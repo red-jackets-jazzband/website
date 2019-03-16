@@ -47,10 +47,6 @@ copyright = "&copy;2019 Red Jackets Jazzband"
       heading = "Connect"
 
       [[params.links.list1.link]]
-        text = "Blog"
-        url = "#"
-
-      [[params.links.list1.link]]
         text = "Email"
         url = "mailto:info@redjackets.nl"
 
@@ -87,6 +83,10 @@ copyright = "&copy;2019 Red Jackets Jazzband"
       [[params.links.list3.link]]
         text = "Band"
         url = "band"
+
+      [[params.links.list3.link]]
+        text = "In Action"
+        url = "inaction"
 
   # The original template is released under the Creative Commons Attribution 3.0 License.
   # Please keep the original attribution link when using for your own project.
