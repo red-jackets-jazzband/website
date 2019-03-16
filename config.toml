@@ -1,0 +1,94 @@
+baseURL = "http://red-jackets-jazzband.github.io/"
+languageCode = "en-us"
+title = "Red Jackets Jazzband"
+theme = "split"
+disableKinds = ["section", "taxonomy", "taxonomyTerm", "RSS", "sitemap"]
+
+# Enter your tracking code to enable Google Analytics
+googleAnalytics = ""
+
+# Copyright
+copyright = "&copy;2019 Red Jackets Jazzband"
+
+[params]
+
+  custom_css = "assets/css/split.css"
+
+  # Metadata for search engines and social sharing
+  author = "Red Jackets Jazzband"
+  description = "Red Jackets jazzband a true jazz orchestra"
+  shareImage = "images/social.jpg"
+  twitterHandle = "redjacketsjazz"
+
+  # Favicon
+  favicon = "favicon.ico"
+
+  # Section - Visual
+  [params.visual]
+
+    # Image
+    [params.visual.image]
+      enable = true
+      file = "images/quedlinburg_back_name.jpg"
+      position = "center center"
+
+    # Video
+    [params.visual.video]
+      enable = false
+      mute = true
+      # file = "videos/background.mp4"
+      youtubeId = "q2kOF8ef24A"
+
+  # Links
+  #
+  # Links List #1
+  [[params.links]]
+    [params.links.list1]
+      heading = "Connect"
+
+      [[params.links.list1.link]]
+        text = "Blog"
+        url = "#"
+
+      [[params.links.list1.link]]
+        text = "Email"
+        url = "mailto:info@redjackets.nl"
+
+  # Links List #2
+  [[params.links]]
+    [params.links.list2]
+      heading = "Social"
+
+      [[params.links.list2.link]]
+        text = "Twitter"
+        url = "http://twitter.com/RedJacketsJazz"
+
+      [[params.links.list2.link]]
+        text = "Instagram"
+        url = "https://www.instagram.com/redjacketsjazzband/"
+
+      [[params.links.list2.link]]
+        text = "Facebook"
+        url = "https://www.facebook.com/RedJacketsJazzband"
+
+      [[params.links.list2.link]]
+        text = "Youtube"
+        url = "https://www.youtube.com/channel/UCH9Ci0xgnyhUaZ8gXQdaiLQ"
+
+  # Links List #3
+  [[params.links]]
+    [params.links.list3]
+      heading = "Pages"
+
+      [[params.links.list3.link]]
+        text = "Agenda"
+        url = "_agenda"
+
+      [[params.links.list3.link]]
+        text = "Band"
+        url = "band"
+
+  # The original template is released under the Creative Commons Attribution 3.0 License.
+  # Please keep the original attribution link when using for your own project.
+  # If you'd like to use the template without the attribution, you can check out
+  # the license option via the template author's website: https://onepagelove.com/split
