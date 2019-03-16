@@ -88,6 +88,10 @@ copyright = "&copy;2019 Red Jackets Jazzband"
         text = "In Action"
         url = "inaction"
 
+      [[params.links.list3.link]]
+        text = "Songs"
+        url = "songs"
+
   # The original template is released under the Creative Commons Attribution 3.0 License.
   # Please keep the original attribution link when using for your own project.
   # If you'd like to use the template without the attribution, you can check out
