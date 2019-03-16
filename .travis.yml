@@ -14,3 +14,13 @@ before_script:
 # script - run the build script
 script:
     - hugo
+
+deploy:
+  provider: pages
+  local-dir: public
+  repo: red-jackets-jazzband/red-jackets-jazzband.github.io
+  skip-cleanup: true
+  github-token: $GITHUB_TOKEN  # Set in the settings page of your repository, as a secure variable
+  keep-history: true
+  on:
+    branch: master
