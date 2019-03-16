@@ -8,5 +8,6 @@ date: 2019-03-16T16:26:50+01:00
 <script src="/script/render_abc.js" type="text/javascript"></script>
 
 <div id="songslist"></div>
+<div id="chordtable"></div>
 <div id="notation" style="background:#ffffee"></div>
 
