@@ -19,8 +19,10 @@ deploy:
   provider: pages
   local-dir: public
   repo: red-jackets-jazzband/red-jackets-jazzband.github.io
+  target-branch: master
   skip-cleanup: true
   github-token: $GITHUB_TOKEN  # Set in the settings page of your repository, as a secure variable
+  committer-from-gh: true
   keep-history: true
   on:
     branch: master
