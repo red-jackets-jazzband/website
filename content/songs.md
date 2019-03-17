@@ -9,7 +9,9 @@ date: 2019-03-16T16:26:50+01:00
 
 <div id="songslist"></div>
 <div id="sheetmenu">
-Transpose (halfsteps)<input type="number" id="transpose" name="quantity" value="0" min="-12" max="12" onchange="rerenderFile()"></div>
+Transpose
+<input type="number" id="transpose" name="quantity" value="0" min="-12" max="12" onchange="rerenderFile()">
+ (halfsteps) </div>
 <div id="songtitle"></div>
 <div id="chordtable"></div>
 <div id="notation" style="background:#ffffee"></div>
