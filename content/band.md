@@ -12,7 +12,7 @@ Started in 2009, after ten years we are still spreading the joy of traditional j
 * **Trumpet** - Martien de Nijs
 * **Trombone** - Tom Senders
 * **Saxophone** - Richard Kieboom
-* **Clarinet** - Johan Luijcks
+* **Clarinet** - Johan Luijks
 * **Sousaphone** - Ben Spoor
 * **Banjo** - Wilfried van Weesenbeecke
 * **Washboard** - Peter Maas
