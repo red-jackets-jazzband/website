@@ -56,6 +56,6 @@ window[ addEventListener ? 'addEventListener' : 'attachEvent' ]( addEventListene
 
 </script>
 
-<table id="showTable" style="width:100%;">
+<table id="showTable" style="width:100%;min-width:500px">
 </table> 
 
