@@ -17,7 +17,7 @@ copyright = "&copy;2019 Red Jackets Jazzband"
   # Metadata for search engines and social sharing
   author = "Red Jackets Jazzband"
   description = "Red Jackets jazzband a true jazz orchestra"
-  shareImage = "images/social.jpg"
+  shareImage = "images/redjackets_logo_small.png"
   twitterHandle = "redjacketsjazz"
 
   # Favicon
