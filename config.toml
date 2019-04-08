@@ -5,7 +5,7 @@ theme = "split"
 disableKinds = ["section", "taxonomy", "taxonomyTerm", "RSS", "sitemap"]
 
 # Enter your tracking code to enable Google Analytics
-googleAnalytics = ""
+googleAnalytics = "UA-37632234-2"
 
 # Copyright
 copyright = "&copy;2019 Red Jackets Jazzband"
