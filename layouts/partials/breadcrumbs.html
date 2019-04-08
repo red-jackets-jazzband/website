@@ -1,8 +1,0 @@
-<span class="title">
-        <a href="/"><image src="/images/Home_Icon.svg" height=19px></a>
-        {{ range (split .URL "/") }}
-            {{ if gt (len . ) 0 }}
-                / <a href="/{{ . }}">{{ humanize (replace . "posts" "blog") }}</a>
-            {{ end }}
-        {{ end }}
-</span>

@@ -4,11 +4,21 @@ title = "Red Jackets Jazzband"
 theme = "split"
 disableKinds = ["section", "taxonomy", "taxonomyTerm", "RSS", "sitemap"]
 
+DefaultContentLanguage = "en"
+
 # Enter your tracking code to enable Google Analytics
 googleAnalytics = "UA-37632234-2"
 
 # Copyright
 copyright = "&copy;2019 Red Jackets Jazzband"
+
+[languages]
+  [languages.en]
+    weight = 1
+  [languages.nl]
+    weight = 2
+  [languages.de]
+    weight = 3
 
 [params]
 
@@ -78,7 +88,7 @@ copyright = "&copy;2019 Red Jackets Jazzband"
 
       [[params.links.list3.link]]
         text = "Agenda"
-        url = "agenda"
+        url = "/agenda"
 
       [[params.links.list3.link]]
         text = "Band"
@@ -86,11 +96,11 @@ copyright = "&copy;2019 Red Jackets Jazzband"
 
       [[params.links.list3.link]]
         text = "In Action"
-        url = "inaction"
+        url = "/in-action"
 
       [[params.links.list3.link]]
         text = "Songs"
-        url = "songs"
+        url = "/songs"
 
   # The original template is released under the Creative Commons Attribution 3.0 License.
   # Please keep the original attribution link when using for your own project.

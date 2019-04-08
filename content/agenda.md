@@ -1,6 +1,6 @@
 ---
 title: "Red Jackets Jazzband"
-tagline: "Shows. Places. Times."
+tagline: "Agenda"
 date: 2019-03-16T08:20:22+01:00
 ---
 

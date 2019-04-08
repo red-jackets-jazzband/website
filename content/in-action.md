@@ -1,6 +1,6 @@
 ---
 title: "Red Jackets Jazzband"
-tagline: "Live. Pictures. Music."
+tagline: "In Action"
 date: 2019-03-16T10:25:31+01:00
 ---
 

@@ -1,6 +1,6 @@
 ---
 title: "Red Jackets Jazzband"
-tagline: "Band. Biography. Members."
+tagline: "Band"
 date: 2019-03-16T10:25:31+01:00
 ---
 
