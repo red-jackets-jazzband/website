@@ -37,7 +37,8 @@ function parse_showlist(data) {
         var row = table.insertRow(-1);
         var cell = row.insertCell(-1);
 	cell.innerHTML = show_date
-	cell.style.fontWeight = "bold";
+    cell.style.fontWeight = "bold";
+    cell.style.paddingRight = "5px";
         var cell = row.insertCell(-1);
         cell.innerHTML = show_name
 	cell.style.fontWeight = "bold";
@@ -56,6 +57,6 @@ window[ addEventListener ? 'addEventListener' : 'attachEvent' ]( addEventListene
 
 </script>
 
-<table id="showTable" style="width:100%;min-width:500px">
+<table id="showTable">
 </table> 
 
