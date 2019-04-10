@@ -40,7 +40,7 @@ copyright = "&copy;2019 Red Jackets Jazzband"
     [params.visual.image]
       enable = true
       file = "images/quedlinburg_back_name.jpg"
-      position = "center center"
+      position = "center top"
 
     # Video
     [params.visual.video]
@@ -67,7 +67,7 @@ copyright = "&copy;2019 Red Jackets Jazzband"
 
       [[params.links.list2.link]]
         text = "Twitter"
-        url = "http://twitter.com/RedJacketsJazz"
+        url = "https://twitter.com/RedJacketsJazz"
 
       [[params.links.list2.link]]
         text = "Instagram"
