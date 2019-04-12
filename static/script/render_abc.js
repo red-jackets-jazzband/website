@@ -25,7 +25,9 @@ function renderAbcFile(text, transpose_steps)
     var chords = parse_chord_scheme(song)
 
     var abcParams = { visualTranspose: transpose_steps,
-	                                responsive: "resize",
+                                    responsive: "resize",
+                                    paddingTop: 0,
+                                    paddingBottom: 0,
 	                                add_classes: true,
                                         format: {
 					     headerfont: "MuseJazzText", 
