@@ -82,7 +82,7 @@ function parse_songlist(data) {
         var song_name = songs[i].split(",")[0];
         var song_path = songs[i].split(",")[1];
 
-        div.innerHTML += "<a href=\"#sheetmenu\" onclick=\"renderSong('" + song_path + "')\" >" + song_name +"</a> | "
+        div.innerHTML += "<a href=\"#s=" + song_path.split(".")[0] + "\" onclick=\"renderSong('" + song_path + "')\" >" + song_name +"</a> | "
     }
 }
 
@@ -186,8 +186,20 @@ function create_chord_table(chords) {
     chordtable.appendChild(table);
 }
 
+function parse_song_from_hash(hash) {
+    const hash2Obj = hash.split("#")[1].split("&")
+                         .map(v => v.split("="))
+                         .reduce( (pre, [key, value]) => ({ ...pre, [key]: value }), {} );
+
+    renderSong(hash2Obj["s"] + ".abc")
+}
+
 function loadSongs() {
     readFile('index_of_songs.txt', parse_songlist)
+
+    if(window.location.hash) {
+        parse_song_from_hash(window.location.hash)
+    } 
 }
 
 window[ addEventListener ? 'addEventListener' : 'attachEvent' ]( addEventListener ? 'load' : 'onload', loadSongs )
