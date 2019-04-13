@@ -20,8 +20,7 @@ function parse_showlist(data) {
     var shows = data.split('\n');
     var number_of_shows = shows.length - 1;
 
-    var upcoming_table = document.getElementById("upcomingShowTable");
-    var past_table = document.getElementById("pastShowTable");
+    var table = document.getElementById("showTable");
 
     var now = new Date()
 
@@ -31,16 +30,13 @@ function parse_showlist(data) {
         last_day = last_day == undefined ? "" : "-" + last_day
         var show_date = new Date( Date.parse(show_date_text.split("-")[0]));
 
-        if( show_date > now ) {
-            var table = upcoming_table;
-        } else {
-            var table = past_table;
-        } 
-
         var show_name = shows[i].split(",")[1];
         var show_loc = shows[i].split(",")[2];
 
         var row = table.insertRow(-1);
+        if( show_date > now ) {
+            row.classList.add('upcomingShow')
+        }
         var cell = row.insertCell(-1);
         cell.innerHTML = show_date.getDate() + last_day + "/" + show_date.getMonth() + "/" + show_date.getFullYear()
         cell.style.fontWeight = "bold";
@@ -49,6 +45,9 @@ function parse_showlist(data) {
         cell.innerHTML = show_name
         cell.style.fontWeight = "bold";
         var row = table.insertRow(-1);
+        if( show_date > now ) {
+            row.classList.add('upcomingShow')
+        }
         row.insertCell(-1);
         var cell = row.insertCell(-1);
         cell.innerHTML = show_loc
