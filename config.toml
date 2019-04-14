@@ -3,6 +3,7 @@ languageCode = "en-us"
 title = "Red Jackets Jazzband"
 theme = "split"
 disableKinds = ["section", "taxonomy", "taxonomyTerm", "RSS"]
+timeout = 60000
 
 DefaultContentLanguage = "en"
 
