@@ -2,7 +2,7 @@ baseURL = "https://red-jackets-jazzband.github.io/"
 languageCode = "en-us"
 title = "Red Jackets Jazzband"
 theme = "split"
-disableKinds = ["section", "taxonomy", "taxonomyTerm", "RSS", "sitemap"]
+disableKinds = ["section", "taxonomy", "taxonomyTerm", "RSS"]
 
 DefaultContentLanguage = "en"
 
