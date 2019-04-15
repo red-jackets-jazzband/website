@@ -1,5 +1,6 @@
 All of me,all_of_me.abc
 Bourbon Street Parade,bourbon_street_parade.abc
+By and By,by_and_by.abc
 Glory Halleluja,glory_halleluja.abc
 Doctor Jazz,doctor_jazz.abc
 Jambalaya,jambalaya.abc
