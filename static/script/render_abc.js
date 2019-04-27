@@ -87,32 +87,22 @@ function readFile(file, callback)
 }
 
 /*
-   Funcion: parse_songlist
-   Read index_of_songs.txt and parse each line
-   Parameters:
-       data - A string containing index_of_songs.txt
-*/
-function parse_songlist(data) {
-    var songs = data.split('\n');
-    songs.forEach (create_song_link);
-}
-
-/*
    Funcion: create_song_link
    From a entry in index_of_songs.txt parse the fields and add link to page
    Parameters:
        song - A string containing line from index_of_songs.txt
 */
-function create_song_link(song) {
+function create_song_link_text(song) {
     var song_parts = song.split(",");
     var song_name = song_parts[0];
     var song_path = song_parts[1];
     var song_title = song_path? song_path.split(".")[0] : "";
 
     if(song_title != "") {
-        var div = document.getElementById('songslist');
-        div.innerHTML += "<a href=\"#s=" + song_title + "\" onclick=\"renderSong('" + song_path + "')\" >" + song_name +"</a> | ";
+        return "<a href=\"#s=" + song_title + "\" onclick=\"renderSong('" + song_path + "')\" >" + song_name +"</a>";
     }
+
+    return "";
 }
 
 function string_to_abc_tune(text, transpose_steps) {
@@ -232,11 +222,64 @@ function parse_song_from_hash(hash) {
 }
 
 function loadSongs() {
-    readFile('index_of_songs.txt', parse_songlist);
+    readFile('index_of_songs.txt', createAllDropdowns);
 
     if(window.location.hash) {
         parse_song_from_hash(window.location.hash);
     }
+}
+
+function createAllDropdowns(data) {
+    var songs = data.split('\n');
+
+    var songMap = createMapFromSongList(songs);
+
+    for (var letter in songMap) {
+        createLetterDropDown(letter, songMap[letter]);
+    }
+}
+
+function createMapFromSongList(songList) {
+
+    var songMap = {};
+    var i = 0;
+    for(; i < songList.length; ++i) {
+        if (songMap[songList[i].charAt(0)] === undefined)
+        {
+            songMap[songList[i].charAt(0)] = [songList[i]];
+        }
+        else
+        {
+            songMap[songList[i].charAt(0)].push(songList[i]);
+        }
+    }
+
+    return songMap;
+}
+
+function createLetterDropDown(letter, songs) {
+
+    var div = document.createElement("DIV");
+    div.classList.add('dropdown');
+
+    var btn = document.createElement("BUTTON");
+    btn.classList.add('dropbtn');
+    btn.innerText = letter;
+    div.appendChild(btn);
+
+    var contentDiv = document.createElement("DIV");
+    contentDiv.classList.add('dropdown-content');
+
+    var i;
+    for (i = 0; i < songs.length; i++) { 
+        contentDiv.innerHTML += create_song_link_text(songs[i]);
+    }
+
+    div.appendChild(contentDiv);
+
+
+    var abc_menu = document.getElementById("abc_menu");
+    abc_menu.appendChild(div);
 }
 
 window[ addEventListener ? 'addEventListener' : 'attachEvent' ]( addEventListener ? 'load' : 'onload', loadSongs );
