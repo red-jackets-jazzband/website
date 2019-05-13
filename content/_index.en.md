@@ -9,3 +9,5 @@ The **Red Jackets Jazzband** is a streetparade jazz band originating from Bergen
 Because we are commited into spreading the joy of jazz, we share [our music](/songs) for new musicians to learn and enjoy traditional jazz. 
 
 If you would like to see us in action, take a look at our [agenda](/agenda) or our [in action](/in-action) page. 
+
+**[Read more](/band)**
