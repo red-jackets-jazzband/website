@@ -9,7 +9,7 @@ install:
     #- go get github.com/gohugoio/hugo    # consume time 70.85s
     - mkdir $HOME/hugo-src
     - pushd $HOME/hugo-src
-    - git clone https://github.com/gohugoio/hugo.git
+    - git clone --branch v0.55.5 https://github.com/gohugoio/hugo.git
     - pushd hugo
     - go install
 
