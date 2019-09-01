@@ -55,6 +55,7 @@ Sweet Sue,sweet_sue.abc
 This Little Light of Mine,little_light.abc
 Walking on a Thin Line,walking_on_a_thin_line.abc
 We shall not be moved,we_shall_not_be_moved.abc
+We'll understand it better by and by,by_and_by.abc
 When you're Smiling,when_youre_smiling.abc
 Willie the Weeper,willie_the_weeper.abc
 You are my Sunshine,you_are_my_sunshine.abc
