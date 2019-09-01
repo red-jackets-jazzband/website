@@ -30,6 +30,7 @@ Just over in the Gloryland,gloryland.abc
 Joe Avery Blues,second_line.abc
 Lady be good,lady_be_good.abc
 Li'l Liza Jane,lil_liza_jane.abc
+Limbo Rock,limbo_rock.abc
 Lord Lord Lord,lord_lord_lord.abc
 Louisiana Fairytale,louisiana_fairytale.abc
 Love Letters in the Sand,love_letters.abc
