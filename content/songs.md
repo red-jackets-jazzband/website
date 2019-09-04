@@ -12,7 +12,7 @@ date: 2019-03-16T16:26:50+01:00
 <div id="sheetmenu" class="hideOnprint">
 <a id="printLink" title="Print this page" href="#" onclick="window.print();return false;">Print</a> | 
 Transpose (halfsteps)
-<input type="number" id="transpose" name="quantity" value="0" min="-12" max="12" onchange="rerenderFile()">
+<input type="number" id="transpose" name="quantity" value="0" min="-12" max="12" oninput="rerenderFile()">
 </div>
 <div id="songtitle"></div>
 <div id="chordtable"></div>
