@@ -11,8 +11,99 @@ var transpose_halfsteps = 0;
   NodeList.prototype.forEach = Array.prototype.forEach;
 })();
 
+function renderBook() {
+
+  document.getElementById("book").innerHTML = "";
+  readFile("index_of_songbook.txt", renderAllSongs);
+
+}
+
+function renderAllSongs(data) {
+  var songList = data.split("\n");
+
+  /*Hide normal song */
+  var songtitle = document.getElementById("songtitle");
+  songtitle.innerHTML = "";
+  var chordtable = document.getElementById("chordtable");
+  chordtable.innerHTML = "";
+  var notation = document.getElementById("notation");
+  notation.innerHTML = "";
+  notation.style = "";
+  notation.classList.remove("abcjs-container");
+
+  /* Add generic stuff */
+  var book = document.getElementById("book");
+
+  var cover = document.createElement("IMG");
+  cover.src = "/images/songbook_cover.png";
+  cover.classList.add("bookCover");
+  book.appendChild(cover);
+
+  var indexDiv = document.createElement("DIV");
+  indexDiv.innerHTML = "<h1>Songs</h1>";
+  indexDiv.classList.add("bookIndex");
+  indexDiv.classList.add("pageBreakBefore");
+  var index = document.createElement("UL");
+  index.classList.add("bookIndexList");
+  indexDiv.appendChild(index);
+  book.appendChild(indexDiv);
+
+  /* Add each song to the book */
+  var i = 0;
+  for (; i < songList.length; ++i) {
+
+    var song_parts = songList[i].split(",");
+    var song_name = song_parts[0];
+    var song_path = song_parts[1];
+    var song_title = song_path ? song_path.split(".")[0] : "";
+
+    var indexItem = document.createElement("LI");
+    var titlePrefix = String(i+1) + ". ";
+    indexItem.innerHTML = titlePrefix + song_name;
+    index.appendChild(indexItem);
+
+    var songTitleElt = document.createElement("DIV");
+    songTitleElt.id = "songtitle-".concat(song_title);
+    songTitleElt.classList.add("songtitle");
+    songTitleElt.classList.add("pageBreakBefore");
+    book.appendChild(songTitleElt);
+    var chordTableElt = document.createElement("DIV");
+    chordTableElt.id = "chordtable-".concat(song_title);
+    chordTableElt.classList.add("chordtable");
+    book.appendChild(chordTableElt);
+    var notationElt = document.createElement("DIV");
+    notationElt.id = "notation-".concat(song_title);
+    notationElt.classList.add("notation");
+    book.appendChild(notationElt);
+/*
+    var footer = document.createElement("DIV");
+    footer.innerHTML = "Retrieved from www.redjackets.nl";
+    footer.id = "footer-".concat(song_title);
+    footer.classList.add("songPrintFooter");
+    footer.classList.add("hideOnScreen");*/
+    //book.appendChild(footer);
+
+    notationElt = notationElt.id;
+    chordTableElt = chordTableElt.id;
+    songTitleElt = songTitleElt.id;
+
+    var f = new XMLHttpRequest();
+    f.onreadystatechange = function() {
+      if (f.readyState === 4) {
+        if (f.status === 200 || f.status === 0) {
+          renderAbcFile(f.responseText, notationElt, chordTableElt, songTitleElt, titlePrefix);
+        }
+      }
+    };
+    f.open("GET", song_path, false); // TODO: make async
+    f.send();
+  }
+
+}
+
 function renderSong(path) {
   document.getElementById("transpose").value = 0;
+  document.getElementById("book").innerHTML = "";
   readFile(path, renderAbcFile);
 }
 
@@ -63,7 +154,13 @@ function offset_for_instrument(instrument) {
    Parameters:
        text - String containing (valid) abc file
 */
-function renderAbcFile(text) {
+function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, titlePrefix) {
+
+  notationElt = (typeof notationElt !== 'undefined') ?  notationElt : "notation";
+  chordTableElt = (typeof chordTableElt !== 'undefined') ?  chordTableElt : "chordtable";
+  songTitleElt = (typeof songTitleElt !== 'undefined') ?  songTitleElt : "songtitle";
+  titlePrefix = (typeof titlePrefix !== 'undefined') ?  titlePrefix : "";
+
   var transpose_steps = document.getElementById("transpose").value;
   // Don't use valueAsNumber to let IE users also enjoy transposing
   transpose_steps = Number(transpose_steps);
@@ -99,21 +196,22 @@ function renderAbcFile(text) {
     }
   };
 
-  ABCJS.renderAbc("notation", text, abcParams);
+  ABCJS.renderAbc(notationElt, text, abcParams);
 
   /* Hide title below chord table */
   document
-    .getElementById("notation")
+    .getElementById(notationElt)
     .querySelectorAll(".abcjs-title")
     .forEach(function(el) {
       el.setAttribute("display", "none");
     });
 
-  create_chord_table(chords);
+  var chordtable = document.getElementById(chordTableElt);
+  create_chord_table(chords, chordtable);
 
   /* Add own title, above chordTable */
-  var songtitle = document.getElementById("songtitle");
-  songtitle.innerHTML = song.metaText.title;
+  var songtitle = document.getElementById(songTitleElt);
+  songtitle.innerHTML = titlePrefix.concat(song.metaText.title);
 }
 
 /*
@@ -125,7 +223,6 @@ function renderAbcFile(text) {
 */
 function readFile(file, callback) {
   var f = new XMLHttpRequest();
-  f.open("GET", file, false);
   f.onreadystatechange = function() {
     if (f.readyState === 4) {
       if (f.status === 200 || f.status === 0) {
@@ -133,6 +230,7 @@ function readFile(file, callback) {
       }
     }
   };
+  f.open("GET", file, true);
   f.send(null);
 }
 
@@ -253,7 +351,7 @@ function parse_chord_scheme(song) {
    Returns:
        chords - A list of lists with the chords per measure
 */
-function create_chord_table(chords) {
+function create_chord_table(chords, chordtable) {
   var table = document.createElement("TABLE");
   table.border = "1";
 
@@ -275,7 +373,6 @@ function create_chord_table(chords) {
     }
   }
 
-  var chordtable = document.getElementById("chordtable");
   chordtable.innerHTML = "";
   chordtable.appendChild(table);
 }

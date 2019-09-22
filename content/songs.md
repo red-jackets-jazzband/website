@@ -7,17 +7,19 @@ date: 2019-03-16T16:26:50+01:00
 <script src="/script/abcjs_midi_5.6.5-min.js" type="text/javascript"></script>
 <script src="/script/render_abc.js" type="text/javascript"></script>
 
-<img src="/images/redjackets_logo.png" id="printLogo" class="hideOnScreen" />
+<img src="/images/redjackets_logo.png" class="printLogo hideOnScreen" />
 <div id="abc_menu" class="hideOnprint"></div>
 <div id="sheetmenu" class="hideOnprint">
+<a id="printBookLink" title="Get the book" href="#" onclick="renderBook()">Book</a> | 
 <a id="printLink" title="Print this page" href="#" onclick="window.print();return false;">Print</a> | 
 Transpose (halfsteps)
 <input type="number" id="transpose" name="quantity" value="0" min="-12" max="12" oninput="rerenderFile()">
 </div>
-<div id="songtitle"></div>
-<div id="chordtable"></div>
-<div id="notation"></div>
+<div id="songtitle" class="songtitle"></div>
+<div id="chordtable" class="chordtable"></div>
+<div id="notation" class="notation"></div>
+<div id="book"></div>
 
-<div id="songPrintFooter" class="hideOnScreen">
+<div id="songPrintFooter" class="songPrintFooter hideOnScreen">
 Retrieved from www.redjackets.nl
 </div>
