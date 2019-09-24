@@ -11,99 +11,8 @@ var transpose_halfsteps = 0;
   NodeList.prototype.forEach = Array.prototype.forEach;
 })();
 
-function renderBook() {
-
-  document.getElementById("book").innerHTML = "";
-  readFile("index_of_songbook.txt", renderAllSongs);
-
-}
-
-function renderAllSongs(data) {
-  var songList = data.split("\n");
-
-  /*Hide normal song */
-  var songtitle = document.getElementById("songtitle");
-  songtitle.innerHTML = "";
-  var chordtable = document.getElementById("chordtable");
-  chordtable.innerHTML = "";
-  var notation = document.getElementById("notation");
-  notation.innerHTML = "";
-  notation.style = "";
-  notation.classList.remove("abcjs-container");
-
-  /* Add generic stuff */
-  var book = document.getElementById("book");
-
-  var cover = document.createElement("IMG");
-  cover.src = "/images/songbook_cover.png";
-  cover.classList.add("bookCover");
-  book.appendChild(cover);
-
-  var indexDiv = document.createElement("DIV");
-  indexDiv.innerHTML = "<h1>Songs</h1>";
-  indexDiv.classList.add("bookIndex");
-  indexDiv.classList.add("pageBreakBefore");
-  var index = document.createElement("UL");
-  index.classList.add("bookIndexList");
-  indexDiv.appendChild(index);
-  book.appendChild(indexDiv);
-
-  /* Add each song to the book */
-  var i = 0;
-  for (; i < songList.length; ++i) {
-
-    var song_parts = songList[i].split(",");
-    var song_name = song_parts[0];
-    var song_path = song_parts[1];
-    var song_title = song_path ? song_path.split(".")[0] : "";
-
-    var indexItem = document.createElement("LI");
-    var titlePrefix = String(i+1) + ". ";
-    indexItem.innerHTML = titlePrefix + song_name;
-    index.appendChild(indexItem);
-
-    var songTitleElt = document.createElement("DIV");
-    songTitleElt.id = "songtitle-".concat(song_title);
-    songTitleElt.classList.add("songtitle");
-    songTitleElt.classList.add("pageBreakBefore");
-    book.appendChild(songTitleElt);
-    var chordTableElt = document.createElement("DIV");
-    chordTableElt.id = "chordtable-".concat(song_title);
-    chordTableElt.classList.add("chordtable");
-    book.appendChild(chordTableElt);
-    var notationElt = document.createElement("DIV");
-    notationElt.id = "notation-".concat(song_title);
-    notationElt.classList.add("notation");
-    book.appendChild(notationElt);
-/*
-    var footer = document.createElement("DIV");
-    footer.innerHTML = "Retrieved from www.redjackets.nl";
-    footer.id = "footer-".concat(song_title);
-    footer.classList.add("songPrintFooter");
-    footer.classList.add("hideOnScreen");*/
-    //book.appendChild(footer);
-
-    notationElt = notationElt.id;
-    chordTableElt = chordTableElt.id;
-    songTitleElt = songTitleElt.id;
-
-    var f = new XMLHttpRequest();
-    f.onreadystatechange = function() {
-      if (f.readyState === 4) {
-        if (f.status === 200 || f.status === 0) {
-          renderAbcFile(f.responseText, notationElt, chordTableElt, songTitleElt, titlePrefix);
-        }
-      }
-    };
-    f.open("GET", song_path, false); // TODO: make async
-    f.send();
-  }
-
-}
-
 function renderSong(path) {
   document.getElementById("transpose").value = 0;
-  document.getElementById("book").innerHTML = "";
   readFile(path, renderAbcFile);
 }
 
@@ -154,14 +63,17 @@ function offset_for_instrument(instrument) {
    Parameters:
        text - String containing (valid) abc file
 */
-function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, titlePrefix) {
+function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, titlePrefix, add_link) {
 
   notationElt = (typeof notationElt !== 'undefined') ?  notationElt : "notation";
   chordTableElt = (typeof chordTableElt !== 'undefined') ?  chordTableElt : "chordtable";
   songTitleElt = (typeof songTitleElt !== 'undefined') ?  songTitleElt : "songtitle";
   titlePrefix = (typeof titlePrefix !== 'undefined') ?  titlePrefix : "";
+  add_link = (typeof add_link !== 'undefined') ?  add_link : true;
 
-  var transpose_steps = document.getElementById("transpose").value;
+  var transpose_steps = document.getElementById("transpose");
+  transpose_steps = (transpose_steps !== null) ? transpose_steps.value : 0;
+
   // Don't use valueAsNumber to let IE users also enjoy transposing
   transpose_steps = Number(transpose_steps);
   var instrument = document.getElementById("instrument").value;
@@ -173,7 +85,9 @@ function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, titlePref
   var song = string_to_abc_tune(text, transpose_steps);
   var chords = parse_chord_scheme(song);
 
-  add_inspiration_link(song.metaText.url);
+  if (add_link) {
+    add_inspiration_link(song.metaText.url);
+  }
 
   var abcParams = {
     visualTranspose: transpose_steps,
@@ -518,8 +432,3 @@ function createLetterDropDown(letter, songs) {
   var abc_menu = document.getElementById("abc_menu");
   abc_menu.appendChild(div);
 }
-
-window[addEventListener ? "addEventListener" : "attachEvent"](
-  addEventListener ? "load" : "onload",
-  loadSongs
-);

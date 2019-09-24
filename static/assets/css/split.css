@@ -524,6 +524,15 @@ video.video {
   padding: 0mm;
 }
 
+.bookIntro {
+  background-color:#ffffff;
+  color:#000000;
+  font-family:'MuseJazzText';
+  padding: 20px;
+  text-align: center;
+  font-size: medium;
+}
+
 .bookIndex {
   background-color:#ffffff;
   color:#000000;
@@ -541,6 +550,11 @@ video.video {
 }
 
 @media print {
+
+  @page { size: A4 portrait;
+          margin: 2mm 10mm;
+  }
+
   .hideOnprint {
       display: none !important;
   }
@@ -551,13 +565,14 @@ video.video {
   .pageBreakBefore {
       page-break-before: always;
   }
+
 }
 @media screen {
   .hideOnprint {
       display: block;
   }
   .hideOnScreen {
-      display: none !important;  
+      display: none !important;
   }
 }
 
