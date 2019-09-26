@@ -544,10 +544,15 @@ video.video {
 
 .bookIndexList {
   column-count: 2;
-  list-style-type:none;
   font-size: large;
   text-align: left;
 }
+
+
+.bookIndexList > ul, li {
+  list-style-type: none;
+}
+
 
 @media print {
 
