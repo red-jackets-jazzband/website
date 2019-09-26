@@ -3,6 +3,12 @@
 function renderBook() {
   document.getElementById("songs").innerHTML = "";
   document.getElementById("bookIndexList").innerHTML = "";
+
+  var instrumentSelect = document.getElementById("instrument");
+  var instrumentText = instrumentSelect.options[instrumentSelect.selectedIndex].text;
+  document.getElementById("instrumentText").innerHTML = instrumentText.toLowerCase();
+  document.getElementById("instrumentTextCover").innerHTML = instrumentText.toLowerCase();
+
   readFile("/songs/index_of_songbook.txt", renderAllSongs);
 }
 

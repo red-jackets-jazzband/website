@@ -425,6 +425,8 @@ video.video {
     background-color:#ffffff;
     color:#000000;
     font-family:'MuseJazzText';
+    line-height: 40px;
+    font-size: x-large;
 }
 
 .songtitle{
@@ -524,22 +526,36 @@ video.video {
   padding: 0mm;
 }
 
-.bookIntro {
-  background-color:#ffffff;
-  color:#000000;
-  font-family:'MuseJazzText';
-  padding: 20px;
-  text-align: center;
-  font-size: medium;
+/* Container holding the image and the text */
+.container {
+  position: relative;
 }
 
-.bookIndex {
+/* Bottom right text */
+.text-block {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  background-color: black !important;
+  color: white !important;
+  padding-left: 20px;
+  padding-right: 20px;
+  font-family:'MuseJazzText';
+}
+
+.bookContent {
   background-color:#ffffff;
   color:#000000;
-  font-family:'MuseJazzText';
   padding: 20px;
+  font-family:'MuseJazzText';
   text-align: center;
+  font-size: medium;
+  line-height: 20px;
+}
+
+.bookContent > h1 {
   font-size: xx-large;
+  padding: 40px;
 }
 
 .bookIndexList {
@@ -547,7 +563,6 @@ video.video {
   font-size: large;
   text-align: left;
 }
-
 
 .bookIndexList > ul, li {
   list-style-type: none;
@@ -557,7 +572,12 @@ video.video {
 @media print {
 
   @page { size: A4 portrait;
-          margin: 2mm 10mm;
+          margin: 0mm;
+  }
+
+  .bookContent {
+    margin: 2mm 10mm;
+    padding: 20px;
   }
 
   .hideOnprint {
