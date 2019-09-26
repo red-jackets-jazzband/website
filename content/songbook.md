@@ -27,4 +27,5 @@ date: 2019-03-16T16:26:50+01:00
 
 <script type="text/javascript">
     createInstrumentDropdown();
+    document.getElementById("instrument").onchange = "";
 </script>
