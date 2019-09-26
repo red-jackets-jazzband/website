@@ -2,6 +2,7 @@
 
 function renderBook() {
   document.getElementById("songs").innerHTML = "";
+  document.getElementById("bookIndexList").innerHTML = "";
   readFile("/songs/index_of_songbook.txt", renderAllSongs);
 }
 
@@ -20,11 +21,13 @@ function renderAllSongs(data) {
     var song_path = song_parts[1];
     var song_title = song_path ? song_path.split(".")[0] : "";
 
+    /* Add to index */
     var indexItem = document.createElement("LI");
     var titlePrefix = String(i+1) + ". ";
     indexItem.innerHTML = titlePrefix + song_name;
     index.appendChild(indexItem);
 
+    /* Add elements in book */
     var songTitleElt = document.createElement("DIV");
     songTitleElt.id = "songtitle-".concat(song_title);
     songTitleElt.classList.add("songtitle");
