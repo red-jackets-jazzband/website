@@ -78,8 +78,10 @@ function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, titlePref
   transpose_steps = Number(transpose_steps);
   var instrument = document.getElementById("instrument").value;
 
-  text = change_cleff_for_instrument(instrument, text);
-  transpose_steps += offset_for_instrument(instrument);
+  if (text.search(/\[V:.*\]/g) == -1) {
+    text = change_cleff_for_instrument(instrument, text);
+    transpose_steps += offset_for_instrument(instrument);
+  }
 
   window.current_song = text;
   var song = string_to_abc_tune(text, transpose_steps);
