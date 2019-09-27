@@ -61,10 +61,6 @@ copyright = "&copy;2019 Red Jackets Jazzband"
         text = "Email"
         url = "mailto:info@redjackets.nl"
 
-      [[params.links.list1.link]]
-        text = "Songbook"
-        url = "/songbook"
-
   # Links List #2
   [[params.links]]
     [params.links.list2]
