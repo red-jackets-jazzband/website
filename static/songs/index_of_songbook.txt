@@ -10,6 +10,7 @@ I Got That Feelin',i_got_that_feeling.abc
 I'm Walking,im_walking.abc
 I Wanna Be Like You,be_like_you.abc
 Jambalaya,jambalaya.abc
+Joe Avery Blues,second_line.abc
 Lord Lord Lord,lord_lord_lord.abc
 Milenburg Joys,milenburg_joys.abc
 Oye Como Va,oye_como_va.abc
