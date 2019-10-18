@@ -10,6 +10,7 @@ I Wanna Be Like You,be_like_you.abc
 Jambalaya,jambalaya.abc
 Lord Lord Lord,lord_lord_lord.abc
 Milenburg Joys,milenburg_joys.abc
+Oye Como Va,ome_como_va.abc
 See See Rider,see_see_rider.abc
 Steamin' Blues,steamin_blues.abc
 Sweet Georgia Brown,sweet_georgia_brown.abc
