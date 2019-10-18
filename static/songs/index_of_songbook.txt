@@ -1,6 +1,7 @@
 Big Chief,big_chief.abc
 Bourbon Street Parade,bourbon_street_parade.abc
 Caravan,caravan.abc
+C'est Magnifique,cest_magnifique.abc
 Corrine Corrina,corrine_corrina.abc
 Do Watcha Wanna,do_watcha_wanna.abc
 Down In Honky Tonk Town,honky_tonk_town.abc
