@@ -76,11 +76,12 @@ function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, titlePref
 
   // Don't use valueAsNumber to let IE users also enjoy transposing
   transpose_steps = Number(transpose_steps);
-  var instrument = document.getElementById("instrument").value;
+  var instrumentSelect = document.getElementById("instrument");
+  document.getElementById("instrumentText").innerHTML = instrumentSelect.options[instrumentSelect.selectedIndex].text.toLowerCase();
 
   if (text.search(/\[V:.*\]/g) == -1) {
-    text = change_cleff_for_instrument(instrument, text);
-    transpose_steps += offset_for_instrument(instrument);
+    text = change_cleff_for_instrument(instrumentSelect.value, text);
+    transpose_steps += offset_for_instrument(instrumentSelect.value);
   }
 
   window.current_song = text;

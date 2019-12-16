@@ -25,6 +25,6 @@ Transpose (halfsteps)
 <div id="notation" class="notation"></div>
 
 <div id="songPrintFooter" class="songPrintFooter hideOnScreen">
-Retrieved from www.redjackets.nl
+Retrieved from www.redjackets.nl - <span id="instrumentText"></span>
 </div>
 
