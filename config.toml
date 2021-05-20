@@ -134,3 +134,9 @@ copyright = "&copy;2019 Red Jackets Jazzband"
   [privacy.youtube]
     disable = false
     privacyEnhanced = true
+
+# https://stackoverflow.com/questions/63198652/hugo-shortcode-ignored-saying-raw-html-omitted
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true
