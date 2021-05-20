@@ -15,7 +15,7 @@ Dressed in the well known red jackets, the band and its members have earned thei
 # Members
 * **Trumpet & Lead Vocal** - Winfried Tiemessen
 * **Trumpet** - Martien de Nijs
-* **Trombone** - Tom Senders
+* **Trombone** - Han Huve
 * **Saxophone** - Richard Kieboom
 * **Clarinet** - Johan Luijks
 * **Sousaphone** - Ben Spoor
