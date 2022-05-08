@@ -91,6 +91,8 @@ function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, titlePref
   var song = string_to_abc_tune(text, transpose_steps);
   var chords = parse_chord_scheme(song);
 
+  var riffs = generate_riffs(chords)
+
   if (add_link) {
     add_inspiration_link(song.metaText.url);
     add_irealpro_link(song, chords);
@@ -167,6 +169,70 @@ function readFile(file, callback) {
   f.open("GET", file, true);
   f.send(null);
 }
+
+function generate_riffs(chords) {
+
+  var chordNotes = [];
+  var cols = 4;
+  if (chords.length > 4 * 4) {
+    cols = 8;
+  }
+  var rows = Math.ceil(chords.length / cols);
+
+  // Also consider multiple chords in measure
+  var lastChord = '%'
+  for (var y = 0; y < rows; y++) {
+    for (var x = 0; x < cols; x++) {
+      var chord_idx = x + y * cols;
+      if (chord_idx < chords.length) {
+
+        var chord = chords[chord_idx].text.toString();
+        if (chord.trim() =='%') {
+          chord = lastChord;
+        }
+        // TODO: This is an inverse operation, consider not doing it
+        chord = chord.replace("♭", "b").replace("♯", "#").replace("Ø", "dim");
+        lastChord = chord;
+        chordNotes.push(Tonal.Chord.get(chord).notes);
+      }
+    }
+  }
+
+  var sortedRiffNotes = [];
+  sortedRiffNotes.push(chordNotes[0])
+
+  for (var idx = 1; idx < chordNotes.length; idx++)  {
+    var intervalsRoot = [];
+    var intervalsSecond = [];
+    var intervalsThird = [];
+    for (var note = 0; note < 3; note++) {
+        // TODO: not only consider up interval
+        intervalsRoot[note] = Tonal.Interval.semitones(Tonal.Interval.distance(sortedRiffNotes[idx-1][0], chordNotes[idx][note]));
+        intervalsSecond[note] = Tonal.Interval.semitones(Tonal.Interval.distance(sortedRiffNotes[idx-1][1], chordNotes[idx][note]));
+        intervalsThird[note] = Tonal.Interval.semitones(Tonal.Interval.distance(sortedRiffNotes[idx-1][2], chordNotes[idx][note]));
+    }
+
+    const minRoot = Math.min.apply(Math, intervalsRoot);
+    const rootIdx = intervalsRoot.indexOf(minRoot);
+
+    intervalsSecond[rootIdx] = "100";
+    intervalsThird[rootIdx] = "100";
+
+    const minSecond = Math.min.apply(Math, intervalsSecond);
+    const secondIdx = intervalsSecond.indexOf(minSecond);
+
+    intervalsThird[secondIdx] = "100";
+
+    const minThird = Math.min.apply(Math, intervalsThird);
+    const thirdIdx = intervalsThird.indexOf(minThird);
+
+    sortedRiffNotes.push([chordNotes[idx][rootIdx], chordNotes[idx][secondIdx], chordNotes[idx][thirdIdx]]);
+  }
+  console.log(sortedRiffNotes);
+
+  // TODO: Add rhytm
+}
+
 
 /*
    Funcion: create_song_link
