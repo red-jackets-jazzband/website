@@ -222,19 +222,37 @@ function generate_riffs(chords) {
           intervalsThird[note] = Tonal.Interval.semitones(Tonal.Interval.distance(prevChord[2], unsortedChord[note]));
       }
 
-      var minRoot = Math.min.apply(Math, intervalsRoot);
-      var rootIdx = intervalsRoot.indexOf(minRoot);
+        // Find smallest interval solution
+        var intervalList = intervalsRoot.concat(intervalsSecond).concat(intervalsThird);
 
-      intervalsSecond[rootIdx] = "100";
-      intervalsThird[rootIdx] = "100";
+        for (var points = 0; points < 3; points++) {
+          var minInterval = Math.min.apply(Math, intervalList);
+          var intervalIndex = intervalList.indexOf(minInterval);
 
-      var minSecond = Math.min.apply(Math, intervalsSecond);
-      var secondIdx = intervalsSecond.indexOf(minSecond);
-
-      intervalsThird[secondIdx] = "100";
-
-      var minThird = Math.min.apply(Math, intervalsThird);
-      var thirdIdx = intervalsThird.indexOf(minThird);
+          switch (intervalIndex) {
+            case 0:
+            case 1:
+            case 2:
+            var rootIdx = intervalIndex;
+            intervalList.fill(100, 0, 3);
+            break;
+            case 3:
+            case 4:
+            case 5:
+            var secondIdx = intervalIndex - 3;
+            intervalList.fill(100, 3, 6);
+            break;
+            case 6:
+            case 7:
+            case 8:
+            var thirdIdx = intervalIndex - 6;
+            intervalList.fill(100, 6, 9);
+            break;
+          }
+          intervalList[intervalIndex % 3] = 100;
+          intervalList[intervalIndex % 3 + 3] = 100;
+          intervalList[intervalIndex % 3 + 6] = 100;
+      }
 
       currentBar.push([chordNotes[bar][idx][rootIdx], chordNotes[bar][idx][secondIdx], chordNotes[bar][idx][thirdIdx]]);
     }
