@@ -173,11 +173,6 @@ function readFile(file, callback) {
 function generate_riffs(chords) {
 
   var chordNotes = [];
-  var cols = 4;
-  if (chords.length > 4 * 4) {
-    cols = 8;
-  }
-  var rows = Math.ceil(chords.length / cols);
 
   var lastChord = '%';
   for (var bar = 0; bar < chords.length; bar++) {
