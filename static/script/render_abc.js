@@ -91,7 +91,7 @@ function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, titlePref
   var song = string_to_abc_tune(text, transpose_steps);
   var chords = parse_chord_scheme(song);
 
-  var riffs = generate_riffs(chords)
+  var riffs = generate_riffs(chords);
 
   if (add_link) {
     add_inspiration_link(song.metaText.url);
@@ -179,54 +179,69 @@ function generate_riffs(chords) {
   }
   var rows = Math.ceil(chords.length / cols);
 
-  // Also consider multiple chords in measure
-  var lastChord = '%'
-  for (var y = 0; y < rows; y++) {
-    for (var x = 0; x < cols; x++) {
-      var chord_idx = x + y * cols;
-      if (chord_idx < chords.length) {
+  var lastChord = '%';
+  for (var bar = 0; bar < chords.length; bar++) {
 
-        var chord = chords[chord_idx].text.toString();
-        if (chord.trim() =='%') {
-          chord = lastChord;
-        }
-        // TODO: This is an inverse operation, consider not doing it
-        chord = chord.replace("♭", "b").replace("♯", "#").replace("Ø", "dim");
-        lastChord = chord;
-        chordNotes.push(Tonal.Chord.get(chord).notes);
+    var currentBar = [];
+    for (var chordIdx = 0; chordIdx < chords[bar].text.length; chordIdx++)
+    {
+      var chord = chords[bar].text[chordIdx].toString();
+
+      if (chord.trim() =='%') {
+        chord = lastChord;
       }
+      // Tonal Chord doesn't handle root (yet)
+      chord = chord.split("/")[0];
+      // TODO: This is an inverse operation, consider not doing it
+      chord = chord.replace("♭", "b").replace("♯", "#").replace("Ø", "dim");
+      lastChord = chord;
+      currentBar.push(Tonal.Chord.get(chord).notes);
     }
+
+    chordNotes.push(currentBar);
   }
 
-  var sortedRiffNotes = [];
-  sortedRiffNotes.push(chordNotes[0])
+  var sortedRiffNotes = [[chordNotes[0].pop()]];
 
-  for (var idx = 1; idx < chordNotes.length; idx++)  {
-    var intervalsRoot = [];
-    var intervalsSecond = [];
-    var intervalsThird = [];
-    for (var note = 0; note < 3; note++) {
-        // TODO: not only consider up interval
-        intervalsRoot[note] = Tonal.Interval.semitones(Tonal.Interval.distance(sortedRiffNotes[idx-1][0], chordNotes[idx][note]));
-        intervalsSecond[note] = Tonal.Interval.semitones(Tonal.Interval.distance(sortedRiffNotes[idx-1][1], chordNotes[idx][note]));
-        intervalsThird[note] = Tonal.Interval.semitones(Tonal.Interval.distance(sortedRiffNotes[idx-1][2], chordNotes[idx][note]));
+  for (var bar = 0; bar < chordNotes.length; bar++)  {
+
+    var currentBar = [];
+    for (var idx = 0; idx < chordNotes[bar].length; idx++)  {
+
+      var intervalsRoot = [];
+      var intervalsSecond = [];
+      var intervalsThird = [];
+
+      var prevChord = sortedRiffNotes[sortedRiffNotes.length -1].slice(-1)[0];
+      var unsortedChord = chordNotes[bar][idx];
+
+      for (var note = 0; note < 3; note++) {
+          // TODO: not only consider up interval
+          intervalsRoot[note] = Tonal.Interval.semitones(Tonal.Interval.distance(prevChord[0], unsortedChord[note]));
+          intervalsSecond[note] = Tonal.Interval.semitones(Tonal.Interval.distance(prevChord[1], unsortedChord[note]));
+          intervalsThird[note] = Tonal.Interval.semitones(Tonal.Interval.distance(prevChord[2], unsortedChord[note]));
+      }
+
+      var minRoot = Math.min.apply(Math, intervalsRoot);
+      var rootIdx = intervalsRoot.indexOf(minRoot);
+
+      intervalsSecond[rootIdx] = "100";
+      intervalsThird[rootIdx] = "100";
+
+      var minSecond = Math.min.apply(Math, intervalsSecond);
+      var secondIdx = intervalsSecond.indexOf(minSecond);
+
+      intervalsThird[secondIdx] = "100";
+
+      var minThird = Math.min.apply(Math, intervalsThird);
+      var thirdIdx = intervalsThird.indexOf(minThird);
+
+      currentBar.push([chordNotes[bar][idx][rootIdx], chordNotes[bar][idx][secondIdx], chordNotes[bar][idx][thirdIdx]]);
     }
 
-    const minRoot = Math.min.apply(Math, intervalsRoot);
-    const rootIdx = intervalsRoot.indexOf(minRoot);
-
-    intervalsSecond[rootIdx] = "100";
-    intervalsThird[rootIdx] = "100";
-
-    const minSecond = Math.min.apply(Math, intervalsSecond);
-    const secondIdx = intervalsSecond.indexOf(minSecond);
-
-    intervalsThird[secondIdx] = "100";
-
-    const minThird = Math.min.apply(Math, intervalsThird);
-    const thirdIdx = intervalsThird.indexOf(minThird);
-
-    sortedRiffNotes.push([chordNotes[idx][rootIdx], chordNotes[idx][secondIdx], chordNotes[idx][thirdIdx]]);
+    if (currentBar.length > 0) {
+       sortedRiffNotes.push(currentBar);
+    }
   }
   console.log(sortedRiffNotes);
 
@@ -536,10 +551,10 @@ function add_irealpro_link(song, chords) {
     if (link !== null) {
       link.href = url;
     } else {
-      var link = document.createElement("A");
+      link = document.createElement("A");
       link.innerHTML = " | irealpro";
-      link.href = url
-      /* link.target = "_blank"; */
+      link.href = url;
+      link.target = "_blank";
       link.id = "iRealPro";
       var menu = document.getElementById("sheetmenu");
       menu.appendChild(link);
