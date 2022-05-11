@@ -91,7 +91,7 @@ function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, titlePref
   var song = string_to_abc_tune(text, transpose_steps);
   var chords = parse_chord_scheme(song);
 
-  var riffs = generate_riffs(chords);
+  var riffs = generate_riffs(chords, song);
 
   if (add_link) {
     add_inspiration_link(song.metaText.url);
@@ -170,11 +170,52 @@ function readFile(file, callback) {
   f.send(null);
 }
 
-function generate_riffs(chords) {
-  var chordNotes = determineChordNotes();
+function generate_riffs(chords, song) {
 
+  var chordNotes = determineChordNotes();
   var sortedRiffNotes = optimizeNotes(chordNotes);
-  console.log(sortedRiffNotes);
+  var abcRiffTune = createAbcTuneFromRiffNotes(sortedRiffNotes, song);
+
+  console.log(abcRiffTune);
+
+  function createAbcTuneFromRiffNotes(sortedRiffNotes, song) {
+    var key = song.lines[0].staff[0].key;
+    var abc_notes = { 'root': [], 'second': [], 'third': [] };
+    for (var bar = 0; bar < sortedRiffNotes.length; bar++) {
+      var chordsInBar = sortedRiffNotes[bar].length;
+      var noteLength = 4 / chordsInBar;
+
+      var rootBar = [];
+      var secondBar = [];
+      var thirdBar = [];
+      for (var chordIdx = 0; chordIdx < chordsInBar; chordIdx++) {
+        var chord = sortedRiffNotes[bar][chordIdx];
+        rootBar.push(tonalNoteToAbc(chord[0], noteLength));
+        secondBar.push(tonalNoteToAbc(chord[1], noteLength));
+        thirdBar.push(tonalNoteToAbc(chord[2], noteLength));
+      }
+      abc_notes.root.push(rootBar.join(" "));
+      abc_notes.second.push(secondBar.join(" "));
+      abc_notes.third.push(thirdBar.join(" "));
+    }
+    var abc_riff = ["X: 0",
+      "L:1/4",
+      "T: " + song.metaText.title + " (riff chords)",
+      "K: " + key.root + key.acc,
+      "V: 1",
+      abc_notes.root.join("| "),
+      "V: 2",
+      abc_notes.second.join("| "),
+      "V: 3",
+      abc_notes.third.join("| ")];
+    return abc_riff.join("\n");
+
+    function tonalNoteToAbc(note, length) {
+      var cOrHigher = note.charCodeAt(0) >= 'C'.charCodeAt(0);
+      var abcNote = Tonal.AbcNotation.scientificToAbcNotation(note + 4) + length;
+      return cOrHigher ? abcNote.toLowerCase() : abcNote;
+    }
+  }
 
   function optimizeNotes(chordNotes) {
   var sortedRiffNotes = [[chordNotes[0].pop()]];
@@ -284,7 +325,6 @@ function generate_riffs(chords) {
     return chordNotes;
   }
 
-  // TODO: Add rhytm
 }
 
 /*
