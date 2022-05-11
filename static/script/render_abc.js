@@ -171,54 +171,44 @@ function readFile(file, callback) {
 }
 
 function generate_riffs(chords) {
+  var chordNotes = determineChordNotes();
 
-  var chordNotes = [];
+  var sortedRiffNotes = optimizeNotes(chordNotes);
+  console.log(sortedRiffNotes);
 
-  var lastChord = '%';
-  for (var bar = 0; bar < chords.length; bar++) {
-
-    var currentBar = [];
-    for (var chordIdx = 0; chordIdx < chords[bar].text.length; chordIdx++)
-    {
-      var chord = chords[bar].text[chordIdx].toString();
-
-      if (chord.trim() =='%') {
-        chord = lastChord;
-      }
-      // Tonal Chord doesn't handle root (yet)
-      chord = chord.split("/")[0];
-      // TODO: This is an inverse operation, consider not doing it
-      chord = chord.replace("♭", "b").replace("♯", "#").replace("Ø", "dim");
-      lastChord = chord;
-      currentBar.push(Tonal.Chord.get(chord).notes);
-    }
-
-    chordNotes.push(currentBar);
-  }
-
+  function optimizeNotes(chordNotes) {
   var sortedRiffNotes = [[chordNotes[0].pop()]];
 
-  for (var bar = 0; bar < chordNotes.length; bar++)  {
-
+    for (var bar = 0; bar < chordNotes.length; bar++) {
     var currentBar = [];
-    for (var idx = 0; idx < chordNotes[bar].length; idx++)  {
-
+      for (var idx = 0; idx < chordNotes[bar].length; idx++) {
       var intervalsRoot = [];
       var intervalsSecond = [];
       var intervalsThird = [];
 
-      var prevChord = sortedRiffNotes[sortedRiffNotes.length -1].slice(-1)[0];
+        var prevChord =
+          sortedRiffNotes[sortedRiffNotes.length - 1].slice(-1)[0];
       var unsortedChord = chordNotes[bar][idx];
 
       for (var note = 0; note < 3; note++) {
-          // TODO: not only consider up interval
-          intervalsRoot[note] = Tonal.Interval.semitones(Tonal.Interval.distance(prevChord[0], unsortedChord[note]));
-          intervalsSecond[note] = Tonal.Interval.semitones(Tonal.Interval.distance(prevChord[1], unsortedChord[note]));
-          intervalsThird[note] = Tonal.Interval.semitones(Tonal.Interval.distance(prevChord[2], unsortedChord[note]));
+          intervalsRoot[note] = determine_interval(
+            prevChord[0],
+            unsortedChord[note]
+          );
+          intervalsSecond[note] = determine_interval(
+            prevChord[1],
+            unsortedChord[note]
+          );
+          intervalsThird[note] = determine_interval(
+            prevChord[2],
+            unsortedChord[note]
+          );
       }
 
         // Find smallest interval solution
-        var intervalList = intervalsRoot.concat(intervalsSecond).concat(intervalsThird);
+        var intervalList = intervalsRoot
+          .concat(intervalsSecond)
+          .concat(intervalsThird);
 
         for (var points = 0; points < 3; points++) {
           var minInterval = Math.min.apply(Math, intervalList);
@@ -245,22 +235,57 @@ function generate_riffs(chords) {
             break;
           }
           intervalList[intervalIndex % 3] = 100;
-          intervalList[intervalIndex % 3 + 3] = 100;
-          intervalList[intervalIndex % 3 + 6] = 100;
+          intervalList[(intervalIndex % 3) + 3] = 100;
+          intervalList[(intervalIndex % 3) + 6] = 100;
       }
 
-      currentBar.push([chordNotes[bar][idx][rootIdx], chordNotes[bar][idx][secondIdx], chordNotes[bar][idx][thirdIdx]]);
+        currentBar.push([
+          chordNotes[bar][idx][rootIdx],
+          chordNotes[bar][idx][secondIdx],
+          chordNotes[bar][idx][thirdIdx],
+        ]);
     }
 
     if (currentBar.length > 0) {
        sortedRiffNotes.push(currentBar);
     }
   }
-  console.log(sortedRiffNotes);
+    return sortedRiffNotes;
+
+    function determine_interval(a, b) {
+      var up = Tonal.Interval.semitones(Tonal.Interval.distance(a, b));
+      var down = Tonal.Interval.semitones(Tonal.Interval.distance(b, a));
+      return Math.min(up, down);
+    }
+  }
+
+  function determineChordNotes() {
+    var chordNotes = [];
+
+    var lastChord = "%";
+    for (var bar = 0; bar < chords.length; bar++) {
+      var currentBar = [];
+      for (var chordIdx = 0; chordIdx < chords[bar].text.length; chordIdx++) {
+        var chord = chords[bar].text[chordIdx].toString();
+
+        if (chord.trim() == "%") {
+          chord = lastChord;
+        }
+        // Tonal Chord doesn't handle root (yet)
+        chord = chord.split("/")[0];
+        // TODO: This is an inverse operation, consider not doing it
+        chord = chord.replace("♭", "b").replace("♯", "#").replace("Ø", "dim");
+        lastChord = chord;
+        currentBar.push(Tonal.Chord.get(chord).notes);
+}
+
+      chordNotes.push(currentBar);
+    }
+    return chordNotes;
+  }
 
   // TODO: Add rhytm
 }
-
 
 /*
    Funcion: create_song_link
