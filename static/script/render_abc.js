@@ -180,6 +180,10 @@ function generate_riffs(chords, song) {
 
   function createAbcTuneFromRiffNotes(sortedRiffNotes, song) {
     var key = song.lines[0].staff[0].key;
+    var notesWithAccidentals = [];
+    for (var accIdx = 0; accIdx < key.accidentals.length; accIdx++) {
+        notesWithAccidentals.push(key.accidentals[accIdx].note);
+    }
     var abc_notes = { 'root': [], 'second': [], 'third': [] };
     for (var bar = 0; bar < sortedRiffNotes.length; bar++) {
       var chordsInBar = sortedRiffNotes[bar].length;
@@ -190,9 +194,9 @@ function generate_riffs(chords, song) {
       var thirdBar = [];
       for (var chordIdx = 0; chordIdx < chordsInBar; chordIdx++) {
         var chord = sortedRiffNotes[bar][chordIdx];
-        rootBar.push(tonalNoteToAbc(chord[0], noteLength));
-        secondBar.push(tonalNoteToAbc(chord[1], noteLength));
-        thirdBar.push(tonalNoteToAbc(chord[2], noteLength));
+        rootBar.push(tonalNoteToAbc(chord[0], noteLength, notesWithAccidentals));
+        secondBar.push(tonalNoteToAbc(chord[1], noteLength, notesWithAccidentals));
+        thirdBar.push(tonalNoteToAbc(chord[2], noteLength, notesWithAccidentals));
       }
       abc_notes.root.push(rootBar.join(" "));
       abc_notes.second.push(secondBar.join(" "));
@@ -210,10 +214,11 @@ function generate_riffs(chords, song) {
       abc_notes.third.join("| ")];
     return abc_riff.join("\n");
 
-    function tonalNoteToAbc(note, length) {
+    function tonalNoteToAbc(note, length, notesWithAccidentals) {
       var cOrHigher = note.charCodeAt(0) >= 'C'.charCodeAt(0);
       var abcNote = Tonal.AbcNotation.scientificToAbcNotation(note + 4) + length;
-      return cOrHigher ? abcNote.toLowerCase() : abcNote;
+      var startIdx = (abcNote.charAt(0).toUpperCase() != note.charAt(0).toUpperCase()) && notesWithAccidentals.includes(note.charAt(0)) ? 1 : 0;
+      return cOrHigher ? abcNote.toLowerCase().substring(startIdx) : abcNote.substring(startIdx);
     }
   }
 
