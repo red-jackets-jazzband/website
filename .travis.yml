@@ -1,7 +1,7 @@
 dist: xenial
 language: go
 go:
-    - master
+    - "1.19"
 
 # before_install
 # install - install any dependencies required
