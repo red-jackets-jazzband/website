@@ -91,8 +91,6 @@ function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, titlePref
   var song = string_to_abc_tune(text, transpose_steps);
   var chords = parse_chord_scheme(song);
 
-  var riffs = generate_riffs(chords, song);
-
   if (add_link) {
     add_inspiration_link(song.metaText.url);
     add_irealpro_link(song, chords);
@@ -133,6 +131,8 @@ function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, titlePref
   };
 
   ABCJS.renderAbc(notationElt, text, abcParams);
+  var abcRiffTune = generate_riffs(chords, song);
+  ABCJS.renderAbc("notation", abcRiffTune, abcParams);
 
   /* Hide title below chord table */
   document
@@ -176,7 +176,7 @@ function generate_riffs(chords, song) {
   var sortedRiffNotes = optimizeNotes(chordNotes);
   var abcRiffTune = createAbcTuneFromRiffNotes(sortedRiffNotes, song);
 
-  console.log(abcRiffTune);
+  return abcRiffTune;
 
   function createAbcTuneFromRiffNotes(sortedRiffNotes, song) {
     var key = song.lines[0].staff[0].key;
@@ -215,6 +215,8 @@ function generate_riffs(chords, song) {
       abc_notes.second.join("| "),
       "V: 3",
       abc_notes.third.join("| ")];
+
+
     return abc_riff.join("\n");
 
     function tonalNoteToAbc(note, length, notesWithAccidentals) {
@@ -226,7 +228,7 @@ function generate_riffs(chords, song) {
   }
 
   function optimizeNotes(chordNotes) {
-  var sortedRiffNotes = [[chordNotes[0].pop()]];
+    var sortedRiffNotes = [[chordNotes[0].pop()]];
 
     for (var bar = 0; bar < chordNotes.length; bar++) {
     var currentBar = [];
@@ -326,7 +328,7 @@ function generate_riffs(chords, song) {
         chord = chord.replace("♭", "b").replace("♯", "#").replace("Ø", "dim");
         lastChord = chord;
         currentBar.push(Tonal.Chord.get(chord).notes);
-}
+      }
 
       chordNotes.push(currentBar);
     }
