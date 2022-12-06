@@ -30,7 +30,7 @@ deploy:
   local_dir: public
   repo: red-jackets-jazzband/red-jackets-jazzband.github.io
   target_branch: master
-  cleanup: false
+  skip_cleanup: true
   token: $GITHUB_TOKEN  # Set in the settings page of your repository, as a secure variable
   committer_from_gh: true
   keep_history: true
