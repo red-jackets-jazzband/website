@@ -9,7 +9,7 @@ Das 2009 gegründete Unternehmen verbreitet nach zehn Jahren immer noch die Freu
 
 # Mitglieder
 * **Trompete und Leadgesang** - Winfried Tiemessen
-* **Trompete** - Martien de Nijs
+* **Trompete** - Jelle Mens
 * **Posaune** - Han Huve
 * **Saxophon** - Richard Kieboom
 * **Klarinette** - Johan Luijks

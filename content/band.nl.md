@@ -14,7 +14,7 @@ Gekleed in de naamgevende rode jasjes heeft de band en zijn leden hun sporen ver
 
 # Leden
 * **Trompet & Zang** - Winfried Tiemessen
-* **Trompet** - Martien de Nijs
+* **Trompet** - Jelle Mens
 * **Trombone** - Han Huve
 * **Saxofoon** - Richard Kieboom
 * **Klarinet** - Johan Luijks
