@@ -1,8 +1,8 @@
 # Red Jackets Jazzband website
 
-[![Build Status](https://app.travis-ci.com/red-jackets-jazzband/website.svg?branch=master)](https://app.travis-ci.com/red-jackets-jazzband/website)
+[![Publish](https://github.com/red-jackets-jazzband/website/actions/workflows/publish.yaml/badge.svg)](https://github.com/red-jackets-jazzband/website/actions/workflows/publish.yaml)
 
-This site is built and deployed automatically by travis.
+This site is built and deployed automatically by github actions.
 
 ## Development
 
