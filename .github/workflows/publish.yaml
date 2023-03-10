@@ -11,3 +11,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: jakejarvis/hugo-build-action@v0.83.1
+
+      - name: Publish
+        uses: tsunematsu21/actions-publish-gh-pages@v1.0.2
+        with:
+          dir: public
+          repo: red-jackets-jazzband/red-jackets-jazzband.github.io
+          branch: master
+          token: ${{ secrets.GH_RJ_DEPLOY }}
