@@ -11,6 +11,7 @@ Blue Heaven,my_blue_heaven.abc
 Bourbon Street Parade,bourbon_street_parade.abc
 By and By,by_and_by.abc
 Caravan,caravan.abc
+Careless Love,careless_love.abc
 Chinatown,chinatown.abc
 Corrine Corrina,corrine_corrina.abc
 Daily Exercise,daily_exercise.abc
