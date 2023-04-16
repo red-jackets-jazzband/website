@@ -96,6 +96,7 @@ function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, titlePref
   var abcParams = {
     visualTranspose: transpose_steps,
     responsive: "resize",
+    staffwidth:1000,
     paddingTop: 0,
     paddingBottom: 0,
     add_classes: true,
@@ -105,17 +106,21 @@ function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, titlePref
       footerfont: "MuseJazzText",
       gchordfont: "MuseJazzText",
       headerfont: "MuseJazzText",
+      historyfont: "MuseJazzText",
       infofont: "MuseJazzText",
       measurefont: "MuseJazzText",
-      metafont: "MuseJazzText",
       partsfont: "MuseJazzText 10 italic",
-      renderfont: "MuseJazzText",
+      repeatfont: "MuseJazzText",
+      subtitlefont: "MuseJazzText",
+      tabgracefont: "MuseJazzText",
+      tablabelfont: "MuseJazzText",
+      tabnumberfont: "MuseJazzText",
       tempofont: "MuseJazzText",
       textfont: "MuseJazzText",
       titlefont: "MuseJazzText 4",
+      tripletfont: "MuseJazzText",
       vocalfont: "MuseJazzText",
       voicefont: "MuseJazzText",
-      wordfont: "MuseJazzText",
       wordsfont: "MuseJazzText"
     }
   };
