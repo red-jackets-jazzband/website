@@ -13,7 +13,6 @@ With an authentic street parade rhythm section at its core with the indispensabl
 Dressed in the well known red jackets, the band and its members have earned their spurs on the street and is a frequently asked part of the line-ups of (inter) national Jazz festivals. With representatives from several generations, the orchestra is a successful combination of youthful enthusiasm and experienced musicians: good music, a dose of enthusiasm and unpredictability!
 
 # Members
-* **Trumpet & Lead Vocal** - Winfried Tiemessen
 * **Trumpet** - Jelle Mens
 * **Trombone** - Han Huve
 * **Saxophone** - Richard Kieboom
@@ -21,5 +20,5 @@ Dressed in the well known red jackets, the band and its members have earned thei
 * **Sousaphone** - Ben Spoor
 * **Banjo** - Wilfried Vanwesenbeeck
 * **Washboard** - Peter Maas
-* **Snare Drum** - Werner Schoutens
-* **Bass Drum** - Wouter Suykerbuyk
+* **Snare Drum** - Wouter Suykerbuyk
+* **Bass Drum** - Corne de Wit

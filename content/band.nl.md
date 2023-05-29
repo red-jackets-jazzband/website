@@ -13,7 +13,6 @@ Met in de basis een authentiek streetparade ritmesectie met het onmisbare geluid
 Gekleed in de naamgevende rode jasjes heeft de band en zijn leden hun sporen verdiend op straat en is deze niet meer weg te denken uit de line-ups van (inter-)nationale Jazzfestivals. Met vertegenwoordingen uit meerdere generaties is het orkest een geslaagde combinatie van jeugdig enthousiasme en gelouterde muzikanten: goede muziek, een dosis enthousiasme en onvoorspelbaarheid!
 
 # Leden
-* **Trompet & Zang** - Winfried Tiemessen
 * **Trompet** - Jelle Mens
 * **Trombone** - Han Huve
 * **Saxofoon** - Richard Kieboom
@@ -21,5 +20,5 @@ Gekleed in de naamgevende rode jasjes heeft de band en zijn leden hun sporen ver
 * **Sousafoon** - Ben Spoor
 * **Banjo** - Wilfried Vanwesenbeeck
 * **Wasbord** - Peter Maas
-* **Snaredrum** - Werner Schoutens
-* **Bass Drum** - Wouter Suykerbuyk
+* **Snaredrum** - Wouter Suykerbuyk
+* **Bass Drum** - Corne de Wit
