@@ -425,7 +425,7 @@ video.video {
     background-color:#ffffff;
     color:#000000;
     font-family:'MuseJazzText';
-    line-height: 40px;
+    line-height: 80px;
     font-size: x-large;
 }
 
@@ -500,7 +500,7 @@ video.video {
 }
 
 .chordDiv {
-  height: 40px;
+  height: 80px;
   overflow: hidden;
 }
 
@@ -627,9 +627,9 @@ video.video {
       display: block;
   }
 
-  .pageBreakBefore {
+  /* .pageBreakBefore {
       page-break-before: always;
-  }
+  } */
 
 }
 @media screen {
