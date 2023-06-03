@@ -135,7 +135,7 @@ function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, titlePref
     }
   };
 
-  var visualObjs = ABCJS.renderAbc(notationElt, text, abcParams);
+  // var visualObjs = ABCJS.renderAbc(notationElt, text, abcParams);
 
   /* Hide title below chord table */
   document

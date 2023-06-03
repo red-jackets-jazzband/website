@@ -9,7 +9,7 @@ function renderBook() {
   document.getElementById("instrumentText").innerHTML = instrumentText.toLowerCase();
   document.getElementById("instrumentTextCover").innerHTML = instrumentText.toLowerCase();
 
-  readFile("/songs/index_of_songbook.txt", renderAllSongs);
+  readFile("/songs/index_of_chordbook.txt", renderAllSongs);
 }
 
 function renderAllSongs(data) {
