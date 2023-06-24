@@ -429,6 +429,11 @@ video.video {
     font-size: x-large;
 }
 
+.song{
+  padding-top: 60px;
+  page-break-inside: avoid;
+}
+
 .songtitle{
     background-color:#ffffff;
     color:#000000;
@@ -627,9 +632,9 @@ video.video {
       display: block;
   }
 
-  /* .pageBreakBefore {
+  .pageBreakBefore {
       page-break-before: always;
-  } */
+  }
 
 }
 @media screen {
