@@ -34,19 +34,23 @@ function renderAllSongs(data) {
     index.appendChild(indexItem);
 
     /* Add elements in book */
+    var songElt = document.createElement("DIV");
+    songElt.classList.add("song");
     var songTitleElt = document.createElement("DIV");
     songTitleElt.id = "songtitle-".concat(song_title);
     songTitleElt.classList.add("songtitle");
-    songTitleElt.classList.add("pageBreakBefore");
-    songsDiv.appendChild(songTitleElt);
+    // songTitleElt.classList.add("pageBreakBefore");
+    songElt.appendChild(songTitleElt);
+
     var chordTableElt = document.createElement("DIV");
     chordTableElt.id = "chordtable-".concat(song_title);
     chordTableElt.classList.add("chordtable");
-    songsDiv.appendChild(chordTableElt);
+    songElt.appendChild(chordTableElt);
     var notationElt = document.createElement("DIV");
     notationElt.id = "notation-".concat(song_title);
     notationElt.classList.add("notation");
-    songsDiv.appendChild(notationElt);
+    songElt.appendChild(notationElt);
+    songsDiv.appendChild(songElt)
 
     retrieveAndRenderSongForBook("/songs/" + song_path, notationElt.id, chordTableElt.id, songTitleElt.id, titlePrefix);
   }
