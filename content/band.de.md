@@ -11,7 +11,7 @@ Das 2009 gegründete Unternehmen verbreitet nach zehn Jahren immer noch die Freu
 * **Trompete** - Jelle Mens
 * **Posaune** - Han Huve
 * **Saxophon** - Richard Kieboom
-* **Klarinette** - Johan Luijks
+* **Klarinette** - Johan Luijks / Peter Poppelaars
 * **Sousaphon** - Ben Spoor
 * **Banjo** - Wilfried Vanwesenbeeck
 * **Waschbrett** - Peter Maas
