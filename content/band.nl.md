@@ -14,6 +14,7 @@ Gekleed in de naamgevende rode jasjes heeft de band en zijn leden hun sporen ver
 
 # Leden
 * **Trompet** - Jelle Mens
+* **Trompet** - Corne de Wit
 * **Trombone** - Han Huve
 * **Saxofoon** - Richard Kieboom
 * **Klarinet** - Johan Luijks / Peter Poppelaars
@@ -21,4 +22,4 @@ Gekleed in de naamgevende rode jasjes heeft de band en zijn leden hun sporen ver
 * **Banjo** - Wilfried Vanwesenbeeck
 * **Wasbord** - Peter Maas
 * **Snaredrum** - Wouter Suykerbuyk
-* **Bass Drum** - Corne de Wit
+* **Bass Drum** - Niels Vos

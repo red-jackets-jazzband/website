@@ -5,10 +5,16 @@ date: 2019-03-16T10:25:31+01:00
 ---
 
 # Biografie
-Das 2009 gegründete Unternehmen verbreitet nach zehn Jahren immer noch die Freude an traditioneller Jazzmusik und verwandten Musikstilen. Wir haben viele Festivals in den Niederlanden und im Ausland gesehen und freuen uns auf neue Möglichkeiten.
+Die Red Jackets Jazzband wurde 2009 in der Jazzstadt Bergen op Zoom gegründet und spielt echten Straßenjazz in allen Varianten: von den bekannten Traditionals aus dem frühen 20. Jahrhundert über den Blues bis hin zu den neueren Rebirth-Klassikern der zweiten Hälfte des letzten Jahrhunderts.
+All diese authentischen New Orleans-Stile haben denselben Kern: Musikmachen geht um Spaß. Natürlich macht man Spaß in einer Band nicht alleine, sondern mit dem gesamten Publikum. Man muss kein Jazzliebhaber sein, um von der Kraft dieser zeitlosen Musik überzeugt zu sein.
+
+Mit einer authentischen Street-Parade-Rhythmusgruppe als Grundlage, die den unverzichtbaren Klang des Waschbretts und der Banjo bietet, bringt die Red Jackets Jazzband die Musik überzeugend zu den Menschen auf der Straße, genau dorthin, wo sie ursprünglich herkommt und hingehört.
+
+Gekleidet in den namensgebenden roten Jacken hat die Band und ihre Mitglieder auf der Straße ihre Spuren hinterlassen und sind aus den Line-Ups nationaler und internationaler Jazzfestivals nicht mehr wegzudenken. Mit Vertretern aus mehreren Generationen ist das Orchester eine gelungene Kombination aus jugendlichem Enthusiasmus und erfahrenen Musikern: gute Musik, eine Prise Enthusiasmus und Unvorhersehbarkeit!
 
 # Mitglieder
 * **Trompete** - Jelle Mens
+* **Trompete** - Corne de Wit
 * **Posaune** - Han Huve
 * **Saxophon** - Richard Kieboom
 * **Klarinette** - Johan Luijks / Peter Poppelaars
@@ -16,4 +22,4 @@ Das 2009 gegründete Unternehmen verbreitet nach zehn Jahren immer noch die Freu
 * **Banjo** - Wilfried Vanwesenbeeck
 * **Waschbrett** - Peter Maas
 * **Snare Drum** - Wouter Suykerbuyk
-* **Bass Drum** - Corne de Wit
+* **Bass Drum** - Niels Vos
