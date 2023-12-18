@@ -14,7 +14,6 @@ Gekleed in de naamgevende rode jasjes heeft de band en zijn leden hun sporen ver
 
 # Leden
 * **Trompet** - Jelle Mens
-* **Trompet** - Corne de Wit
 * **Trombone** - Han Huve
 * **Saxofoon** - Richard Kieboom
 * **Klarinet** - Johan Luijks / Peter Poppelaars
