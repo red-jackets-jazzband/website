@@ -10,7 +10,7 @@ date: 2019-03-16T10:25:31+01:00
 {{< youtube kCuQjRIvTNA >}}
 {{< youtube NtarjQxEaIU >}}
 
-{{< instagram C8H2O28IWiP >}}
+<img src="/images/redjackets_jazzdienst.jpg" alt="Jazzdienst 2024" width="100%">
 
 <br>
 <img src="/images/jazzboz2017_kinderen.jpg" alt="Jazzboz 2017" width="100%">
