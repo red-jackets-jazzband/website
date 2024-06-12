@@ -8,6 +8,10 @@ date: 2019-03-16T10:25:31+01:00
 
 {{< youtube q2kOF8ef24A >}}
 {{< youtube kCuQjRIvTNA >}}
+{{< youtube NtarjQxEaIU >}}
+
+{{< instagram C8H2O28IWiP >}}
+
 <br>
 <img src="/images/jazzboz2017_kinderen.jpg" alt="Jazzboz 2017" width="100%">
 <img src="/images/red_jackets_breda.jpg" alt="Red Jackets - Breda Jazz Festival" width="100%">
