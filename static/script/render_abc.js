@@ -323,7 +323,7 @@ function simplify_blues(chords) {
 */
 function simplify_song(chords, count) {
 
-  if (chords.length % count != 0) {
+  if (chords.length === 0 || chords.length % count !== 0) {
     return chords;
   }
 
