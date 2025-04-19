@@ -16,6 +16,7 @@ Gekleidet in den namensgebenden roten Jacken hat die Band und ihre Mitglieder au
 * **Trompete** - Jelle Mens
 * **Trompete** - Carlo van Elsakker
 * **Posaune** - Han Huve
+* **Posaune** - Pieter Geers
 * **Saxophon** - Peter Poppelaars
 * **Klarinette** - Johan Luijks
 * **Sousaphon** - Ben Spoor

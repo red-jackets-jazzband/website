@@ -16,6 +16,7 @@ Dressed in the well known red jackets, the band and its members have earned thei
 * **Trumpet** - Jelle Mens
 * **Trumpet** - Carlo van Elsakker
 * **Trombone** - Han Huve
+* **Trombone** - Pieter Geers
 * **Saxophone** - Peter Poppelaars
 * **Clarinet** - Johan Luijks
 * **Sousaphone** - Ben Spoor
