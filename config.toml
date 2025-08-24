@@ -2,7 +2,7 @@ baseURL = "https://www.redjackets.nl/"
 languageCode = "en-us"
 title = "Red Jackets Jazzband"
 theme = "split"
-disableKinds = ["section", "taxonomy", "taxonomyTerm", "RSS"]
+disableKinds = ["section", "taxonomy", "RSS"]
 timeout = 60000
 
 DefaultContentLanguage = "en"
@@ -124,7 +124,7 @@ copyright = "&copy;2019 Red Jackets Jazzband"
   [privacy.instagram]
     disable = false
     simple = true
-  [privacy.twitter]
+  [privacy.x]
     disable = false
     enableDNT = false
     simple = true
