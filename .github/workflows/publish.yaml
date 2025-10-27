@@ -13,7 +13,7 @@ jobs:
         with:
           submodules: 'recursive'
 
-      - uses: lowply/build-hugo@v0.148.2
+      - uses: lowply/build-hugo@v0.152.2
 
       - name: Publish
         uses: tsunematsu21/actions-publish-gh-pages@v1.0.2
