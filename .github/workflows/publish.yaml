@@ -20,6 +20,11 @@ jobs:
           pip install linkchecker
           linkchecker public/index.html
 
+      - uses: actions/upload-artifact@v5.0.0
+        with:
+          name: website
+          path: public/
+
   publish:
     runs-on: ubuntu-latest
     needs:
@@ -27,6 +32,11 @@ jobs:
     permissions:
       id-token: write
     steps:
+      - name: Download the website
+        uses: actions/download-artifact@v5.0.0
+        with:
+          name: website
+          path: public/
       - name: Publish
         uses: tsunematsu21/actions-publish-gh-pages@v1.0.2
         if: github.ref == 'refs/heads/master'
