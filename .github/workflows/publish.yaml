@@ -3,20 +3,23 @@ name: Publish
 on:
   push:
     branches:
-      - master
+      - '**'
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-        with:
-          submodules: 'recursive'
-
       - uses: lowply/build-hugo@v0.152.2
+
+      - name: Check for broken links
+        run: |
+          pip install linkchecker
+          linkchecker public/index.html
 
       - name: Publish
         uses: tsunematsu21/actions-publish-gh-pages@v1.0.2
+        if: github.ref == 'refs/heads/master'
         with:
           dir: public
           repo: red-jackets-jazzband/red-jackets-jazzband.github.io
