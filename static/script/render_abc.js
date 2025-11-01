@@ -2,6 +2,7 @@
 
 var current_song = null;
 var transpose_halfsteps = 0;
+var audio_context = null;
 
 /* Fix for IE that does not implement forEach
    see https://tips.tutorialhorizon.com/2017/01/06/object-doesnt-support-property-or-method-foreach/
@@ -130,7 +131,10 @@ function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, titlePref
     }
   };
 
-  ABCJS.renderAbc(notationElt, text, abcParams);
+  const visualObj = ABCJS.renderAbc(notationElt, text, abcParams);
+
+  audio_context
+  addAudioPlayback(visualObj[0], text);
 
   /* Hide title below chord table */
   document
@@ -147,6 +151,41 @@ function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, titlePref
   var songtitle = document.getElementById(songTitleElt);
   songtitle.innerHTML = titlePrefix.concat(song.metaText.title);
 }
+
+function addAudioPlayback(visualObj, abcString) { 
+
+    var synth = new ABCJS.synth.CreateSynth();
+    audio_context = new (window.AudioContext || window.webkitAudioContext)();
+    var playing = false;
+
+    document.getElementById("playPause").addEventListener("click", function(event) {
+      event.preventDefault(); // prevent page jump
+      if (!playing) {
+        audio_context.resume().then(function() {
+          synth.init({ 
+              visualObj: visualObj,
+              audioContext: audio_context,
+              options: { /* synth options */ }
+            })
+            .then(function () {
+              return synth.prime(abcString);
+            })
+            .then(function () {
+              synth.start();
+              playing = true;
+              document.getElementById("playPause").textContent = "Stop";
+            })
+            .catch(function(err) {
+              console.warn("Synth error", err);
+            });
+        });
+      } else {
+        synth.stop();
+        playing = false;
+        document.getElementById("playPause").textContent = "Play";
+      }
+    });
+} 
 
 /*
    Funcion: readFile
