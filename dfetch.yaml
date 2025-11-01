@@ -1,0 +1,11 @@
+manifest:
+  version: '0.0'
+
+  remotes:
+  - name: github-com-escalate
+    url-base: https://github.com/escalate
+
+  projects:
+  - name: themes/split
+    revision: fabd3dd8c3a3f27c398ff6451fe9adbc3323518d
+    repo-path: hugo-split-theme.git
