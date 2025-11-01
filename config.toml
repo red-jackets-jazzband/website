@@ -93,7 +93,7 @@ copyright = "&copy;2019 Red Jackets Jazzband"
 
       [[params.links.list3.link]]
         text = "Band"
-        url = "band"
+        url = "/band"
 
       [[params.links.list3.link]]
         text = "In Action"
