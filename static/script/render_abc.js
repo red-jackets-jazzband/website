@@ -133,7 +133,7 @@ function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, titlePref
 
   const visualObj = ABCJS.renderAbc(notationElt, text, abcParams);
 
-  audio_context
+  audio_context = null;
   addAudioPlayback(visualObj[0], text);
 
   /* Hide title below chord table */
