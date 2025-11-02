@@ -24,3 +24,4 @@ Gekleed in de naamgevende rode jasjes heeft de band en zijn leden hun sporen ver
 * **Wasbord** - Peter Maas
 * **Snaredrum** - Wouter Suykerbuyk
 * **Bass Drum** - Niels Vos
+* **Grand Marshall** - Christ van Steen

@@ -24,3 +24,4 @@ Gekleidet in den namensgebenden roten Jacken hat die Band und ihre Mitglieder au
 * **Waschbrett** - Peter Maas
 * **Snare Drum** - Wouter Suykerbuyk
 * **Bass Drum** - Niels Vos
+* **Grand Marshall** - Christ van Steen

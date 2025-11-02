@@ -24,3 +24,4 @@ Dressed in the well known red jackets, the band and its members have earned thei
 * **Washboard** - Peter Maas
 * **Snare Drum** - Wouter Suykerbuyk
 * **Bass Drum** - Niels Vos
+* **Grand Marshall** - Christ van Steen
