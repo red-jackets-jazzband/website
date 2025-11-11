@@ -7,6 +7,8 @@ date: 2019-03-16T10:25:31+01:00
 <img src="/images/brussel2025/040A2326.jpg" alt="Red Jackets - Brussel Jazz Week 2025" width="100%">
 <img src="/images/brussel2025/040A2342.jpg" alt="Red Jackets - Brussel Jazz Week 2025" width="100%">
 <img src="/images/redjackets_jazzdienst.jpg" alt="Jazzdienst 2024" width="100%">
+<img src="/images/domburg2025.jpg" alt="Domburg 2025" width="100%">
+<img src="/images/enkhuizen2024.jpg" alt="Enkhuizen 2024" width="100%">
 
 {{< youtube q2kOF8ef24A >}}
 {{< youtube kCuQjRIvTNA >}}
