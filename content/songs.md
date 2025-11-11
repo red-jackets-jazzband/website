@@ -19,8 +19,8 @@ date: 2019-03-16T16:26:50+01:00
 <a id="printLink" title="Print this page" href="#" onclick="window.print();return false;">Print</a> |
 Transpose (halfsteps)
 <input type="number" id="transpose" name="quantity" value="0" min="-12" max="12" oninput="rerenderFile()">
-<!-- <button id="playPause">Play</button> -->
-<a href="#" id="playPause">Start Audio</a>
+<a href="#" id="play">▶</a>
+<a href="#" id="stop">⏹</a>
 </div>
 <div id="songtitle" class="songtitle"></div>
 <div id="chordtable" class="chordtable"></div> 
