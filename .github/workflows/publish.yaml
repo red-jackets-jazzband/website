@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: lowply/build-hugo@v0.152.2
+      - uses: lowply/build-hugo@v0.154.0
 
       - name: Check for broken links
         run: |
