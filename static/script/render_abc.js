@@ -134,7 +134,7 @@ function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, titlePref
   var compingRhythm = compingSelect ? compingSelect.value : "none";
   if (compingRhythm !== "none" && chords.length > 0) {
     var abcCompingTune = generate_comping(chords, song, compingRhythm);
-    // Transposition is done inside generate_comping, so visualTranspose must be 0.
+    // Chord/key data from parseOnly is already in the instrument key; no re-transposition needed.
     var compingParams = {
       visualTranspose: 0,
       responsive: "resize",
@@ -256,7 +256,7 @@ function generate_comping(chords, song, rhythm) {
       for (var ci = 0; ci < chords[bar].text.length; ci++) {
         var ch = chords[bar].text[ci].toString();
         if (ch.trim() === "%") ch = last;
-        ch = ch.split("/")[0].replace("♭","b").replace("♯","#").replace("Ø","dim");
+        ch = ch.split("/")[0];
         last = ch;
         var notes = Tonal.Chord.get(ch).notes.slice(0, 3);
         while (notes.length < 3) notes.push(notes[0] || "C");
@@ -320,10 +320,7 @@ function generate_comping(chords, song, rhythm) {
     var ci = Math.min(chordIdx, chords[barIdx].text.length - 1);
     var raw = (chords[barIdx].text[ci] || "").toString().trim();
     if (!raw || raw === "%") return "";
-    // Normalise unicode accidentals to ASCII for ABCJS; chord is already in
-    // the instrument key (pre-transposed by parseOnly/visualTranspose).
-    var display = raw.replace(/♭/g,"b").replace(/♯/g,"#").replace(/Ø/g,"dim");
-    return '"' + display.replace(/"/g, '') + '"';
+    return '"' + raw.replace(/"/g, '') + '"';
   }
 
   // Replace visible rests (z) with invisible rests (x) — used for Third/Fifth
@@ -356,8 +353,6 @@ function generate_comping(chords, song, rhythm) {
     }
   }
 
-  // Voice names: chord position of bar-1 seed
-  var seed0 = voicedBars[0] && voicedBars[0][0] ? voicedBars[0][0] : ["","",""];
   var posNames = ["Root","Third","Fifth"];
 
   // Split bars into lines matching the original song's line structure
@@ -504,6 +499,7 @@ function parse_chord_scheme(song) {
   var current_measure = {};
   current_measure.text = [];
 
+  var validChord = /^[A-Ga-g]([#♯b♭])?(maj|m|min|dim|aug|sus|add)?(Ø)?(\d)?([#♯b♭])?(\d)?(\/[A-Ga-g]([#♯b♭])?(\d)?)?$/;
   var parsed_valid_chord = false;
   var did_not_parse_chord_in_this_measure = true;
   var in_alternative_ending = false;
@@ -568,11 +564,8 @@ function parse_chord_scheme(song) {
         }
 
         if (!in_alternative_ending) {
-          var validChord = /^[A-Ga-g]([#♯b♭])?(maj|m|min|dim|aug|sus|add)?(Ø)?(\d)?([#♯b♭])?(\d)?(\/[A-Ga-g]([#♯b♭])?(\d)?)?$/;
-
           if (element.chord !== undefined && validChord.test(element.chord[0].name)) {
-            var chord = replace_accidental_with_utf8_char(element.chord[0].name);
-            current_measure.text.push(chord);
+            current_measure.text.push(element.chord[0].name);
             did_not_parse_chord_in_this_measure = false;
             parsed_valid_chord = true;
           }
@@ -679,7 +672,7 @@ function create_chord_table(chords, chordtable) {
         var cell = row.insertCell(-1);
         var chordDiv = document.createElement("DIV");
         chordDiv.classList.add("chordDiv");
-        chordDiv.innerHTML = chords[chord_idx].text;
+        chordDiv.innerHTML = chords[chord_idx].text.map(replace_accidental_with_utf8_char).join(" ");
         cell.appendChild(chordDiv);
         cell.classList.add("chordCell");
 
