@@ -213,10 +213,13 @@ function generate_comping(chords, song, rhythm, transposeSteps) {
   }
 
   function transposeChordName(name, semitones) {
-    if (!semitones) return name;
-    var parsed = Tonal.Chord.get(name);
-    if (!parsed.tonic) return name;
-    return transposePitchClass(parsed.tonic, semitones) + name.slice(parsed.tonic.length);
+    // parse_chord_scheme stores names with unicode accidentals (♭ ♯ Ø) and
+    // may include a bass note after "/"; normalise to ASCII for Tonal.
+    var clean = name.split("/")[0].replace(/♭/g,"b").replace(/♯/g,"#").replace(/Ø/g,"dim");
+    if (!semitones) return clean;
+    var parsed = Tonal.Chord.get(clean);
+    if (!parsed.tonic) return clean;
+    return transposePitchClass(parsed.tonic, semitones) + clean.slice(parsed.tonic.length);
   }
 
   // Patterns in L:1/8 (4/4 = 8 slots per bar).
