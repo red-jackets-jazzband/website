@@ -207,31 +207,89 @@ function generate_comping(chords, song, rhythm) {
   // Patterns in L:1/8 (4/4 = 8 slots per bar).
   // twobar1/twobar2: bar 1 and bar 2 of the classic 2-bar figure (8 slots each).
   // half: 4-slot fragment used when 2 chords share one bar.
+  // Pattern functions receive up to 4 ABC note strings: n (main), nd (scale
+  // step down), nu (scale step up), nu2 (two scale steps up).  Patterns that
+  // don't need step notes simply ignore the extra arguments.
+  // All durations are in L:1/8 units; one bar = 8 slots in 4/4.
   var PATTERNS = {
-    // Core patterns
-    'charleston':           { twobar1: function(n){return n+"2 z4 z"+n;},              twobar2: function(n){return "z2 "+n+"4 z2";},           half: function(n){return n+"2 z"+n;} },
-    'reverse_charleston':   { twobar1: function(n){return "z"+n+" z2 "+n+"2 z2";},     twobar2: function(n){return "z4 "+n+"2 z"+n;},           half: function(n){return "z"+n+" "+n+"2";} },
-    'tresillo':             { twobar1: function(n){return n+"3 "+n+"3 "+n+"2";},        twobar2: function(n){return "z3 "+n+"3 "+n+"2";},         half: function(n){return n+"3 "+n;} },
-    'habanera':             { twobar1: function(n){return n+"3 "+n+" "+n+"2 "+n+"2";},  twobar2: function(n){return "z3 "+n+" "+n+"2 "+n+"2";},  half: function(n){return n+"3 "+n;} },
-    // Charleston displacements
-    'charleston_on_2':      { twobar1: function(n){return "z2 "+n+"2 z"+n+" z2";},     twobar2: function(n){return "z4 "+n+"2 z"+n;},           half: function(n){return "z2 "+n+"2";} },
-    'charleston_on_3':      { twobar1: function(n){return "z4 "+n+"2 z"+n;},           twobar2: function(n){return "z2 "+n+"2 z4";},            half: function(n){return "z2 "+n+"2";} },
-    'charleston_on_and1':   { twobar1: function(n){return "z"+n+" z"+n+" z4";},        twobar2: function(n){return "z3 "+n+" z3 "+n;},          half: function(n){return "z"+n+" z"+n;} },
-    'charleston_on_and2':   { twobar1: function(n){return "z3 "+n+" z4";},             twobar2: function(n){return "z7 "+n;},                   half: function(n){return "z3 "+n;} },
-    // Reverse Charleston displacements
-    'rev_charleston_on_2':  { twobar1: function(n){return "z3 "+n+" "+n+"2 z2";},      twobar2: function(n){return "z"+n+" "+n+"2 z4";},        half: function(n){return "z3 "+n;} },
-    'rev_charleston_on_3':  { twobar1: function(n){return "z5 "+n+" "+n+" z";},        twobar2: function(n){return "z3 "+n+" "+n+" z3";},       half: function(n){return "z3 "+n;} },
-    // Anticipations (hit just before the anticipated beat)
-    'anticipate_2':         { twobar1: function(n){return "z"+n+" z6";},               twobar2: function(n){return "z3 "+n+" z4";},             half: function(n){return "z"+n+" z2";} },
-    'anticipate_3':         { twobar1: function(n){return "z3 "+n+" z4";},             twobar2: function(n){return "z5 "+n+" z2";},             half: function(n){return "z3 "+n;} },
-    'anticipate_4':         { twobar1: function(n){return "z5 "+n+" z2";},             twobar2: function(n){return "z7 "+n;},                   half: function(n){return "z3 "+n;} },
-    // Off-beat / syncopation figures
-    'offbeat_hits':         { twobar1: function(n){return "z"+n+" z"+n+" z"+n+" z"+n;}, twobar2: function(n){return n+" z"+n+" z"+n+" z"+n+" z";}, half: function(n){return "z"+n+" z"+n;} },
-    'syncopated_3hit':      { twobar1: function(n){return n+" "+n+" z2 "+n+"3 z";},    twobar2: function(n){return "z"+n+" z2 "+n+"3 z";},      half: function(n){return n+" "+n+" z2";} }
+    // 1: Hits on beat 2 & 4, bar 2 ends on syncopated long note
+    'on_2_and_4':     { twobar1: function(n)        { return "z2 "+n+"2 z2 "+n+"2"; },
+                        twobar2: function(n)        { return n+" z z "+n+"-"+n+"4"; },
+                        half:    function(n)        { return "z2 "+n+"2"; } },
+    // 2: Bar 1 whole note tied into bar 2 dotted half
+    'hold_over':      { twobar1: function(n)        { return n+"8-"; },
+                        twobar2: function(n)        { return n+"6 z2"; },
+                        half:    function(n)        { return n+"4"; } },
+    // 3: Quick hits then step-down walk
+    'walk_down_a':    { twobar1: function(n,nd)     { return n+" z z "+n+"-"+n+"2 z2"; },
+                        twobar2: function(n,nd)     { return n+" "+n+" "+nd+" "+n+" z4"; },
+                        half:    function(n,nd)     { return n+" z z "+n; } },
+    // 4: Step both ways around the main note
+    'cross_step':     { twobar1: function(n,nd,nu)  { return "z2 "+n+" z z "+n+" z2"; },
+                        twobar2: function(n,nd,nu)  { return n+" z z "+n+"-"+n+" "+nu+" "+nd+" z"; },
+                        half:    function(n,nd,nu)  { return "z2 "+n+" z"; } },
+    // 5: Syncopated walk with step down
+    'walk_down_b':    { twobar1: function(n,nd)     { return "z2 "+n+" z "+nd+" "+n+"2 "+nd; },
+                        twobar2: function(n,nd)     { return n+" "+n+" "+nd+" "+n+" z4"; },
+                        half:    function(n,nd)     { return "z2 "+n+" z"; } },
+    // 6: Single hit then long hold, same each bar
+    'hit_and_hold':   { twobar1: function(n)        { return n+" z z "+n+"-"+n+"4"; },
+                        twobar2: function(n)        { return n+" z z "+n+"-"+n+"4"; },
+                        half:    function(n)        { return n+" z z "+n; } },
+    // 7: Two quick hits, rest, then varied hits
+    'double_hit':     { twobar1: function(n)        { return n+" "+n+" z2 z4"; },
+                        twobar2: function(n)        { return n+" "+n+" z "+n+" z "+n+"3"; },
+                        half:    function(n)        { return n+" "+n+" z2"; } },
+    // 8: Whole note tied over both bars
+    'whole_note':     { twobar1: function(n)        { return n+"8-"; },
+                        twobar2: function(n)        { return n+"8"; },
+                        half:    function(n)        { return n+"4"; } },
+    // 9: Bar 1 whole note, bar 2 steps down only
+    'whole_then_step':{ twobar1: function(n,nd)     { return n+"8"; },
+                        twobar2: function(n,nd)     { return nd+" z z "+nd+" z4"; },
+                        half:    function(n,nd)     { return n+"4"; } },
+    // 10: Step-down then step-up approach, bar 2 resolves on step-up note
+    'step_approach':  { twobar1: function(n,nd,nu)  { return n+" "+nd+" z2 "+nu+" "+nd+" z2"; },
+                        twobar2: function(n,nd,nu)  { return nu+"3 "+nd+" z4"; },
+                        half:    function(n,nd,nu)  { return n+" "+nd+" z2"; } },
+    // 11: Double hit, then bar 2 uses step-up and step-down
+    'double_then_step':{ twobar1: function(n,nd,nu) { return n+" "+n+" z2 "+n+" "+n+" z2"; },
+                         twobar2: function(n,nd,nu) { return n+" z "+nu+" "+nd+" z4"; },
+                         half:    function(n,nd,nu) { return n+" "+n+" z2"; } },
+    // 12: 8th-note walk alternating n and nd
+    'walk_eighths':   { twobar1: function(n,nd)     { return n+" "+n+" "+nd+" "+nd+" "+n+" "+n+" "+nd+" "+nd; },
+                        twobar2: function(n,nd)     { return n+" z z "+n+"-"+n+"4"; },
+                        half:    function(n,nd)     { return n+" "+n+" "+nd+" "+nd; } },
+    // 13: Full walking line through all step notes
+    'full_walk':      { twobar1: function(n,nd,nu)  { return n+" "+n+" "+nd+" "+n+" "+nu+" "+n+" "+nd+" "+n; },
+                        twobar2: function(n,nd,nu)  { return nd+" z z "+n+"-"+n+"4"; },
+                        half:    function(n,nd,nu)  { return n+" "+n+" "+nd+" "+n; } },
+    // 14: Bar 1 approaches from below, bar 2 from two steps above
+    'third_approach': { twobar1: function(n,nd,nu,nu2) { return n+" "+nd+" z "+nd+"-"+n+"4"; },
+                        twobar2: function(n,nd,nu,nu2) { return nu2+" "+nd+" z "+nd+"-"+n+"4"; },
+                        half:    function(n,nd,nu,nu2) { return n+" "+nd+" z "+nd; } },
+    // 15: Step-down then step-up neighbor, long resolve
+    'step_neighbor':  { twobar1: function(n,nd,nu)  { return n+" "+nd+" z "+nu+"-"+n+"4"; },
+                        twobar2: function(n,nd,nu)  { return n+" "+nd+" z "+nu+" z "+n+"3"; },
+                        half:    function(n,nd,nu)  { return n+" "+nd+" z "+nu; } },
+    // 16: Sparse hits, bar 2 ties step-up note then resolves to main
+    'hold_and_rise':  { twobar1: function(n,nd,nu)  { return "z2 "+n+" z z "+n+" z2"; },
+                        twobar2: function(n,nd,nu)  { return n+" z z "+nu+"-"+nu+"3 "+n; },
+                        half:    function(n,nd,nu)  { return "z2 "+n+" z"; } }
   };
   var pat = PATTERNS[rhythm] || PATTERNS['charleston'];
 
   var key = song.lines[0].staff[0].key;
+
+  // Build the diatonic scale for the key so step-motion patterns can find
+  // the neighbour note one (or two) scale degrees above/below a chord tone.
+  var modeAliases = {"": "major", "maj": "major", "m": "minor", "min": "minor",
+    "dor": "dorian", "phr": "phrygian", "lyd": "lydian",
+    "mix": "mixolydian", "aeo": "aeolian", "loc": "locrian"};
+  var keyNote = key.root + (key.acc || "");
+  var keyMode = modeAliases[(key.mode || "").toLowerCase()] || "major";
+  var keyScale = Tonal.Scale.get(keyNote + " " + keyMode).notes;
+  if (!keyScale.length) keyScale = Tonal.Scale.get(keyNote + " major").notes;
 
   // Convert a Tonal pitch class (e.g. "C", "Bb") to an ABC pitch token.
   function toAbc(noteName) {
@@ -241,10 +299,32 @@ function generate_comping(chords, song, rhythm) {
     return cOrHigher ? abcNote.toLowerCase() : abcNote;
   }
 
-  // Build ABC fragment for a half-bar (4 slots) used when 2 chords share one bar
-  function barFragment(noteName, slots) {
-    var n = toAbc(noteName);
-    return slots === 8 ? pat.twobar1(n) : pat.half(n);
+  // Return the ABC note that is `delta` diatonic scale steps from pitch class
+  // `pc`, choosing the octave so the step actually goes in the right direction.
+  function scaleStepAbc(pc, delta) {
+    var idx = keyScale.indexOf(pc);
+    if (idx === -1) return toAbc(pc); // chromatic note — no diatonic step
+    var stepPc = keyScale[((idx + delta) % keyScale.length + keyScale.length) % keyScale.length];
+    var baseMidi = Tonal.Note.midi(pc + "4") || 60;
+    var bestNote = null, bestDist = Infinity, sign = delta > 0 ? 1 : -1;
+    for (var oct = 2; oct <= 6; oct++) {
+      var m = Tonal.Note.midi(stepPc + oct);
+      if (m === null || m === undefined) continue;
+      var dist = sign * (m - baseMidi);
+      if (dist > 0 && dist < bestDist) { bestDist = dist; bestNote = stepPc + oct; }
+    }
+    return bestNote ? Tonal.AbcNotation.scientificToAbcNotation(bestNote) : toAbc(stepPc);
+  }
+
+  // Returns [n, nd, nu, nu2]: the ABC tokens for the main chord note plus its
+  // diatonic neighbours, ready to spread into any pattern function via .apply.
+  function noteArgs(pc) {
+    return [toAbc(pc), scaleStepAbc(pc, -1), scaleStepAbc(pc, 1), scaleStepAbc(pc, 2)];
+  }
+
+  // Build the half-bar ABC fragment (4 slots) used when 2 chords share a bar.
+  function barFragment(noteName) {
+    return pat.half.apply(null, noteArgs(noteName));
   }
 
   // Resolve chord names to Tonal note arrays (3 notes each)
@@ -336,15 +416,15 @@ function generate_comping(chords, song, rhythm) {
     if (cb.length === 1) {
       var patFn = (bar % 2 === 0) ? pat.twobar1 : pat.twobar2;
       var ann = getChordAnn(bar, 0);
-      v1_bars.push(ann + patFn(toAbc(cb[0][0])));
-      v2_bars.push(hideRests(patFn(toAbc(cb[0][1]))));
-      v3_bars.push(hideRests(patFn(toAbc(cb[0][2]))));
+      v1_bars.push(ann + patFn.apply(null, noteArgs(cb[0][0])));
+      v2_bars.push(hideRests(patFn.apply(null, noteArgs(cb[0][1]))));
+      v3_bars.push(hideRests(patFn.apply(null, noteArgs(cb[0][2]))));
     } else if (cb.length === 2) {
       var ann0 = getChordAnn(bar, 0);
       var ann1 = getChordAnn(bar, 1);
-      v1_bars.push(ann0 + barFragment(cb[0][0], 4) + " " + ann1 + barFragment(cb[1][0], 4));
-      v2_bars.push(hideRests(barFragment(cb[0][1], 4) + " " + barFragment(cb[1][1], 4)));
-      v3_bars.push(hideRests(barFragment(cb[0][2], 4) + " " + barFragment(cb[1][2], 4)));
+      v1_bars.push(ann0 + barFragment(cb[0][0]) + " " + ann1 + barFragment(cb[1][0]));
+      v2_bars.push(hideRests(barFragment(cb[0][1]) + " " + barFragment(cb[1][1])));
+      v3_bars.push(hideRests(barFragment(cb[0][2]) + " " + barFragment(cb[1][2])));
     } else {
       // 3+ chords per bar: quarter notes
       v1_bars.push(cb.map(function(c, i){ return getChordAnn(bar, i) + toAbc(c[0]) + "2"; }).join(" "));
@@ -372,21 +452,22 @@ function generate_comping(chords, song, rhythm) {
   }
 
   var rhythmNames = {
-    'charleston':           'Charleston',
-    'reverse_charleston':   'Reverse Charleston',
-    'tresillo':             'Tresillo',
-    'habanera':             'Habanera',
-    'charleston_on_2':      'Charleston on 2',
-    'charleston_on_3':      'Charleston on 3',
-    'charleston_on_and1':   'Charleston on &1',
-    'charleston_on_and2':   'Charleston on &2',
-    'rev_charleston_on_2':  'Rev Charleston on 2',
-    'rev_charleston_on_3':  'Rev Charleston on 3',
-    'anticipate_2':         'Anticipate 2',
-    'anticipate_3':         'Anticipate 3',
-    'anticipate_4':         'Anticipate 4',
-    'offbeat_hits':         'Offbeat hits',
-    'syncopated_3hit':      'Syncopated 3-hit'
+    'on_2_and_4':      'On 2 and 4',
+    'hold_over':       'Hold over',
+    'walk_down_a':     'Walk down A',
+    'cross_step':      'Cross step',
+    'walk_down_b':     'Walk down B',
+    'hit_and_hold':    'Hit and hold',
+    'double_hit':      'Double hit',
+    'whole_note':      'Whole note',
+    'whole_then_step': 'Whole then step',
+    'step_approach':   'Step approach',
+    'double_then_step':'Double then step',
+    'walk_eighths':    'Walk eighths',
+    'full_walk':       'Full walk',
+    'third_approach':  'Third approach',
+    'step_neighbor':   'Step neighbor',
+    'hold_and_rise':   'Hold and rise'
   };
   var rhythmLabel = rhythmNames[rhythm] || rhythm;
 
@@ -906,43 +987,34 @@ function createCompingDropdown() {
 
   var groups = [
     {
-      label: "CORE PATTERNS",
+      label: "BASE PATTERNS",
       rhythms: [
-        { label: "Charleston",          value: "charleston" },
-        { label: "Reverse Charleston",  value: "reverse_charleston" },
-        { label: "Tresillo",            value: "tresillo" },
-        { label: "Habanera",            value: "habanera" }
+        { label: "On 2 and 4",       value: "on_2_and_4" },
+        { label: "Hold over",        value: "hold_over" },
+        { label: "Hit and hold",     value: "hit_and_hold" },
+        { label: "Double hit",       value: "double_hit" },
+        { label: "Whole note",       value: "whole_note" }
       ]
     },
     {
-      label: "CHARLESTON DISPLACEMENTS",
+      label: "STEP DOWN",
       rhythms: [
-        { label: "Charleston on 2",     value: "charleston_on_2" },
-        { label: "Charleston on 3",     value: "charleston_on_3" },
-        { label: "Charleston on &1",    value: "charleston_on_and1" },
-        { label: "Charleston on &2",    value: "charleston_on_and2" }
+        { label: "Walk down A",      value: "walk_down_a" },
+        { label: "Walk down B",      value: "walk_down_b" },
+        { label: "Whole then step",  value: "whole_then_step" },
+        { label: "Walk eighths",     value: "walk_eighths" }
       ]
     },
     {
-      label: "REVERSE CHARLESTON DISPLACEMENTS",
+      label: "STEP UP & DOWN",
       rhythms: [
-        { label: "Rev Charleston on 2", value: "rev_charleston_on_2" },
-        { label: "Rev Charleston on 3", value: "rev_charleston_on_3" }
-      ]
-    },
-    {
-      label: "ANTICIPATIONS",
-      rhythms: [
-        { label: "Anticipate 2",        value: "anticipate_2" },
-        { label: "Anticipate 3",        value: "anticipate_3" },
-        { label: "Anticipate 4",        value: "anticipate_4" }
-      ]
-    },
-    {
-      label: "OFF-BEAT / SYNCOPATION",
-      rhythms: [
-        { label: "Offbeat hits",        value: "offbeat_hits" },
-        { label: "Syncopated 3-hit",    value: "syncopated_3hit" }
+        { label: "Cross step",       value: "cross_step" },
+        { label: "Step approach",    value: "step_approach" },
+        { label: "Double then step", value: "double_then_step" },
+        { label: "Full walk",        value: "full_walk" },
+        { label: "Third approach",   value: "third_approach" },
+        { label: "Step neighbor",    value: "step_neighbor" },
+        { label: "Hold and rise",    value: "hold_and_rise" }
       ]
     }
   ];
