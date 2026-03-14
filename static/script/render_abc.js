@@ -445,40 +445,89 @@ function generate_comping(chords, song, rhythm) {
     return '"' + raw.replace(/"/g, '') + '"';
   }
 
-  // Replace visible rests (z) with invisible rests (x) — used for Third/Fifth
-  // voices so only the Root voice shows rest symbols.
-  function hideRests(s) { return s.replace(/z(\d*)/g, "x$1"); }
+  // Tokenize an ABC bar string into note/rest/annotation elements.
+  function tokenizeBar(s) {
+    var toks = [];
+    var re = /"[^"]*"|[_^=]?[A-Ga-gz][',]*\d*-?/g;
+    var m;
+    while ((m = re.exec(s)) !== null) {
+      var t = m[0];
+      if (t[0] === '"') {
+        toks.push({ann: t});
+      } else {
+        var tie = t[t.length - 1] === '-';
+        var body = tie ? t.slice(0, -1) : t;
+        var dm = body.match(/(\d+)$/);
+        var dur = dm ? parseInt(dm[1]) : 1;
+        var pitch = dm ? body.slice(0, -dm[1].length) : body;
+        var letter = pitch.replace(/^[_^=]/, '')[0];
+        toks.push({pitch: pitch, dur: dur, tie: tie, rest: letter === 'z' || letter === 'x'});
+      }
+    }
+    return toks;
+  }
 
-  // Build one ABC bar fragment per voice; V:1 gets chord annotations.
-  // Single-chord bars alternate between twobar1 (even bars) and twobar2 (odd
-  // bars) to produce the classic 2-bar comping figures from jazz textbooks.
-  var v1_bars = [], v2_bars = [], v3_bars = [];
+  // Merge 3 same-rhythm ABC bar strings into one using chord notation [n1 n2 n3].
+  // Rests become a single centred z.  Consecutive 8th notes are beamed in groups of 4.
+  function mergeToChords(bar1, bar2, bar3) {
+    var toks1 = tokenizeBar(bar1);
+    var toks2 = tokenizeBar(bar2);
+    var toks3 = tokenizeBar(bar3);
+    var result = "", i1 = 0, i2 = 0, i3 = 0, pos = 0, prevDur = 0;
+    while (i1 < toks1.length) {
+      var t1 = toks1[i1];
+      if (t1.ann) { result += (result ? " " : "") + t1.ann; i1++; continue; }
+      while (i2 < toks2.length && toks2[i2].ann) i2++;
+      while (i3 < toks3.length && toks3[i3].ann) i3++;
+      if (i2 >= toks2.length || i3 >= toks3.length) break;
+      var t2 = toks2[i2], t3 = toks3[i3];
+      var dur = t1.dur;
+      var tie = t1.tie || t2.tie || t3.tie;
+      var needSpace = result !== "" && (pos % 4 === 0 || prevDur > 1 || dur > 1);
+      var durStr = dur > 1 ? dur : "";
+      var atom = t1.rest
+        ? "z" + durStr + (tie ? "-" : "")
+        : "[" + t1.pitch + t2.pitch + t3.pitch + "]" + durStr + (tie ? "-" : "");
+      if (result && needSpace) result += " ";
+      result += atom;
+      prevDur = dur; pos += dur;
+      i1++; i2++; i3++;
+    }
+    return result;
+  }
+
+  // Build merged chord-notation bars (single voice).
+  var merged_bars = [];
   for (var bar = 0; bar < voicedBars.length; bar++) {
     var cb = voicedBars[bar];
     if (cb.length === 1) {
       var patFn = (bar % 2 === 0) ? pat.twobar1 : pat.twobar2;
       var ann = getChordAnn(bar, 0);
       var ra = resolvedNoteArgs(cb[0][0], cb[0][1], cb[0][2]);
-      v1_bars.push(ann + patFn.apply(null, ra[0]));
-      v2_bars.push(hideRests(patFn.apply(null, ra[1])));
-      v3_bars.push(hideRests(patFn.apply(null, ra[2])));
+      merged_bars.push(mergeToChords(
+        ann + patFn.apply(null, ra[0]),
+        patFn.apply(null, ra[1]),
+        patFn.apply(null, ra[2])
+      ));
     } else if (cb.length === 2) {
       var ann0 = getChordAnn(bar, 0);
       var ann1 = getChordAnn(bar, 1);
       var ra0 = resolvedNoteArgs(cb[0][0], cb[0][1], cb[0][2]);
       var ra1 = resolvedNoteArgs(cb[1][0], cb[1][1], cb[1][2]);
-      v1_bars.push(ann0 + pat.half.apply(null, ra0[0]) + " " + ann1 + pat.half.apply(null, ra1[0]));
-      v2_bars.push(hideRests(pat.half.apply(null, ra0[1]) + " " + pat.half.apply(null, ra1[1])));
-      v3_bars.push(hideRests(pat.half.apply(null, ra0[2]) + " " + pat.half.apply(null, ra1[2])));
+      merged_bars.push(mergeToChords(
+        ann0 + pat.half.apply(null, ra0[0]) + " " + ann1 + pat.half.apply(null, ra1[0]),
+        pat.half.apply(null, ra0[1]) + " " + pat.half.apply(null, ra1[1]),
+        pat.half.apply(null, ra0[2]) + " " + pat.half.apply(null, ra1[2])
+      ));
     } else {
-      // 3+ chords per bar: quarter notes
-      v1_bars.push(cb.map(function(c, i){ return getChordAnn(bar, i) + toAbc(c[0]) + "2"; }).join(" "));
-      v2_bars.push(cb.map(function(c){ return toAbc(c[1]) + "2"; }).join(" "));
-      v3_bars.push(cb.map(function(c){ return toAbc(c[2]) + "2"; }).join(" "));
+      // 3+ chords per bar: quarter-note chords
+      merged_bars.push(mergeToChords(
+        cb.map(function(c, i) { return getChordAnn(bar, i) + toAbc(c[0]) + "2"; }).join(" "),
+        cb.map(function(c) { return toAbc(c[1]) + "2"; }).join(" "),
+        cb.map(function(c) { return toAbc(c[2]) + "2"; }).join(" ")
+      ));
     }
   }
-
-  var posNames = ["Root","Third","Fifth"];
 
   // Split bars into lines matching the original song's line structure
   var lineCounts = barsPerLine(song, voicedBars.length);
@@ -516,22 +565,18 @@ function generate_comping(chords, song, rhythm) {
   };
   var rhythmLabel = rhythmNames[rhythm] || rhythm;
 
+  // Carry the clef (e.g. bass for trombone/sousaphone) into the comping score.
+  var staffClef = song.lines[0].staff[0].clef;
+  var clefStr = (staffClef && staffClef.type === "bass") ? " clef=bass middle=D" : "";
+
   return [
     "X:0",
     "L:1/8",
     "M:4/4",
     "T: " + song.metaText.title + " (comping - " + rhythmLabel + ")",
-    "K: " + key.root + (key.acc || ""),
-    "%%score (1 2 3)",
-    "V:1 stem=up   name=\"" + posNames[0] + "\"",
-    "V:2 stem=up   name=\"" + posNames[1] + "\"",
-    "V:3 stem=down name=\"" + posNames[2] + "\"",
+    "K: " + key.root + (key.acc || "") + clefStr,
     "V:1",
-    voiceLines(v1_bars),
-    "V:2",
-    voiceLines(v2_bars),
-    "V:3",
-    voiceLines(v3_bars)
+    voiceLines(merged_bars)
   ].join("\n");
 }
 
