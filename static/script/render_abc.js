@@ -299,27 +299,31 @@ function generate_comping(chords, song, rhythm) {
     return cOrHigher ? abcNote.toLowerCase() : abcNote;
   }
 
-  // Return the ABC note that is `delta` diatonic scale steps from pitch class
-  // `pc`, choosing the octave so the step actually goes in the right direction.
-  function scaleStepAbc(pc, delta) {
-    var idx = keyScale.indexOf(pc);
-    if (idx === -1) return toAbc(pc); // chromatic note — no diatonic step
-    var stepPc = keyScale[((idx + delta) % keyScale.length + keyScale.length) % keyScale.length];
-    var baseMidi = Tonal.Note.midi(pc + "4") || 60;
-    var bestNote = null, bestDist = Infinity, sign = delta > 0 ? 1 : -1;
-    for (var oct = 2; oct <= 6; oct++) {
-      var m = Tonal.Note.midi(stepPc + oct);
-      if (m === null || m === undefined) continue;
-      var dist = sign * (m - baseMidi);
-      if (dist > 0 && dist < bestDist) { bestDist = dist; bestNote = stepPc + oct; }
-    }
-    return bestNote ? Tonal.AbcNotation.scientificToAbcNotation(bestNote) : toAbc(stepPc);
-  }
-
-  // Returns [n, nd, nu, nu2]: the ABC tokens for the main chord note plus its
-  // diatonic neighbours, ready to spread into any pattern function via .apply.
+  // Returns [n, nd, nu, nu2]: the main chord note as ABC plus its diatonic
+  // neighbours one and two scale degrees away.  Each step note is chosen at
+  // the octave that minimises the interval to the main note, so no large jumps
+  // occur regardless of which octave toAbc placed the main note in.
   function noteArgs(pc) {
-    return [toAbc(pc), scaleStepAbc(pc, -1), scaleStepAbc(pc, 1), scaleStepAbc(pc, 2)];
+    var mainAbc  = toAbc(pc);
+    // Recover the actual MIDI of the placed note so steps are relative to it.
+    var mainSci  = Tonal.AbcNotation.abcToScientificNotation(mainAbc);
+    var mainMidi = (mainSci && Tonal.Note.midi(mainSci)) || Tonal.Note.midi(pc + "4") || 60;
+
+    function stepAbc(delta) {
+      var idx = keyScale.indexOf(pc);
+      if (idx === -1) return mainAbc; // chromatic note — repeat the main note
+      var stepPc = keyScale[((idx + delta) % keyScale.length + keyScale.length) % keyScale.length];
+      var bestNote = null, bestDist = Infinity, sign = delta > 0 ? 1 : -1;
+      for (var oct = 2; oct <= 6; oct++) {
+        var m = Tonal.Note.midi(stepPc + oct);
+        if (!m) continue;
+        var dist = sign * (m - mainMidi);
+        if (dist > 0 && dist < bestDist) { bestDist = dist; bestNote = stepPc + oct; }
+      }
+      return bestNote ? Tonal.AbcNotation.scientificToAbcNotation(bestNote) : mainAbc;
+    }
+
+    return [mainAbc, stepAbc(-1), stepAbc(1), stepAbc(2)];
   }
 
   // Build the half-bar ABC fragment (4 slots) used when 2 chords share a bar.
