@@ -651,11 +651,17 @@ video.video {
   cursor: pointer;
 }
 
-#instrument {
+#instrument,
+#comping {
   padding: 0px;
   font: inherit;
   font-size: inherit;
 }
+
+/* Comping voices: root (#222), third (site gold), fifth (site pink) */
+.notation .abcjs-v0 path { fill: #222222; stroke: #222222; }
+.notation .abcjs-v1 path { fill: #e29d0f; stroke: #e29d0f; }
+.notation .abcjs-v2 path { fill: #CA486d; stroke: #CA486d; }
 
 .dropdown {
   position: relative;

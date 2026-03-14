@@ -130,16 +130,14 @@ function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, titlePref
     }
   };
 
-  ABCJS.renderAbc(notationElt, text, abcParams);
   var compingSelect = document.getElementById("comping");
   var compingRhythm = compingSelect ? compingSelect.value : "none";
-  var abcNotationTune;
   if (compingRhythm !== "none" && chords.length > 0) {
-    abcNotationTune = generate_comping(chords, song, compingRhythm);
+    var abcCompingTune = generate_comping(chords, song, compingRhythm);
+    ABCJS.renderAbc(notationElt, abcCompingTune, abcParams);
   } else {
-    abcNotationTune = generate_riffs(chords, song);
+    ABCJS.renderAbc(notationElt, text, abcParams);
   }
-  ABCJS.renderAbc("notation", abcNotationTune, abcParams);
 
   /* Hide title below chord table */
   document
@@ -177,319 +175,213 @@ function readFile(file, callback) {
   f.send(null);
 }
 
+/*
+   Function: generate_comping
+   Generates ABC notation for chord-tone comping using the selected rhythm.
+   Three voices (root, third, fifth) share one staff, each colored by CSS.
+   Voice names are taken from their chord-position in bar 1.
+*/
 function generate_comping(chords, song, rhythm) {
+  // Patterns in L:1/8 (4/4 = 8 slots per bar, 2 chords/bar = 4 slots each).
+  // 'n' is a single ABC note or rest token (no length suffix).
+  var PATTERNS = {
+    'charleston':         { full: function(n){return n+"2 z"+n+" z4";},          half: function(n){return n+"2 z"+n;} },
+    'reverse_charleston': { full: function(n){return "z"+n+" z2 "+n+"2 z2";},    half: function(n){return "z"+n+" "+n+"2";} },
+    'tresillo':           { full: function(n){return n+"3 "+n+"3 "+n+"2";},       half: function(n){return n+"3 "+n;} },
+    'habanera':           { full: function(n){return n+"3 "+n+" "+n+"2 "+n+"2";}, half: function(n){return n+"3 "+n;} },
+    'bossa_nova':         { full: function(n){return n+" z2 "+n+" z "+n+" z "+n;},half: function(n){return n+" z "+n+" z";} },
+    'son_clave':          { full: function(n){return n+" z2 "+n+" z3 "+n;},       half: function(n){return n+" z2 "+n;} }
+  };
+  var pat = PATTERNS[rhythm] || PATTERNS['charleston'];
+
   var key = song.lines[0].staff[0].key;
-  var keyStr = key.root + key.acc;
-  var notesWithAccidentals = [];
-  for (var accIdx = 0; accIdx < key.accidentals.length; accIdx++) {
-    notesWithAccidentals.push(key.accidentals[accIdx].note);
-  }
+  var notesWithAccidentals = key.accidentals.map(function(a) { return a.note; });
 
-  var chordNotes = getChordNotesForComping(chords);
-  var sortedChordNotes = optimizeNotesForComping(chordNotes);
-
-  var bars = [];
-  for (var bar = 0; bar < sortedChordNotes.length; bar++) {
-    bars.push(buildCompingBar(sortedChordNotes[bar]));
-  }
-
-  var rhythmLabel = rhythm.replace(/_/g, ' ');
-  var abc = [
-    "X: 0",
-    "L:1/8",
-    "M:4/4",
-    "T: " + song.metaText.title + " (comping - " + rhythmLabel + ")",
-    "K: " + keyStr,
-    bars.join("|")
-  ];
-  return abc.join("\n");
-
-  function noteToAbcStr(note) {
-    var cOrHigher = note.charCodeAt(0) >= 'C'.charCodeAt(0);
-    var abcNote = Tonal.AbcNotation.scientificToAbcNotation(note + "4");
-    var startIdx = (abcNote.charAt(0).toUpperCase() !== note.charAt(0).toUpperCase()) && notesWithAccidentals.includes(note.charAt(0)) ? 1 : 0;
+  // Convert a Tonal note name (e.g. "C", "Bb") to an ABC pitch token
+  function toAbc(noteName) {
+    if (!noteName) return "z";
+    var cOrHigher = noteName.charCodeAt(0) >= 'C'.charCodeAt(0);
+    var abcNote = Tonal.AbcNotation.scientificToAbcNotation(noteName + "4");
+    var startIdx = (abcNote.charAt(0).toUpperCase() !== noteName.charAt(0).toUpperCase()) &&
+                   notesWithAccidentals.includes(noteName.charAt(0)) ? 1 : 0;
     abcNote = abcNote.substring(startIdx);
     return cOrHigher ? abcNote.toLowerCase() : abcNote;
   }
 
-  function chordToAbcStr(chord) {
-    var validNotes = chord.filter(function(n) { return n && n.length > 0; });
-    if (validNotes.length === 0) { return "z"; }
-    return "[" + validNotes.map(noteToAbcStr).join("") + "]";
+  // Build ABC fragment for one note position in the chord using the rhythm
+  function barFragment(noteName, slots) {
+    var n = toAbc(noteName);
+    return slots === 8 ? pat.full(n) : pat.half(n);
   }
 
-  function applyRhythmFull(chordStr) {
-    // Full bar: 8 eighth-note slots in 4/4
-    switch (rhythm) {
-      case 'four_feel':          return chordStr+"2 "+chordStr+"2 "+chordStr+"2 "+chordStr+"2";
-      case 'two_feel':           return chordStr+"4 z4";
-      case 'charleston':         return chordStr+"2 z"+chordStr+" z4";
-      case 'reverse_charleston': return "z"+chordStr+" z2 "+chordStr+"2 z2";
-      case 'stop_time':          return chordStr+"2 z6";
-      default:                   return chordStr+"2 "+chordStr+"2 "+chordStr+"2 "+chordStr+"2";
-    }
-  }
-
-  function applyRhythmHalf(chordStr) {
-    // Half bar: 4 eighth-note slots (2 beats)
-    switch (rhythm) {
-      case 'four_feel':          return chordStr+"2 "+chordStr+"2";
-      case 'two_feel':           return chordStr+"2 z2";
-      case 'charleston':         return chordStr+"2 z"+chordStr;
-      case 'reverse_charleston': return "z"+chordStr+" "+chordStr+"2";
-      case 'stop_time':          return chordStr+"2 z2";
-      default:                   return chordStr+"2 "+chordStr+"2";
-    }
-  }
-
-  function buildCompingBar(chordsInBar) {
-    var numChords = chordsInBar.length;
-    if (numChords === 1) {
-      return applyRhythmFull(chordToAbcStr(chordsInBar[0]));
-    } else if (numChords === 2) {
-      return applyRhythmHalf(chordToAbcStr(chordsInBar[0])) + " " + applyRhythmHalf(chordToAbcStr(chordsInBar[1]));
-    } else {
-      return chordsInBar.map(function(c) { return chordToAbcStr(c) + "2"; }).join(" ");
-    }
-  }
-
-  function getChordNotesForComping(chords) {
-    var chordNotes = [];
-    var lastChord = "%";
+  // Resolve chord names to Tonal note arrays (3 notes each)
+  function extractChordNotes(chords) {
+    var result = [];
+    var last = "C";
     for (var bar = 0; bar < chords.length; bar++) {
-      var currentBar = [];
-      for (var chordIdx = 0; chordIdx < chords[bar].text.length; chordIdx++) {
-        var chord = chords[bar].text[chordIdx].toString();
-        if (chord.trim() === "%") { chord = lastChord; }
-        chord = chord.split("/")[0];
-        chord = chord.replace("♭", "b").replace("♯", "#").replace("Ø", "dim");
-        lastChord = chord;
-        currentBar.push(Tonal.Chord.get(chord).notes);
+      var barRow = [];
+      for (var ci = 0; ci < chords[bar].text.length; ci++) {
+        var ch = chords[bar].text[ci].toString();
+        if (ch.trim() === "%") ch = last;
+        ch = ch.split("/")[0].replace("♭","b").replace("♯","#").replace("Ø","dim");
+        last = ch;
+        var notes = Tonal.Chord.get(ch).notes.slice(0, 3);
+        while (notes.length < 3) notes.push(notes[0] || "C");
+        barRow.push(notes);
       }
-      chordNotes.push(currentBar);
+      result.push(barRow);
     }
-    return chordNotes;
+    return result;
   }
 
-  function optimizeNotesForComping(chordNotes) {
-    var sorted = [[chordNotes[0].pop()]];
+  // Voice-lead: for each bar, choose the inversion that minimises movement
+  // from the previous chord. Returns same structure as input.
+  function voiceLead(chordNotes) {
+    if (!chordNotes.length || !chordNotes[0].length) return chordNotes;
+    // Seed: use the first chord of bar 0 as-is, then remove it from the queue
+    var seed = chordNotes[0][0];
+    chordNotes[0] = chordNotes[0].slice(1);
+    var sorted = [[seed]];
+
+    function semitones(a, b) {
+      var up   = Tonal.Interval.semitones(Tonal.Interval.distance(a, b));
+      var dn   = Tonal.Interval.semitones(Tonal.Interval.distance(b, a));
+      return Math.min(up, dn);
+    }
 
     for (var bar = 0; bar < chordNotes.length; bar++) {
       var currentBar = [];
-      for (var idx = 0; idx < chordNotes[bar].length; idx++) {
-        var prevChord = sorted[sorted.length - 1].slice(-1)[0];
-        var unsortedChord = chordNotes[bar][idx];
-        // Ensure at least 3 notes, pad with first note if needed
-        while (unsortedChord.length < 3) { unsortedChord.push(unsortedChord[0]); }
-        while (prevChord.length < 3) { prevChord.push(prevChord[0]); }
-
-        var intervalsRoot = [], intervalsSecond = [], intervalsThird = [];
-        for (var note = 0; note < 3; note++) {
-          intervalsRoot[note]   = compingInterval(prevChord[0], unsortedChord[note]);
-          intervalsSecond[note] = compingInterval(prevChord[1], unsortedChord[note]);
-          intervalsThird[note]  = compingInterval(prevChord[2], unsortedChord[note]);
+      for (var ci = 0; ci < chordNotes[bar].length; ci++) {
+        var prev = sorted[sorted.length - 1].slice(-1)[0];
+        var curr = chordNotes[bar][ci];
+        var iR = [], iS = [], iT = [];
+        for (var n = 0; n < 3; n++) {
+          iR[n] = semitones(prev[0], curr[n]);
+          iS[n] = semitones(prev[1], curr[n]);
+          iT[n] = semitones(prev[2], curr[n]);
         }
-
-        var intervalList = intervalsRoot.concat(intervalsSecond).concat(intervalsThird);
-        var rootIdx = 0, secondIdx = 1, thirdIdx = 2;
-
-        for (var points = 0; points < 3; points++) {
-          var minInterval = Math.min.apply(Math, intervalList);
-          var intervalIndex = intervalList.indexOf(minInterval);
-          if (intervalIndex < 3) {
-            rootIdx = intervalIndex;
-            intervalList.fill(100, 0, 3);
-          } else if (intervalIndex < 6) {
-            secondIdx = intervalIndex - 3;
-            intervalList.fill(100, 3, 6);
-          } else {
-            thirdIdx = intervalIndex - 6;
-            intervalList.fill(100, 6, 9);
-          }
-          intervalList[intervalIndex % 3] = 100;
-          intervalList[(intervalIndex % 3) + 3] = 100;
-          intervalList[(intervalIndex % 3) + 6] = 100;
+        var list = iR.concat(iS).concat(iT);
+        var rI = 0, sI = 1, tI = 2;
+        for (var p = 0; p < 3; p++) {
+          var mi = Math.min.apply(Math, list);
+          var ix = list.indexOf(mi);
+          if      (ix < 3) { rI = ix;     list.fill(100, 0, 3); }
+          else if (ix < 6) { sI = ix - 3; list.fill(100, 3, 6); }
+          else             { tI = ix - 6; list.fill(100, 6, 9); }
+          list[ix % 3] = list[(ix % 3) + 3] = list[(ix % 3) + 6] = 100;
         }
-
-        currentBar.push([unsortedChord[rootIdx], unsortedChord[secondIdx], unsortedChord[thirdIdx]]);
+        currentBar.push([curr[rI], curr[sI], curr[tI]]);
       }
-      if (currentBar.length > 0) { sorted.push(currentBar); }
+      if (currentBar.length) sorted.push(currentBar);
     }
     return sorted;
   }
 
-  function compingInterval(a, b) {
-    var up   = Tonal.Interval.semitones(Tonal.Interval.distance(a, b));
-    var down = Tonal.Interval.semitones(Tonal.Interval.distance(b, a));
-    return Math.min(up, down);
+  var rawNotes  = extractChordNotes(chords);
+  var voicedBars = voiceLead(rawNotes);
+
+  // Build one ABC bar fragment per voice
+  var v1_bars = [], v2_bars = [], v3_bars = [];
+  for (var bar = 0; bar < voicedBars.length; bar++) {
+    var cb = voicedBars[bar];
+    if (cb.length === 1) {
+      v1_bars.push(barFragment(cb[0][0], 8));
+      v2_bars.push(barFragment(cb[0][1], 8));
+      v3_bars.push(barFragment(cb[0][2], 8));
+    } else if (cb.length === 2) {
+      v1_bars.push(barFragment(cb[0][0], 4) + " " + barFragment(cb[1][0], 4));
+      v2_bars.push(barFragment(cb[0][1], 4) + " " + barFragment(cb[1][1], 4));
+      v3_bars.push(barFragment(cb[0][2], 4) + " " + barFragment(cb[1][2], 4));
+    } else {
+      // 3+ chords per bar: quarter notes
+      v1_bars.push(cb.map(function(c){ return toAbc(c[0])+"2"; }).join(" "));
+      v2_bars.push(cb.map(function(c){ return toAbc(c[1])+"2"; }).join(" "));
+      v3_bars.push(cb.map(function(c){ return toAbc(c[2])+"2"; }).join(" "));
+    }
   }
+
+  // Voice names: chord position of bar-1 seed
+  var seed0 = voicedBars[0] && voicedBars[0][0] ? voicedBars[0][0] : ["","",""];
+  var posNames = ["Root","Third","Fifth"];
+
+  // Split bars into lines matching the original song's line structure
+  var lineCounts = barsPerLine(song, voicedBars.length);
+
+  function voiceLines(bars) {
+    var lines = [];
+    var idx = 0;
+    for (var l = 0; l < lineCounts.length && idx < bars.length; l++) {
+      var line = [];
+      for (var b = 0; b < lineCounts[l] && idx < bars.length; b++, idx++) {
+        line.push(bars[idx]);
+      }
+      lines.push(line.join("|") + "|");
+    }
+    return lines.join("\n");
+  }
+
+  var rhythmNames = {
+    'charleston':         'Charleston',
+    'reverse_charleston': 'Reverse Charleston',
+    'tresillo':           'Tresillo',
+    'habanera':           'Habanera',
+    'bossa_nova':         'Bossa Nova',
+    'son_clave':          'Son Clave'
+  };
+  var rhythmLabel = rhythmNames[rhythm] || rhythm;
+
+  return [
+    "X:0",
+    "L:1/8",
+    "M:4/4",
+    "T: " + song.metaText.title + " (comping - " + rhythmLabel + ")",
+    "K: " + key.root + key.acc,
+    "%%score (1 2 3)",
+    "V:1 stem=up   name=\"" + posNames[0] + "\"",
+    "V:2 stem=up   name=\"" + posNames[1] + "\"",
+    "V:3 stem=down name=\"" + posNames[2] + "\"",
+    "V:1",
+    voiceLines(v1_bars),
+    "V:2",
+    voiceLines(v2_bars),
+    "V:3",
+    voiceLines(v3_bars)
+  ].join("\n");
 }
 
-function generate_riffs(chords, song) {
-
-  var chordNotes = determineChordNotes();
-  var sortedRiffNotes = optimizeNotes(chordNotes);
-  var abcRiffTune = createAbcTuneFromRiffNotes(sortedRiffNotes, song);
-
-  return abcRiffTune;
-
-  function createAbcTuneFromRiffNotes(sortedRiffNotes, song) {
-    var key = song.lines[0].staff[0].key;
-    var notesWithAccidentals = [];
-    for (var accIdx = 0; accIdx < key.accidentals.length; accIdx++) {
-        notesWithAccidentals.push(key.accidentals[accIdx].note);
-    }
-    var abc_notes = { 'root': [], 'second': [], 'third': [] };
-    for (var bar = 0; bar < sortedRiffNotes.length; bar++) {
-      var chordsInBar = sortedRiffNotes[bar].length;
-      var noteLength = 4 / chordsInBar;
-
-      var rootBar = [];
-      var secondBar = [];
-      var thirdBar = [];
-      for (var chordIdx = 0; chordIdx < chordsInBar; chordIdx++) {
-        var chord = sortedRiffNotes[bar][chordIdx];
-        rootBar.push(tonalNoteToAbc(chord[0], noteLength, notesWithAccidentals));
-        secondBar.push(tonalNoteToAbc(chord[1], noteLength, notesWithAccidentals));
-        thirdBar.push(tonalNoteToAbc(chord[2], noteLength, notesWithAccidentals));
+/*
+   Function: barsPerLine
+   Returns an array with the bar count for each staff line of the original song,
+   so the comping output can mirror the same line structure.
+*/
+function barsPerLine(song, totalBars) {
+  var counts = [];
+  var inAlt = false;
+  for (var i = 0; i < song.lines.length; i++) {
+    if (song.lines[i].staff === undefined) continue;
+    var voice = song.lines[i].staff[0].voices[0];
+    var n = 0, hasNote = false;
+    for (var j = 0; j < voice.length; j++) {
+      var el = voice[j];
+      if (el.el_type === "note") hasNote = true;
+      if (el.el_type === "bar") {
+        if (el.startEnding !== undefined && el.startEnding > 1) inAlt = true;
+        if (el.endEnding   !== undefined && inAlt)              inAlt = false;
+        if (!inAlt && hasNote) { n++; hasNote = false; }
       }
-      abc_notes.root.push(rootBar.join(" "));
-      abc_notes.second.push(secondBar.join(" "));
-      abc_notes.third.push(thirdBar.join(" "));
     }
-    var abc_riff = ["X: 0",
-      "L:1/4",
-      "T: " + song.metaText.title + " (riff chords)",
-      "K: " + key.root + key.acc,
-      "V:1 name=\"Root\" ",
-      "V:2 name=\"Third\" ",
-      "V:3 name=\"Fifth\" ",
-      "V: 1",
-      abc_notes.root.join("| "),
-      "V: 2",
-      abc_notes.second.join("| "),
-      "V: 3",
-      abc_notes.third.join("| ")];
-
-
-    return abc_riff.join("\n");
-
-    function tonalNoteToAbc(note, length, notesWithAccidentals) {
-      var cOrHigher = note.charCodeAt(0) >= 'C'.charCodeAt(0);
-      var abcNote = Tonal.AbcNotation.scientificToAbcNotation(note + 4) + length;
-      var startIdx = (abcNote.charAt(0).toUpperCase() != note.charAt(0).toUpperCase()) && notesWithAccidentals.includes(note.charAt(0)) ? 1 : 0;
-      return cOrHigher ? abcNote.toLowerCase().substring(startIdx) : abcNote.substring(startIdx);
-    }
+    if (n > 0) counts.push(n);
   }
-
-  function optimizeNotes(chordNotes) {
-    var sortedRiffNotes = [[chordNotes[0].pop()]];
-
-    for (var bar = 0; bar < chordNotes.length; bar++) {
-    var currentBar = [];
-      for (var idx = 0; idx < chordNotes[bar].length; idx++) {
-      var intervalsRoot = [];
-      var intervalsSecond = [];
-      var intervalsThird = [];
-
-        var prevChord =
-          sortedRiffNotes[sortedRiffNotes.length - 1].slice(-1)[0];
-      var unsortedChord = chordNotes[bar][idx];
-
-      for (var note = 0; note < 3; note++) {
-          intervalsRoot[note] = determine_interval(
-            prevChord[0],
-            unsortedChord[note]
-          );
-          intervalsSecond[note] = determine_interval(
-            prevChord[1],
-            unsortedChord[note]
-          );
-          intervalsThird[note] = determine_interval(
-            prevChord[2],
-            unsortedChord[note]
-          );
-      }
-
-        // Find smallest interval solution
-        var intervalList = intervalsRoot
-          .concat(intervalsSecond)
-          .concat(intervalsThird);
-
-        for (var points = 0; points < 3; points++) {
-          var minInterval = Math.min.apply(Math, intervalList);
-          var intervalIndex = intervalList.indexOf(minInterval);
-
-          switch (intervalIndex) {
-            case 0:
-            case 1:
-            case 2:
-            var rootIdx = intervalIndex;
-            intervalList.fill(100, 0, 3);
-            break;
-            case 3:
-            case 4:
-            case 5:
-            var secondIdx = intervalIndex - 3;
-            intervalList.fill(100, 3, 6);
-            break;
-            case 6:
-            case 7:
-            case 8:
-            var thirdIdx = intervalIndex - 6;
-            intervalList.fill(100, 6, 9);
-            break;
-          }
-          intervalList[intervalIndex % 3] = 100;
-          intervalList[(intervalIndex % 3) + 3] = 100;
-          intervalList[(intervalIndex % 3) + 6] = 100;
-      }
-
-        currentBar.push([
-          chordNotes[bar][idx][rootIdx],
-          chordNotes[bar][idx][secondIdx],
-          chordNotes[bar][idx][thirdIdx],
-        ]);
-    }
-
-    if (currentBar.length > 0) {
-       sortedRiffNotes.push(currentBar);
-    }
+  var total = counts.reduce(function(a, b) { return a + b; }, 0);
+  if (total !== totalBars) {
+    // Fallback: equal distribution matching original line count
+    var nLines = Math.max(counts.length, 1);
+    var perLine = Math.ceil(totalBars / nLines);
+    counts = [];
+    var rem = totalBars;
+    while (rem > 0) { var k = Math.min(perLine, rem); counts.push(k); rem -= k; }
   }
-    return sortedRiffNotes;
-
-    function determine_interval(a, b) {
-      var up = Tonal.Interval.semitones(Tonal.Interval.distance(a, b));
-      var down = Tonal.Interval.semitones(Tonal.Interval.distance(b, a));
-      return Math.min(up, down);
-    }
-  }
-
-  function determineChordNotes() {
-    var chordNotes = [];
-
-    var lastChord = "%";
-    for (var bar = 0; bar < chords.length; bar++) {
-      var currentBar = [];
-      for (var chordIdx = 0; chordIdx < chords[bar].text.length; chordIdx++) {
-        var chord = chords[bar].text[chordIdx].toString();
-
-        if (chord.trim() == "%") {
-          chord = lastChord;
-        }
-        // Tonal Chord doesn't handle root (yet)
-        chord = chord.split("/")[0];
-        // TODO: This is an inverse operation, consider not doing it
-        chord = chord.replace("♭", "b").replace("♯", "#").replace("Ø", "dim");
-        lastChord = chord;
-        currentBar.push(Tonal.Chord.get(chord).notes);
-      }
-
-      chordNotes.push(currentBar);
-    }
-    return chordNotes;
-  }
-
+  return counts;
 }
 
 /*
@@ -950,12 +842,13 @@ function createCompingDropdown() {
   div.appendChild(select);
 
   var rhythms = [
-    { label: "Comping: Off",          value: "none" },
-    { label: "Four-Feel",             value: "four_feel" },
-    { label: "Two-Feel",              value: "two_feel" },
-    { label: "Charleston",            value: "charleston" },
-    { label: "Reverse Charleston",    value: "reverse_charleston" },
-    { label: "Stop-Time",             value: "stop_time" }
+    { label: "Comping: Off",       value: "none" },
+    { label: "Charleston",         value: "charleston" },
+    { label: "Rev. Charleston",    value: "reverse_charleston" },
+    { label: "Tresillo",           value: "tresillo" },
+    { label: "Habanera",           value: "habanera" },
+    { label: "Bossa Nova",         value: "bossa_nova" },
+    { label: "Son Clave",          value: "son_clave" }
   ];
 
   for (var i = 0; i < rhythms.length; i++) {
