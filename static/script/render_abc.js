@@ -133,7 +133,7 @@ function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, titlePref
   var compingSelect = document.getElementById("comping");
   var compingRhythm = compingSelect ? compingSelect.value : "none";
   if (compingRhythm !== "none" && chords.length > 0) {
-    var abcCompingTune = generate_comping(chords, song, compingRhythm);
+    var abcCompingTune = generate_comping(chords, song, compingRhythm, text);
     // Chord/key data from parseOnly is already in the instrument key; no re-transposition needed.
     var compingParams = {
       visualTranspose: 0,
@@ -196,10 +196,11 @@ function readFile(file, callback) {
 /*
    Function: generate_comping
    Generates ABC notation for chord-tone comping using the selected rhythm.
-   Three voices (root, third, fifth) share one staff, each colored by CSS.
-   Voice names are taken from their chord-position in bar 1.
+   Uses the original ABC text as a structural template so repeats, volta
+   brackets and all barline markings are preserved verbatim; only the note
+   content of each bar is replaced with the comping chord voicing.
 */
-function generate_comping(chords, song, rhythm) {
+function generate_comping(chords, song, rhythm, abcText) {
   // `chords` and `song` come from ABCJS.parseOnly called with visualTranspose,
   // so all chord names and key data are already in the instrument's key.
   // No additional transposition is needed here.
@@ -529,22 +530,6 @@ function generate_comping(chords, song, rhythm) {
     }
   }
 
-  // Split bars into lines matching the original song's line structure
-  var lineCounts = barsPerLine(song, voicedBars.length);
-
-  function voiceLines(bars) {
-    var lines = [];
-    var idx = 0;
-    for (var l = 0; l < lineCounts.length && idx < bars.length; l++) {
-      var line = [];
-      for (var b = 0; b < lineCounts[l] && idx < bars.length; b++, idx++) {
-        line.push(bars[idx]);
-      }
-      lines.push(line.join("|") + "|");
-    }
-    return lines.join("\n");
-  }
-
   var rhythmNames = {
     'on_2_and_4':      'On 2 and 4',
     'hold_over':       'Hold over',
@@ -565,55 +550,116 @@ function generate_comping(chords, song, rhythm) {
   };
   var rhythmLabel = rhythmNames[rhythm] || rhythm;
 
-  // Carry the clef (e.g. bass for trombone/sousaphone) into the comping score.
+  // Build the instrument key string (root + acc + mode + optional clef).
   var staffClef = song.lines[0].staff[0].clef;
-  var clefStr = (staffClef && staffClef.type === "bass") ? " clef=bass middle=D" : "";
+  var clefStr   = (staffClef && staffClef.type === "bass") ? " clef=bass middle=D" : "";
+  var keyStr    = key.root + (key.acc || "") + (key.mode ? " " + key.mode : "") + clefStr;
 
-  return [
-    "X:0",
-    "L:1/8",
-    "M:4/4",
-    "T: " + song.metaText.title + " (comping - " + rhythmLabel + ")",
-    "K: " + key.root + (key.acc || "") + clefStr,
-    "V:1",
-    voiceLines(merged_bars)
-  ].join("\n");
+  return buildCompingAbc(abcText, merged_bars, keyStr, rhythmLabel);
 }
 
 /*
-   Function: barsPerLine
-   Returns an array with the bar count for each staff line of the original song,
-   so the comping output can mirror the same line structure.
+   Function: buildCompingAbc
+   Rewrites an ABC tune text by keeping its header structure (with updated K:,
+   T: and L: fields) and replacing each bar's note content in the body with
+   the corresponding pre-built comping bar string.  All barlines, repeat signs,
+   volta brackets and inline field changes are preserved verbatim from the
+   original, so the comping automatically inherits the full song structure.
 */
-function barsPerLine(song, totalBars) {
-  var counts = [];
-  var inAlt = false;
-  for (var i = 0; i < song.lines.length; i++) {
-    if (song.lines[i].staff === undefined) continue;
-    var voice = song.lines[i].staff[0].voices[0];
-    var n = 0, hasNote = false;
-    for (var j = 0; j < voice.length; j++) {
-      var el = voice[j];
-      if (el.el_type === "note") hasNote = true;
-      if (el.el_type === "bar") {
-        if (el.startEnding !== undefined && el.startEnding > 1) inAlt = true;
-        if (el.endEnding   !== undefined && inAlt)              inAlt = false;
-        if (!inAlt && hasNote) { n++; hasNote = false; }
-      }
+function buildCompingAbc(abcText, mergedBars, keyStr, rhythmLabel) {
+  // ── Header rewriting ──────────────────────────────────────────────────────
+  var lines = abcText.split('\n');
+  var kLine = -1;
+  for (var i = lines.length - 1; i >= 0; i--) {
+    if (/^K:/.test(lines[i])) { kLine = i; break; }
+  }
+  if (kLine === -1) return abcText;
+
+  var newHeader = [], hasL = false;
+  for (var i = 0; i <= kLine; i++) {
+    var line = lines[i];
+    if (/^T:/.test(line)) {
+      newHeader.push(line + ' (comping - ' + rhythmLabel + ')');
+    } else if (/^L:/.test(line)) {
+      newHeader.push('L:1/8'); hasL = true;
+    } else if (/^K:/.test(line)) {
+      if (!hasL) newHeader.push('L:1/8');
+      newHeader.push('K:' + keyStr);
+    } else if (/^%%score\b/.test(line) || (/^V:\d/.test(line) && line.trim().length > 3)) {
+      // drop %%score directives and V:N lines that carry voice properties
+    } else {
+      newHeader.push(line);
     }
-    if (n > 0) counts.push(n);
   }
-  var total = counts.reduce(function(a, b) { return a + b; }, 0);
-  if (total !== totalBars) {
-    // Fallback: equal distribution matching original line count
-    var nLines = Math.max(counts.length, 1);
-    var perLine = Math.ceil(totalBars / nLines);
-    counts = [];
-    var rem = totalBars;
-    while (rem > 0) { var k = Math.min(perLine, rem); counts.push(k); rem -= k; }
+
+  // ── Body rewriting ────────────────────────────────────────────────────────
+  var body = lines.slice(kLine + 1).join('\n');
+
+  // If the body uses explicit voice sections, keep only V:1 content.
+  if (/^V:\d/m.test(body)) {
+    var v1 = [], inV1 = false;
+    body.split('\n').forEach(function(bl) {
+      if (/^V:1\b/.test(bl)) { inV1 = true; return; }
+      if (/^V:\d/.test(bl))  { inV1 = false; return; }
+      if (inV1) v1.push(bl);
+    });
+    body = v1.join('\n');
   }
-  return counts;
+
+  body = replaceNotesInBars(body, mergedBars);
+  return newHeader.join('\n') + '\nV:1\n' + body;
 }
+
+/*
+   Function: replaceNotesInBars
+   Splits an ABC tune body at barlines, then for each bar segment that contains
+   notes/rests replaces the musical content with the next entry in mergedBars.
+   Barlines, repeat signs, volta brackets, inline field changes and whitespace
+   (newlines) are all kept exactly as found in the original.
+*/
+function replaceNotesInBars(body, mergedBars) {
+  // Barline patterns, longest-match first to avoid partial overlaps.
+  var BARLINE = /\|:|\|\||::|:\|:?|\[\||\|[\]]?|\[\d[\d,\-]*/g;
+
+  var parts = [], lastIdx = 0, m;
+  while ((m = BARLINE.exec(body)) !== null) {
+    parts.push({bar: false, s: body.slice(lastIdx, m.index)});
+    parts.push({bar: true,  s: m[0]});
+    lastIdx = m.index + m[0].length;
+  }
+  parts.push({bar: false, s: body.slice(lastIdx)});
+
+  var barIdx = 0, out = '';
+  for (var i = 0; i < parts.length; i++) {
+    var p = parts[i];
+    if (p.bar) { out += p.s; continue; }
+
+    // Strip chord annotations and inline fields before checking for notes.
+    var stripped = p.s
+      .replace(/"[^"]*"/g, '')
+      .replace(/\[[A-Z]:[^\]]*\]/g, '')
+      .replace(/^%%[^\n]*/gm, '');
+
+    if (/[A-Ga-gz]/.test(stripped)) {
+      // This segment contains musical notes – replace with comping content.
+      var inlineFields = (p.s.match(/\[[A-Z]:[^\]]*\]/g) || []).join(' ');
+      var leadWs = (p.s.match(/^[\s]*/) || [''])[0]; // preserve leading newline
+      var content;
+      if (barIdx < mergedBars.length) {
+        content = mergedBars[barIdx++];
+      } else {
+        // No comping bar available (e.g. second/third ending): keep chord
+        // annotations from the original with a whole rest as a placeholder.
+        content = (p.s.match(/"[^"]*"/g) || []).join(' ') + ' z8';
+      }
+      out += leadWs + (inlineFields ? inlineFields + ' ' : '') + content + ' ';
+    } else {
+      out += p.s; // structural-only content, keep verbatim
+    }
+  }
+  return out;
+}
+
 
 /*
    Funcion: create_song_link
