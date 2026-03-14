@@ -133,7 +133,7 @@ function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, titlePref
   var compingSelect = document.getElementById("comping");
   var compingRhythm = compingSelect ? compingSelect.value : "none";
   if (compingRhythm !== "none" && chords.length > 0) {
-    var abcCompingTune = generate_comping(chords, song, compingRhythm, transpose_steps);
+    var abcCompingTune = generate_comping(chords, song, compingRhythm);
     // Transposition is done inside generate_comping, so visualTranspose must be 0.
     var compingParams = {
       visualTranspose: 0,
@@ -199,28 +199,10 @@ function readFile(file, callback) {
    Three voices (root, third, fifth) share one staff, each colored by CSS.
    Voice names are taken from their chord-position in bar 1.
 */
-function generate_comping(chords, song, rhythm, transposeSteps) {
-  transposeSteps = transposeSteps || 0;
-
-  // Chromatic pitch class table for transposition (uses flats for enharmonics)
-  var CHROMATIC = ["C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"];
-  var PC_INDEX  = {C:0,"C#":1,Db:1,D:2,"D#":3,Eb:3,E:4,F:5,"F#":6,Gb:6,G:7,"G#":8,Ab:8,A:9,"A#":10,Bb:10,B:11};
-
-  function transposePitchClass(pc, semitones) {
-    if (!semitones) return pc;
-    var idx = PC_INDEX[pc];
-    return idx === undefined ? pc : CHROMATIC[((idx + semitones) % 12 + 12) % 12];
-  }
-
-  function transposeChordName(name, semitones) {
-    // parse_chord_scheme stores names with unicode accidentals (♭ ♯ Ø) and
-    // may include a bass note after "/"; normalise to ASCII for Tonal.
-    var clean = name.split("/")[0].replace(/♭/g,"b").replace(/♯/g,"#").replace(/Ø/g,"dim");
-    if (!semitones) return clean;
-    var parsed = Tonal.Chord.get(clean);
-    if (!parsed.tonic) return clean;
-    return transposePitchClass(parsed.tonic, semitones) + clean.slice(parsed.tonic.length);
-  }
+function generate_comping(chords, song, rhythm) {
+  // `chords` and `song` come from ABCJS.parseOnly called with visualTranspose,
+  // so all chord names and key data are already in the instrument's key.
+  // No additional transposition is needed here.
 
   // Patterns in L:1/8 (4/4 = 8 slots per bar).
   // twobar1/twobar2: bar 1 and bar 2 of the classic 2-bar figure (8 slots each).
@@ -252,14 +234,10 @@ function generate_comping(chords, song, rhythm, transposeSteps) {
   var key = song.lines[0].staff[0].key;
 
   // Convert a Tonal pitch class (e.g. "C", "Bb") to an ABC pitch token.
-  // Notes are transposed by transposeSteps semitones before conversion;
-  // accidentals are always written explicitly (no key-signature stripping)
-  // so they remain correct regardless of the transposed key.
   function toAbc(noteName) {
     if (!noteName) return "z";
-    var pc = transposeSteps ? transposePitchClass(noteName, transposeSteps) : noteName;
-    var cOrHigher = pc.charCodeAt(0) >= 'C'.charCodeAt(0);
-    var abcNote = Tonal.AbcNotation.scientificToAbcNotation(pc + "4");
+    var cOrHigher = noteName.charCodeAt(0) >= 'C'.charCodeAt(0);
+    var abcNote = Tonal.AbcNotation.scientificToAbcNotation(noteName + "4");
     return cOrHigher ? abcNote.toLowerCase() : abcNote;
   }
 
@@ -342,7 +320,9 @@ function generate_comping(chords, song, rhythm, transposeSteps) {
     var ci = Math.min(chordIdx, chords[barIdx].text.length - 1);
     var raw = (chords[barIdx].text[ci] || "").toString().trim();
     if (!raw || raw === "%") return "";
-    var display = transposeChordName(raw, transposeSteps);
+    // Normalise unicode accidentals to ASCII for ABCJS; chord is already in
+    // the instrument key (pre-transposed by parseOnly/visualTranspose).
+    var display = raw.replace(/♭/g,"b").replace(/♯/g,"#").replace(/Ø/g,"dim");
     return '"' + display.replace(/"/g, '') + '"';
   }
 
