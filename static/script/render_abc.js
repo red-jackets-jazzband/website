@@ -345,6 +345,10 @@ function generate_comping(chords, song, rhythm, transposeSteps) {
     return '"' + display.replace(/"/g, '') + '"';
   }
 
+  // Replace visible rests (z) with invisible rests (x) — used for Third/Fifth
+  // voices so only the Root voice shows rest symbols.
+  function hideRests(s) { return s.replace(/z(\d*)/g, "x$1"); }
+
   // Build one ABC bar fragment per voice; V:1 gets chord annotations.
   // Single-chord bars alternate between twobar1 (even bars) and twobar2 (odd
   // bars) to produce the classic 2-bar comping figures from jazz textbooks.
@@ -355,14 +359,14 @@ function generate_comping(chords, song, rhythm, transposeSteps) {
       var patFn = (bar % 2 === 0) ? pat.twobar1 : pat.twobar2;
       var ann = getChordAnn(bar, 0);
       v1_bars.push(ann + patFn(toAbc(cb[0][0])));
-      v2_bars.push(patFn(toAbc(cb[0][1])));
-      v3_bars.push(patFn(toAbc(cb[0][2])));
+      v2_bars.push(hideRests(patFn(toAbc(cb[0][1]))));
+      v3_bars.push(hideRests(patFn(toAbc(cb[0][2]))));
     } else if (cb.length === 2) {
       var ann0 = getChordAnn(bar, 0);
       var ann1 = getChordAnn(bar, 1);
       v1_bars.push(ann0 + barFragment(cb[0][0], 4) + " " + ann1 + barFragment(cb[1][0], 4));
-      v2_bars.push(barFragment(cb[0][1], 4) + " " + barFragment(cb[1][1], 4));
-      v3_bars.push(barFragment(cb[0][2], 4) + " " + barFragment(cb[1][2], 4));
+      v2_bars.push(hideRests(barFragment(cb[0][1], 4) + " " + barFragment(cb[1][1], 4)));
+      v3_bars.push(hideRests(barFragment(cb[0][2], 4) + " " + barFragment(cb[1][2], 4)));
     } else {
       // 3+ chords per bar: quarter notes
       v1_bars.push(cb.map(function(c, i){ return getChordAnn(bar, i) + toAbc(c[0]) + "2"; }).join(" "));
