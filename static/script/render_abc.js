@@ -131,6 +131,8 @@ function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, titlePref
   };
 
   ABCJS.renderAbc(notationElt, text, abcParams);
+  var abcRiffTune = generate_riffs(chords, song);
+  ABCJS.renderAbc("notation", abcRiffTune, abcParams);
 
   /* Hide title below chord table */
   document
@@ -166,6 +168,173 @@ function readFile(file, callback) {
   };
   f.open("GET", file, true);
   f.send(null);
+}
+
+function generate_riffs(chords, song) {
+
+  var chordNotes = determineChordNotes();
+  var sortedRiffNotes = optimizeNotes(chordNotes);
+  var abcRiffTune = createAbcTuneFromRiffNotes(sortedRiffNotes, song);
+
+  return abcRiffTune;
+
+  function createAbcTuneFromRiffNotes(sortedRiffNotes, song) {
+    var key = song.lines[0].staff[0].key;
+    var notesWithAccidentals = [];
+    for (var accIdx = 0; accIdx < key.accidentals.length; accIdx++) {
+        notesWithAccidentals.push(key.accidentals[accIdx].note);
+    }
+    var abc_notes = { 'root': [], 'second': [], 'third': [] };
+    for (var bar = 0; bar < sortedRiffNotes.length; bar++) {
+      var chordsInBar = sortedRiffNotes[bar].length;
+      var noteLength = 4 / chordsInBar;
+
+      var rootBar = [];
+      var secondBar = [];
+      var thirdBar = [];
+      for (var chordIdx = 0; chordIdx < chordsInBar; chordIdx++) {
+        var chord = sortedRiffNotes[bar][chordIdx];
+        rootBar.push(tonalNoteToAbc(chord[0], noteLength, notesWithAccidentals));
+        secondBar.push(tonalNoteToAbc(chord[1], noteLength, notesWithAccidentals));
+        thirdBar.push(tonalNoteToAbc(chord[2], noteLength, notesWithAccidentals));
+      }
+      abc_notes.root.push(rootBar.join(" "));
+      abc_notes.second.push(secondBar.join(" "));
+      abc_notes.third.push(thirdBar.join(" "));
+    }
+    var abc_riff = ["X: 0",
+      "L:1/4",
+      "T: " + song.metaText.title + " (riff chords)",
+      "K: " + key.root + key.acc,
+      "V:1 name=\"Root\" ",
+      "V:2 name=\"Third\" ",
+      "V:3 name=\"Fifth\" ",
+      "V: 1",
+      abc_notes.root.join("| "),
+      "V: 2",
+      abc_notes.second.join("| "),
+      "V: 3",
+      abc_notes.third.join("| ")];
+
+
+    return abc_riff.join("\n");
+
+    function tonalNoteToAbc(note, length, notesWithAccidentals) {
+      var cOrHigher = note.charCodeAt(0) >= 'C'.charCodeAt(0);
+      var abcNote = Tonal.AbcNotation.scientificToAbcNotation(note + 4) + length;
+      var startIdx = (abcNote.charAt(0).toUpperCase() != note.charAt(0).toUpperCase()) && notesWithAccidentals.includes(note.charAt(0)) ? 1 : 0;
+      return cOrHigher ? abcNote.toLowerCase().substring(startIdx) : abcNote.substring(startIdx);
+    }
+  }
+
+  function optimizeNotes(chordNotes) {
+    var sortedRiffNotes = [[chordNotes[0].pop()]];
+
+    for (var bar = 0; bar < chordNotes.length; bar++) {
+    var currentBar = [];
+      for (var idx = 0; idx < chordNotes[bar].length; idx++) {
+      var intervalsRoot = [];
+      var intervalsSecond = [];
+      var intervalsThird = [];
+
+        var prevChord =
+          sortedRiffNotes[sortedRiffNotes.length - 1].slice(-1)[0];
+      var unsortedChord = chordNotes[bar][idx];
+
+      for (var note = 0; note < 3; note++) {
+          intervalsRoot[note] = determine_interval(
+            prevChord[0],
+            unsortedChord[note]
+          );
+          intervalsSecond[note] = determine_interval(
+            prevChord[1],
+            unsortedChord[note]
+          );
+          intervalsThird[note] = determine_interval(
+            prevChord[2],
+            unsortedChord[note]
+          );
+      }
+
+        // Find smallest interval solution
+        var intervalList = intervalsRoot
+          .concat(intervalsSecond)
+          .concat(intervalsThird);
+
+        for (var points = 0; points < 3; points++) {
+          var minInterval = Math.min.apply(Math, intervalList);
+          var intervalIndex = intervalList.indexOf(minInterval);
+
+          switch (intervalIndex) {
+            case 0:
+            case 1:
+            case 2:
+            var rootIdx = intervalIndex;
+            intervalList.fill(100, 0, 3);
+            break;
+            case 3:
+            case 4:
+            case 5:
+            var secondIdx = intervalIndex - 3;
+            intervalList.fill(100, 3, 6);
+            break;
+            case 6:
+            case 7:
+            case 8:
+            var thirdIdx = intervalIndex - 6;
+            intervalList.fill(100, 6, 9);
+            break;
+          }
+          intervalList[intervalIndex % 3] = 100;
+          intervalList[(intervalIndex % 3) + 3] = 100;
+          intervalList[(intervalIndex % 3) + 6] = 100;
+      }
+
+        currentBar.push([
+          chordNotes[bar][idx][rootIdx],
+          chordNotes[bar][idx][secondIdx],
+          chordNotes[bar][idx][thirdIdx],
+        ]);
+    }
+
+    if (currentBar.length > 0) {
+       sortedRiffNotes.push(currentBar);
+    }
+  }
+    return sortedRiffNotes;
+
+    function determine_interval(a, b) {
+      var up = Tonal.Interval.semitones(Tonal.Interval.distance(a, b));
+      var down = Tonal.Interval.semitones(Tonal.Interval.distance(b, a));
+      return Math.min(up, down);
+    }
+  }
+
+  function determineChordNotes() {
+    var chordNotes = [];
+
+    var lastChord = "%";
+    for (var bar = 0; bar < chords.length; bar++) {
+      var currentBar = [];
+      for (var chordIdx = 0; chordIdx < chords[bar].text.length; chordIdx++) {
+        var chord = chords[bar].text[chordIdx].toString();
+
+        if (chord.trim() == "%") {
+          chord = lastChord;
+        }
+        // Tonal Chord doesn't handle root (yet)
+        chord = chord.split("/")[0];
+        // TODO: This is an inverse operation, consider not doing it
+        chord = chord.replace("♭", "b").replace("♯", "#").replace("Ø", "dim");
+        lastChord = chord;
+        currentBar.push(Tonal.Chord.get(chord).notes);
+      }
+
+      chordNotes.push(currentBar);
+    }
+    return chordNotes;
+  }
+
 }
 
 /*
@@ -470,10 +639,10 @@ function add_irealpro_link(song, chords) {
     if (link !== null) {
       link.href = url;
     } else {
-      var link = document.createElement("A");
+      link = document.createElement("A");
       link.innerHTML = " | irealpro";
-      link.href = url
-      /* link.target = "_blank"; */
+      link.href = url;
+      link.target = "_blank";
       link.id = "iRealPro";
       var menu = document.getElementById("sheetmenu");
       menu.appendChild(link);
