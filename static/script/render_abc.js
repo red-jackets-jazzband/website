@@ -133,8 +133,26 @@ function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, titlePref
   var compingSelect = document.getElementById("comping");
   var compingRhythm = compingSelect ? compingSelect.value : "none";
   if (compingRhythm !== "none" && chords.length > 0) {
-    var abcCompingTune = generate_comping(chords, song, compingRhythm);
-    ABCJS.renderAbc(notationElt, abcCompingTune, abcParams);
+    var abcCompingTune = generate_comping(chords, song, compingRhythm, transpose_steps);
+    // Transposition is done inside generate_comping, so visualTranspose must be 0.
+    var compingParams = {
+      visualTranspose: 0,
+      responsive: "resize",
+      staffwidth: 1000,
+      paddingTop: 0,
+      paddingBottom: 0,
+      add_classes: true,
+      jazzchords: true,
+      oneSvgPerLine: false,
+      format: abcParams.format
+    };
+    ABCJS.renderAbc(notationElt, abcCompingTune, compingParams);
+    // Color the Root / Third / Fifth voice-name labels to match the note colors
+    var voiceColors = {'Root': '#222222', 'Third': '#e29d0f', 'Fifth': '#CA486d'};
+    document.getElementById(notationElt).querySelectorAll('text').forEach(function(el) {
+      var txt = (el.textContent || '').trim();
+      if (voiceColors[txt]) el.style.fill = voiceColors[txt];
+    });
   } else {
     ABCJS.renderAbc(notationElt, text, abcParams);
   }
@@ -181,51 +199,71 @@ function readFile(file, callback) {
    Three voices (root, third, fifth) share one staff, each colored by CSS.
    Voice names are taken from their chord-position in bar 1.
 */
-function generate_comping(chords, song, rhythm) {
-  // Patterns in L:1/8 (4/4 = 8 slots per bar, 2 chords/bar = 4 slots each).
-  // 'n' is a single ABC note token; slot counts must total 8 (full) or 4 (half).
+function generate_comping(chords, song, rhythm, transposeSteps) {
+  transposeSteps = transposeSteps || 0;
+
+  // Chromatic pitch class table for transposition (uses flats for enharmonics)
+  var CHROMATIC = ["C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"];
+  var PC_INDEX  = {C:0,"C#":1,Db:1,D:2,"D#":3,Eb:3,E:4,F:5,"F#":6,Gb:6,G:7,"G#":8,Ab:8,A:9,"A#":10,Bb:10,B:11};
+
+  function transposePitchClass(pc, semitones) {
+    if (!semitones) return pc;
+    var idx = PC_INDEX[pc];
+    return idx === undefined ? pc : CHROMATIC[((idx + semitones) % 12 + 12) % 12];
+  }
+
+  function transposeChordName(name, semitones) {
+    if (!semitones) return name;
+    var parsed = Tonal.Chord.get(name);
+    if (!parsed.tonic) return name;
+    return transposePitchClass(parsed.tonic, semitones) + name.slice(parsed.tonic.length);
+  }
+
+  // Patterns in L:1/8 (4/4 = 8 slots per bar).
+  // twobar1/twobar2: bar 1 and bar 2 of the classic 2-bar figure (8 slots each).
+  // half: 4-slot fragment used when 2 chords share one bar.
   var PATTERNS = {
     // Core patterns
-    'charleston':           { full: function(n){return n+"2 z"+n+" z4";},               half: function(n){return n+"2 z"+n;} },
-    'reverse_charleston':   { full: function(n){return "z"+n+" z2 "+n+"2 z2";},         half: function(n){return "z"+n+" "+n+"2";} },
-    'tresillo':             { full: function(n){return n+"3 "+n+"3 "+n+"2";},            half: function(n){return n+"3 "+n;} },
-    'habanera':             { full: function(n){return n+"3 "+n+" "+n+"2 "+n+"2";},      half: function(n){return n+"3 "+n;} },
+    'charleston':           { twobar1: function(n){return n+"2 z4 z"+n;},              twobar2: function(n){return "z2 "+n+"4 z2";},           half: function(n){return n+"2 z"+n;} },
+    'reverse_charleston':   { twobar1: function(n){return "z"+n+" z2 "+n+"2 z2";},     twobar2: function(n){return "z4 "+n+"2 z"+n;},           half: function(n){return "z"+n+" "+n+"2";} },
+    'tresillo':             { twobar1: function(n){return n+"3 "+n+"3 "+n+"2";},        twobar2: function(n){return "z3 "+n+"3 "+n+"2";},         half: function(n){return n+"3 "+n;} },
+    'habanera':             { twobar1: function(n){return n+"3 "+n+" "+n+"2 "+n+"2";},  twobar2: function(n){return "z3 "+n+" "+n+"2 "+n+"2";},  half: function(n){return n+"3 "+n;} },
     // Charleston displacements
-    'charleston_on_2':      { full: function(n){return "z2 "+n+"2 z"+n+" z2";},         half: function(n){return "z2 "+n+"2";} },
-    'charleston_on_3':      { full: function(n){return "z4 "+n+"2 z"+n;},               half: function(n){return "z2 "+n+"2";} },
-    'charleston_on_and1':   { full: function(n){return "z"+n+" z"+n+" z4";},            half: function(n){return "z"+n+" z"+n;} },
-    'charleston_on_and2':   { full: function(n){return "z3 "+n+" z4";},                 half: function(n){return "z3 "+n;} },
+    'charleston_on_2':      { twobar1: function(n){return "z2 "+n+"2 z"+n+" z2";},     twobar2: function(n){return "z4 "+n+"2 z"+n;},           half: function(n){return "z2 "+n+"2";} },
+    'charleston_on_3':      { twobar1: function(n){return "z4 "+n+"2 z"+n;},           twobar2: function(n){return "z2 "+n+"2 z4";},            half: function(n){return "z2 "+n+"2";} },
+    'charleston_on_and1':   { twobar1: function(n){return "z"+n+" z"+n+" z4";},        twobar2: function(n){return "z3 "+n+" z3 "+n;},          half: function(n){return "z"+n+" z"+n;} },
+    'charleston_on_and2':   { twobar1: function(n){return "z3 "+n+" z4";},             twobar2: function(n){return "z7 "+n;},                   half: function(n){return "z3 "+n;} },
     // Reverse Charleston displacements
-    'rev_charleston_on_2':  { full: function(n){return "z3 "+n+" "+n+"2 z2";},          half: function(n){return "z3 "+n;} },
-    'rev_charleston_on_3':  { full: function(n){return "z5 "+n+" "+n+" z";},            half: function(n){return "z3 "+n;} },
+    'rev_charleston_on_2':  { twobar1: function(n){return "z3 "+n+" "+n+"2 z2";},      twobar2: function(n){return "z"+n+" "+n+"2 z4";},        half: function(n){return "z3 "+n;} },
+    'rev_charleston_on_3':  { twobar1: function(n){return "z5 "+n+" "+n+" z";},        twobar2: function(n){return "z3 "+n+" "+n+" z3";},       half: function(n){return "z3 "+n;} },
     // Anticipations (hit just before the anticipated beat)
-    'anticipate_2':         { full: function(n){return "z"+n+" z6";},                   half: function(n){return "z"+n+" z2";} },
-    'anticipate_3':         { full: function(n){return "z3 "+n+" z4";},                 half: function(n){return "z3 "+n;} },
-    'anticipate_4':         { full: function(n){return "z5 "+n+" z2";},                 half: function(n){return "z3 "+n;} },
+    'anticipate_2':         { twobar1: function(n){return "z"+n+" z6";},               twobar2: function(n){return "z3 "+n+" z4";},             half: function(n){return "z"+n+" z2";} },
+    'anticipate_3':         { twobar1: function(n){return "z3 "+n+" z4";},             twobar2: function(n){return "z5 "+n+" z2";},             half: function(n){return "z3 "+n;} },
+    'anticipate_4':         { twobar1: function(n){return "z5 "+n+" z2";},             twobar2: function(n){return "z7 "+n;},                   half: function(n){return "z3 "+n;} },
     // Off-beat / syncopation figures
-    'offbeat_hits':         { full: function(n){return "z"+n+" z"+n+" z"+n+" z"+n;},   half: function(n){return "z"+n+" z"+n;} },
-    'syncopated_3hit':      { full: function(n){return n+" "+n+" z2 "+n+"3 z";},        half: function(n){return n+" "+n+" z2";} }
+    'offbeat_hits':         { twobar1: function(n){return "z"+n+" z"+n+" z"+n+" z"+n;}, twobar2: function(n){return n+" z"+n+" z"+n+" z"+n+" z";}, half: function(n){return "z"+n+" z"+n;} },
+    'syncopated_3hit':      { twobar1: function(n){return n+" "+n+" z2 "+n+"3 z";},    twobar2: function(n){return "z"+n+" z2 "+n+"3 z";},      half: function(n){return n+" "+n+" z2";} }
   };
   var pat = PATTERNS[rhythm] || PATTERNS['charleston'];
 
   var key = song.lines[0].staff[0].key;
-  var notesWithAccidentals = key.accidentals.map(function(a) { return a.note; });
 
-  // Convert a Tonal note name (e.g. "C", "Bb") to an ABC pitch token
+  // Convert a Tonal pitch class (e.g. "C", "Bb") to an ABC pitch token.
+  // Notes are transposed by transposeSteps semitones before conversion;
+  // accidentals are always written explicitly (no key-signature stripping)
+  // so they remain correct regardless of the transposed key.
   function toAbc(noteName) {
     if (!noteName) return "z";
-    var cOrHigher = noteName.charCodeAt(0) >= 'C'.charCodeAt(0);
-    var abcNote = Tonal.AbcNotation.scientificToAbcNotation(noteName + "4");
-    var startIdx = (abcNote.charAt(0).toUpperCase() !== noteName.charAt(0).toUpperCase()) &&
-                   notesWithAccidentals.includes(noteName.charAt(0)) ? 1 : 0;
-    abcNote = abcNote.substring(startIdx);
+    var pc = transposeSteps ? transposePitchClass(noteName, transposeSteps) : noteName;
+    var cOrHigher = pc.charCodeAt(0) >= 'C'.charCodeAt(0);
+    var abcNote = Tonal.AbcNotation.scientificToAbcNotation(pc + "4");
     return cOrHigher ? abcNote.toLowerCase() : abcNote;
   }
 
-  // Build ABC fragment for one note position in the chord using the rhythm
+  // Build ABC fragment for a half-bar (4 slots) used when 2 chords share one bar
   function barFragment(noteName, slots) {
     var n = toAbc(noteName);
-    return slots === 8 ? pat.full(n) : pat.half(n);
+    return slots === 8 ? pat.twobar1(n) : pat.half(n);
   }
 
   // Resolve chord names to Tonal note arrays (3 notes each)
@@ -302,18 +340,23 @@ function generate_comping(chords, song, rhythm) {
     var raw = (chords[barIdx].text[ci] || "").toString().trim();
     if (raw === "%") raw = lastChordName;
     else lastChordName = raw || lastChordName;
-    return raw ? '"' + raw.replace(/"/g, '') + '"' : "";
+    if (!raw) return "";
+    var display = transposeChordName(raw, transposeSteps);
+    return '"' + display.replace(/"/g, '') + '"';
   }
 
-  // Build one ABC bar fragment per voice; V:1 gets chord annotations
+  // Build one ABC bar fragment per voice; V:1 gets chord annotations.
+  // Single-chord bars alternate between twobar1 (even bars) and twobar2 (odd
+  // bars) to produce the classic 2-bar comping figures from jazz textbooks.
   var v1_bars = [], v2_bars = [], v3_bars = [];
   for (var bar = 0; bar < voicedBars.length; bar++) {
     var cb = voicedBars[bar];
     if (cb.length === 1) {
+      var patFn = (bar % 2 === 0) ? pat.twobar1 : pat.twobar2;
       var ann = getChordAnn(bar, 0);
-      v1_bars.push(ann + barFragment(cb[0][0], 8));
-      v2_bars.push(barFragment(cb[0][1], 8));
-      v3_bars.push(barFragment(cb[0][2], 8));
+      v1_bars.push(ann + patFn(toAbc(cb[0][0])));
+      v2_bars.push(patFn(toAbc(cb[0][1])));
+      v3_bars.push(patFn(toAbc(cb[0][2])));
     } else if (cb.length === 2) {
       var ann0 = getChordAnn(bar, 0);
       var ann1 = getChordAnn(bar, 1);
@@ -372,7 +415,7 @@ function generate_comping(chords, song, rhythm) {
     "L:1/8",
     "M:4/4",
     "T: " + song.metaText.title + " (comping - " + rhythmLabel + ")",
-    "K: " + key.root + key.acc,
+    "K: " + transposePitchClass(key.root + (key.acc || ""), transposeSteps),
     "%%score (1 2 3)",
     "V:1 stem=up   name=\"" + posNames[0] + "\"",
     "V:2 stem=up   name=\"" + posNames[1] + "\"",
