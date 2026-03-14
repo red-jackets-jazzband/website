@@ -183,14 +183,28 @@ function readFile(file, callback) {
 */
 function generate_comping(chords, song, rhythm) {
   // Patterns in L:1/8 (4/4 = 8 slots per bar, 2 chords/bar = 4 slots each).
-  // 'n' is a single ABC note or rest token (no length suffix).
+  // 'n' is a single ABC note token; slot counts must total 8 (full) or 4 (half).
   var PATTERNS = {
-    'charleston':         { full: function(n){return n+"2 z"+n+" z4";},          half: function(n){return n+"2 z"+n;} },
-    'reverse_charleston': { full: function(n){return "z"+n+" z2 "+n+"2 z2";},    half: function(n){return "z"+n+" "+n+"2";} },
-    'tresillo':           { full: function(n){return n+"3 "+n+"3 "+n+"2";},       half: function(n){return n+"3 "+n;} },
-    'habanera':           { full: function(n){return n+"3 "+n+" "+n+"2 "+n+"2";}, half: function(n){return n+"3 "+n;} },
-    'bossa_nova':         { full: function(n){return n+" z2 "+n+" z "+n+" z "+n;},half: function(n){return n+" z "+n+" z";} },
-    'son_clave':          { full: function(n){return n+" z2 "+n+" z3 "+n;},       half: function(n){return n+" z2 "+n;} }
+    // Core patterns
+    'charleston':           { full: function(n){return n+"2 z"+n+" z4";},               half: function(n){return n+"2 z"+n;} },
+    'reverse_charleston':   { full: function(n){return "z"+n+" z2 "+n+"2 z2";},         half: function(n){return "z"+n+" "+n+"2";} },
+    'tresillo':             { full: function(n){return n+"3 "+n+"3 "+n+"2";},            half: function(n){return n+"3 "+n;} },
+    'habanera':             { full: function(n){return n+"3 "+n+" "+n+"2 "+n+"2";},      half: function(n){return n+"3 "+n;} },
+    // Charleston displacements
+    'charleston_on_2':      { full: function(n){return "z2 "+n+"2 z"+n+" z2";},         half: function(n){return "z2 "+n+"2";} },
+    'charleston_on_3':      { full: function(n){return "z4 "+n+"2 z"+n;},               half: function(n){return "z2 "+n+"2";} },
+    'charleston_on_and1':   { full: function(n){return "z"+n+" z"+n+" z4";},            half: function(n){return "z"+n+" z"+n;} },
+    'charleston_on_and2':   { full: function(n){return "z3 "+n+" z4";},                 half: function(n){return "z3 "+n;} },
+    // Reverse Charleston displacements
+    'rev_charleston_on_2':  { full: function(n){return "z3 "+n+" "+n+"2 z2";},          half: function(n){return "z3 "+n;} },
+    'rev_charleston_on_3':  { full: function(n){return "z5 "+n+" "+n+" z";},            half: function(n){return "z3 "+n;} },
+    // Anticipations (hit just before the anticipated beat)
+    'anticipate_2':         { full: function(n){return "z"+n+" z6";},                   half: function(n){return "z"+n+" z2";} },
+    'anticipate_3':         { full: function(n){return "z3 "+n+" z4";},                 half: function(n){return "z3 "+n;} },
+    'anticipate_4':         { full: function(n){return "z5 "+n+" z2";},                 half: function(n){return "z3 "+n;} },
+    // Off-beat / syncopation figures
+    'offbeat_hits':         { full: function(n){return "z"+n+" z"+n+" z"+n+" z"+n;},   half: function(n){return "z"+n+" z"+n;} },
+    'syncopated_3hit':      { full: function(n){return n+" "+n+" z2 "+n+"3 z";},        half: function(n){return n+" "+n+" z2";} }
   };
   var pat = PATTERNS[rhythm] || PATTERNS['charleston'];
 
@@ -280,23 +294,37 @@ function generate_comping(chords, song, rhythm) {
   var rawNotes  = extractChordNotes(chords);
   var voicedBars = voiceLead(rawNotes);
 
-  // Build one ABC bar fragment per voice
+  // Track last resolved chord name so % repeats can be labelled correctly
+  var lastChordName = "";
+  function getChordAnn(barIdx, chordIdx) {
+    if (!chords[barIdx] || !chords[barIdx].text) return "";
+    var ci = Math.min(chordIdx, chords[barIdx].text.length - 1);
+    var raw = (chords[barIdx].text[ci] || "").toString().trim();
+    if (raw === "%") raw = lastChordName;
+    else lastChordName = raw || lastChordName;
+    return raw ? '"' + raw.replace(/"/g, '') + '"' : "";
+  }
+
+  // Build one ABC bar fragment per voice; V:1 gets chord annotations
   var v1_bars = [], v2_bars = [], v3_bars = [];
   for (var bar = 0; bar < voicedBars.length; bar++) {
     var cb = voicedBars[bar];
     if (cb.length === 1) {
-      v1_bars.push(barFragment(cb[0][0], 8));
+      var ann = getChordAnn(bar, 0);
+      v1_bars.push(ann + barFragment(cb[0][0], 8));
       v2_bars.push(barFragment(cb[0][1], 8));
       v3_bars.push(barFragment(cb[0][2], 8));
     } else if (cb.length === 2) {
-      v1_bars.push(barFragment(cb[0][0], 4) + " " + barFragment(cb[1][0], 4));
+      var ann0 = getChordAnn(bar, 0);
+      var ann1 = getChordAnn(bar, 1);
+      v1_bars.push(ann0 + barFragment(cb[0][0], 4) + " " + ann1 + barFragment(cb[1][0], 4));
       v2_bars.push(barFragment(cb[0][1], 4) + " " + barFragment(cb[1][1], 4));
       v3_bars.push(barFragment(cb[0][2], 4) + " " + barFragment(cb[1][2], 4));
     } else {
       // 3+ chords per bar: quarter notes
-      v1_bars.push(cb.map(function(c){ return toAbc(c[0])+"2"; }).join(" "));
-      v2_bars.push(cb.map(function(c){ return toAbc(c[1])+"2"; }).join(" "));
-      v3_bars.push(cb.map(function(c){ return toAbc(c[2])+"2"; }).join(" "));
+      v1_bars.push(cb.map(function(c, i){ return getChordAnn(bar, i) + toAbc(c[0]) + "2"; }).join(" "));
+      v2_bars.push(cb.map(function(c){ return toAbc(c[1]) + "2"; }).join(" "));
+      v3_bars.push(cb.map(function(c){ return toAbc(c[2]) + "2"; }).join(" "));
     }
   }
 
@@ -321,12 +349,21 @@ function generate_comping(chords, song, rhythm) {
   }
 
   var rhythmNames = {
-    'charleston':         'Charleston',
-    'reverse_charleston': 'Reverse Charleston',
-    'tresillo':           'Tresillo',
-    'habanera':           'Habanera',
-    'bossa_nova':         'Bossa Nova',
-    'son_clave':          'Son Clave'
+    'charleston':           'Charleston',
+    'reverse_charleston':   'Reverse Charleston',
+    'tresillo':             'Tresillo',
+    'habanera':             'Habanera',
+    'charleston_on_2':      'Charleston on 2',
+    'charleston_on_3':      'Charleston on 3',
+    'charleston_on_and1':   'Charleston on &1',
+    'charleston_on_and2':   'Charleston on &2',
+    'rev_charleston_on_2':  'Rev Charleston on 2',
+    'rev_charleston_on_3':  'Rev Charleston on 3',
+    'anticipate_2':         'Anticipate 2',
+    'anticipate_3':         'Anticipate 3',
+    'anticipate_4':         'Anticipate 4',
+    'offbeat_hits':         'Offbeat hits',
+    'syncopated_3hit':      'Syncopated 3-hit'
   };
   var rhythmLabel = rhythmNames[rhythm] || rhythm;
 
@@ -841,21 +878,65 @@ function createCompingDropdown() {
   select.onchange = rerenderFile;
   div.appendChild(select);
 
-  var rhythms = [
-    { label: "Comping: Off",       value: "none" },
-    { label: "Charleston",         value: "charleston" },
-    { label: "Rev. Charleston",    value: "reverse_charleston" },
-    { label: "Tresillo",           value: "tresillo" },
-    { label: "Habanera",           value: "habanera" },
-    { label: "Bossa Nova",         value: "bossa_nova" },
-    { label: "Son Clave",          value: "son_clave" }
+  var offOption = document.createElement("OPTION");
+  offOption.innerHTML = "COMPING: OFF";
+  offOption.value = "none";
+  select.appendChild(offOption);
+
+  var groups = [
+    {
+      label: "CORE PATTERNS",
+      rhythms: [
+        { label: "Charleston",          value: "charleston" },
+        { label: "Reverse Charleston",  value: "reverse_charleston" },
+        { label: "Tresillo",            value: "tresillo" },
+        { label: "Habanera",            value: "habanera" }
+      ]
+    },
+    {
+      label: "CHARLESTON DISPLACEMENTS",
+      rhythms: [
+        { label: "Charleston on 2",     value: "charleston_on_2" },
+        { label: "Charleston on 3",     value: "charleston_on_3" },
+        { label: "Charleston on &1",    value: "charleston_on_and1" },
+        { label: "Charleston on &2",    value: "charleston_on_and2" }
+      ]
+    },
+    {
+      label: "REVERSE CHARLESTON DISPLACEMENTS",
+      rhythms: [
+        { label: "Rev Charleston on 2", value: "rev_charleston_on_2" },
+        { label: "Rev Charleston on 3", value: "rev_charleston_on_3" }
+      ]
+    },
+    {
+      label: "ANTICIPATIONS",
+      rhythms: [
+        { label: "Anticipate 2",        value: "anticipate_2" },
+        { label: "Anticipate 3",        value: "anticipate_3" },
+        { label: "Anticipate 4",        value: "anticipate_4" }
+      ]
+    },
+    {
+      label: "OFF-BEAT / SYNCOPATION",
+      rhythms: [
+        { label: "Offbeat hits",        value: "offbeat_hits" },
+        { label: "Syncopated 3-hit",    value: "syncopated_3hit" }
+      ]
+    }
   ];
 
-  for (var i = 0; i < rhythms.length; i++) {
-    var option = document.createElement("OPTION");
-    option.innerHTML = rhythms[i].label.toUpperCase();
-    option.value = rhythms[i].value;
-    select.appendChild(option);
+  for (var g = 0; g < groups.length; g++) {
+    var grp = document.createElement("OPTGROUP");
+    grp.label = groups[g].label;
+    var rhythms = groups[g].rhythms;
+    for (var i = 0; i < rhythms.length; i++) {
+      var option = document.createElement("OPTION");
+      option.innerHTML = rhythms[i].label.toUpperCase();
+      option.value = rhythms[i].value;
+      grp.appendChild(option);
+    }
+    select.appendChild(grp);
   }
 
   var abc_menu = document.getElementById("sheetmenu");
