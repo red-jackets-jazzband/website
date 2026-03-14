@@ -342,9 +342,31 @@ function generate_comping(chords, song, rhythm) {
     return [mainAbc, stepAbc(-1), stepAbc(1), stepAbc(2)];
   }
 
-  // Build the half-bar ABC fragment (4 slots) used when 2 chords share a bar.
-  function barFragment(noteName) {
-    return pat.half.apply(null, noteArgs(noteName));
+  // Shift an ABC pitch token (e.g. "c", "_B", "c'") up by one octave.
+  function abcOctaveUp(note) {
+    var m = note.match(/^([_^=]*)([A-Ga-g])([\,']*)$/);
+    if (!m) return note;
+    var acc = m[1], letter = m[2], marks = m[3];
+    if (marks.indexOf(',') !== -1) {
+      return acc + letter + marks.slice(1);        // C, → C  (remove one comma)
+    } else if (letter === letter.toUpperCase()) {
+      return acc + letter.toLowerCase() + marks;   // C  → c  (oct 3 → 4)
+    } else {
+      return acc + letter + marks + "'";           // c  → c' (oct 4 → 5)
+    }
+  }
+
+  // Compute noteArgs for 3 voices and ensure no two voices share the same
+  // ABC note in any slot (which would produce unisons in the output).
+  function resolvedNoteArgs(pc0, pc1, pc2) {
+    var a0 = noteArgs(pc0);
+    var a1 = noteArgs(pc1);
+    var a2 = noteArgs(pc2);
+    for (var s = 0; s < 4; s++) {
+      if (a1[s] === a0[s]) a1[s] = abcOctaveUp(a1[s]);
+      if (a2[s] === a0[s] || a2[s] === a1[s]) a2[s] = abcOctaveUp(a2[s]);
+    }
+    return [a0, a1, a2];
   }
 
   // Resolve chord names to Tonal note arrays (3 notes each)
@@ -436,15 +458,18 @@ function generate_comping(chords, song, rhythm) {
     if (cb.length === 1) {
       var patFn = (bar % 2 === 0) ? pat.twobar1 : pat.twobar2;
       var ann = getChordAnn(bar, 0);
-      v1_bars.push(ann + patFn.apply(null, noteArgs(cb[0][0])));
-      v2_bars.push(hideRests(patFn.apply(null, noteArgs(cb[0][1]))));
-      v3_bars.push(hideRests(patFn.apply(null, noteArgs(cb[0][2]))));
+      var ra = resolvedNoteArgs(cb[0][0], cb[0][1], cb[0][2]);
+      v1_bars.push(ann + patFn.apply(null, ra[0]));
+      v2_bars.push(hideRests(patFn.apply(null, ra[1])));
+      v3_bars.push(hideRests(patFn.apply(null, ra[2])));
     } else if (cb.length === 2) {
       var ann0 = getChordAnn(bar, 0);
       var ann1 = getChordAnn(bar, 1);
-      v1_bars.push(ann0 + barFragment(cb[0][0]) + " " + ann1 + barFragment(cb[1][0]));
-      v2_bars.push(hideRests(barFragment(cb[0][1]) + " " + barFragment(cb[1][1])));
-      v3_bars.push(hideRests(barFragment(cb[0][2]) + " " + barFragment(cb[1][2])));
+      var ra0 = resolvedNoteArgs(cb[0][0], cb[0][1], cb[0][2]);
+      var ra1 = resolvedNoteArgs(cb[1][0], cb[1][1], cb[1][2]);
+      v1_bars.push(ann0 + pat.half.apply(null, ra0[0]) + " " + ann1 + pat.half.apply(null, ra1[0]));
+      v2_bars.push(hideRests(pat.half.apply(null, ra0[1]) + " " + pat.half.apply(null, ra1[1])));
+      v3_bars.push(hideRests(pat.half.apply(null, ra0[2]) + " " + pat.half.apply(null, ra1[2])));
     } else {
       // 3+ chords per bar: quarter notes
       v1_bars.push(cb.map(function(c, i){ return getChordAnn(bar, i) + toAbc(c[0]) + "2"; }).join(" "));
