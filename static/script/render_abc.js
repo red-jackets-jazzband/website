@@ -332,15 +332,13 @@ function generate_comping(chords, song, rhythm, transposeSteps) {
   var rawNotes  = extractChordNotes(chords);
   var voicedBars = voiceLead(rawNotes);
 
-  // Track last resolved chord name so % repeats can be labelled correctly
-  var lastChordName = "";
+  // Only show a chord annotation when the original bar had an explicit chord
+  // name — bars with % (repeat) get no annotation, matching the original song.
   function getChordAnn(barIdx, chordIdx) {
     if (!chords[barIdx] || !chords[barIdx].text) return "";
     var ci = Math.min(chordIdx, chords[barIdx].text.length - 1);
     var raw = (chords[barIdx].text[ci] || "").toString().trim();
-    if (raw === "%") raw = lastChordName;
-    else lastChordName = raw || lastChordName;
-    if (!raw) return "";
+    if (!raw || raw === "%") return "";
     var display = transposeChordName(raw, transposeSteps);
     return '"' + display.replace(/"/g, '') + '"';
   }
