@@ -310,17 +310,33 @@ function generate_comping(chords, song, rhythm) {
     var mainMidi = (mainSci && Tonal.Note.midi(mainSci)) || Tonal.Note.midi(pc + "4") || 60;
 
     function stepAbc(delta) {
+      var sign = delta > 0 ? 1 : -1;
       var idx = keyScale.indexOf(pc);
-      if (idx === -1) return mainAbc; // chromatic note — repeat the main note
-      var stepPc = keyScale[((idx + delta) % keyScale.length + keyScale.length) % keyScale.length];
-      var bestNote = null, bestDist = Infinity, sign = delta > 0 ? 1 : -1;
-      for (var oct = 2; oct <= 6; oct++) {
-        var m = Tonal.Note.midi(stepPc + oct);
-        if (!m) continue;
-        var dist = sign * (m - mainMidi);
-        if (dist > 0 && dist < bestDist) { bestDist = dist; bestNote = stepPc + oct; }
+      var candidates = [];
+
+      if (idx !== -1) {
+        // Diatonic note: target is exactly |delta| scale degrees away.
+        var stepPc = keyScale[((idx + delta) % keyScale.length + keyScale.length) % keyScale.length];
+        for (var oct = 2; oct <= 6; oct++) {
+          var m = Tonal.Note.midi(stepPc + oct);
+          if (m) candidates.push({note: stepPc + oct, dist: sign * (m - mainMidi)});
+        }
+      } else {
+        // Chromatic note (not in key scale): use the nearest key-scale note
+        // in the requested direction so the voice still has meaningful motion
+        // instead of repeating the same pitch.
+        for (var si = 0; si < keyScale.length; si++) {
+          for (var o = 2; o <= 6; o++) {
+            var ms = Tonal.Note.midi(keyScale[si] + o);
+            if (ms) candidates.push({note: keyScale[si] + o, dist: sign * (ms - mainMidi)});
+          }
+        }
       }
-      return bestNote ? Tonal.AbcNotation.scientificToAbcNotation(bestNote) : mainAbc;
+
+      candidates = candidates.filter(function(c) { return c.dist > 0; });
+      if (!candidates.length) return mainAbc;
+      candidates.sort(function(a, b) { return a.dist - b.dist; });
+      return Tonal.AbcNotation.scientificToAbcNotation(candidates[0].note);
     }
 
     return [mainAbc, stepAbc(-1), stepAbc(1), stepAbc(2)];
