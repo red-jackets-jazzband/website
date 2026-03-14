@@ -415,7 +415,7 @@ function generate_comping(chords, song, rhythm, transposeSteps) {
     "L:1/8",
     "M:4/4",
     "T: " + song.metaText.title + " (comping - " + rhythmLabel + ")",
-    "K: " + transposePitchClass(key.root + (key.acc || ""), transposeSteps),
+    "K: " + key.root + (key.acc || ""),
     "%%score (1 2 3)",
     "V:1 stem=up   name=\"" + posNames[0] + "\"",
     "V:2 stem=up   name=\"" + posNames[1] + "\"",
