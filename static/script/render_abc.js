@@ -131,8 +131,15 @@ function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, titlePref
   };
 
   ABCJS.renderAbc(notationElt, text, abcParams);
-  var abcRiffTune = generate_riffs(chords, song);
-  ABCJS.renderAbc("notation", abcRiffTune, abcParams);
+  var compingSelect = document.getElementById("comping");
+  var compingRhythm = compingSelect ? compingSelect.value : "none";
+  var abcNotationTune;
+  if (compingRhythm !== "none" && chords.length > 0) {
+    abcNotationTune = generate_comping(chords, song, compingRhythm);
+  } else {
+    abcNotationTune = generate_riffs(chords, song);
+  }
+  ABCJS.renderAbc("notation", abcNotationTune, abcParams);
 
   /* Hide title below chord table */
   document
@@ -168,6 +175,154 @@ function readFile(file, callback) {
   };
   f.open("GET", file, true);
   f.send(null);
+}
+
+function generate_comping(chords, song, rhythm) {
+  var key = song.lines[0].staff[0].key;
+  var keyStr = key.root + key.acc;
+  var notesWithAccidentals = [];
+  for (var accIdx = 0; accIdx < key.accidentals.length; accIdx++) {
+    notesWithAccidentals.push(key.accidentals[accIdx].note);
+  }
+
+  var chordNotes = getChordNotesForComping(chords);
+  var sortedChordNotes = optimizeNotesForComping(chordNotes);
+
+  var bars = [];
+  for (var bar = 0; bar < sortedChordNotes.length; bar++) {
+    bars.push(buildCompingBar(sortedChordNotes[bar]));
+  }
+
+  var rhythmLabel = rhythm.replace(/_/g, ' ');
+  var abc = [
+    "X: 0",
+    "L:1/8",
+    "M:4/4",
+    "T: " + song.metaText.title + " (comping - " + rhythmLabel + ")",
+    "K: " + keyStr,
+    bars.join("|")
+  ];
+  return abc.join("\n");
+
+  function noteToAbcStr(note) {
+    var cOrHigher = note.charCodeAt(0) >= 'C'.charCodeAt(0);
+    var abcNote = Tonal.AbcNotation.scientificToAbcNotation(note + "4");
+    var startIdx = (abcNote.charAt(0).toUpperCase() !== note.charAt(0).toUpperCase()) && notesWithAccidentals.includes(note.charAt(0)) ? 1 : 0;
+    abcNote = abcNote.substring(startIdx);
+    return cOrHigher ? abcNote.toLowerCase() : abcNote;
+  }
+
+  function chordToAbcStr(chord) {
+    var validNotes = chord.filter(function(n) { return n && n.length > 0; });
+    if (validNotes.length === 0) { return "z"; }
+    return "[" + validNotes.map(noteToAbcStr).join("") + "]";
+  }
+
+  function applyRhythmFull(chordStr) {
+    // Full bar: 8 eighth-note slots in 4/4
+    switch (rhythm) {
+      case 'four_feel':          return chordStr+"2 "+chordStr+"2 "+chordStr+"2 "+chordStr+"2";
+      case 'two_feel':           return chordStr+"4 z4";
+      case 'charleston':         return chordStr+"2 z"+chordStr+" z4";
+      case 'reverse_charleston': return "z"+chordStr+" z2 "+chordStr+"2 z2";
+      case 'stop_time':          return chordStr+"2 z6";
+      default:                   return chordStr+"2 "+chordStr+"2 "+chordStr+"2 "+chordStr+"2";
+    }
+  }
+
+  function applyRhythmHalf(chordStr) {
+    // Half bar: 4 eighth-note slots (2 beats)
+    switch (rhythm) {
+      case 'four_feel':          return chordStr+"2 "+chordStr+"2";
+      case 'two_feel':           return chordStr+"2 z2";
+      case 'charleston':         return chordStr+"2 z"+chordStr;
+      case 'reverse_charleston': return "z"+chordStr+" "+chordStr+"2";
+      case 'stop_time':          return chordStr+"2 z2";
+      default:                   return chordStr+"2 "+chordStr+"2";
+    }
+  }
+
+  function buildCompingBar(chordsInBar) {
+    var numChords = chordsInBar.length;
+    if (numChords === 1) {
+      return applyRhythmFull(chordToAbcStr(chordsInBar[0]));
+    } else if (numChords === 2) {
+      return applyRhythmHalf(chordToAbcStr(chordsInBar[0])) + " " + applyRhythmHalf(chordToAbcStr(chordsInBar[1]));
+    } else {
+      return chordsInBar.map(function(c) { return chordToAbcStr(c) + "2"; }).join(" ");
+    }
+  }
+
+  function getChordNotesForComping(chords) {
+    var chordNotes = [];
+    var lastChord = "%";
+    for (var bar = 0; bar < chords.length; bar++) {
+      var currentBar = [];
+      for (var chordIdx = 0; chordIdx < chords[bar].text.length; chordIdx++) {
+        var chord = chords[bar].text[chordIdx].toString();
+        if (chord.trim() === "%") { chord = lastChord; }
+        chord = chord.split("/")[0];
+        chord = chord.replace("♭", "b").replace("♯", "#").replace("Ø", "dim");
+        lastChord = chord;
+        currentBar.push(Tonal.Chord.get(chord).notes);
+      }
+      chordNotes.push(currentBar);
+    }
+    return chordNotes;
+  }
+
+  function optimizeNotesForComping(chordNotes) {
+    var sorted = [[chordNotes[0].pop()]];
+
+    for (var bar = 0; bar < chordNotes.length; bar++) {
+      var currentBar = [];
+      for (var idx = 0; idx < chordNotes[bar].length; idx++) {
+        var prevChord = sorted[sorted.length - 1].slice(-1)[0];
+        var unsortedChord = chordNotes[bar][idx];
+        // Ensure at least 3 notes, pad with first note if needed
+        while (unsortedChord.length < 3) { unsortedChord.push(unsortedChord[0]); }
+        while (prevChord.length < 3) { prevChord.push(prevChord[0]); }
+
+        var intervalsRoot = [], intervalsSecond = [], intervalsThird = [];
+        for (var note = 0; note < 3; note++) {
+          intervalsRoot[note]   = compingInterval(prevChord[0], unsortedChord[note]);
+          intervalsSecond[note] = compingInterval(prevChord[1], unsortedChord[note]);
+          intervalsThird[note]  = compingInterval(prevChord[2], unsortedChord[note]);
+        }
+
+        var intervalList = intervalsRoot.concat(intervalsSecond).concat(intervalsThird);
+        var rootIdx = 0, secondIdx = 1, thirdIdx = 2;
+
+        for (var points = 0; points < 3; points++) {
+          var minInterval = Math.min.apply(Math, intervalList);
+          var intervalIndex = intervalList.indexOf(minInterval);
+          if (intervalIndex < 3) {
+            rootIdx = intervalIndex;
+            intervalList.fill(100, 0, 3);
+          } else if (intervalIndex < 6) {
+            secondIdx = intervalIndex - 3;
+            intervalList.fill(100, 3, 6);
+          } else {
+            thirdIdx = intervalIndex - 6;
+            intervalList.fill(100, 6, 9);
+          }
+          intervalList[intervalIndex % 3] = 100;
+          intervalList[(intervalIndex % 3) + 3] = 100;
+          intervalList[(intervalIndex % 3) + 6] = 100;
+        }
+
+        currentBar.push([unsortedChord[rootIdx], unsortedChord[secondIdx], unsortedChord[thirdIdx]]);
+      }
+      if (currentBar.length > 0) { sorted.push(currentBar); }
+    }
+    return sorted;
+  }
+
+  function compingInterval(a, b) {
+    var up   = Tonal.Interval.semitones(Tonal.Interval.distance(a, b));
+    var down = Tonal.Interval.semitones(Tonal.Interval.distance(b, a));
+    return Math.min(up, down);
+  }
 }
 
 function generate_riffs(chords, song) {
@@ -744,6 +899,7 @@ function parseQueryString(queryString) {
 
 function loadSongs() {
   createInstrumentDropdown();
+  createCompingDropdown();
   readFile("index_of_songs.txt", createAllDropdowns);
 
   if (window.location.hash) {
@@ -776,6 +932,36 @@ function createInstrumentDropdown() {
     var option = document.createElement("OPTION");
     option.innerHTML = instruments[i].toUpperCase();
     option.value = instruments[i].toLowerCase().replace(" ", "_");
+    select.appendChild(option);
+  }
+
+  var abc_menu = document.getElementById("sheetmenu");
+  abc_menu.appendChild(div);
+}
+
+function createCompingDropdown() {
+  var div = document.createElement("DIV");
+  div.classList.add("dropdown");
+
+  var select = document.createElement("SELECT");
+  select.classList.add("dropbtn");
+  select.id = "comping";
+  select.onchange = rerenderFile;
+  div.appendChild(select);
+
+  var rhythms = [
+    { label: "Comping: Off",          value: "none" },
+    { label: "Four-Feel",             value: "four_feel" },
+    { label: "Two-Feel",              value: "two_feel" },
+    { label: "Charleston",            value: "charleston" },
+    { label: "Reverse Charleston",    value: "reverse_charleston" },
+    { label: "Stop-Time",             value: "stop_time" }
+  ];
+
+  for (var i = 0; i < rhythms.length; i++) {
+    var option = document.createElement("OPTION");
+    option.innerHTML = rhythms[i].label.toUpperCase();
+    option.value = rhythms[i].value;
     select.appendChild(option);
   }
 
