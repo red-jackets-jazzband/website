@@ -683,6 +683,8 @@ var audioParams = {
   program: 56  // Trumpet (GM)
 };
 
+var lastHighlighted = [];
+
 // Cursor control callbacks for ABCJS SynthController
 var cursorControl = {
   onStart: function() {
@@ -692,12 +694,15 @@ var cursorControl = {
     if (!ev || !ev.elements) return;
     clearNoteHighlight();
 
-    // Highlight the notes at current position
+    // Highlight the notes at current position and cache them
+    var newHighlighted = [];
     for (var i = 0; i < ev.elements.length; i++) {
       for (var j = 0; j < ev.elements[i].length; j++) {
         ev.elements[i][j].classList.add("abcjs-current-note");
+        newHighlighted.push(ev.elements[i][j]);
       }
     }
+    lastHighlighted = newHighlighted;
   },
   onFinished: function() {
     audioPlayer.isPlaying = false;
@@ -708,10 +713,10 @@ var cursorControl = {
 };
 
 function clearNoteHighlight() {
-  var notes = document.querySelectorAll(".abcjs-current-note");
-  for (var i = 0; i < notes.length; i++) {
-    notes[i].classList.remove("abcjs-current-note");
+  for (var i = 0; i < lastHighlighted.length; i++) {
+    lastHighlighted[i].classList.remove("abcjs-current-note");
   }
+  lastHighlighted = [];
 }
 
 function updatePlayButton() {
