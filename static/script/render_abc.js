@@ -754,7 +754,13 @@ function playPause() {
 
 function stopAudio() {
   if (!audioPlayer.synthController) return;
-  audioPlayer.synthController.stop();
+  // SynthController has no stop() — pause() is what actually silences the
+  // AudioBufferSourceNode. Then seek the underlying buffer back to position 0.
+  audioPlayer.synthController.pause();
+  var midiBuffer = audioPlayer.synthController.midiBuffer;
+  if (midiBuffer && typeof midiBuffer.seek === "function") {
+    midiBuffer.seek(0);
+  }
   audioPlayer.isPlaying = false;
   updatePlayButton();
   clearNoteHighlight();
@@ -766,10 +772,11 @@ function initAudioForTune(visualObj) {
     return;
   }
 
-  // Stop and discard any existing controller so the old tune's audio buffer
-  // is fully released before we create a fresh one for the new tune.
+  // Silence and discard the existing controller before loading a new tune.
+  // pause() is used because SynthController has no stop() — pause() is the
+  // call that actually stops the underlying AudioBufferSourceNode.
   if (audioPlayer.synthController) {
-    try { audioPlayer.synthController.stop(); } catch(e) {}
+    try { audioPlayer.synthController.pause(); } catch(e) {}
     audioPlayer.synthController = null;
   }
   audioPlayer.isPlaying = false;
