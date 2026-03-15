@@ -861,17 +861,13 @@ function buildTimingMap(visualObj) {
 
 /*
   seekToMs: Seek playback to a given millisecond offset.
-  Accesses the underlying midiBuffer (CreateSynth) from SynthController.
 */
 function seekToMs(ms) {
   var sc = audioPlayer.synthController;
   if (!sc || audioPlayer.totalMs <= 0) return;
   var fraction = Math.max(0, Math.min(1, ms / audioPlayer.totalMs));
-  // ABCJS SynthController stores the CreateSynth instance as midiBuffer
-  var midiBuffer = sc.midiBuffer || sc.synth || sc._synth;
-  if (midiBuffer && typeof midiBuffer.seek === "function") {
-    midiBuffer.seek(fraction);
-    // seek() internally pauses; resume if we were playing
+  if (typeof sc.seek === "function") {
+    sc.seek(fraction);
     if (audioPlayer.isPlaying && typeof sc.play === "function") {
       sc.play();
     }
