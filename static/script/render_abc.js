@@ -771,12 +771,15 @@ function stopAudio() {
   // Re-call setTune() on the existing controller to fully reset its internal
   // state (midiBuffer + timingCallbacks) back to position 0. The soundfont
   // buffers are already decoded in the AudioContext so this is fast.
-  audioPlayer.synthController.setTune(audioPlayer.currentVisualObj, false, audioParams)
+  var ctrl = audioPlayer.synthController;
+  ctrl.setTune(audioPlayer.currentVisualObj, false, audioParams)
     .then(function() {
+      if (ctrl !== audioPlayer.synthController) return;
       setPlayerButtonsDisabled(false);
     })
     .catch(function(err) {
       console.warn("Stop reset failed:", err);
+      if (ctrl !== audioPlayer.synthController) return;
       setPlayerButtonsDisabled(false);
     });
 }
@@ -816,13 +819,16 @@ function initAudioForTune(visualObj) {
     displayWarp: false
   });
 
-  audioPlayer.synthController.setTune(visualObj, false, audioParams)
+  var ctrl = audioPlayer.synthController;
+  ctrl.setTune(visualObj, false, audioParams)
     .then(function() {
+      if (ctrl !== audioPlayer.synthController) return;
       setAudioLoadingVisible(false);
       setPlayerButtonsDisabled(false);
     })
     .catch(function(err) {
       console.warn("Audio could not load:", err);
+      if (ctrl !== audioPlayer.synthController) return;
       setAudioLoadingVisible(false);
     });
 }
