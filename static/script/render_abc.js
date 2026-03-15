@@ -674,7 +674,13 @@ function createLetterDropDown(letter, songs) {
 var audioPlayer = {
   synthController: null,
   isPlaying: false,
-  totalMs: 0
+  totalMs: 0,
+  currentVisualObj: null
+};
+
+var audioParams = {
+  soundFontUrl: "https://gleitz.github.io/midi-js-soundfonts/MusyngKite/",
+  program: 56  // Trumpet (GM)
 };
 
 // Cursor control callbacks for ABCJS SynthController
@@ -753,37 +759,26 @@ function playPause() {
 }
 
 function stopAudio() {
-  if (!audioPlayer.synthController) return;
-  var sc = audioPlayer.synthController;
+  if (!audioPlayer.synthController || !audioPlayer.currentVisualObj) return;
 
-  // Silence the audio
-  sc.pause();
-
-  // Reset the audio buffer position to the start
-  var midiBuffer = sc.midiBuffer;
-  if (midiBuffer && typeof midiBuffer.seek === "function") {
-    midiBuffer.seek(0);
-  }
-
-  // Reset the timing callbacks event index so note highlighting stays in
-  // sync when playback is resumed. pause() leaves the index mid-song;
-  // reset()/stop() bring it back to event 0.
-  var tc = sc.timingCallbacks;
-  if (tc) {
-    if (typeof tc.reset === "function") {
-      tc.reset();
-    } else if (typeof tc.stop === "function") {
-      tc.stop();
-    }
-    // Direct index reset as a fallback for any ABCJS version
-    if (tc.currentEvent !== undefined) {
-      tc.currentEvent = 0;
-    }
-  }
-
+  // Silence immediately
+  try { audioPlayer.synthController.pause(); } catch(e) {}
   audioPlayer.isPlaying = false;
   updatePlayButton();
   clearNoteHighlight();
+  setPlayerButtonsDisabled(true);
+
+  // Re-call setTune() on the existing controller to fully reset its internal
+  // state (midiBuffer + timingCallbacks) back to position 0. The soundfont
+  // buffers are already decoded in the AudioContext so this is fast.
+  audioPlayer.synthController.setTune(audioPlayer.currentVisualObj, false, audioParams)
+    .then(function() {
+      setPlayerButtonsDisabled(false);
+    })
+    .catch(function(err) {
+      console.warn("Stop reset failed:", err);
+      setPlayerButtonsDisabled(false);
+    });
 }
 
 function initAudioForTune(visualObj) {
@@ -792,22 +787,21 @@ function initAudioForTune(visualObj) {
     return;
   }
 
-  // Silence and discard the existing controller before loading a new tune.
-  // pause() is used because SynthController has no stop() — pause() is the
-  // call that actually stops the underlying AudioBufferSourceNode.
+  // Silence and discard the existing controller before loading a new tune
   if (audioPlayer.synthController) {
     try { audioPlayer.synthController.pause(); } catch(e) {}
     audioPlayer.synthController = null;
   }
   audioPlayer.isPlaying = false;
   audioPlayer.totalMs = 0;
+  audioPlayer.currentVisualObj = visualObj;
   updatePlayButton();
   setPlayerButtonsDisabled(true);
   setAudioLoadingVisible(true);
 
-  // Show the player panel
-  var playerDiv = document.getElementById("audioPlayer");
-  if (playerDiv) playerDiv.style.display = "";
+  // Show the inline player controls
+  var controls = document.getElementById("audioControls");
+  if (controls) controls.style.display = "";
 
   // Pre-compute note-to-time map for click-to-seek
   buildTimingMap(visualObj);
@@ -821,12 +815,6 @@ function initAudioForTune(visualObj) {
     displayProgress: false,
     displayWarp: false
   });
-
-  // MusyngKite is a high-quality free SoundFont (trumpet = GM program 56)
-  var audioParams = {
-    soundFontUrl: "https://gleitz.github.io/midi-js-soundfonts/MusyngKite/",
-    program: 56
-  };
 
   audioPlayer.synthController.setTune(visualObj, false, audioParams)
     .then(function() {
