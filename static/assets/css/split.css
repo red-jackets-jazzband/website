@@ -761,11 +761,6 @@ video.video {
   fill: #e29d0f !important;
 }
 
-/* Playback cursor line */
-.abcjs-cursor-line {
-  pointer-events: none;
-}
-
 /* Make notes clickable */
 #notation svg g[class*="abcjs-note"],
 #notation svg g[class*="abcjs-bar"] {
