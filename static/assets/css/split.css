@@ -688,3 +688,91 @@ video.video {
   background-color: #e29d0f;
   color: black;
 }
+
+/* ============================================================
+   Audio Player
+   ============================================================ */
+.audio-player {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 16px;
+  background-color: #1a1a1a;
+  border-bottom: 1px solid #2a2a2a;
+  font-family: "Montserrat", sans-serif;
+}
+
+.audio-btn {
+  background-color: transparent;
+  color: #e29d0f;
+  border: 2px solid #e29d0f;
+  border-radius: 50%;
+  width: 38px;
+  height: 38px;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.audio-btn:hover:not(:disabled) {
+  background-color: #e29d0f;
+  color: #000;
+}
+
+.audio-btn.playing {
+  border-color: #c88800;
+  color: #c88800;
+}
+
+.audio-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  border-color: #444;
+  color: #444;
+}
+
+.audio-info {
+  color: #555;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.audio-loading {
+  color: #888;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  display: none;
+}
+
+.audio-loading.visible {
+  display: inline;
+}
+
+/* Current note highlight during playback */
+.abcjs-current-note path,
+.abcjs-current-note ellipse,
+.abcjs-current-note polygon,
+.abcjs-current-note rect {
+  fill: #e29d0f !important;
+}
+
+/* Playback cursor line */
+.abcjs-cursor-line {
+  pointer-events: none;
+}
+
+/* Make notes clickable */
+#notation svg g[class*="abcjs-note"],
+#notation svg g[class*="abcjs-bar"] {
+  cursor: pointer;
+}
+
+#notation svg g[class*="abcjs-note"]:hover path,
+#notation svg g[class*="abcjs-note"]:hover ellipse {
+  fill: #c88800 !important;
+}

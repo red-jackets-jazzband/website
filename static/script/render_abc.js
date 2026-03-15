@@ -130,7 +130,7 @@ function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, titlePref
     }
   };
 
-  ABCJS.renderAbc(notationElt, text, abcParams);
+  var visualObjs = ABCJS.renderAbc(notationElt, text, abcParams);
 
   /* Hide title below chord table */
   document
@@ -146,6 +146,12 @@ function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, titlePref
   /* Add own title, above chordTable */
   var songtitle = document.getElementById(songTitleElt);
   songtitle.innerHTML = titlePrefix.concat(song.metaText.title);
+
+  /* Initialize audio player for the main songs page */
+  if (notationElt === "notation" && visualObjs && visualObjs.length > 0) {
+    initAudioForTune(visualObjs[0]);
+    setupNotationClickHandler();
+  }
 }
 
 /*
@@ -659,4 +665,263 @@ function createLetterDropDown(letter, songs) {
 
   var abc_menu = document.getElementById("abc_menu");
   abc_menu.appendChild(div);
+}
+
+// ============================================================
+// Audio Playback
+// ============================================================
+
+var audioPlayer = {
+  synthController: null,
+  isPlaying: false,
+  totalMs: 0
+};
+
+// Cursor control callbacks for ABCJS SynthController
+var cursorControl = {
+  onStart: function() {
+    clearPlaybackCursor();
+    clearNoteHighlight();
+  },
+  onEvent: function(ev) {
+    if (!ev || !ev.elements) return;
+    clearPlaybackCursor();
+    clearNoteHighlight();
+
+    // Highlight the notes at current position
+    for (var i = 0; i < ev.elements.length; i++) {
+      for (var j = 0; j < ev.elements[i].length; j++) {
+        ev.elements[i][j].classList.add("abcjs-current-note");
+      }
+    }
+
+    // Draw vertical cursor line through the current note
+    var firstEl = ev.elements[0] && ev.elements[0][0];
+    if (firstEl) {
+      var svg = firstEl;
+      while (svg && svg.tagName.toLowerCase() !== "svg") {
+        svg = svg.parentElement;
+      }
+      if (svg) {
+        try {
+          var bbox = firstEl.getBBox();
+          var svgH = (svg.viewBox && svg.viewBox.baseVal && svg.viewBox.baseVal.height) ||
+                     parseFloat(svg.getAttribute("height")) || 10000;
+          var line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+          var cx = bbox.x + bbox.width / 2;
+          line.setAttribute("x1", cx);
+          line.setAttribute("x2", cx);
+          line.setAttribute("y1", 0);
+          line.setAttribute("y2", svgH);
+          line.setAttribute("class", "abcjs-cursor-line");
+          line.setAttribute("stroke", "#e29d0f");
+          line.setAttribute("stroke-width", "1.5");
+          line.setAttribute("opacity", "0.8");
+          svg.appendChild(line);
+        } catch(e) {}
+      }
+    }
+  },
+  onFinished: function() {
+    audioPlayer.isPlaying = false;
+    updatePlayButton();
+    clearPlaybackCursor();
+    clearNoteHighlight();
+  },
+  onBeat: function() {}
+};
+
+function clearPlaybackCursor() {
+  var lines = document.querySelectorAll(".abcjs-cursor-line");
+  for (var i = 0; i < lines.length; i++) {
+    if (lines[i].parentNode) {
+      lines[i].parentNode.removeChild(lines[i]);
+    }
+  }
+}
+
+function clearNoteHighlight() {
+  var notes = document.querySelectorAll(".abcjs-current-note");
+  for (var i = 0; i < notes.length; i++) {
+    notes[i].classList.remove("abcjs-current-note");
+  }
+}
+
+function updatePlayButton() {
+  var btn = document.getElementById("playPauseBtn");
+  if (!btn) return;
+  if (audioPlayer.isPlaying) {
+    btn.innerHTML = "&#9646;&#9646;";
+    btn.title = "Pause";
+    btn.classList.add("playing");
+  } else {
+    btn.innerHTML = "&#9654;";
+    btn.title = "Play";
+    btn.classList.remove("playing");
+  }
+}
+
+function setPlayerButtonsDisabled(disabled) {
+  var playBtn = document.getElementById("playPauseBtn");
+  var stopBtn = document.getElementById("stopBtn");
+  if (playBtn) playBtn.disabled = disabled;
+  if (stopBtn) stopBtn.disabled = disabled;
+}
+
+function setAudioLoadingVisible(visible) {
+  var label = document.getElementById("audioLoadingLabel");
+  if (label) {
+    if (visible) {
+      label.classList.add("visible");
+    } else {
+      label.classList.remove("visible");
+    }
+  }
+}
+
+function playPause() {
+  if (!audioPlayer.synthController) return;
+  if (audioPlayer.isPlaying) {
+    audioPlayer.synthController.pause();
+    audioPlayer.isPlaying = false;
+  } else {
+    audioPlayer.synthController.play();
+    audioPlayer.isPlaying = true;
+  }
+  updatePlayButton();
+}
+
+function stopAudio() {
+  if (!audioPlayer.synthController) return;
+  audioPlayer.synthController.stop();
+  audioPlayer.isPlaying = false;
+  updatePlayButton();
+  clearPlaybackCursor();
+  clearNoteHighlight();
+}
+
+function initAudioForTune(visualObj) {
+  if (!ABCJS.synth || typeof ABCJS.synth.supportsAudio !== "function" ||
+      !ABCJS.synth.supportsAudio()) {
+    return;
+  }
+
+  // Reset state
+  if (audioPlayer.isPlaying) {
+    try { audioPlayer.synthController.stop(); } catch(e) {}
+  }
+  audioPlayer.isPlaying = false;
+  audioPlayer.totalMs = 0;
+  updatePlayButton();
+  setPlayerButtonsDisabled(true);
+  setAudioLoadingVisible(true);
+
+  // Show the player panel
+  var playerDiv = document.getElementById("audioPlayer");
+  if (playerDiv) playerDiv.style.display = "";
+
+  // Pre-compute note-to-time map for click-to-seek
+  buildTimingMap(visualObj);
+
+  // Create SynthController once and reuse
+  if (!audioPlayer.synthController) {
+    audioPlayer.synthController = new ABCJS.synth.SynthController();
+    audioPlayer.synthController.load("#abc-player-container", cursorControl, {
+      displayLoop: false,
+      displayRestart: false,
+      displayPlay: false,
+      displayProgress: false,
+      displayWarp: false
+    });
+  }
+
+  // MusyngKite is a high-quality free SoundFont (trumpet = GM program 56)
+  var audioParams = {
+    soundFontUrl: "https://gleitz.github.io/midi-js-soundfonts/MusyngKite/",
+    program: 56
+  };
+
+  audioPlayer.synthController.setTune(visualObj, false, audioParams)
+    .then(function() {
+      setAudioLoadingVisible(false);
+      setPlayerButtonsDisabled(false);
+    })
+    .catch(function(err) {
+      console.warn("Audio could not load:", err);
+      setAudioLoadingVisible(false);
+    });
+}
+
+/*
+  buildTimingMap: Use ABCJS.TimingCallbacks to pre-compute the time (ms) for
+  every note element in the SVG, stored as el._abcSeekMs. Also records the
+  total song duration for fraction-based seeking.
+*/
+function buildTimingMap(visualObj) {
+  if (typeof ABCJS.TimingCallbacks !== "function") return;
+  try {
+    var tc = new ABCJS.TimingCallbacks(visualObj, {
+      eventCallback: function() { return true; },
+      beatCallback: function() { return true; }
+    });
+    var timings = tc.noteTimings || [];
+    var maxMs = 0;
+    for (var i = 0; i < timings.length; i++) {
+      var t = timings[i];
+      if (t.type === "event" && t.elements && t.milliseconds !== undefined) {
+        if (t.milliseconds > maxMs) maxMs = t.milliseconds;
+        for (var v = 0; v < t.elements.length; v++) {
+          for (var e = 0; e < t.elements[v].length; e++) {
+            t.elements[v][e]._abcSeekMs = t.milliseconds;
+          }
+        }
+      }
+    }
+    // Add a small buffer so the final note isn't at fraction=1 immediately
+    audioPlayer.totalMs = maxMs + 500;
+  } catch(e) {
+    console.warn("buildTimingMap error:", e);
+  }
+}
+
+/*
+  seekToMs: Seek playback to a given millisecond offset.
+  Accesses the underlying midiBuffer (CreateSynth) from SynthController.
+*/
+function seekToMs(ms) {
+  var sc = audioPlayer.synthController;
+  if (!sc || audioPlayer.totalMs <= 0) return;
+  var fraction = Math.max(0, Math.min(1, ms / audioPlayer.totalMs));
+  // ABCJS SynthController stores the CreateSynth instance as midiBuffer
+  var midiBuffer = sc.midiBuffer || sc.synth || sc._synth;
+  if (midiBuffer && typeof midiBuffer.seek === "function") {
+    midiBuffer.seek(fraction);
+    // seek() internally pauses; resume if we were playing
+    if (audioPlayer.isPlaying && typeof sc.play === "function") {
+      sc.play();
+    }
+  }
+}
+
+/*
+  handleNotationClick: Walk up the DOM from the clicked element to find the
+  nearest element tagged with _abcSeekMs and seek to that position.
+*/
+function handleNotationClick(e) {
+  var notation = document.getElementById("notation");
+  var el = e.target;
+  while (el && el !== notation) {
+    if (el._abcSeekMs !== undefined) {
+      seekToMs(el._abcSeekMs);
+      return;
+    }
+    el = el.parentElement;
+  }
+}
+
+function setupNotationClickHandler() {
+  var notation = document.getElementById("notation");
+  if (!notation || notation._abcClickHandlerSet) return;
+  notation._abcClickHandlerSet = true;
+  notation.addEventListener("click", handleNotationClick);
 }
