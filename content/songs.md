@@ -20,6 +20,14 @@ date: 2019-03-16T16:26:50+01:00
 Transpose (halfsteps)
 <input type="number" id="transpose" name="quantity" value="0" min="-12" max="12" oninput="rerenderFile()">
 </div>
+<div id="audioPlayer" class="audio-player hideOnprint" style="display:none;">
+  <button id="playPauseBtn" class="audio-btn" disabled onclick="playPause()" title="Play">&#9654;</button>
+  <button id="stopBtn" class="audio-btn" disabled onclick="stopAudio()" title="Stop">&#9632;</button>
+  <span class="audio-info">Trumpet</span>
+  <span class="audio-loading" id="audioLoadingLabel">Loading...</span>
+</div>
+<div id="abc-player-container" style="display:none;"></div>
+
 <div id="songtitle" class="songtitle"></div>
 <div id="chordtable" class="chordtable"></div>
 <div id="notation" class="notation"></div>
