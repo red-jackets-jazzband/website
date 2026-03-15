@@ -680,12 +680,10 @@ var audioPlayer = {
 // Cursor control callbacks for ABCJS SynthController
 var cursorControl = {
   onStart: function() {
-    clearPlaybackCursor();
     clearNoteHighlight();
   },
   onEvent: function(ev) {
     if (!ev || !ev.elements) return;
-    clearPlaybackCursor();
     clearNoteHighlight();
 
     // Highlight the notes at current position
@@ -694,51 +692,14 @@ var cursorControl = {
         ev.elements[i][j].classList.add("abcjs-current-note");
       }
     }
-
-    // Draw vertical cursor line through the current note
-    var firstEl = ev.elements[0] && ev.elements[0][0];
-    if (firstEl) {
-      var svg = firstEl;
-      while (svg && svg.tagName.toLowerCase() !== "svg") {
-        svg = svg.parentElement;
-      }
-      if (svg) {
-        try {
-          var bbox = firstEl.getBBox();
-          var svgH = (svg.viewBox && svg.viewBox.baseVal && svg.viewBox.baseVal.height) ||
-                     parseFloat(svg.getAttribute("height")) || 10000;
-          var line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-          var cx = bbox.x + bbox.width / 2;
-          line.setAttribute("x1", cx);
-          line.setAttribute("x2", cx);
-          line.setAttribute("y1", 0);
-          line.setAttribute("y2", svgH);
-          line.setAttribute("class", "abcjs-cursor-line");
-          line.setAttribute("stroke", "#e29d0f");
-          line.setAttribute("stroke-width", "1.5");
-          line.setAttribute("opacity", "0.8");
-          svg.appendChild(line);
-        } catch(e) {}
-      }
-    }
   },
   onFinished: function() {
     audioPlayer.isPlaying = false;
     updatePlayButton();
-    clearPlaybackCursor();
     clearNoteHighlight();
   },
   onBeat: function() {}
 };
-
-function clearPlaybackCursor() {
-  var lines = document.querySelectorAll(".abcjs-cursor-line");
-  for (var i = 0; i < lines.length; i++) {
-    if (lines[i].parentNode) {
-      lines[i].parentNode.removeChild(lines[i]);
-    }
-  }
-}
 
 function clearNoteHighlight() {
   var notes = document.querySelectorAll(".abcjs-current-note");
@@ -796,7 +757,6 @@ function stopAudio() {
   audioPlayer.synthController.stop();
   audioPlayer.isPlaying = false;
   updatePlayButton();
-  clearPlaybackCursor();
   clearNoteHighlight();
 }
 
@@ -806,8 +766,8 @@ function initAudioForTune(visualObj) {
     return;
   }
 
-  // Reset state
-  if (audioPlayer.isPlaying) {
+  // Reset state — always stop any current playback before loading a new tune
+  if (audioPlayer.synthController) {
     try { audioPlayer.synthController.stop(); } catch(e) {}
   }
   audioPlayer.isPlaying = false;
