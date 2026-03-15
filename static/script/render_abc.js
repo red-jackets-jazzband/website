@@ -754,13 +754,33 @@ function playPause() {
 
 function stopAudio() {
   if (!audioPlayer.synthController) return;
-  // SynthController has no stop() — pause() is what actually silences the
-  // AudioBufferSourceNode. Then seek the underlying buffer back to position 0.
-  audioPlayer.synthController.pause();
-  var midiBuffer = audioPlayer.synthController.midiBuffer;
+  var sc = audioPlayer.synthController;
+
+  // Silence the audio
+  sc.pause();
+
+  // Reset the audio buffer position to the start
+  var midiBuffer = sc.midiBuffer;
   if (midiBuffer && typeof midiBuffer.seek === "function") {
     midiBuffer.seek(0);
   }
+
+  // Reset the timing callbacks event index so note highlighting stays in
+  // sync when playback is resumed. pause() leaves the index mid-song;
+  // reset()/stop() bring it back to event 0.
+  var tc = sc.timingCallbacks;
+  if (tc) {
+    if (typeof tc.reset === "function") {
+      tc.reset();
+    } else if (typeof tc.stop === "function") {
+      tc.stop();
+    }
+    // Direct index reset as a fallback for any ABCJS version
+    if (tc.currentEvent !== undefined) {
+      tc.currentEvent = 0;
+    }
+  }
+
   audioPlayer.isPlaying = false;
   updatePlayButton();
   clearNoteHighlight();
