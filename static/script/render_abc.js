@@ -766,9 +766,11 @@ function initAudioForTune(visualObj) {
     return;
   }
 
-  // Reset state — always stop any current playback before loading a new tune
+  // Stop and discard any existing controller so the old tune's audio buffer
+  // is fully released before we create a fresh one for the new tune.
   if (audioPlayer.synthController) {
     try { audioPlayer.synthController.stop(); } catch(e) {}
+    audioPlayer.synthController = null;
   }
   audioPlayer.isPlaying = false;
   audioPlayer.totalMs = 0;
@@ -783,17 +785,15 @@ function initAudioForTune(visualObj) {
   // Pre-compute note-to-time map for click-to-seek
   buildTimingMap(visualObj);
 
-  // Create SynthController once and reuse
-  if (!audioPlayer.synthController) {
-    audioPlayer.synthController = new ABCJS.synth.SynthController();
-    audioPlayer.synthController.load("#abc-player-container", cursorControl, {
-      displayLoop: false,
-      displayRestart: false,
-      displayPlay: false,
-      displayProgress: false,
-      displayWarp: false
-    });
-  }
+  // Fresh SynthController for every new tune
+  audioPlayer.synthController = new ABCJS.synth.SynthController();
+  audioPlayer.synthController.load("#abc-player-container", cursorControl, {
+    displayLoop: false,
+    displayRestart: false,
+    displayPlay: false,
+    displayProgress: false,
+    displayWarp: false
+  });
 
   // MusyngKite is a high-quality free SoundFont (trumpet = GM program 56)
   var audioParams = {
