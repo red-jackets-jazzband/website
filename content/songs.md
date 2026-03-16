@@ -20,8 +20,8 @@ date: 2019-03-16T16:26:50+01:00
 Transpose
 <input type="number" id="transpose" name="quantity" value="0" min="-12" max="12" oninput="rerenderFile()">
 <span id="audioControls" style="display:none;">|
-<button id="playPauseBtn" class="audio-btn-inline" disabled onclick="playPause()" title="Play">&#9654;</button>
-<button id="stopBtn" class="audio-btn-inline" disabled onclick="stopAudio()" title="Stop">&#9632;</button>
+<button id="playPauseBtn" class="audio-btn-inline" disabled onclick="playPause()" title="Play"><i class="fa-solid fa-play"></i></button>
+<button id="stopBtn" class="audio-btn-inline" disabled onclick="stopAudio()" title="Stop"><i class="fa-solid fa-stop"></i></button>
 <span class="audio-loading" id="audioLoadingLabel">...</span>
 </span> | 
 </div>
