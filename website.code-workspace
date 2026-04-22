@@ -1,0 +1,22 @@
+{
+    "folders": [
+        {
+            "path": "."
+        }
+    ],
+    "settings": {
+        "spellright.language": [
+            "en_US"
+        ],
+        "spellright.documentTypes": [
+            "latex",
+            "plaintext",
+            "markdown"
+        ]
+    },
+    "extensions": {
+        "recommendations": [
+            "softaware.abc-music"
+        ]
+    }
+}
