@@ -1,5 +1,5 @@
 baseURL = "https://www.redjackets.nl/"
-languageCode = "en-us"
+locale = "en-us"
 title = "Red Jackets Jazzband"
 theme = "split"
 disableKinds = ["section", "taxonomy", "RSS"]

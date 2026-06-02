@@ -1,0 +1,11 @@
+diff --git a/layouts/_default/baseof.html b/layouts/_default/baseof.html
+index b734a0c..1aa9b54 100644
+--- a/layouts/_default/baseof.html
++++ b/layouts/_default/baseof.html
+@@ -1,5 +1,5 @@
+ <!DOCTYPE html>
+-<html lang="{{ default .Site.LanguageCode "en-US" }}">
++<html lang="{{ default .Site.Language.Locale "en-US" }}">
+ 
+ <head>
+   {{ partial "head" . }}

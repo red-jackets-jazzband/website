@@ -2,9 +2,9 @@
 # For more info see https://dfetch.rtfd.io/en/latest/getting_started.html
 dfetch:
   branch: master
-  hash: 01d2505a748bc64320fe4620f2118d94
-  last_fetch: 01/11/2025, 15:14:22
-  patch: ''
+  hash: 015824dd54c5a22580989efcd07a9347
+  last_fetch: 02/06/2026, 21:42:17
+  patch: patches/themes-split.patch
   remote_url: https://github.com/escalate/hugo-split-theme.git
   revision: fabd3dd8c3a3f27c398ff6451fe9adbc3323518d
   tag: ''
