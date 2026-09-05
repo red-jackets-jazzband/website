@@ -8,6 +8,19 @@ Description: Split is a centrally-divided layout for a professional online prese
 /* -- CSS Reset -- */
 @import url("https://fonts.googleapis.com/css?family=Montserrat:400,600");
 @import url("https://fonts.googleapis.com/css?family=Lora");
+@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap");
+
+/*
+  Design tokens: names for the colors already in use throughout this file
+  (no value changes here). New songs-page components introduced by the
+  redesign should reference these instead of repeating the hex values.
+*/
+:root {
+  --rj-ground: #1b1b1b;
+  --rj-gold: #e29d0f;
+  --rj-body: #848d96;
+  --rj-hover: #CA486d;
+}
 html, body, div, span, applet, object, iframe,
 h1, h2, h3, h4, h5, h6, p, blockquote, pre,
 a, abbr, acronym, address, big, cite, code,

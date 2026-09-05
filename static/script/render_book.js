@@ -1,5 +1,7 @@
 "use strict";
 
+import { createInstrumentDropdown, readFile, renderAbcFile, initPrintLink } from "./render_abc.js";
+
 function renderBook() {
   document.getElementById("songs").innerHTML = "";
   document.getElementById("bookIndexList").innerHTML = "";
@@ -66,3 +68,11 @@ function retrieveAndRenderSongForBook(song_path, notationElt, chordTableElt, son
   f.open("GET", song_path, true);
   f.send();
 }
+
+createInstrumentDropdown();
+initPrintLink();
+
+document.getElementById("printBookLink").addEventListener("click", function(e) {
+  e.preventDefault();
+  renderBook();
+});

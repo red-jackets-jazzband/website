@@ -1,61 +1,19 @@
 "use strict";
 
-var current_song = null;
-var transpose_halfsteps = 0;
+import { INSTRUMENTS, offsetForInstrument, changeClefForInstrument } from "./lib/instruments.js";
+import { parseChordScheme, simplifyBlues, simplifySong, computeChordOffset } from "./lib/chords.js";
+import { irealProFromAbc } from "./lib/irealpro.js";
 
-/* Fix for IE that does not implement forEach
-   see https://tips.tutorialhorizon.com/2017/01/06/object-doesnt-support-property-or-method-foreach/
-*/
-(function() {
-  if (typeof NodeList.prototype.forEach === "function") return false;
-  NodeList.prototype.forEach = Array.prototype.forEach;
-})();
-
-function renderSong(path) {
+export function renderSong(path) {
   document.getElementById("transpose").value = 0;
   audioPlayer.melodOff = false;
   readFile(path, renderAbcFile);
 }
 
-function rerenderFile() {
+export function rerenderFile() {
   if (window.current_song !== undefined) {
     renderAbcFile(window.current_song);
   }
-}
-
-function change_cleff_for_instrument(instrument, text) {
-  switch (instrument) {
-    case "sousaphone":
-    case "trombone":
-      text = text.replace(/(K:\s*\w+)/g, "$1 clef=bass middle=D");
-      break;
-    default:
-      text = text.replace(/clef=bass\ middle=D/g, "");
-      break;
-  }
-
-  return text;
-}
-
-function offset_for_instrument(instrument) {
-  var steps = 0;
-
-  switch (instrument) {
-    case "alto_saxophone":
-      steps = 9;
-      break;
-    case "tenor_saxophone":
-    case "sousaphone":
-    case "trumpet":
-    case "clarinet_bb":
-      steps = 2;
-      break;
-    default:
-      steps = 0;
-      break;
-  }
-
-  return steps;
 }
 
 /*
@@ -93,7 +51,7 @@ function stylePartMarkers(containerId) {
    Parameters:
        text - String containing (valid) abc file
 */
-function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, titlePrefix, add_link) {
+export function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, titlePrefix, add_link) {
 
   notationElt = (typeof notationElt !== 'undefined') ?  notationElt : "notation";
   chordTableElt = (typeof chordTableElt !== 'undefined') ?  chordTableElt : "chordtable";
@@ -113,13 +71,13 @@ function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, titlePref
   const hasInstrumentVoices = text.match(/^V:\d+.*(clef=|transpose=|name=)/gm);
 
   if (!hasInstrumentVoices) {
-    text = change_cleff_for_instrument(instrumentSelect.value, text);
-    transpose_steps += offset_for_instrument(instrumentSelect.value);
+    text = changeClefForInstrument(instrumentSelect.value, text);
+    transpose_steps += offsetForInstrument(instrumentSelect.value);
   }
 
   window.current_song = text;
   var song = string_to_abc_tune(text, transpose_steps);
-  var chords = parse_chord_scheme(song);
+  var chords = parseChordScheme(song);
   var displayChords = (instrumentSelect.value === 'concert_+_roman')
     ? convertChordsToRoman(chords, song)
     : chords;
@@ -214,7 +172,7 @@ function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, titlePref
        file - Path to file to read
        callback - Function to call with data if loaded succesfully
 */
-function readFile(file, callback) {
+export function readFile(file, callback) {
   var f = new XMLHttpRequest();
   f.onreadystatechange = function() {
     if (f.readyState === 4) {
@@ -265,206 +223,6 @@ function closeDropdowns() {
 function string_to_abc_tune(text, transpose_steps) {
   var tunes = ABCJS.parseOnly(text, { visualTranspose: transpose_steps });
   return tunes[0];
-}
-
-/*
-   Funcion: replace_accidental_with_utf8_char
-   Replaces the sharp and flat signs with the official unicode chars
-   Parameters:
-       note - A string containing # or b signs
-   Returns:
-       note - with the b and # replaced
-*/
-function replace_accidental_with_utf8_char(note) {
-  return note.replace("b ", "♭").replace("#", "♯").replace("dim", "Ø");
-}
-
-/*
-   Funcion: parse_chord_scheme
-   Reads the chords from the song in abcjs intermediate format into a list per measure with the chords
-   Returns:
-       chords - A list of lists with the chords per measure
-*/
-function parse_chord_scheme(song) {
-  var chords = [];
-  var current_measure = {};
-  current_measure.text = [];
-
-  var parsed_valid_chord = false;
-  var did_not_parse_chord_in_this_measure = true;
-  var in_alternative_ending = false;
-  var note_or_rest_in_measure = false;
-
-  for (var i = 0; i < song.lines.length; i += 1) {
-
-    // Subtitle is added to song.lines, don't break when line has no staff
-    if (song.lines[i].staff !== undefined) {
-      var line = song.lines[i].staff[0].voices[0];
-
-      for (var line_idx = 0; line_idx < line.length; line_idx += 1) {
-        var element = line[line_idx];
-
-        if (element.el_type === "note") {
-          note_or_rest_in_measure = true;
-        }
-
-        if (element.el_type === "bar") {
-          if (element.type === "bar_left_repeat") {
-            current_measure.leftRepeat = true;
-          }
-          else if (element.type === "bar_right_repeat") {
-            current_measure.rightRepeat = true;
-          }
-          else if (element.type === "bar_thin_thin") {
-            if (note_or_rest_in_measure && parsed_valid_chord) {
-              current_measure.doubeThinBarRight = true;
-            } else {
-              current_measure.doubeThinBarLeft = true;
-            }
-          }
-
-          if (element.startEnding !== undefined) {
-            if (element.startEnding > 1) {
-              in_alternative_ending = true;
-            }
-          } else {
-            if (element.endEnding !== undefined && in_alternative_ending) {
-              in_alternative_ending = false;
-            }
-          }
-
-          if (!in_alternative_ending) {
-            if (did_not_parse_chord_in_this_measure &&
-                parsed_valid_chord &&
-                note_or_rest_in_measure) {
-              current_measure.text.push(" % ");
-            }
-
-            if (current_measure.text.length > 0) {
-              current_measure.text = current_measure.text.slice(0);
-
-              chords.push(current_measure);
-              current_measure = {};
-              current_measure.text = [];
-              note_or_rest_in_measure = false;
-            }
-
-            did_not_parse_chord_in_this_measure = true;
-          }
-        }
-
-        if (!in_alternative_ending) {
-          var validChord = /^[A-Ga-g]([#♯b♭])?(maj|m|min|dim|aug|sus|add)?(Ø)?(\d)?([#♯b♭])?(\d)?(\/[A-Ga-g]([#♯b♭])?(\d)?)?$/;
-
-          if (element.chord !== undefined && validChord.test(element.chord[0].name)) {
-            var chord = replace_accidental_with_utf8_char(element.chord[0].name);
-            current_measure.text.push(chord);
-            did_not_parse_chord_in_this_measure = false;
-            parsed_valid_chord = true;
-          }
-        }
-      }
-    }
-  }
-
-  // Prevent returning only % % % % % ....
-  if (!parsed_valid_chord) {
-    chords = [];
-  }
-  return chords;
-}
-
-
-/*
-   Funcion: simplify_blues
-   Checks if it is a 12-bar blues scheme, if so, check if all chords are repeated, and just return the 12-bar blues.
-   Returns:
-       chords - A list of lists with the chords per measure
-*/
-function simplify_blues(chords) {
-  return simplify_song(chords, 12)
-}
-
-/*
-   Funcion: simplify_song
-   Checks if it is a count-bar scheme, if so, check if all chords are repeated, and just return the 12-bar blues.
-   Returns:
-       chords - A list of lists with the chords per measure
-*/
-function simplify_song(chords, count) {
-
-  if (chords.length === 0 || chords.length % count !== 0) {
-    return chords;
-  }
-
-  var repeats = chords.length / count;
-
-  // Check each measure in the blues
-  for (var i = 0; i < count; i++) {
-    var first = chords[i].text;
-
-    for (var r = 1; r < repeats; r++) {
-      var second = chords[i + count * r].text;
-
-      // Are there the same amount of chords in the measure?
-      if (first.length != second.length) {
-        return chords;
-      }
-
-      for (var c = 0; c < first.length; c++) {
-        if (first[c] !== second[c]) {
-          return chords;
-        }
-      }
-    }
-  }
-
-  // Its a scheme that repeats! Dump any bars or repeats
-  for (var c = 0; c < count; c++) {
-    if (chords[c].leftRepeat !== undefined) {
-      delete chords[c].leftRepeat;
-    }
-    if (chords[c].rightRepeat !== undefined) {
-      delete chords[c].rightRepeat;
-    }
-    if (chords[c].doubeThinBarLeft !== undefined) {
-      delete chords[c].doubeThinBarLeft;
-    }
-    if (chords[c].doubeThinBarRight !== undefined) {
-      delete chords[c].doubeThinBarRight;
-    }
-  }
-
-  return chords.slice(0, count);
-}
-
-/*
-  computeChordOffset: count how many measures precede the first chord annotation.
-  Used to align _abcMeasureIdx (which counts from measure 0 including intros)
-  with chord table cell indices (which start at the first chord measure).
-*/
-function computeChordOffset(song) {
-  if (!song.lines) return 0;
-  var validChord = /^[A-Ga-g]([#♯b♭])?(maj|m|min|dim|aug|sus|add)?(Ø)?(\d)?([#♯b♭])?(\d)?(\/[A-Ga-g]([#♯b♭])?(\d)?)?$/;
-  var measureCount = 0;
-  var hasNotesInMeasure = false;
-  for (var i = 0; i < song.lines.length; i++) {
-    var line = song.lines[i];
-    if (!line.staff || !line.staff[0] || !line.staff[0].voices) continue;
-    var voice = line.staff[0].voices[0] || [];
-    for (var j = 0; j < voice.length; j++) {
-      var el = voice[j];
-      if (el.chord && el.chord.length > 0 && validChord.test(el.chord[0].name)) {
-        return measureCount;
-      }
-      if (el.el_type === 'note') hasNotesInMeasure = true;
-      if (el.el_type === 'bar') {
-        if (hasNotesInMeasure) measureCount++;
-        hasNotesInMeasure = false;
-      }
-    }
-  }
-  return 0;
 }
 
 // ============================================================
@@ -581,8 +339,8 @@ function create_chord_table(chords, chordtable) {
   var table = document.createElement("TABLE");
   table.border = "1";
 
-  chords = simplify_blues(chords);
-  chords = simplify_song(chords, 8);
+  chords = simplifyBlues(chords);
+  chords = simplifySong(chords, 8);
 
   var cols = 4;
   if (chords.length > 4 * 4) {
@@ -684,70 +442,6 @@ function add_irealpro_link(song, chords) {
 }
 
 /*
-   Funcion: irealProFromAbc
-   Creates an irealpro compatible link from ABC
-*/
-function irealProFromAbc(song, chords) {
-
-  var key = song.lines[0].staff[0].key.root + song.lines[0].staff[0].key.acc;
-  var num = song.lines[0].staff[0].meter.value[0].num;
-  var denom = song.lines[0].staff[0].meter.value[0].den;
-
-
-  var title = song.metaText.title;
-  var composer = (song.metaText.composer !== undefined) ? song.metaText.composer : "Unknown";
-  var style = "Second Line";
-
-  var irealProHeader = title + '=' + composer + '=' + style + '=' + key + '=n=T' + num + denom;
-  var irealProText = '';
-  for (var i = 0; i < chords.length; i++) {
-
-    if (chords[i].leftRepeat !== undefined) {
-      irealProText += '{';
-    }
-    else if (chords[i].doubeThinBarLeft !== undefined) {
-      irealProText += '[';
-    }
-    else if (i == 0)
-    {
-      irealProText += '|';
-    }
-
-    var cell = chords[i].text.toString().replace(/,/g, ' ,');
-    var spaceCount = ((cell || '').match(/\ /g) || []).length;
-    irealProText += cell;
-
-    switch(spaceCount) {
-      case 0:
-        irealProText += "   ";
-        break;
-      case 1:
-        irealProText += " ";
-        break;
-      default:
-        break;
-    }
-
-    if (chords[i].rightRepeat !== undefined) {
-      irealProText += '}';
-    }
-    else if (chords[i].doubeThinBarRight !== undefined) {
-      irealProText += 'ZY|';
-    }
-    else
-    {
-      irealProText += '|';
-    }
-
-  }
-
-  irealProText = irealProText.replace(/Ø/g, 'h').replace(/m/g, '-').replace(/%/g, 'x ').replace(/♭/g, "b").replace(/♯/g, "#").replace(/\|$/,"Z");
-
-  return 'irealbook://' + encodeURIComponent(irealProHeader) + encodeURIComponent(irealProText);
-}
-
-
-/*
    Funcion: parse_song_from_hash
    Parse which song os the currently selected song and render that (usefull for sharing)
    Returns:
@@ -775,8 +469,11 @@ function parseQueryString(queryString) {
   return params;
 }
 
-function loadSongs() {
+export function loadSongs() {
   createInstrumentDropdown();
+  document.getElementById("instrument").addEventListener("change", rerenderFile);
+  initPrintLink();
+  initSheetControls();
   readFile("index_of_songs.txt", createAllDropdowns);
 
   if (window.location.hash) {
@@ -784,7 +481,42 @@ function loadSongs() {
   }
 }
 
-function createInstrumentDropdown() {
+/*
+   Funcion: initPrintLink
+   Wires up the (shared) #printLink to window.print(), used on both the
+   songs page and the songbook page.
+*/
+export function initPrintLink() {
+  var link = document.getElementById("printLink");
+  if (link) {
+    link.addEventListener("click", function(e) {
+      e.preventDefault();
+      window.print();
+    });
+  }
+}
+
+/*
+   Funcion: initSheetControls
+   Wires up the songs-page-only sheet controls (transpose input, audio
+   buttons) that used to carry inline onclick/oninput attributes. Not
+   called on the songbook page, which has none of these elements.
+*/
+function initSheetControls() {
+  var transpose = document.getElementById("transpose");
+  if (transpose) transpose.addEventListener("input", rerenderFile);
+
+  var playBtn = document.getElementById("playPauseBtn");
+  if (playBtn) playBtn.addEventListener("click", playPause);
+
+  var stopBtn = document.getElementById("stopBtn");
+  if (stopBtn) stopBtn.addEventListener("click", stopAudio);
+
+  var melodyBtn = document.getElementById("melodyOffBtn");
+  if (melodyBtn) melodyBtn.addEventListener("click", toggleMelody);
+}
+
+export function createInstrumentDropdown() {
   var div = document.createElement("DIV");
   div.classList.add("dropdown");
 
@@ -792,26 +524,14 @@ function createInstrumentDropdown() {
   select.classList.add("dropbtn");
   select.innerText = "Instrument";
   select.id = "instrument";
-  select.onchange = rerenderFile;
   div.appendChild(select);
 
-  var instruments = [
-    "Concert pitch",
-    "Concert + Roman",
-    "Alto Saxophone",
-    "Clarinet Bb",
-    "Sousaphone",
-    "Tenor Saxophone",
-    "Trombone",
-    "Trumpet"
-  ];
-  var i;
-  for (i = 0; i < instruments.length; i++) {
+  INSTRUMENTS.forEach(function(instrument) {
     var option = document.createElement("OPTION");
-    option.innerHTML = instruments[i].toUpperCase();
-    option.value = instruments[i].toLowerCase().replace(/ /g, '_');
+    option.innerHTML = instrument.label.toUpperCase();
+    option.value = instrument.value;
     select.appendChild(option);
-  }
+  });
 
   var abc_menu = document.getElementById("sheetmenu");
   abc_menu.appendChild(div);
@@ -1194,3 +914,12 @@ function setupNotationClickHandler() {
   notation._abcClickHandlerSet = true;
   notation.addEventListener("click", handleNotationClick);
 }
+
+// TEMPORARY: create_song_link_text() generates raw onclick="renderSong(...)"
+// / onclick="closeDropdowns()" markup for the letter-dropdown song list.
+// Inline event handler attributes always run in the global scope, even
+// though this file is now an ES module, so these two need an explicit
+// window assignment for now. Milestone 3 replaces the letter-dropdown list
+// with addEventListener-based rendering and removes this.
+window.renderSong = renderSong;
+window.closeDropdowns = closeDropdowns;
