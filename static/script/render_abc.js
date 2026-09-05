@@ -366,7 +366,7 @@ export function loadSongs() {
 /*
    Funcion: initPrintLink
    Wires up the (shared) #printLink to window.print(), used on both the
-   songs page and the songbook page.
+   songs page and the setlists page.
 */
 export function initPrintLink() {
   var link = document.getElementById("printLink");
@@ -382,7 +382,7 @@ export function initPrintLink() {
    Funcion: initSheetControls
    Wires up the songs-page-only sheet controls (transpose input, audio
    buttons) that used to carry inline onclick/oninput attributes. Not
-   called on the songbook page, which has none of these elements.
+   called on the setlists page, which has none of these elements.
 */
 function initSheetControls() {
   var transpose = document.getElementById("transpose");
@@ -461,7 +461,7 @@ function closeOverflowMenu() {
 
 /*
    Instrument profile persistence (localStorage). Shared by the songs page
-   and the songbook page: whichever instrument you last picked on either
+   and the setlists page: whichever instrument you last picked on either
    page is what both preselect next time. Guarded with try/catch so private
    browsing / disabled storage degrades to today's no-persistence behavior
    instead of throwing.
@@ -510,7 +510,7 @@ export function createInstrumentDropdown() {
   });
 
   // The songs page has an overflow menu for the instrument picker; the
-  // songbook page (no overflow menu) still appends it straight to #sheetmenu.
+  // setlists page (no overflow menu) still appends it straight to #sheetmenu.
   var menu = document.getElementById("overflowMenu") || document.getElementById("sheetmenu");
   menu.appendChild(div);
 }

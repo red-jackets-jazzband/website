@@ -104,8 +104,8 @@ copyright = "&copy;2019 Red Jackets Jazzband"
         url = "/songs"
 
       [[params.links.list3.link]]
-        text = "Songbook"
-        url = "/songbook"
+        text = "Setlists"
+        url = "/setlists"
 
   # The original template is released under the Creative Commons Attribution 3.0 License.
   # Please keep the original attribution link when using for your own project.
