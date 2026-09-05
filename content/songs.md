@@ -17,7 +17,7 @@ date: 2019-03-16T16:26:50+01:00
     });
 </script>
 
-<div class="rj-songs-layout">
+<div class="rj-songs-layout" data-default-tab="library">
 
 <div id="rjLibrary" class="rj-library hideOnprint">
   <div class="rj-library-masthead">
@@ -30,9 +30,38 @@ date: 2019-03-16T16:26:50+01:00
       </div>
     </div>
   </div>
-  <div class="rj-library-search">
+  <div class="rj-library-tabs" id="libraryTabs">
+    <button type="button" class="rj-library-tab" data-tab="library">Library</button>
+    <button type="button" class="rj-library-tab" data-tab="setlists">Setlists</button>
+  </div>
+
+  <div class="rj-library-search" id="librarySearchRow">
     <input type="search" id="songSearch" placeholder="Search lead sheets" autocomplete="off" aria-label="Search lead sheets" />
   </div>
+
+  <div class="rj-library-setlist-tools" id="setlistTools" hidden>
+    <button type="button" class="rj-library-tool-btn rj-library-back-btn" id="setlistsBackBtn" hidden>&larr; All setlists</button>
+    <div class="rj-library-new-setlist" id="newSetlistRow">
+      <input type="text" id="newSetlistName" placeholder="New setlist name" autocomplete="off">
+      <button type="button" id="newSetlistBtn" class="rj-library-tool-btn">+ Create</button>
+      <label class="rj-library-tool-btn rj-library-import-label">
+        Import&hellip;
+        <input type="file" id="importSetlistInput" accept=".txt" hidden>
+      </label>
+    </div>
+    <div class="rj-library-open-setlist" id="openSetlistTools" hidden>
+      <input type="text" id="setlistNameInput" class="rj-library-name-input" hidden>
+      <button type="button" id="setlistPrintBtn" class="rj-library-tool-btn">Print booklet</button>
+      <button type="button" id="setlistCopyBtn" class="rj-library-tool-btn" hidden>Copy to mine</button>
+      <button type="button" id="setlistExportBtn" class="rj-library-tool-btn" hidden>Export</button>
+      <button type="button" id="setlistDeleteBtn" class="rj-library-tool-btn rj-library-tool-danger" hidden>Delete</button>
+    </div>
+    <div class="rj-library-add-song" id="addSongRow" hidden>
+      <input type="search" id="setlistAddSongSearch" placeholder="Add a song&hellip;" autocomplete="off">
+      <div id="setlistAddSongResults" class="rj-library-add-song-results"></div>
+    </div>
+  </div>
+
   <div class="rj-library-body">
     <div class="rj-library-list" id="songList"></div>
     <div class="rj-library-rail" id="songRail"></div>
@@ -124,3 +153,4 @@ Retrieved from www.redjackets.nl - <span id="instrumentText"></span>
   </div>
 </div>
 <div id="exportBooklet" class="hideOnScreen"></div>
+<div id="setlistPrintBooklet" class="hideOnScreen"></div>
