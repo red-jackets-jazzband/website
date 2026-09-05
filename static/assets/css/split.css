@@ -1027,13 +1027,11 @@ video.video {
   elsewhere in this file for #rjLibrary.rj-library and #setlistEditor.
 */
 #setlistTools[hidden],
-#newSetlistRow[hidden],
 #openSetlistTools[hidden],
 #addSongRow[hidden],
 #setlistsBackBtn[hidden],
 #setlistNameInput[hidden],
 #setlistPrintBtn[hidden],
-#setlistCopyBtn[hidden],
 #setlistExportBtn[hidden],
 #setlistDeleteBtn[hidden] {
   display: none;
@@ -1078,8 +1076,43 @@ video.video {
   border-color: #a8442f;
   color: #ca486d;
 }
+/* Icon-only variant, used by the new-setlist / import row in the Yours list. */
+.rj-library-tool-icon {
+  flex: none;
+  width: 36px;
+  padding: 0;
+  font-size: 12px;
+}
 .rj-library-import-label input[type="file"] {
   display: none;
+}
+
+/*
+  The new-setlist row sits at the foot of the Yours list inside the scrolling
+  #songList, not in the top toolbar — set it off from the setlist rows above.
+*/
+.rj-library-list .rj-library-new-setlist {
+  padding: 12px 4px 4px;
+  margin-top: 4px;
+  border-top: 1px solid rgba(255,255,255,.06);
+}
+/* Name takes the first line on its own; "start from" + the two icons share
+   the second line. */
+.rj-library-list .rj-library-new-setlist input[type="text"] {
+  flex-basis: 100%;
+}
+.rj-library-new-setlist-from {
+  flex: 1;
+  min-width: 110px;
+  height: 36px;
+  box-sizing: border-box;
+  padding: 0 8px;
+  background: #262626;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 7px;
+  color: #dedcd8;
+  font: 500 12px "Montserrat", sans-serif;
+  cursor: pointer;
 }
 .rj-library-add-song-results {
   flex-basis: 100%;
@@ -1131,18 +1164,12 @@ video.video {
 .setlist-row:hover .setlist-row-main {
   color: var(--rj-hover);
 }
-.setlist-row-copy {
+.setlist-row-meta {
   flex: none;
+  align-self: center;
   padding: 0 10px;
-  background: none;
-  border: none;
-  border-left: 1px solid rgba(255,255,255,.1);
-  color: rgba(236,234,230,.5);
+  color: rgba(236,234,230,.4);
   font: 600 10.5px "Montserrat", sans-serif;
-  cursor: pointer;
-}
-.setlist-row-copy:hover {
-  color: var(--rj-gold);
 }
 .song-list-item.setlist-song-row {
   display: flex;
@@ -1405,6 +1432,11 @@ body:has(#rjLibrary) .split-bio {
   scrollbar, which read as a stray slider wedged between the letters and the
   sheet. Spreading them out means there's never anything to scroll.
 */
+/* display:flex below beats the UA [hidden] rule, so the Setlists tab's
+   `railEl.hidden = true` never took effect — spell the hidden case out. */
+.rj-library-rail[hidden] {
+  display: none;
+}
 .rj-library-rail {
   flex: none;
   width: 22px;

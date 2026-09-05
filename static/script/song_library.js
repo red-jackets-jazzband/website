@@ -22,6 +22,7 @@ import {
 var allSongs = []; // [{ name, file }] from index_of_songs.txt, shared by both tabs
 var allSongsLoaded = false;
 var setlistIndex = []; // [{ name, file }] from index_of_setlists.txt
+var bandSetlistCache = {}; // file -> parsed setlist, so a re-render doesn't refetch
 
 var activeTab = "library"; // "library" | "setlists"
 var setlistsView = "home"; // "home" | "open"
@@ -228,14 +229,10 @@ function showSetlistsHome() {
   currentPersonalId = null;
   currentOpenSongs = null;
 
-  var backBtn = document.getElementById("setlistsBackBtn");
-  var newRow = document.getElementById("newSetlistRow");
-  var openTools = document.getElementById("openSetlistTools");
-  var addRow = document.getElementById("addSongRow");
-  if (backBtn) backBtn.hidden = true;
-  if (newRow) newRow.hidden = false;
-  if (openTools) openTools.hidden = true;
-  if (addRow) addRow.hidden = true;
+  // Home view has no top toolbar — "new setlist" and "import" live as a row
+  // at the bottom of the Yours list (see buildNewSetlistRow).
+  var setlistTools = document.getElementById("setlistTools");
+  if (setlistTools) setlistTools.hidden = true;
 
   renderSetlistsHome();
 }
@@ -271,6 +268,132 @@ function renderSetlistsHome() {
       listEl.appendChild(buildPersonalSetlistRow(entry));
     });
   }
+  listEl.appendChild(buildNewSetlistRow());
+}
+
+/*
+   A fill-in-the-blank row at the foot of the Yours list: a name field plus
+   an icon to create it and an icon to import a .txt. There's no persistent
+   "new setlist name" box in a toolbar — a name is only needed at the moment
+   you make one.
+*/
+function buildNewSetlistRow() {
+  var row = document.createElement("DIV");
+  row.className = "rj-library-new-setlist";
+
+  var nameInput = document.createElement("INPUT");
+  nameInput.type = "text";
+  nameInput.placeholder = "New setlist name";
+  nameInput.autocomplete = "off";
+  row.appendChild(nameInput);
+
+  // "Start from existing" — seed the new (always personal, always editable)
+  // setlist with another one's songs. This replaces the old per-row
+  // "Copy to mine" button on band setlists.
+  var fromSelect = document.createElement("SELECT");
+  fromSelect.className = "rj-library-new-setlist-from";
+  fromSelect.setAttribute("aria-label", "Start from an existing setlist");
+  var blankOpt = document.createElement("OPTION");
+  blankOpt.value = "";
+  blankOpt.textContent = "Start from scratch";
+  fromSelect.appendChild(blankOpt);
+  if (setlistIndex.length) {
+    var bandGroup = document.createElement("OPTGROUP");
+    bandGroup.label = "From the band";
+    setlistIndex.forEach(function(entry) {
+      var opt = document.createElement("OPTION");
+      opt.value = "band:" + entry.file;
+      opt.textContent = entry.name;
+      bandGroup.appendChild(opt);
+    });
+    fromSelect.appendChild(bandGroup);
+  }
+  var mine = listPersonalSetlists(storage());
+  if (mine.length) {
+    var mineGroup = document.createElement("OPTGROUP");
+    mineGroup.label = "Yours";
+    mine.forEach(function(entry) {
+      var opt = document.createElement("OPTION");
+      opt.value = "mine:" + entry.id;
+      opt.textContent = entry.name;
+      mineGroup.appendChild(opt);
+    });
+    fromSelect.appendChild(mineGroup);
+  }
+  row.appendChild(fromSelect);
+
+  function openNew(entry) {
+    nameInput.value = "";
+    fromSelect.value = "";
+    openPersonalSetlist(entry.id);
+  }
+
+  function create() {
+    var name = (nameInput.value || "").trim();
+    var source = fromSelect.value;
+
+    if (!source) {
+      openNew(createPersonalSetlist(storage(), name || "New setlist"));
+      return;
+    }
+    if (source.indexOf("mine:") === 0) {
+      var src = getPersonalSetlist(storage(), source.slice(5));
+      if (!src) return;
+      openNew(copyBandSetlistToPersonal(storage(), {
+        name: name || (src.name + " copy"),
+        desc: src.desc,
+        songs: src.songs,
+      }));
+      return;
+    }
+    var file = source.slice(5); // "band:"
+    loadBandSetlist(file, function(parsed) {
+      openNew(copyBandSetlistToPersonal(storage(), {
+        name: name || parsed.name || file.replace(/\.txt$/i, ""),
+        desc: parsed.desc,
+        songs: parsed.songs,
+      }));
+    });
+  }
+
+  var createBtn = document.createElement("BUTTON");
+  createBtn.type = "button";
+  createBtn.className = "rj-library-tool-btn rj-library-tool-icon";
+  createBtn.title = "Create setlist";
+  createBtn.setAttribute("aria-label", "Create setlist");
+  createBtn.innerHTML = '<span class="fa-solid fa-plus" aria-hidden="true"></span>';
+  createBtn.addEventListener("click", create);
+  row.appendChild(createBtn);
+
+  nameInput.addEventListener("keydown", function(e) {
+    if (e.key === "Enter") { e.preventDefault(); create(); }
+  });
+
+  var importLabel = document.createElement("LABEL");
+  importLabel.className = "rj-library-tool-btn rj-library-tool-icon rj-library-import-label";
+  importLabel.title = "Import a setlist .txt file";
+  importLabel.setAttribute("aria-label", "Import a setlist .txt file");
+  importLabel.innerHTML = '<span class="fa-solid fa-file-import" aria-hidden="true"></span>';
+
+  var importInput = document.createElement("INPUT");
+  importInput.type = "file";
+  importInput.accept = ".txt";
+  importInput.hidden = true;
+  importInput.addEventListener("change", function() {
+    var file = importInput.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function() {
+      importPersonalSetlistText(storage(), String(reader.result), file.name.replace(/\.txt$/i, ""));
+      importInput.value = "";
+      renderSetlistsHome();
+    };
+    reader.readAsText(file);
+  });
+  importLabel.appendChild(importInput);
+  row.appendChild(importLabel);
+
+  return row;
 }
 
 function buildEmptyRow(text) {
@@ -280,49 +403,58 @@ function buildEmptyRow(text) {
   return empty;
 }
 
-function buildBandSetlistRow(entry) {
+function songCountLabel(n) {
+  return n + (n === 1 ? " song" : " songs");
+}
+
+// Fetch + parse a band setlist .txt once, then serve it from an in-memory
+// cache — the home list asks for every band setlist's song count on each
+// render, and opening one asks again.
+function loadBandSetlist(file, onLoad, onError) {
+  if (bandSetlistCache[file]) {
+    onLoad(bandSetlistCache[file]);
+    return;
+  }
+  readFile("/setlists/" + file, function(text) {
+    var parsed = parseSetlistFile(text);
+    bandSetlistCache[file] = parsed;
+    onLoad(parsed);
+  }, onError);
+}
+
+function buildSetlistRow(title, count, onOpen) {
   var row = document.createElement("DIV");
   row.className = "song-list-item setlist-row";
 
   var main = document.createElement("BUTTON");
   main.type = "button";
   main.className = "setlist-row-main";
-  main.textContent = entry.name;
-  main.addEventListener("click", function() {
-    openBandSetlist(entry.file, entry.name);
-  });
+  main.textContent = title;
+  main.addEventListener("click", onOpen);
   row.appendChild(main);
 
-  var copyBtn = document.createElement("BUTTON");
-  copyBtn.type = "button";
-  copyBtn.className = "setlist-row-copy";
-  copyBtn.textContent = "Copy to mine";
-  copyBtn.addEventListener("click", function(e) {
-    e.stopPropagation();
-    readFile("/setlists/" + entry.file, function(text) {
-      var parsed = parseSetlistFile(text);
-      var copy = copyBandSetlistToPersonal(storage(), {
-        name: parsed.name || entry.name,
-        desc: parsed.desc,
-        songs: parsed.songs,
-      });
-      openPersonalSetlist(copy.id);
-    });
-  });
-  row.appendChild(copyBtn);
+  var meta = document.createElement("SPAN");
+  meta.className = "setlist-row-meta";
+  if (count != null) meta.textContent = songCountLabel(count);
+  row.appendChild(meta);
 
-  return row;
+  return { row: row, meta: meta };
+}
+
+function buildBandSetlistRow(entry) {
+  var built = buildSetlistRow(entry.name, null, function() {
+    openBandSetlist(entry.file, entry.name);
+  });
+  loadBandSetlist(entry.file, function(parsed) {
+    built.meta.textContent = songCountLabel(parsed.songs.length);
+  });
+  return built.row;
 }
 
 function buildPersonalSetlistRow(entry) {
-  var row = document.createElement("BUTTON");
-  row.type = "button";
-  row.className = "song-list-item setlist-row";
-  row.textContent = entry.name + " · " + entry.songs.length + (entry.songs.length === 1 ? " song" : " songs");
-  row.addEventListener("click", function() {
+  return buildSetlistRow(entry.name, entry.songs.length, function() {
     openPersonalSetlist(entry.id);
-  });
-  return row;
+  }).row;
 }
 
 // ============================================================
@@ -330,8 +462,7 @@ function buildPersonalSetlistRow(entry) {
 // ============================================================
 
 function openBandSetlist(file, fallbackName) {
-  readFile("/setlists/" + file, function(text) {
-    var setlist = parseSetlistFile(text);
+  loadBandSetlist(file, function(setlist) {
     currentPersonalId = null;
     renderOpenSetlist(setlist.name || fallbackName, setlist.songs, null, setlist.desc);
   }, function(status) {
@@ -362,17 +493,16 @@ function renderOpenSetlist(name, songs, personalEntry, desc) {
   setlistsView = "open";
   currentOpenSongs = songs;
 
+  var setlistTools = document.getElementById("setlistTools");
   var backBtn = document.getElementById("setlistsBackBtn");
-  var newRow = document.getElementById("newSetlistRow");
   var openTools = document.getElementById("openSetlistTools");
   var addRow = document.getElementById("addSongRow");
   var nameInput = document.getElementById("setlistNameInput");
-  var copyBtn = document.getElementById("setlistCopyBtn");
   var exportBtn = document.getElementById("setlistExportBtn");
   var deleteBtn = document.getElementById("setlistDeleteBtn");
 
+  if (setlistTools) setlistTools.hidden = false;
   if (backBtn) backBtn.hidden = false;
-  if (newRow) newRow.hidden = true;
   if (openTools) openTools.hidden = false;
   if (addRow) addRow.hidden = !personalEntry;
 
@@ -381,15 +511,8 @@ function renderOpenSetlist(name, songs, personalEntry, desc) {
     nameInput.hidden = !isPersonal;
     if (isPersonal && document.activeElement !== nameInput) nameInput.value = name;
   }
-  if (copyBtn) copyBtn.hidden = isPersonal;
   if (exportBtn) exportBtn.hidden = !isPersonal;
   if (deleteBtn) deleteBtn.hidden = !isPersonal;
-  if (copyBtn) {
-    copyBtn.onclick = function() {
-      var copy = copyBandSetlistToPersonal(storage(), { name: name, desc: desc, songs: songs });
-      openPersonalSetlist(copy.id);
-    };
-  }
 
   var listEl = document.getElementById("songList");
   listEl.innerHTML = "";
@@ -625,31 +748,8 @@ function initSetlistControls() {
   var backBtn = document.getElementById("setlistsBackBtn");
   if (backBtn) backBtn.addEventListener("click", showSetlistsHome);
 
-  var newBtn = document.getElementById("newSetlistBtn");
-  if (newBtn) {
-    newBtn.addEventListener("click", function() {
-      var nameInput = document.getElementById("newSetlistName");
-      var name = (nameInput.value || "").trim() || "New setlist";
-      var entry = createPersonalSetlist(storage(), name);
-      nameInput.value = "";
-      openPersonalSetlist(entry.id);
-    });
-  }
-
-  var importInput = document.getElementById("importSetlistInput");
-  if (importInput) {
-    importInput.addEventListener("change", function() {
-      var file = importInput.files[0];
-      if (!file) return;
-      var reader = new FileReader();
-      reader.onload = function() {
-        importPersonalSetlistText(storage(), String(reader.result), file.name.replace(/\.txt$/i, ""));
-        renderSetlistsHome();
-        importInput.value = "";
-      };
-      reader.readAsText(file);
-    });
-  }
+  // "New setlist" and "Import" are rendered per-view at the foot of the Yours
+  // list (buildNewSetlistRow), so their handlers are wired there, not here.
 
   var nameInput = document.getElementById("setlistNameInput");
   if (nameInput) {
