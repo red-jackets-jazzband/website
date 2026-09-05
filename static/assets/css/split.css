@@ -574,6 +574,13 @@ video.video {
 .sheet-icon-btn:hover:not(:disabled) {
   background: var(--rj-gold);
   color: #222222;
+  /*
+    Print / iRealPro are <a>s, and the theme's `a:hover { border: none }`
+    (specificity 0,1,1) otherwise beats `.sheet-icon-btn`'s 1px border on
+    hover only — the button loses its border and, being content-box, shrinks
+    2px, nudging the glyph. Re-declare the border here so geometry holds.
+  */
+  border: 1px solid rgba(255,255,255,.11);
 }
 .sheet-icon-btn.active {
   background: var(--rj-gold);
