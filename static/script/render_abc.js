@@ -440,7 +440,7 @@ function add_irealpro_link(song, chords) {
     link.href = url;
   } else {
     link = document.createElement("A");
-    link.innerHTML = '<i class="fa-solid fa-mobile-screen-button"></i>';
+    link.innerHTML = '<span class="fa-solid fa-mobile-screen-button" aria-hidden="true"></span>';
     link.href = url;
     link.id = "iRealPro";
     link.className = "sheet-icon-btn";
@@ -810,11 +810,11 @@ function updatePlayButton() {
   var btn = document.getElementById("playPauseBtn");
   if (!btn) return;
   if (audioPlayer.isPlaying) {
-    btn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+    btn.innerHTML = '<span class="fa-solid fa-pause" aria-hidden="true"></span>';
     btn.title = "Pause";
     btn.classList.add("playing");
   } else {
-    btn.innerHTML = '<i class="fa-solid fa-play"></i>';
+    btn.innerHTML = '<span class="fa-solid fa-play" aria-hidden="true"></span>';
     btn.title = "Play";
     btn.classList.remove("playing");
   }
@@ -834,12 +834,12 @@ function updateMelodyButton() {
   if (!btn) return;
   if (audioPlayer.melodOff) {
     btn.classList.add("active");
-    btn.innerHTML = '<i class="fa-solid fa-volume-xmark"></i>';
+    btn.innerHTML = '<span class="fa-solid fa-volume-xmark" aria-hidden="true"></span>';
     btn.title = "Unmute melody";
     btn.setAttribute("aria-label", "Unmute melody");
   } else {
     btn.classList.remove("active");
-    btn.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
+    btn.innerHTML = '<span class="fa-solid fa-volume-high" aria-hidden="true"></span>';
     btn.title = "Mute melody";
     btn.setAttribute("aria-label", "Mute melody");
   }
