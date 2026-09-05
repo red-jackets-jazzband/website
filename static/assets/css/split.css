@@ -707,6 +707,22 @@ video.video {
   color: #222222;
 }
 
+/*
+  iRealPro button carries the brand's circular wordmark (white on transparent)
+  instead of a Font Awesome glyph. It's dimmed to match the sibling icon glyphs
+  at rest, and on the gold hover fill it flips to solid black for contrast.
+*/
+#iRealPro .irealpro-logo {
+  display: block;
+  width: 20px;
+  height: 20px;
+  opacity: .72;
+}
+#iRealPro:hover:not(:disabled) .irealpro-logo {
+  opacity: 1;
+  filter: brightness(0);
+}
+
 /* ============================================================
    Inspiration picture-in-picture panel
    ============================================================ */
