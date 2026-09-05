@@ -434,17 +434,28 @@ video.video {
    url('/fonts/MuseJazzText.ttf') format('truetype'); /* Chrome 4+, Firefox 3.5, Opera 10+, Safari 3—5 */
 }
 
+/*
+  .rj-sheet-paper: the single white "sheet of paper" backing songtitle +
+  chordtable + notation + lyrics. Those four used to each carry their own
+  background-color:#fff, which left the dark page background showing through
+  as bands in the gaps between them — this rule is the fix, they now share
+  one continuous white surface.
+*/
+.rj-sheet-paper {
+  background-color: #ffffff;
+  color: #000000;
+  border-radius: 8px;
+  overflow: hidden;
+  padding: 12px 24px 24px;
+}
+
 .chordtable{
-    background-color:#ffffff;
-    color:#000000;
     font-family:'MuseJazzText';
     line-height: 40px;
     font-size: x-large;
 }
 
 .songtitle{
-    background-color:#ffffff;
-    color:#000000;
     font-family:'MuseJazzText';
     text-align: center;
     font-size: xx-large;
@@ -1006,16 +1017,6 @@ video.video {
   color: #eceae6;
   margin-bottom: 18px;
 }
-.notation {
-  background:#ffffff;
-  color: #000000;
-}
-
-.lyrics {
-  background: #ffffff;
-  color: #000000;
-}
-
 .printLogo {
   display: block;
   margin-left: auto;
