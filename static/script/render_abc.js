@@ -424,25 +424,30 @@ function initInspirationPanel() {
 
 /*
    Funcion: add_irealpro_link
-   Adds a link to the overflow menu for devices that could have irealpro
+   Adds an icon button to the sheet's action cluster that opens the chart in
+   iReal Pro (available on iOS, Android, macOS and Windows). Only shown for
+   tunes that actually have a chord scheme to hand over.
 */
 function add_irealpro_link(song, chords) {
 
-  var couldHaveIrealPro = /iPhone|iPad|iPod|Android|Macintosh/i.test(navigator.userAgent);
-  if (couldHaveIrealPro && (chords.length > 0)) {
-    var url = irealProFromAbc(song, chords);
-    var link = document.getElementById("iRealPro");
-    if (link !== null) {
-      link.href = url;
-    } else {
-      var link = document.createElement("A");
-      link.innerHTML = "irealpro";
-      link.href = url
-      /* link.target = "_blank"; */
-      link.id = "iRealPro";
-      var menu = document.getElementById("overflowMenu");
-      if (menu) menu.appendChild(link);
-    }
+  var link = document.getElementById("iRealPro");
+  if (chords.length === 0) {
+    if (link !== null) link.parentNode.removeChild(link);
+    return;
+  }
+  var url = irealProFromAbc(song, chords);
+  if (link !== null) {
+    link.href = url;
+  } else {
+    link = document.createElement("A");
+    link.innerHTML = '<i class="fa-solid fa-mobile-screen-button"></i>';
+    link.href = url;
+    link.id = "iRealPro";
+    link.className = "sheet-icon-btn";
+    link.title = "Open in iReal Pro";
+    link.setAttribute("aria-label", "Open in iReal Pro");
+    var actions = document.getElementById("sheetActions");
+    if (actions) actions.appendChild(link);
   }
 }
 
@@ -535,43 +540,6 @@ function initSheetControls() {
     });
   }
 
-  var overflowToggle = document.getElementById("overflowToggle");
-  if (overflowToggle) {
-    overflowToggle.addEventListener("click", function(e) {
-      e.stopPropagation();
-      toggleOverflowMenu();
-    });
-  }
-  document.addEventListener("click", function(e) {
-    var menu = document.getElementById("overflowMenu");
-    if (menu && !menu.hidden && !menu.contains(e.target) && e.target !== overflowToggle) {
-      closeOverflowMenu();
-    }
-  });
-}
-
-function toggleOverflowMenu() {
-  var menu = document.getElementById("overflowMenu");
-  if (!menu) return;
-  if (menu.hidden) {
-    openOverflowMenu();
-  } else {
-    closeOverflowMenu();
-  }
-}
-
-function openOverflowMenu() {
-  var menu = document.getElementById("overflowMenu");
-  var toggle = document.getElementById("overflowToggle");
-  if (menu) menu.hidden = false;
-  if (toggle) toggle.setAttribute("aria-expanded", "true");
-}
-
-function closeOverflowMenu() {
-  var menu = document.getElementById("overflowMenu");
-  var toggle = document.getElementById("overflowToggle");
-  if (menu) menu.hidden = true;
-  if (toggle) toggle.setAttribute("aria-expanded", "false");
 }
 
 /*
@@ -713,7 +681,6 @@ export function createInstrumentDropdown() {
   // next to Key/Tempo/Play, and it's now the thing you actually change,
   // not just a label reflecting a choice made elsewhere.
   var menu = document.getElementById("sheetStatus") ||
-    document.getElementById("overflowMenu") ||
     document.getElementById("sheetmenu");
   menu.appendChild(div);
 }

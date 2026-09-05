@@ -102,12 +102,11 @@ aliases: ["/setlists/", "/songbook/"]
 
   <span id="inspirationSlot"></span>
 
-  <button id="overflowToggle" class="sheet-overflow-toggle" type="button" title="More options" aria-haspopup="true" aria-expanded="false">More</button>
-  <div id="overflowMenu" class="sheet-overflow-menu" hidden>
-    <a id="printLink" class="overflow-action" title="Print this page" href="#">Print</a>
-    <button id="exportOpenBtn" type="button" class="overflow-action overflow-link-btn">Export&hellip;</button>
-    <span class="audio-loading" id="audioLoadingLabel">...</span>
+  <div class="sheet-actions" id="sheetActions">
+    <a id="printLink" class="sheet-icon-btn" href="#" title="Print this page" aria-label="Print this page"><i class="fa-solid fa-print"></i></a>
+    <button id="exportOpenBtn" class="sheet-icon-btn" type="button" title="Export&hellip;" aria-label="Export"><i class="fa-solid fa-file-export"></i></button>
   </div>
+  <span class="audio-loading" id="audioLoadingLabel">...</span>
 </div>
 <div id="abc-player-container" style="display:none;"></div>
 
