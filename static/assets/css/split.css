@@ -724,6 +724,65 @@ video.video {
     display: none !important;
   }
 }
+
+/* ============================================================
+   Setlists page
+   ============================================================ */
+.setlists-section-title {
+  font: 700 11px/1 "Montserrat", sans-serif;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--rj-gold);
+  margin: 24px 0 12px;
+}
+.setlists-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.setlists-row {
+  text-align: left;
+  padding: 16px 18px;
+  background: #1f1f1f;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 10px;
+  color: #dedcd8;
+  font: 600 14px "Montserrat", sans-serif;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.setlists-row:hover {
+  border-color: var(--rj-gold);
+  color: var(--rj-gold);
+}
+.setlists-empty {
+  font: 400 13px "Lora", serif;
+  font-style: italic;
+  color: rgba(236,234,230,.5);
+}
+/*
+  #setlistBackBtn.setlists-back (not just .setlists-back): also carries
+  .hideOnprint — see the #rjLibrary.rj-library comment above.
+*/
+#setlistBackBtn.setlists-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 16px;
+  padding: 8px 4px;
+  background: none;
+  border: none;
+  color: var(--rj-gold);
+  font: 600 12px/1 "Montserrat", sans-serif;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  cursor: pointer;
+}
+.setlist-view-title {
+  font: 700 22px/1.2 "Montserrat", sans-serif;
+  color: #eceae6;
+  margin-bottom: 18px;
+}
 .notation {
   background:#ffffff;
   color: #000000;
