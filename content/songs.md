@@ -63,10 +63,12 @@ date: 2019-03-16T16:26:50+01:00
 </div>
 <div id="abc-player-container" style="display:none;"></div>
 
+<div class="rj-sheet-paper">
 <div id="songtitle" class="songtitle"></div>
 <div id="chordtable" class="chordtable"></div>
 <div id="notation" class="notation"></div>
 <div id="lyrics" class="lyrics"></div>
+</div>
 
 <div id="songPrintFooter" class="songPrintFooter hideOnScreen">
 Retrieved from www.redjackets.nl - <span id="instrumentText"></span>
