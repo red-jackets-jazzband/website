@@ -28,8 +28,7 @@ export function renderSong(path) {
 */
 export function renderSongTextWithOverride(text, transposeSemitones) {
   document.getElementById("transpose").value = transposeSemitones || 0;
-  tempoPercent = 100;
-  updateTempoLabel();
+  tempoBpm = null;
   audioPlayer.melodOff = false;
   renderAbcFile(text);
 }
@@ -89,12 +88,22 @@ export function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, ti
 
   // Don't use valueAsNumber to let IE users also enjoy transposing
   transpose_steps = Number(transpose_steps) + extraTransposeSteps;
+  // The Key stepper (+ a setlist's key override) is a real request to hear
+  // the song in a different key, so it should shift the audio too — stash
+  // it before the instrument's own offset is folded in below, since that
+  // offset only exists to make the notation read correctly for whichever
+  // instrument is selected and must NOT change how the tune actually
+  // sounds (every instrument's audio plays back in the same concert pitch).
+  // Guarded to the main sheet's own render so a booklet/export pass over
+  // other songs never clobbers it for the song actually on screen.
+  if (notationElt === "notation") {
+    audioPlayer.transposeSemitones = transpose_steps;
+  }
   var instrumentSelect = document.getElementById("instrument");
   var instrumentTextEl = document.getElementById("instrumentText");
   if (instrumentTextEl) {
     instrumentTextEl.innerHTML = instrumentSelect.options[instrumentSelect.selectedIndex].text.toLowerCase();
   }
-  updateSheetStatusLine(instrumentSelect);
 
   // Check if there are voice definitions with instrument-related attributes
   const hasInstrumentVoices = text.match(/^V:\d+.*(clef=|transpose=|name=)/gm);
@@ -187,6 +196,7 @@ export function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, ti
   if (notationElt === "notation" && visualObjs && visualObjs.length > 0) {
     initAudioForTune(visualObjs[0]);
     setupNotationClickHandler();
+    updateTempoLabel();
   }
 
   // Move W: lyric SVGs out of notation so the printer can paginate between them
@@ -508,9 +518,9 @@ function initSheetControls() {
   if (keyDownBtn) keyDownBtn.addEventListener("click", function() { stepTranspose(-1); });
 
   var tempoUpBtn = document.getElementById("tempoUpBtn");
-  if (tempoUpBtn) tempoUpBtn.addEventListener("click", function() { stepTempo(10); });
+  if (tempoUpBtn) tempoUpBtn.addEventListener("click", function() { stepTempo(TEMPO_STEP); });
   var tempoDownBtn = document.getElementById("tempoDownBtn");
-  if (tempoDownBtn) tempoDownBtn.addEventListener("click", function() { stepTempo(-10); });
+  if (tempoDownBtn) tempoDownBtn.addEventListener("click", function() { stepTempo(-TEMPO_STEP); });
 
   var playBtn = document.getElementById("playPauseBtn");
   if (playBtn) playBtn.addEventListener("click", playPause);
@@ -541,20 +551,6 @@ function initSheetControls() {
       closeOverflowMenu();
     }
   });
-}
-
-/*
-   Funcion: updateSheetStatusLine
-   Shows the current instrument as a read-only caption next to the sheet
-   controls. The instrument picker itself lives in the library sidebar's
-   profile row (a fact about the player, set once) — Key and Tempo are the
-   per-song steppers that live next to Play. Separate from #instrumentText,
-   which still feeds the print footer.
-*/
-function updateSheetStatusLine(instrumentSelect) {
-  var statusEl = document.getElementById("sheetStatus");
-  if (!statusEl) return;
-  statusEl.textContent = instrumentSelect.options[instrumentSelect.selectedIndex].text;
 }
 
 function toggleOverflowMenu() {
@@ -597,47 +593,68 @@ function stepTranspose(delta) {
 }
 
 // ============================================================
-// Tempo control (playback speed only — the engraved notation is unaffected)
+// Tempo control (playback speed only — the engraved notation is unaffected).
+// Musicians think in bpm, not percent, so the stepper shows and steps a
+// real bpm number. tempoBpm === null means "follow the tune's own Q: field"
+// (the default for every newly-opened song); stepping it the first time
+// seeds it from that native tempo (or DEFAULT_BPM, for a tune with no Q:
+// field to read).
 // ============================================================
 
-var tempoPercent = 100;
-var TEMPO_MIN = 50;
-var TEMPO_MAX = 150;
+var DEFAULT_BPM = 120;
+var TEMPO_STEP = 4;
+var TEMPO_MIN_BPM = 40;
+var TEMPO_MAX_BPM = 320;
+var tempoBpm = null;
 
 function stepTempo(delta) {
-  tempoPercent = Math.max(TEMPO_MIN, Math.min(TEMPO_MAX, tempoPercent + delta));
+  var base = tempoBpm !== null ? tempoBpm : (audioPlayer.nativeQpm || DEFAULT_BPM);
+  tempoBpm = Math.max(TEMPO_MIN_BPM, Math.min(TEMPO_MAX_BPM, base + delta));
   updateTempoLabel();
   applyTempo();
 }
 
 function updateTempoLabel() {
   var label = document.getElementById("tempoValueLabel");
-  if (label) label.textContent = tempoPercent + "%";
+  if (!label) return;
+  var bpm = tempoBpm !== null ? tempoBpm : (audioPlayer.nativeQpm || DEFAULT_BPM);
+  label.textContent = Math.round(bpm);
+}
+
+/*
+   Function: currentWarpPercent
+   ABCJS's synth expresses playback speed as a "warp" percentage of the
+   tune's own engraved tempo (100 = play at the Q: field's bpm), not as an
+   absolute bpm. Convert our real-bpm target into that percentage.
+   tempoBpm === null means "no override" -> 100%.
+*/
+function currentWarpPercent() {
+  if (tempoBpm === null) return 100;
+  var native = audioPlayer.nativeQpm || DEFAULT_BPM;
+  return Math.max(1, Math.round((tempoBpm / native) * 100));
 }
 
 /*
    Funcion: applyTempo
-   Applies the current tempo percentage by reloading the tune into the live
-   SynthController with a scaled `qpm` option (percentage of the tune's own
-   Q: field, read once into audioPlayer.nativeQpm when the tune first loads).
-   SynthController does expose a `setWarp` instance method, but it's wired to
-   ABCJS's own built-in tempo-slider DOM element (created only when
-   `displayWarp: true`) and throws when that element doesn't exist — confirmed
-   by testing it directly, which is why this goes through setTune's `qpm`
-   option instead. Resumes playback afterward if it was already playing.
+   Applies the current tempo to the live SynthController via its `setWarp`
+   method. An earlier version passed a `qpm` option to `setTune` instead,
+   but SynthController ignores that for playback in ABCJS 6.6.3 — `go()`
+   drives the MIDI buffer purely from the tune's own millisecondsPerMeasure
+   and `warp`, so the stepper had no audible effect. `setWarp` re-primes the
+   buffer at the new speed and resumes playback itself if it was running.
+   We render the (hidden) warp slider — `displayWarp: true` in
+   initAudioForTune — precisely so `setWarp`'s internal `control.setWarp`
+   call finds its `.abcjs-midi-tempo` element instead of throwing.
 */
 function applyTempo() {
   var ctrl = audioPlayer.synthController;
-  if (!ctrl || !audioPlayer.currentVisualObj) return;
-  var wasPlaying = audioPlayer.isPlaying;
-  ctrl.setTune(audioPlayer.currentVisualObj, false, currentAudioParams())
+  if (!ctrl || typeof ctrl.setWarp !== "function") return;
+  Promise.resolve(ctrl.setWarp(currentWarpPercent()))
     .then(function() {
       if (ctrl !== audioPlayer.synthController) return;
-      if (wasPlaying) {
-        ctrl.play();
-        audioPlayer.isPlaying = true;
-        updatePlayButton();
-      }
+      // setWarp restarts playback itself when it was already running.
+      audioPlayer.isPlaying = !!ctrl.isStarted;
+      updatePlayButton();
     })
     .catch(function(err) {
       console.warn("Tempo change failed:", err);
@@ -694,12 +711,12 @@ export function createInstrumentDropdown() {
     storeInstrument(select.value);
   });
 
-  // The instrument is a fact about the player, not a per-song setting, so it
-  // lives in the library sidebar's persistent profile row (#rjLibraryProfile)
-  // rather than the per-song overflow menu. The setlists page doesn't have
-  // that sidebar (yet — see the unification milestone), so it still falls
-  // back to appending straight into #sheetmenu.
-  var menu = document.getElementById("rjLibraryProfile") ||
+  // Mounted into #sheetStatus — the left-hand slot in the sheet's button
+  // bar that used to hold a read-only "current instrument" caption. The
+  // dropdown replaces that caption outright: it's always visible right
+  // next to Key/Tempo/Play, and it's now the thing you actually change,
+  // not just a label reflecting a choice made elsewhere.
+  var menu = document.getElementById("sheetStatus") ||
     document.getElementById("overflowMenu") ||
     document.getElementById("sheetmenu");
   menu.appendChild(div);
@@ -739,6 +756,7 @@ var audioPlayer = {
   currentVisualObj: null,
   nativeQpm: null,
   melodOff: false,
+  transposeSemitones: 0,
   repeatStart: undefined,
   repeatEnd: undefined
 };
@@ -751,8 +769,10 @@ var audioParams = {
 function currentAudioParams() {
   var params = Object.assign({}, audioParams);
   if (audioPlayer.melodOff) params.voicesOff = true;
-  if (tempoPercent !== 100 && audioPlayer.nativeQpm) {
-    params.qpm = Math.round(audioPlayer.nativeQpm * tempoPercent / 100);
+  // Tempo is applied through SynthController.setWarp (see applyTempo), not a
+  // synth option — `qpm` here is ignored by SynthController's playback path.
+  if (audioPlayer.transposeSemitones) {
+    params.midiTranspose = audioPlayer.transposeSemitones;
   }
   return params;
 }
@@ -945,7 +965,10 @@ function initAudioForTune(visualObj) {
     displayRestart: false,
     displayPlay: false,
     displayProgress: false,
-    displayWarp: false
+    // The container is display:none, so this renders nothing visible — but it
+    // makes SynthController build the `.abcjs-midi-tempo` element that its own
+    // setWarp() writes to, so the Tempo stepper (applyTempo) can drive it.
+    displayWarp: true
   });
 
   var ctrl = audioPlayer.synthController;
@@ -954,6 +977,8 @@ function initAudioForTune(visualObj) {
       if (ctrl !== audioPlayer.synthController) return;
       setAudioLoadingVisible(false);
       setPlayerButtonsDisabled(false);
+      // Carry a tempo override from the previously-open song onto this one.
+      if (tempoBpm !== null) applyTempo();
     })
     .catch(function(err) {
       console.warn("Audio could not load:", err);

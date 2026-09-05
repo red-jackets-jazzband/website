@@ -25,15 +25,16 @@ The site itself has no build step beyond Hugo — it's a pure static site, and `
 ### Music interactive pages
 `/songs/` and `/setlists/` ([content/songs.md](content/songs.md), [content/setlists.md](content/setlists.md)) share one interactive shell — a library sidebar with a **Library / Setlists** tab switcher, plus a single-song sheet — rather than being two unrelated apps. Both pages load the same bootstrap (`render_abc.js`, `song_library.js`, `export_panel.js`); the only difference is which tab starts active (`data-default-tab` on `.rj-songs-layout`).
 
-**Library tab** ([static/script/song_library.js](static/script/song_library.js) + [static/script/render_abc.js](static/script/render_abc.js), ~850 lines):
-- Loads ABC notation files from [static/songs/](static/songs/) (118+ songs) via XHR, index at `static/songs/index_of_songs.txt`
+**Library tab** ([static/script/song_library.js](static/script/song_library.js) + [static/script/render_abc.js](static/script/render_abc.js), ~1,730 lines):
+- Loads ABC notation files from [static/songs/](static/songs/) (146+ songs) via XHR, index at `static/songs/index_of_songs.txt`
 - Search-first list with an A-Z scroll rail; picking a song renders it into the shared sheet
-- Sheet header: Key and Tempo are always-visible steppers next to Play (the two things touched mid-rehearsal); Instrument lives in a persistent profile row at the bottom of the sidebar (a fact about the player, not a per-song setting); everything else (Stop, mute melody, Print, Export, iRealPro) is one tap away in "More"
+- Sheet header (left to right): the **Instrument** dropdown, **Key** and **Tempo** steppers, **Play**, a contextual **Inspiration** button, and **More** for everything else (Stop, mute melody, Print, Export, iRealPro). Instrument lives here (not the sidebar) since it's the same button bar as Key/Tempo/Play; the row wraps onto a second line when it doesn't all fit, same as the mobile layout. Key's caption reads "semitones" and Tempo's reads real bpm (seeded from the tune's own `Q:` field), not an abstract percentage
 - Renders notation using [ABCjs](https://paulrosen.github.io/abcjs/) (library bundled in `static/script/`)
-- Transposition: real-time for Concert, Alto Sax (+9), Bb Clarinet/Trumpet (+2), Tenor Sax (+2), Trombone (bass clef), Sousaphone (bass clef)
+- Transposition: real-time for Concert, Alto Sax (+9), Bb Clarinet/Trumpet (+2), Tenor Sax (+2), Trombone (bass clef), Sousaphone (bass clef). The Key stepper's semitone offset transposes **both** the printed notation (ABCJS `visualTranspose`) and the audio (ABCJS `midiTranspose`, set independently — `visualTranspose` alone is notation-only and never reaches the synth); the instrument's own offset is folded into `visualTranspose` only, so playback always sounds the same concert pitch no matter which instrument's part is on screen
 - Chord analysis: parses chords from ABC, converts to Roman numeral notation using [Tonal.js](https://github.com/tonaljs/tonal) (`static/script/tonal.min.js`)
-- Audio playback via ABCjs SynthController with FatBoy soundfont (trumpet); Tempo is a real playback-speed control via `setTune`'s `qpm` option (`SynthController.setWarp` is UI-DOM-bound and unusable headless/without its own slider element)
+- Audio playback via ABCjs SynthController with FatBoy soundfont (trumpet); the Tempo stepper holds a real bpm value, converted to ABCjs's "warp" percentage (`bpm / nativeQpm * 100`) and applied via `SynthController.setWarp`, which re-primes the MIDI buffer and resumes playback itself. `setTune`'s `qpm` option does **not** work — SynthController's `go()` drives playback purely from the tune's `millisecondsPerMeasure` and `warp`. `setWarp` internally writes to a `.abcjs-midi-tempo` DOM element, so the player is loaded with `displayWarp: true` (the `#abc-player-container` is `display:none`, so nothing shows)
 - iRealPro URL generation for mobile musicians
+- Inspiration: when a song's ABC has an `F:` field, a per-song button opens a docked, draggable picture-in-picture panel (`#inspirationPanel`, built in `render_abc.js`) embedding a privacy-enhanced YouTube player (URL parsing/embed-building in `static/script/lib/youtube.js`) — it keeps playing across song navigation until explicitly closed, instead of leaving the page
 
 **Setlists tab** (also [static/script/song_library.js](static/script/song_library.js)):
 - Band setlists are plain-text files in [static/setlists/](static/setlists/) (indexed by `index_of_setlists.txt`), read-only, with an optional key override per song and an optional `desc` line rendered as a print-only booklet cover page
@@ -45,7 +46,7 @@ The site itself has no build step beyond Hugo — it's a pure static site, and `
 - `static/songs/` — ABC notation files (one per song)
 - `static/setlists/` — plain-text setlist files (one per band setlist) + `index_of_setlists.txt` manifest
 - `static/script/` — All JavaScript: ABCjs library, Tonal.js, render_abc.js, song_library.js, export_panel.js, render_agenda.js
-  - `static/script/lib/` — pure, side-effect-free ES modules (instrument table, chord parsing, iRealPro URL building, song-index/setlist-file parsing, music theory), each with a colocated `*.test.js`. Loaded via `import` from the per-page scripts, which are themselves `type="module"`. This is where new pure logic belongs; DOM/ABCjs orchestration stays in the per-page scripts.
+  - `static/script/lib/` — pure, side-effect-free ES modules (instrument table, chord parsing, iRealPro URL building, song-index/setlist-file parsing, music theory, personal-setlist storage, YouTube URL/embed parsing), each with a colocated `*.test.js`. Loaded via `import` from the per-page scripts, which are themselves `type="module"`. This is where new pure logic belongs; DOM/ABCjs orchestration stays in the per-page scripts.
 - `static/assets/css/split.css` — Theme overrides/customizations
 - `static/agenda/` — Event data files
 
@@ -55,7 +56,7 @@ The site itself has no build step beyond Hugo — it's a pure static site, and `
 - Per-page layouts inherit from the Split theme
 
 ### CI/CD
-GitHub Actions ([.github/workflows/publish.yaml](.github/workflows/publish.yaml)):
-1. Builds with Hugo v0.155.2
-2. Runs linkchecker on the output
-3. On `master`: publishes `public/` to `red-jackets-jazzband/red-jackets-jazzband.github.io` using secret `GH_RJ_DEPLOY`
+GitHub Actions ([.github/workflows/publish.yaml](.github/workflows/publish.yaml)) runs on every push, in three gated jobs:
+1. `lint-and-test` — `npm ci`, `npm run lint`, `npm test`
+2. `build` (needs `lint-and-test`) — builds with Hugo via `lowply/build-hugo@v0.161.1`, runs linkchecker on the output, uploads `public/` as an artifact
+3. `publish` (needs `build`) — only `if: github.ref == 'refs/heads/master'`: downloads that artifact and publishes it to `red-jackets-jazzband/red-jackets-jazzband.github.io` using secret `GH_RJ_DEPLOY`
