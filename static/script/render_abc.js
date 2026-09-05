@@ -516,6 +516,31 @@ function initSheetControls() {
   if (melodyBtn) melodyBtn.addEventListener("click", toggleMelody);
 }
 
+/*
+   Instrument profile persistence (localStorage). Shared by the songs page
+   and the songbook page: whichever instrument you last picked on either
+   page is what both preselect next time. Guarded with try/catch so private
+   browsing / disabled storage degrades to today's no-persistence behavior
+   instead of throwing.
+*/
+var INSTRUMENT_STORAGE_KEY = "rj.instrument";
+
+function readStoredInstrument() {
+  try {
+    return window.localStorage.getItem(INSTRUMENT_STORAGE_KEY);
+  } catch (e) {
+    return null;
+  }
+}
+
+function storeInstrument(value) {
+  try {
+    window.localStorage.setItem(INSTRUMENT_STORAGE_KEY, value);
+  } catch (e) {
+    // localStorage unavailable — nothing to do, instrument choice just won't persist.
+  }
+}
+
 export function createInstrumentDropdown() {
   var div = document.createElement("DIV");
   div.classList.add("dropdown");
@@ -531,6 +556,14 @@ export function createInstrumentDropdown() {
     option.innerHTML = instrument.label.toUpperCase();
     option.value = instrument.value;
     select.appendChild(option);
+  });
+
+  var storedValue = readStoredInstrument();
+  if (storedValue && INSTRUMENTS.some(function(instrument) { return instrument.value === storedValue; })) {
+    select.value = storedValue;
+  }
+  select.addEventListener("change", function() {
+    storeInstrument(select.value);
   });
 
   var abc_menu = document.getElementById("sheetmenu");
