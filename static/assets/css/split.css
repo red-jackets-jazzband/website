@@ -928,9 +928,26 @@ video.video {
     display: none;
   }
 
-  /* "Print chordbook" — same stacked layout as the songbook, staves removed.
-     Without the staves each song is only a title + a chord grid, so let them
-     flow several to a page (kept whole) instead of one-per-page. */
+  /* "Print chordbook" — same stacked DOM as the songbook, staves removed.
+     Without the staves each song is just a title + a chord grid, so the
+     chordbook prints landscape with four charts tiled 2×2 to a page. At
+     ~A5 each the cut pages fit a marching lyre / flip folder.
+
+     A named @page turns only this export landscape (the sitewide @page is
+     portrait). The booklet and its tiles are given explicit mm widths
+     rather than percentages: with a named page Chrome's initial containing
+     block can stay portrait-sized, so `width: 50%` would tile the charts
+     into the left ~65% of the sheet. 297×210 page, 9mm margins => a
+     279×192mm printable box, split 2×2. */
+  @page chordbook {
+    size: A4 landscape;
+    margin: 9mm;
+  }
+  body.export-mode-chordbook #setlistPrintBooklet {
+    page: chordbook;
+    display: flow-root; /* contain the tile floats without a clearfix */
+    width: 279mm;
+  }
   body.export-mode-chordbook #setlistPrintBooklet .notation {
     display: none !important;
   }
@@ -938,7 +955,46 @@ video.video {
     page-break-before: auto;
     break-inside: avoid;
     page-break-inside: avoid;
-    padding-top: 18px;
+    float: left;
+    box-sizing: border-box;
+    width: 139.5mm;
+    /* Every tile is exactly this tall, so two rows fill the page and the
+       floats tile 2-up without needing `clear`. */
+    height: 96mm;
+    overflow: hidden;
+    padding: 3mm 8mm;
+    /* Sit the chart in the middle of its quarter-page; `safe` keeps a chart
+       taller than the tile pinned to the top rather than clipped both ends. */
+    display: flex;
+    flex-direction: column;
+    justify-content: safe center;
+  }
+  /* "Set N" headings still open a fresh page; clear the tiled row before
+     them and let the tiles start flowing again straight after. */
+  body.export-mode-chordbook #setlistPrintBooklet .setlist-booklet-set-heading {
+    clear: both;
+    page-break-after: avoid;
+  }
+  body.export-mode-chordbook #setlistPrintBooklet .setlist-view-title,
+  body.export-mode-chordbook #setlistPrintBooklet .setlist-cover {
+    display: none; /* no cover/heading page — the chordbook is just the tiles */
+  }
+  body.export-mode-chordbook #setlistPrintBooklet .songtitle {
+    font-size: x-large;
+    padding: 0 0 4px;
+  }
+  /* Taller cells than the on-screen 40px so the chart uses the full height
+     of its quarter-page rather than sitting as a small block of whitespace
+     (mirrors the standalone chordbook's roomier grid). Kept modest so the
+     common 4-row chart fills the tile while a rare 5–6 row one still fits. */
+  body.export-mode-chordbook #setlistPrintBooklet .chordtable > .chordGrid {
+    font-size: x-large;
+    width: 100%;
+    margin: 3mm auto 0;
+  }
+  body.export-mode-chordbook #setlistPrintBooklet .chordDiv {
+    height: 50px;
+    line-height: 50px; /* vertically centre the single line of chord text */
   }
 
   /* Keep the title, chord grid and each engraved staff line whole across a
