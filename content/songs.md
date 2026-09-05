@@ -100,7 +100,7 @@ aliases: ["/setlists/", "/songbook/"]
     <button id="melodyOffBtn" class="sheet-icon-btn" type="button" disabled title="Mute melody" aria-label="Mute melody"><span class="fa-solid fa-volume-high" aria-hidden="true"></span></button>
   </div>
 
-  <span id="inspirationSlot"></span>
+  <div id="inspirationSlot"></div>
 
   <div class="sheet-actions" id="sheetActions">
     <a id="printLink" class="sheet-icon-btn" href="#" title="Print this page" aria-label="Print this page"><span class="fa-solid fa-print" aria-hidden="true"></span></a>
