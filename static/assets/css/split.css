@@ -850,6 +850,15 @@ video.video {
   body.export-hide-lyrics .lyrics {
     display: none !important;
   }
+  /*
+    Booklet export/print (multiple songs into #exportBooklet, or a setlist
+    into its own booklet container): the currently-open single song in
+    #rjSheet has no print-hiding class of its own, so without this it would
+    print alongside the booklet too.
+  */
+  body.export-booklet-mode #rjSheet {
+    display: none !important;
+  }
 }
 
 /* ============================================================
