@@ -1,9 +1,16 @@
 "use strict";
 
+// True for a setlist item that is a set divider ("break") rather than a song.
+export function isSetlistDivider(item) {
+  return !!item && item.divider !== undefined && item.file === undefined;
+}
+
 // Parses a setlist file: optional leading "# name,<Display Name>" and
 // "# desc,<short text>" comment lines, then one "file.abc,KEY" per song
-// (KEY optional — blank means the song's own native key). Blank lines and
-// any other "#"-prefixed line are ignored.
+// (KEY optional — blank means the song's own native key). A "# break" line
+// (optionally "# break,<label>") splits the list into sets — set 1 before
+// the first break, set 2 after it, and so on. Blank lines and any other
+// "#"-prefixed line are ignored.
 export function parseSetlistFile(text) {
   var name = null;
   var desc = null;
@@ -16,11 +23,11 @@ export function parseSetlistFile(text) {
     if (line.charAt(0) === "#") {
       var commentBody = line.slice(1).trim();
       var commaIdx = commentBody.indexOf(",");
-      if (commaIdx === -1) return;
-      var key = commentBody.slice(0, commaIdx).trim().toLowerCase();
-      var value = commentBody.slice(commaIdx + 1).trim();
-      if (key === "name") name = value;
-      if (key === "desc") desc = value;
+      var key = (commaIdx === -1 ? commentBody : commentBody.slice(0, commaIdx)).trim().toLowerCase();
+      var value = commaIdx === -1 ? "" : commentBody.slice(commaIdx + 1).trim();
+      if (key === "break") songs.push({ divider: value });
+      else if (commaIdx !== -1 && key === "name") name = value;
+      else if (commaIdx !== -1 && key === "desc") desc = value;
       return;
     }
 
@@ -40,8 +47,12 @@ export function serializeSetlistFile(setlist) {
   var lines = [];
   if (setlist.name) lines.push("# name," + setlist.name);
   if (setlist.desc) lines.push("# desc," + setlist.desc);
-  (setlist.songs || []).forEach(function(song) {
-    lines.push(song.file + "," + (song.key || ""));
+  (setlist.songs || []).forEach(function(item) {
+    if (isSetlistDivider(item)) {
+      lines.push(item.divider ? "# break," + item.divider : "# break");
+    } else {
+      lines.push(item.file + "," + (item.key || ""));
+    }
   });
   return lines.join("\n") + "\n";
 }

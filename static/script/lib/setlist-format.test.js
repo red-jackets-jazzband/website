@@ -34,6 +34,44 @@ test("parseSetlistFile skips blank lines and unrecognized comment lines", () => 
   assert.deepEqual(setlist.songs, [{ file: "basin_street.abc", key: "" }]);
 });
 
+test("parseSetlistFile splits the list into sets on '# break' lines", () => {
+  var text = [
+    "# name,Festival night",
+    "basin_street.abc,C",
+    "# break",
+    "tiger_rag.abc,",
+    "# break,Encores",
+    "indiana.abc,",
+  ].join("\n");
+
+  var setlist = parseSetlistFile(text);
+  assert.deepEqual(setlist.songs, [
+    { file: "basin_street.abc", key: "C" },
+    { divider: "" },
+    { file: "tiger_rag.abc", key: "" },
+    { divider: "Encores" },
+    { file: "indiana.abc", key: "" },
+  ]);
+});
+
+test("serializeSetlistFile writes set dividers back as '# break' lines and round-trips", () => {
+  var original = {
+    name: "Three sets",
+    desc: "",
+    songs: [
+      { file: "a.abc", key: "" },
+      { divider: "" },
+      { file: "b.abc", key: "Bb" },
+      { divider: "Last set" },
+      { file: "c.abc", key: "" },
+    ],
+  };
+  var text = serializeSetlistFile(original);
+  assert.match(text, /\n# break\n/);
+  assert.match(text, /\n# break,Last set\n/);
+  assert.deepEqual(parseSetlistFile(text).songs, original.songs);
+});
+
 test("serializeSetlistFile round-trips through parseSetlistFile", () => {
   var original = {
     name: "Rehearsal Tuesday",

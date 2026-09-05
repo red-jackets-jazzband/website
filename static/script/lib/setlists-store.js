@@ -1,6 +1,6 @@
 "use strict";
 
-import { parseSetlistFile, serializeSetlistFile } from "./setlist-format.js";
+import { parseSetlistFile, serializeSetlistFile, isSetlistDivider } from "./setlist-format.js";
 
 var STORAGE_KEY = "rj.setlists.v1";
 
@@ -85,6 +85,22 @@ export function removeSongFromPersonalSetlist(storage, id, index) {
   var list = readStorage(storage);
   var entry = findEntry(list, id);
   if (entry) entry.songs.splice(index, 1);
+  writeStorage(storage, list);
+}
+
+// Appends a set divider ("break") to the end of the list. Its label is left
+// blank — the UI shows an auto "Set N" caption until one is typed in.
+export function addDividerToPersonalSetlist(storage, id) {
+  var list = readStorage(storage);
+  var entry = findEntry(list, id);
+  if (entry) entry.songs.push({ divider: "" });
+  writeStorage(storage, list);
+}
+
+export function updateDividerLabelInPersonalSetlist(storage, id, index, label) {
+  var list = readStorage(storage);
+  var entry = findEntry(list, id);
+  if (entry && isSetlistDivider(entry.songs[index])) entry.songs[index].divider = label;
   writeStorage(storage, list);
 }
 

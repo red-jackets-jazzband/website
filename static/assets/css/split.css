@@ -1249,6 +1249,42 @@ video.video {
   color: #eceae6;
   margin-bottom: 18px;
 }
+/* Set dividers ("break") inside an open setlist. A read-only band setlist
+   shows a plain "Set N" heading (reusing .song-list-letter); a personal one
+   shows an editable label plus the same move/remove controls as a song. */
+.setlist-set-heading {
+  border-top: 1px solid rgba(255,255,255,.08);
+  margin-top: 6px;
+}
+.song-list-item.setlist-divider-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 4px;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+.setlist-divider-input {
+  flex: 1;
+  min-width: 0;
+  height: 26px;
+  box-sizing: border-box;
+  padding: 0 8px;
+  background: #1f1f1f;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 6px;
+  color: var(--rj-gold);
+  font: 700 10.5px "Montserrat", sans-serif;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+}
+/* "Set N" heading between song blocks in the printed booklet. */
+.setlist-booklet-set-heading {
+  font: 700 20px "Montserrat", sans-serif;
+  color: #000;
+  text-align: center;
+  margin: 0 0 12px;
+  padding-top: 8px;
+}
 .printLogo {
   display: block;
   margin-left: auto;

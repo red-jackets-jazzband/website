@@ -2,7 +2,7 @@
 
 import { renderSong, renderSongTextWithOverride, readFile, renderAbcFile } from "./render_abc.js";
 import { parseSongIndex, groupSongsByLetter, filterSongsByQuery, songTitleSlug } from "./lib/song-index.js";
-import { parseSetlistFile } from "./lib/setlist-format.js";
+import { parseSetlistFile, isSetlistDivider } from "./lib/setlist-format.js";
 import { extractKeyFromAbc, semitonesBetweenKeys } from "./lib/music-theory.js";
 import {
   listPersonalSetlists,
@@ -13,6 +13,8 @@ import {
   addSongToPersonalSetlist,
   removeSongFromPersonalSetlist,
   updateSongKeyInPersonalSetlist,
+  addDividerToPersonalSetlist,
+  updateDividerLabelInPersonalSetlist,
   moveSongInPersonalSetlist,
   copyBandSetlistToPersonal,
   exportPersonalSetlistText,
@@ -407,6 +409,13 @@ function songCountLabel(n) {
   return n + (n === 1 ? " song" : " songs");
 }
 
+// Song items only — set dividers ("breaks") don't count toward the total.
+function countSetlistSongs(items) {
+  return (items || []).filter(function(item) {
+    return !isSetlistDivider(item);
+  }).length;
+}
+
 // Fetch + parse a band setlist .txt once, then serve it from an in-memory
 // cache — the home list asks for every band setlist's song count on each
 // render, and opening one asks again.
@@ -446,13 +455,13 @@ function buildBandSetlistRow(entry) {
     openBandSetlist(entry.file, entry.name);
   });
   loadBandSetlist(entry.file, function(parsed) {
-    built.meta.textContent = songCountLabel(parsed.songs.length);
+    built.meta.textContent = songCountLabel(countSetlistSongs(parsed.songs));
   });
   return built.row;
 }
 
 function buildPersonalSetlistRow(entry) {
-  return buildSetlistRow(entry.name, entry.songs.length, function() {
+  return buildSetlistRow(entry.name, countSetlistSongs(entry.songs), function() {
     openPersonalSetlist(entry.id);
   }).row;
 }
@@ -524,8 +533,25 @@ function renderOpenSetlist(name, songs, personalEntry, desc) {
     listEl.appendChild(heading);
   }
 
-  songs.forEach(function(song, index) {
-    listEl.appendChild(buildSetlistSongRow(song, index, songs, personalEntry));
+  // A setlist can be split into sets by "break" dividers (Set 1 before the
+  // first break, Set 2 after it, …). When there's at least one, song numbers
+  // restart at 1 in each set and a "Set N" heading precedes each block;
+  // without any, numbering is a single flat 1..n as before.
+  var hasDividers = songs.some(isSetlistDivider);
+  if (hasDividers && !(songs.length > 0 && isSetlistDivider(songs[0]))) {
+    listEl.appendChild(buildSetHeaderRow("Set 1"));
+  }
+  var setNumber = 1;
+  var songInSet = 0;
+  songs.forEach(function(item, index) {
+    if (isSetlistDivider(item)) {
+      setNumber += 1;
+      songInSet = 0;
+      listEl.appendChild(buildSetlistDividerRow(item, index, songs, personalEntry, setNumber));
+      return;
+    }
+    songInSet += 1;
+    listEl.appendChild(buildSetlistSongRow(item, index, songs, personalEntry, hasDividers ? songInSet : index + 1));
   });
 
   if (songs.length === 0) {
@@ -535,13 +561,84 @@ function renderOpenSetlist(name, songs, personalEntry, desc) {
   buildSetlistPrintBooklet(name, songs, desc);
 }
 
-function buildSetlistSongRow(song, index, songs, personalEntry) {
+// Move-up / move-down / remove — the same three controls on both a setlist
+// song row and a set-divider row (personal setlists only).
+function appendMoveRemoveButtons(row, index, songs, personalEntry) {
+  var upBtn = document.createElement("BUTTON");
+  upBtn.type = "button";
+  upBtn.className = "setlist-song-btn";
+  upBtn.textContent = "↑";
+  upBtn.disabled = index === 0;
+  upBtn.addEventListener("click", function() {
+    moveSongInPersonalSetlist(storage(), personalEntry.id, index, -1);
+    refreshOpenPersonalSetlist();
+  });
+  row.appendChild(upBtn);
+
+  var downBtn = document.createElement("BUTTON");
+  downBtn.type = "button";
+  downBtn.className = "setlist-song-btn";
+  downBtn.textContent = "↓";
+  downBtn.disabled = index === songs.length - 1;
+  downBtn.addEventListener("click", function() {
+    moveSongInPersonalSetlist(storage(), personalEntry.id, index, 1);
+    refreshOpenPersonalSetlist();
+  });
+  row.appendChild(downBtn);
+
+  var removeBtn = document.createElement("BUTTON");
+  removeBtn.type = "button";
+  removeBtn.className = "setlist-song-btn setlist-song-remove";
+  removeBtn.textContent = "×";
+  removeBtn.title = "Remove";
+  removeBtn.addEventListener("click", function() {
+    removeSongFromPersonalSetlist(storage(), personalEntry.id, index);
+    refreshOpenPersonalSetlist();
+  });
+  row.appendChild(removeBtn);
+}
+
+// A "Set N" band-style heading in the song list (read-only band setlists,
+// and the implicit "Set 1" above the first break).
+function buildSetHeaderRow(text) {
+  var row = document.createElement("DIV");
+  row.className = "song-list-letter setlist-set-heading";
+  row.textContent = text;
+  return row;
+}
+
+// A set divider: a plain heading for band setlists, an editable label +
+// move/remove controls for personal ones.
+function buildSetlistDividerRow(item, index, songs, personalEntry, setNumber) {
+  if (!personalEntry) {
+    return buildSetHeaderRow(item.divider || ("Set " + setNumber));
+  }
+
+  var row = document.createElement("DIV");
+  row.className = "song-list-item setlist-divider-row";
+
+  var label = document.createElement("INPUT");
+  label.type = "text";
+  label.className = "setlist-divider-input";
+  label.placeholder = "Set " + setNumber;
+  label.value = item.divider || "";
+  label.addEventListener("change", function() {
+    updateDividerLabelInPersonalSetlist(storage(), personalEntry.id, index, label.value.trim());
+    refreshOpenPersonalSetlist();
+  });
+  row.appendChild(label);
+
+  appendMoveRemoveButtons(row, index, songs, personalEntry);
+  return row;
+}
+
+function buildSetlistSongRow(song, index, songs, personalEntry, displayNumber) {
   var row = document.createElement("DIV");
   row.className = "song-list-item setlist-song-row";
 
   var number = document.createElement("SPAN");
   number.className = "setlist-song-number";
-  number.textContent = index + 1;
+  number.textContent = displayNumber;
   row.appendChild(number);
 
   var title = document.createElement("BUTTON");
@@ -565,38 +662,7 @@ function buildSetlistSongRow(song, index, songs, personalEntry) {
     });
     row.appendChild(keyInput);
 
-    var upBtn = document.createElement("BUTTON");
-    upBtn.type = "button";
-    upBtn.className = "setlist-song-btn";
-    upBtn.textContent = "↑";
-    upBtn.disabled = index === 0;
-    upBtn.addEventListener("click", function() {
-      moveSongInPersonalSetlist(storage(), personalEntry.id, index, -1);
-      refreshOpenPersonalSetlist();
-    });
-    row.appendChild(upBtn);
-
-    var downBtn = document.createElement("BUTTON");
-    downBtn.type = "button";
-    downBtn.className = "setlist-song-btn";
-    downBtn.textContent = "↓";
-    downBtn.disabled = index === songs.length - 1;
-    downBtn.addEventListener("click", function() {
-      moveSongInPersonalSetlist(storage(), personalEntry.id, index, 1);
-      refreshOpenPersonalSetlist();
-    });
-    row.appendChild(downBtn);
-
-    var removeBtn = document.createElement("BUTTON");
-    removeBtn.type = "button";
-    removeBtn.className = "setlist-song-btn setlist-song-remove";
-    removeBtn.textContent = "×";
-    removeBtn.title = "Remove";
-    removeBtn.addEventListener("click", function() {
-      removeSongFromPersonalSetlist(storage(), personalEntry.id, index);
-      refreshOpenPersonalSetlist();
-    });
-    row.appendChild(removeBtn);
+    appendMoveRemoveButtons(row, index, songs, personalEntry);
   } else if (song.key) {
     var keyBadge = document.createElement("SPAN");
     keyBadge.className = "setlist-song-key-badge";
@@ -632,6 +698,13 @@ function openSetlistSong(song) {
 // hidden #setlistPrintBooklet (print-only), never the on-screen list.
 // ============================================================
 
+function buildBookletSetHeading(text) {
+  var el = document.createElement("DIV");
+  el.className = "setlist-booklet-set-heading pageBreakBefore";
+  el.textContent = text;
+  return el;
+}
+
 function buildSetlistPrintBooklet(name, songs, desc) {
   var container = document.getElementById("setlistPrintBooklet");
   if (!container) return;
@@ -663,15 +736,37 @@ function buildSetlistPrintBooklet(name, songs, desc) {
     container.appendChild(cover);
   }
 
-  songs.forEach(function(song, index) {
-    var n = index + 1;
+  var hasDividers = songs.some(isSetlistDivider);
+  var setNumber = 1;
+  var n = 0; // unique across the whole booklet — drives the element ids
+  var songInSet = 0; // restarts each set — the number shown before the title
+  // A "Set N" heading opens the page; the song right under it must not then
+  // start its own new page, so the break moves onto the heading instead.
+  var headingLeadsPage = false;
+  if (hasDividers && !(songs.length > 0 && isSetlistDivider(songs[0]))) {
+    container.appendChild(buildBookletSetHeading("Set 1"));
+    headingLeadsPage = true;
+  }
+  songs.forEach(function(song) {
+    if (isSetlistDivider(song)) {
+      setNumber += 1;
+      songInSet = 0;
+      container.appendChild(buildBookletSetHeading(song.divider || ("Set " + setNumber)));
+      headingLeadsPage = true;
+      return;
+    }
+    n += 1;
+    songInSet += 1;
+    var songNumber = hasDividers ? songInSet : n; // captured by the async readFile callback below
     var titleId = "setlistPrintTitle-" + n;
     var chordId = "setlistPrintChord-" + n;
     var notationId = "setlistPrintNotation-" + n;
 
     var titleEl = document.createElement("DIV");
     titleEl.id = titleId;
-    titleEl.classList.add("songtitle", "pageBreakBefore");
+    titleEl.classList.add("songtitle");
+    if (!headingLeadsPage) titleEl.classList.add("pageBreakBefore");
+    headingLeadsPage = false;
     container.appendChild(titleEl);
 
     var chordEl = document.createElement("DIV");
@@ -690,7 +785,7 @@ function buildSetlistPrintBooklet(name, songs, desc) {
         var nativeKey = extractKeyFromAbc(text) || "C";
         extraTransposeSteps = semitonesBetweenKeys(nativeKey, song.key);
       }
-      renderAbcFile(text, notationId, chordId, titleId, n + ". ", false, extraTransposeSteps);
+      renderAbcFile(text, notationId, chordId, titleId, songNumber + ". ", false, extraTransposeSteps);
     }, function(status) {
       console.warn("Setlist references a missing song file: " + song.file + " (status " + status + ")");
     });
@@ -782,6 +877,15 @@ function initSetlistControls() {
       if (!window.confirm("Delete this setlist? This can't be undone.")) return;
       deletePersonalSetlist(storage(), currentPersonalId);
       showSetlistsHome();
+    });
+  }
+
+  var addBreakBtn = document.getElementById("setlistAddBreakBtn");
+  if (addBreakBtn) {
+    addBreakBtn.addEventListener("click", function() {
+      if (!currentPersonalId) return;
+      addDividerToPersonalSetlist(storage(), currentPersonalId);
+      refreshOpenPersonalSetlist();
     });
   }
 
