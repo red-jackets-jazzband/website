@@ -694,8 +694,14 @@ function openSetlistSong(song) {
 }
 
 // ============================================================
-// Print booklet: the "stack every song" pattern, but only ever feeding the
-// hidden #setlistPrintBooklet (print-only), never the on-screen list.
+// Printing an open setlist. One hidden container (#setlistPrintBooklet,
+// print-only) holds everything; a body class picks which of the three
+// printed forms actually shows:
+//   - "Print setlist"   -> just the numbered song list (stage list)
+//   - "Print chordbook"  -> every song's title + chord grid (no staves)
+//   - "Print songbook"   -> every song's title + chords + staff notation
+// Chordbook and songbook share the exact same stacked DOM; chordbook simply
+// hides the notation in CSS (body.export-mode-chordbook .notation).
 // ============================================================
 
 function buildBookletSetHeading(text) {
@@ -703,6 +709,50 @@ function buildBookletSetHeading(text) {
   el.className = "setlist-booklet-set-heading pageBreakBefore";
   el.textContent = text;
   return el;
+}
+
+// The "Print setlist" form: a big, glanceable list of just the song titles,
+// numbered per set, for taping to a music stand. No song files are fetched.
+function buildSetlistStageList(container, songs) {
+  var list = document.createElement("DIV");
+  list.className = "setlist-stage-list";
+
+  var hasDividers = songs.some(isSetlistDivider);
+  var setNumber = 1;
+  var current = document.createElement("OL"); // a fresh <ol> per set restarts numbering at 1
+
+  if (hasDividers && !(songs.length > 0 && isSetlistDivider(songs[0]))) {
+    var firstHeading = document.createElement("DIV");
+    firstHeading.className = "setlist-stage-set-heading";
+    firstHeading.textContent = "Set 1";
+    list.appendChild(firstHeading);
+  }
+  list.appendChild(current);
+
+  songs.forEach(function(song) {
+    if (isSetlistDivider(song)) {
+      setNumber += 1;
+      var heading = document.createElement("DIV");
+      heading.className = "setlist-stage-set-heading";
+      heading.textContent = song.divider || ("Set " + setNumber);
+      list.appendChild(heading);
+      current = document.createElement("OL");
+      list.appendChild(current);
+      return;
+    }
+    var li = document.createElement("LI");
+    li.textContent = songNameFor(song.file);
+    if (song.key) {
+      var key = document.createElement("SPAN");
+      key.className = "setlist-stage-key";
+      key.textContent = song.key;
+      li.appendChild(document.createTextNode(" "));
+      li.appendChild(key);
+    }
+    current.appendChild(li);
+  });
+
+  container.appendChild(list);
 }
 
 function buildSetlistPrintBooklet(name, songs, desc) {
@@ -736,6 +786,8 @@ function buildSetlistPrintBooklet(name, songs, desc) {
     container.appendChild(cover);
   }
 
+  buildSetlistStageList(container, songs);
+
   var hasDividers = songs.some(isSetlistDivider);
   var setNumber = 1;
   var n = 0; // unique across the whole booklet — drives the element ids
@@ -762,22 +814,27 @@ function buildSetlistPrintBooklet(name, songs, desc) {
     var chordId = "setlistPrintChord-" + n;
     var notationId = "setlistPrintNotation-" + n;
 
+    var songEl = document.createElement("DIV");
+    songEl.className = "setlist-booklet-song";
+    if (!headingLeadsPage) songEl.classList.add("pageBreakBefore");
+    headingLeadsPage = false;
+
     var titleEl = document.createElement("DIV");
     titleEl.id = titleId;
     titleEl.classList.add("songtitle");
-    if (!headingLeadsPage) titleEl.classList.add("pageBreakBefore");
-    headingLeadsPage = false;
-    container.appendChild(titleEl);
+    songEl.appendChild(titleEl);
 
     var chordEl = document.createElement("DIV");
     chordEl.id = chordId;
     chordEl.classList.add("chordtable");
-    container.appendChild(chordEl);
+    songEl.appendChild(chordEl);
 
     var notationEl = document.createElement("DIV");
     notationEl.id = notationId;
     notationEl.classList.add("notation");
-    container.appendChild(notationEl);
+    songEl.appendChild(notationEl);
+
+    container.appendChild(songEl);
 
     readFile("/songs/" + song.file, function(text) {
       var extraTransposeSteps = 0;
@@ -792,10 +849,19 @@ function buildSetlistPrintBooklet(name, songs, desc) {
   });
 }
 
-function printSetlistBooklet() {
-  document.body.classList.add("export-booklet-mode");
+var SETLIST_PRINT_MODES = ["setlist", "chordbook", "songbook"];
+
+function printSetlist(mode) {
+  var body = document.body;
+  body.classList.add("export-booklet-mode");
+  SETLIST_PRINT_MODES.forEach(function(m) {
+    body.classList.toggle("export-mode-" + m, m === mode);
+  });
   window.addEventListener("afterprint", function restore() {
-    document.body.classList.remove("export-booklet-mode");
+    body.classList.remove("export-booklet-mode");
+    SETLIST_PRINT_MODES.forEach(function(m) {
+      body.classList.remove("export-mode-" + m);
+    });
     window.removeEventListener("afterprint", restore);
   });
   window.print();
@@ -855,8 +921,14 @@ function initSetlistControls() {
     });
   }
 
-  var printBtn = document.getElementById("setlistPrintBtn");
-  if (printBtn) printBtn.addEventListener("click", printSetlistBooklet);
+  [
+    ["printSetlistBtn", "setlist"],
+    ["printChordbookBtn", "chordbook"],
+    ["printSongbookBtn", "songbook"]
+  ].forEach(function(pair) {
+    var btn = document.getElementById(pair[0]);
+    if (btn) btn.addEventListener("click", function() { printSetlist(pair[1]); });
+  });
 
   var exportBtn = document.getElementById("setlistExportBtn");
   if (exportBtn) {

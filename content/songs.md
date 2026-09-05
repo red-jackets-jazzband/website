@@ -32,7 +32,9 @@ aliases: ["/setlists/", "/songbook/"]
     <button type="button" class="rj-library-tool-btn rj-library-back-btn" id="setlistsBackBtn" hidden>&larr; All setlists</button>
     <div class="rj-library-open-setlist" id="openSetlistTools" hidden>
       <input type="text" id="setlistNameInput" class="rj-library-name-input" hidden>
-      <button type="button" id="setlistPrintBtn" class="rj-library-tool-btn">Print booklet</button>
+      <button type="button" id="printSetlistBtn" class="rj-library-tool-btn">Print setlist</button>
+      <button type="button" id="printChordbookBtn" class="rj-library-tool-btn">Print chordbook</button>
+      <button type="button" id="printSongbookBtn" class="rj-library-tool-btn">Print songbook</button>
       <button type="button" id="setlistExportBtn" class="rj-library-tool-btn" hidden>Export</button>
       <button type="button" id="setlistDeleteBtn" class="rj-library-tool-btn rj-library-tool-danger" hidden>Delete</button>
     </div>

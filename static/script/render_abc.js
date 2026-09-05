@@ -134,10 +134,22 @@ export function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, ti
     document.body.classList.add("rj-sheet-active");
   }
 
+  // The setlist print booklet engraves each song into its own off-screen
+  // container (see #setlistPrintBooklet in split.css). Two reasons it needs a
+  // plain fixed-width render rather than the sheet's "responsive: resize":
+  //   1. responsive mode sets inline styles on the notation element
+  //      (display:inline-block, a padding-bottom % box, overflow:hidden) that
+  //      then fight the print stylesheet — e.g. "Print chordbook" can't hide
+  //      the staves because the inline display beats a plain CSS rule.
+  //   2. its width comes from measuring the container, which is brittle for a
+  //      box that's only ever visible during printing.
+  // A fixed staffwidth sized to the A4 print column sidesteps both.
+  var isBookletRender = notationElt !== "notation";
+
   var abcParams = {
     visualTranspose: transpose_steps,
-    responsive: "resize",
-    staffwidth:1000,
+    responsive: isBookletRender ? undefined : "resize",
+    staffwidth: isBookletRender ? 700 : 1000,
     paddingTop: 0,
     paddingBottom: 0,
     add_classes: true,
