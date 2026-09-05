@@ -727,11 +727,12 @@ video.video {
    Inspiration picture-in-picture panel
    ============================================================ */
 /*
-   #inspirationPanel.inspiration-panel (not just .inspiration-panel): same
-   [hidden]-vs-author-class specificity fight documented above for
-   #exportPanel.export-panel — the id-qualified selector is required so
-   this rule beats the browser's own [hidden] rule regardless of source
-   order once JS toggles the attribute.
+   #inspirationPanel.inspiration-panel (not just .inspiration-panel): this
+   element also carries .hideOnprint, whose `@media screen { display: block }`
+   rule has equal class-level specificity and sits later in the file, so the
+   id-qualified selector is required for this rule to win regardless of source
+   order once JS toggles the [hidden] attribute — see the #rjLibrary.rj-library
+   comment above for the full explanation.
 */
 #inspirationPanel.inspiration-panel {
   position: fixed;
@@ -822,147 +823,11 @@ video.video {
   }
 }
 
-/* ============================================================
-   Export panel
-   ============================================================ */
-/*
-  #exportPanel.export-panel (not just .export-panel): this element also
-  carries .hideOnprint, whose `@media screen { display: block }` rule has
-  equal class-level specificity and sits later in the file — see the
-  #rjLibrary.rj-library comment above for the full explanation.
-*/
-#exportPanel.export-panel {
-  position: fixed;
-  inset: 0;
-  z-index: 20;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0,0,0,.55);
-}
-#exportPanel.export-panel[hidden] {
-  display: none;
-}
-.export-panel-inner {
-  width: 360px;
-  max-width: calc(100vw - 32px);
-  max-height: calc(100vh - 64px);
-  overflow-y: auto;
-  background: #1f1f1f;
-  border: 1px solid rgba(255,255,255,.1);
-  border-radius: 10px;
-  padding: 18px;
-  box-sizing: border-box;
-  font-family: "Montserrat", sans-serif;
-  color: #dedcd8;
-}
-.export-panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 14px;
-}
-.export-panel-title {
-  font: 700 15px/1 "Montserrat", sans-serif;
-  color: #eceae6;
-}
-.export-close-btn {
-  background: none;
-  border: none;
-  color: rgba(236,234,230,.6);
-  font-size: 20px;
-  line-height: 1;
-  cursor: pointer;
-}
-.export-close-btn:hover {
-  color: var(--rj-gold);
-}
-.export-format-row {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 14px;
-  font: 500 13px "Montserrat", sans-serif;
-}
-.export-song-picker {
-  margin-bottom: 14px;
-}
-.export-song-picker-hint {
-  font: 400 11px "Lora", serif;
-  font-style: italic;
-  color: rgba(236,234,230,.5);
-  margin-bottom: 8px;
-}
-.export-song-picker input[type="search"] {
-  width: 100%;
-  box-sizing: border-box;
-  height: 36px;
-  padding: 0 10px;
-  background: #262626;
-  border: 1px solid rgba(255,255,255,.1);
-  border-radius: 6px;
-  color: #dedcd8;
-  margin-bottom: 8px;
-}
-.export-song-list {
-  max-height: 200px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.export-song-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font: 400 12.5px "Montserrat", sans-serif;
-  padding: 4px 0;
-}
-.export-selected-count {
-  font: 500 10.5px "JetBrains Mono", monospace;
-  color: rgba(236,234,230,.45);
-  margin-top: 6px;
-}
-.export-option-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font: 500 13px "Montserrat", sans-serif;
-  margin-bottom: 4px;
-}
-.export-panel-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 16px;
-}
-.export-btn-secondary,
-.export-btn-primary {
-  height: 38px;
-  padding: 0 16px;
-  border-radius: 8px;
-  font: 600 12px "Montserrat", sans-serif;
-  cursor: pointer;
-  border: none;
-}
-.export-btn-secondary {
-  background: #2f2f2f;
-  color: rgba(236,234,230,.8);
-}
-.export-btn-primary {
-  background: var(--rj-gold);
-  color: var(--rj-ground);
-}
-
 @media print {
-  body.export-hide-lyrics .lyrics {
-    display: none !important;
-  }
   /*
-    Booklet export/print (multiple songs into #exportBooklet, or a setlist
-    into its own booklet container): the currently-open single song in
-    #rjSheet has no print-hiding class of its own, so without this it would
-    print alongside the booklet too.
+    Setlist "Print booklet" stacks every song into #setlistPrintBooklet; the
+    currently-open single song in #rjSheet has no print-hiding class of its
+    own, so without this it would print alongside the booklet too.
   */
   body.export-booklet-mode #rjSheet {
     display: none !important;

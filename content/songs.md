@@ -10,11 +10,9 @@ aliases: ["/setlists/", "/songbook/"]
 <script type="module">
     import { loadSongs } from "/script/render_abc.js";
     import { initSongLibrary } from "/script/song_library.js";
-    import { initExportPanel } from "/script/export_panel.js";
     window.addEventListener("load", function () {
         loadSongs();
         initSongLibrary();
-        initExportPanel();
     });
 </script>
 
@@ -104,7 +102,6 @@ aliases: ["/setlists/", "/songbook/"]
 
   <div class="sheet-actions" id="sheetActions">
     <a id="printLink" class="sheet-icon-btn" href="#" title="Print this page" aria-label="Print this page"><span class="fa-solid fa-print" aria-hidden="true"></span></a>
-    <button id="exportOpenBtn" class="sheet-icon-btn" type="button" title="Export&hellip;" aria-label="Export"><span class="fa-solid fa-file-export" aria-hidden="true"></span></button>
   </div>
   <span class="audio-loading" id="audioLoadingLabel">...</span>
 </div>
@@ -124,32 +121,6 @@ Retrieved from www.redjackets.nl - <span id="instrumentText"></span>
 </div>
 </div>
 
-<div id="exportPanel" class="export-panel hideOnprint" hidden>
-  <div class="export-panel-inner">
-    <div class="export-panel-header">
-      <div class="export-panel-title">Export</div>
-      <button id="exportCloseBtn" type="button" class="export-close-btn" aria-label="Close">&times;</button>
-    </div>
-    <div class="export-panel-body">
-      <div class="export-format-row">
-        <label><input type="radio" name="exportFormat" value="chart" checked> This chart</label>
-        <label><input type="radio" name="exportFormat" value="booklet"> Booklet (multiple songs)</label>
-      </div>
-      <div id="exportSongPicker" class="export-song-picker" hidden>
-        <div class="export-song-picker-hint">Pick the songs to include.</div>
-        <input type="search" id="exportSongSearch" placeholder="Search lead sheets" autocomplete="off" aria-label="Search lead sheets to add to the booklet">
-        <div id="exportSongList" class="export-song-list"></div>
-        <div id="exportSelectedCount" class="export-selected-count"></div>
-      </div>
-      <label class="export-option-row"><input type="checkbox" id="exportIncludeLyrics" checked> Include lyrics</label>
-    </div>
-    <div class="export-panel-footer">
-      <button id="exportCancelBtn" type="button" class="export-btn-secondary">Cancel</button>
-      <button id="exportRunBtn" type="button" class="export-btn-primary">Export</button>
-    </div>
-  </div>
-</div>
-<div id="exportBooklet" class="hideOnScreen"></div>
 <div id="setlistPrintBooklet" class="hideOnScreen"></div>
 
 <div id="inspirationPanel" class="inspiration-panel hideOnprint" hidden>
