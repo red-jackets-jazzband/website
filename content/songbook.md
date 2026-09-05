@@ -5,12 +5,11 @@ date: 2019-03-16T16:26:50+01:00
 ---
 
 <script src="/script/abcjs_midi_6.6.3-min.js" type="text/javascript"></script>
-<script src="/script/render_book.js" type="text/javascript"></script>
-<script src="/script/render_abc.js" type="text/javascript"></script>
+<script type="module" src="/script/render_book.js"></script>
 
 <div id="sheetmenu" class="hideOnprint">
-<a id="printBookLink" title="Get the book" href="#" onclick="renderBook()">Generate the Book!</a> |
-<a id="printLink" title="Print this page" href="#" onclick="window.print();return false;">Print</a> |
+<a id="printBookLink" title="Get the book" href="#">Generate the Book!</a> |
+<a id="printLink" title="Print this page" href="#">Print</a> |
 </div>
 <div id="book">
     <div class="container">
@@ -47,8 +46,3 @@ date: 2019-03-16T16:26:50+01:00
     <div id="songs"></div>
     </div>
 </div>
-
-<script type="text/javascript">
-    createInstrumentDropdown();
-    document.getElementById("instrument").onchange = "";
-</script>

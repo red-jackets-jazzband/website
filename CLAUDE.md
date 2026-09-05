@@ -7,8 +7,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Local dev server**: `hugo serve` (serves at http://localhost:1313)
 - **Build**: `hugo` (outputs to `public/`)
 - **Link checking**: `pip install linkchecker && linkchecker public/index.html` (run after `hugo`)
+- **Lint the JS**: `npm run lint` (ESLint, scoped to `static/script/lib/`)
+- **Unit tests**: `npm test` (Node's built-in test runner, `static/script/lib/*.test.js`)
 
-No package.json, no Node build step — this is a pure Hugo static site.
+The site itself has no build step beyond Hugo — it's a pure static site, and `package.json`/`node_modules` exist purely as **dev tooling** (lint + unit tests for the pure logic in `static/script/lib/`), never as part of the Hugo build or the GitHub Pages deploy.
 
 ## Architecture
 
@@ -37,6 +39,7 @@ The most complex parts of the site are the two interactive music pages:
 ### Static assets layout
 - `static/songs/` — ABC notation files (one per song)
 - `static/script/` — All JavaScript: ABCjs library, Tonal.js, render_abc.js, render_book.js, render_agenda.js
+  - `static/script/lib/` — pure, side-effect-free ES modules (instrument table, chord parsing, iRealPro URL building), each with a colocated `*.test.js`. Loaded via `import` from `render_abc.js`/`render_book.js`, which are themselves `type="module"` scripts. This is where new pure logic belongs; DOM/ABCjs orchestration stays in the per-page scripts.
 - `static/assets/css/split.css` — Theme overrides/customizations
 - `static/agenda/` — Event data files
 

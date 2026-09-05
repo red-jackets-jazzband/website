@@ -1,0 +1,15 @@
+{
+  "name": "red-jackets-website",
+  "private": true,
+  "type": "module",
+  "description": "Dev tooling (lint + unit tests) for the Red Jackets Jazzband Hugo site's vanilla JS. Not part of the Hugo build or the GitHub Pages deploy.",
+  "scripts": {
+    "lint": "eslint static/script/lib",
+    "test": "node --test static/script/lib/*.test.js"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.10.0",
+    "globals": "^17.12.0"
+  }
+}
