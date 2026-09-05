@@ -66,10 +66,6 @@ date: 2019-03-16T16:26:50+01:00
     <div class="rj-library-list" id="songList"></div>
     <div class="rj-library-rail" id="songRail"></div>
   </div>
-  <div class="rj-library-profile">
-    <div class="rj-library-profile-label">Your instrument</div>
-    <div id="rjLibraryProfile"></div>
-  </div>
 </div>
 
 <div id="rjSheet" class="rj-sheet">
@@ -83,7 +79,7 @@ date: 2019-03-16T16:26:50+01:00
     <button type="button" id="keyDownBtn" class="sheet-stepper-btn" aria-label="Lower key">&minus;</button>
     <div class="sheet-stepper-value">
       <input type="number" id="transpose" name="quantity" value="0" min="-12" max="12" aria-label="Key, in semitones from concert pitch">
-      <span class="sheet-stepper-label">key</span>
+      <span class="sheet-stepper-label">semitones</span>
     </div>
     <button type="button" id="keyUpBtn" class="sheet-stepper-btn" aria-label="Raise key">&plus;</button>
   </div>
@@ -91,8 +87,8 @@ date: 2019-03-16T16:26:50+01:00
   <div class="sheet-stepper" id="tempoStepper" title="Tempo">
     <button type="button" id="tempoDownBtn" class="sheet-stepper-btn" aria-label="Slower">&minus;</button>
     <div class="sheet-stepper-value">
-      <span id="tempoValueLabel">100%</span>
-      <span class="sheet-stepper-label">tempo</span>
+      <span id="tempoValueLabel">120</span>
+      <span class="sheet-stepper-label">bpm</span>
     </div>
     <button type="button" id="tempoUpBtn" class="sheet-stepper-btn" aria-label="Faster">&plus;</button>
   </div>
