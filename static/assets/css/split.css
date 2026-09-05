@@ -835,6 +835,101 @@ video.video {
 }
 
 /* ============================================================
+   Printing one song sheet (the Print icon on #rjSheet).
+
+   On screen this page is a fixed 100vh flex split: a 30% masthead
+   image, then a 70% content column that scrolls. On paper that
+   left the notation boxed into ~70% of the page width, and long
+   tunes (e.g. "Bei mir bist du schön") were clipped or sliced
+   through the middle of a staff at the page break. This unwraps
+   the whole split for print so the sheet gets the full page and
+   paginates between staff lines instead of across them.
+   ============================================================ */
+@media print {
+  .fs-split {
+    display: block;
+    width: auto;
+    height: auto;
+  }
+  .fs-split .split-image {
+    display: none;
+  }
+  .fs-split .split-content {
+    width: auto;
+    min-height: 0;
+    display: block;
+    overflow: visible;
+  }
+  body:has(#rjLibrary) .fs-split .split-content-vertically-center,
+  .fs-split .split-content .split-content-vertically-center {
+    display: block;
+    width: auto;
+    max-width: none;
+    height: auto;
+    margin: 0;
+    padding: 0;
+  }
+  .rj-songs-layout {
+    display: block;
+    height: auto;
+    gap: 0;
+  }
+  .rj-sheet {
+    width: 100%;
+  }
+  /*
+    Tighter than the browser's ~13mm default so a dense tune
+    ("Bei mir bist du schön") has the vertical room to land on a
+    single page.
+  */
+  @page {
+    margin: 8mm 10mm;
+  }
+  .rj-sheet-paper {
+    padding: 0;
+    border-radius: 0;
+    overflow: visible;
+    /*
+      Even unwrapped and full-width the longest tunes engrave a
+      hair past one page. A small uniform shrink of the printed
+      body closes that gap; `zoom` (unlike `transform: scale()`)
+      actually reduces the laid-out height, so pagination — and
+      the break-inside rules below — still work.
+    */
+    zoom: 0.9;
+  }
+  /* Reclaim the generous on-screen spacing around the header. */
+  #songtitle {
+    padding: 4px 0 8px;
+  }
+  #chordtable {
+    line-height: 1.2;
+  }
+  #chordtable > .chordGrid {
+    margin: 4px auto;
+  }
+  #chordtable .chordDiv {
+    height: auto;
+    min-height: 0;
+  }
+  /*
+    oneSvgPerLine makes each engraved line its own SVG (wrapped in
+    abcjs's responsive-resize <div>). Keep every line — and the
+    title/chord grid — whole rather than letting a page break run
+    through it.
+  */
+  #songtitle,
+  #chordtable,
+  #notation > *,
+  #notation svg,
+  #lyrics > *,
+  #lyrics svg {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
+
+/* ============================================================
    Shared library sidebar: Library / Setlists tabs
    ============================================================ */
 .rj-library-tabs {
