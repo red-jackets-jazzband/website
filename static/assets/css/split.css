@@ -451,20 +451,28 @@ video.video {
     padding: 20px;
 }
 
-.chordtable > table {
+.chordtable > .chordGrid {
+    display: grid;
+    grid-template-columns: repeat(var(--chord-cols, 4), 1fr);
     padding: 10px;
     width: 90%;
+    margin: 10px auto;
     text-align: center;
-    margin: 10;
-    position: relative;
-    left: 50%;
-    transform: translate(-50%, 0%);
-    table-layout: fixed;
-}
-.chordtable > table {
     border-width: 1px;
     border-style: solid;
     border-color: #000000;
+    box-sizing: border-box;
+}
+
+/* Reflow to fewer columns at narrow widths regardless of the desktop
+   4-vs-8 column count, so cells stay readable rather than shrinking to
+   near-illegible width. Cell order/count is unchanged — .chordCell is a
+   flat sequence read positionally by playback highlighting, only the
+   number of columns it wraps into changes. */
+@media (max-width: 480px) {
+  .chordtable > .chordGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 #sheetmenu{
     font-family:"Montserrat", sans-serif;
@@ -624,7 +632,14 @@ body:has(#rjLibrary) .fs-split .split-content-vertically-center {
   width: 100%;
 }
 
-.rj-library {
+/*
+  #rjLibrary.rj-library (not just .rj-library): this element also carries
+  .hideOnprint, whose `@media screen { display: block }` rule has equal
+  class-level specificity and sits later in the file — without the id
+  qualifier here it silently wins and collapses this back to a plain block,
+  losing the flex layout. Same reasoning applies to #sheetBackBtn below.
+*/
+#rjLibrary.rj-library {
   width: 300px;
   flex: none;
   background: var(--rj-ground);
@@ -762,14 +777,53 @@ body:has(#rjLibrary) .fs-split .split-content-vertically-center {
   min-width: 0;
 }
 
-/* Interim mobile safety net until Milestone 5's proper list<->sheet stacking */
+#sheetBackBtn.rj-sheet-back {
+  display: none;
+}
+
+/*
+  Phone layout: the library and the sheet become two full-width screens —
+  list first, tap a song to see the sheet, tap back to return — instead of
+  a cramped side-by-side split. body.rj-sheet-active (set whenever a song
+  actually renders, from any entry point: list click, hash deep-link, or
+  reload) is what switches which of the two is showing.
+
+  Every selector here that toggles `display` on #rjLibrary/#rjSheet/
+  #sheetBackBtn is id-qualified to match the specificity of their base
+  rules above (see the #rjLibrary.rj-library comment) — otherwise these
+  overrides would lose to the base rule instead of the intended cascade.
+*/
 @media (max-width: 800px) {
   .rj-songs-layout {
     flex-direction: column;
+    gap: 0;
   }
-  .rj-library {
+  #rjLibrary.rj-library {
     width: 100%;
-    max-height: 420px;
+    max-height: none;
+  }
+  #rjSheet.rj-sheet {
+    display: none;
+  }
+  body.rj-sheet-active #rjLibrary.rj-library {
+    display: none;
+  }
+  body.rj-sheet-active #rjSheet.rj-sheet {
+    display: block;
+  }
+  #sheetBackBtn.rj-sheet-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 12px 0 0 16px;
+    padding: 8px 4px;
+    background: none;
+    border: none;
+    color: var(--rj-gold);
+    font: 600 12px/1 "Montserrat", sans-serif;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    cursor: pointer;
   }
 }
 
@@ -777,6 +831,8 @@ body:has(#rjLibrary) .fs-split .split-content-vertically-center {
   border-width: 1px;
   border-style: solid;
   border-color: #000000;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .chordCell.chordCell-playing {
@@ -835,7 +891,7 @@ body:has(#rjLibrary) .fs-split .split-content-vertically-center {
 }
 
 @media print {
-  .chordtable > table {
+  .chordtable > .chordGrid {
     font-size: xx-large;
   }
 }

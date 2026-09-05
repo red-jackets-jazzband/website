@@ -39,6 +39,7 @@ date: 2019-03-16T16:26:50+01:00
 
 <div id="rjSheet" class="rj-sheet">
 
+<button id="sheetBackBtn" class="rj-sheet-back hideOnprint" type="button">&larr; Songs</button>
 <!-- <img src="/images/redjackets_logo.png" id="printLogo" class="printLogo hideOnScreen" /> -->
 <div id="sheetmenu" class="hideOnprint">
   <div id="sheetStatus" class="sheet-status"></div>
