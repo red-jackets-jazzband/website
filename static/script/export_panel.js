@@ -36,6 +36,7 @@ export function initExportPanel() {
 
   window.addEventListener("afterprint", function() {
     document.body.classList.remove("export-hide-lyrics");
+    document.body.classList.remove("export-booklet-mode");
   });
 
   readFile("index_of_songs.txt", function(data) {
@@ -105,6 +106,12 @@ function runExport() {
     return;
   }
 
+  // The currently-open single song (#rjSheet) has no print-hiding class of
+  // its own — normally correct, since printing while reading a chart should
+  // print that chart — but it would otherwise print alongside the booklet
+  // too. Hide it just for this print, same restore-on-afterprint pattern as
+  // export-hide-lyrics above.
+  document.body.classList.add("export-booklet-mode");
   buildBooklet(selectedFiles.slice(), function() {
     closePanel();
     window.print();
