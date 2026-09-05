@@ -30,18 +30,9 @@ aliases: ["/setlists/", "/songbook/"]
 
   <div class="rj-library-setlist-tools" id="setlistTools" hidden>
     <button type="button" class="rj-library-tool-btn rj-library-back-btn" id="setlistsBackBtn" hidden>&larr; All setlists</button>
-    <div class="rj-library-new-setlist" id="newSetlistRow">
-      <input type="text" id="newSetlistName" placeholder="New setlist name" autocomplete="off">
-      <button type="button" id="newSetlistBtn" class="rj-library-tool-btn">+ Create</button>
-      <label class="rj-library-tool-btn rj-library-import-label">
-        Import&hellip;
-        <input type="file" id="importSetlistInput" accept=".txt" hidden>
-      </label>
-    </div>
     <div class="rj-library-open-setlist" id="openSetlistTools" hidden>
       <input type="text" id="setlistNameInput" class="rj-library-name-input" hidden>
       <button type="button" id="setlistPrintBtn" class="rj-library-tool-btn">Print booklet</button>
-      <button type="button" id="setlistCopyBtn" class="rj-library-tool-btn" hidden>Copy to mine</button>
       <button type="button" id="setlistExportBtn" class="rj-library-tool-btn" hidden>Export</button>
       <button type="button" id="setlistDeleteBtn" class="rj-library-tool-btn rj-library-tool-danger" hidden>Delete</button>
     </div>
