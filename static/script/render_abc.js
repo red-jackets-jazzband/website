@@ -834,12 +834,12 @@ function updateMelodyButton() {
   if (!btn) return;
   if (audioPlayer.melodOff) {
     btn.classList.add("active");
-    btn.innerHTML = '<span class="fa-solid fa-volume-xmark" aria-hidden="true"></span>';
+    btn.innerHTML = '<span class="fa-solid fa-microphone-lines-slash" aria-hidden="true"></span>';
     btn.title = "Unmute melody";
     btn.setAttribute("aria-label", "Unmute melody");
   } else {
     btn.classList.remove("active");
-    btn.innerHTML = '<span class="fa-solid fa-volume-high" aria-hidden="true"></span>';
+    btn.innerHTML = '<span class="fa-solid fa-microphone-lines" aria-hidden="true"></span>';
     btn.title = "Mute melody";
     btn.setAttribute("aria-label", "Mute melody");
   }
