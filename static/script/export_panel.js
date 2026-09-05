@@ -39,7 +39,7 @@ export function initExportPanel() {
     document.body.classList.remove("export-booklet-mode");
   });
 
-  readFile("index_of_songs.txt", function(data) {
+  readFile("/songs/index_of_songs.txt", function(data) {
     allSongs = parseSongIndex(data);
     renderSongPicker("");
   });
@@ -128,6 +128,8 @@ function runExport() {
 function buildBooklet(files, done) {
   var container = document.getElementById("exportBooklet");
   container.innerHTML = "";
+  var setlistBooklet = document.getElementById("setlistPrintBooklet");
+  if (setlistBooklet) setlistBooklet.innerHTML = "";
   if (files.length === 0) {
     done();
     return;

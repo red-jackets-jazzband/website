@@ -5,12 +5,32 @@ import { parseChordScheme, simplifyBlues, simplifySong, computeChordOffset } fro
 import { irealProFromAbc } from "./lib/irealpro.js";
 import { convertChordsToRoman } from "./lib/music-theory.js";
 
+/*
+   Funcion: renderSong
+   `path` is always a bare .abc filename (from a hash link or the library
+   list) — always resolved against /songs/, regardless of which page this
+   runs on (both /songs/ and /setlists/ share this module).
+*/
 export function renderSong(path) {
-  document.getElementById("transpose").value = 0;
+  readFile("/songs/" + path, function(text) {
+    renderSongTextWithOverride(text, 0);
+  });
+}
+
+/*
+   Funcion: renderSongTextWithOverride
+   Same reset-then-render sequence as renderSong, but for a caller that
+   already has the ABC text in hand (song_library.js, opening a setlist song
+   that needs its key preset from a per-song override) and wants the Key
+   stepper preset to a computed semitone value instead of always starting
+   at 0.
+*/
+export function renderSongTextWithOverride(text, transposeSemitones) {
+  document.getElementById("transpose").value = transposeSemitones || 0;
   tempoPercent = 100;
   updateTempoLabel();
   audioPlayer.melodOff = false;
-  readFile(path, renderAbcFile);
+  renderAbcFile(text);
 }
 
 export function rerenderFile() {

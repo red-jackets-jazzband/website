@@ -862,189 +862,131 @@ video.video {
 }
 
 /* ============================================================
-   Setlists page
+   Shared library sidebar: Library / Setlists tabs
    ============================================================ */
-.setlists-section-title {
-  font: 700 11px/1 "Montserrat", sans-serif;
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  color: var(--rj-gold);
-  margin: 24px 0 12px;
+.rj-library-tabs {
+  flex: none;
+  display: flex;
+  gap: 6px;
+  padding: 12px 16px 0;
 }
-.setlists-list {
+.rj-library-tab {
+  flex: 1;
+  height: 32px;
+  background: none;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 7px;
+  color: rgba(230,228,224,.55);
+  font: 600 11px "Montserrat", sans-serif;
+  letter-spacing: .04em;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.rj-library-tab:hover {
+  color: #dedcd8;
+}
+.rj-library-tab.active {
+  background: var(--rj-gold);
+  border-color: var(--rj-gold);
+  color: #1b1b1b;
+}
+
+.rj-library-setlist-tools {
+  flex: none;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
+  padding: 12px 16px 0;
 }
-.setlists-row {
-  text-align: left;
-  padding: 16px 18px;
-  background: #1f1f1f;
-  border: 1px solid rgba(255,255,255,.1);
-  border-radius: 10px;
-  color: #dedcd8;
-  font: 600 14px "Montserrat", sans-serif;
-  cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
-}
-.setlists-row:hover {
-  border-color: var(--rj-gold);
-  color: var(--rj-gold);
-}
-.setlists-row-band {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  cursor: default;
-  padding: 0;
-  overflow: hidden;
-}
-.setlists-row-band .setlists-row-main {
-  flex: 1;
-  text-align: left;
+.rj-library-back-btn {
+  align-self: flex-start;
   background: none;
   border: none;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-  padding: 16px 18px;
-}
-.setlists-row-band:hover .setlists-row-main {
+  padding: 0;
   color: var(--rj-gold);
-}
-.setlists-row-band .setlists-row-copy {
-  flex: none;
-  height: 100%;
-  padding: 0 16px;
-  background: rgba(255,255,255,.05);
-  border: none;
-  border-left: 1px solid rgba(255,255,255,.1);
-  color: rgba(236,234,230,.6);
   font: 600 11px "Montserrat", sans-serif;
+  text-transform: uppercase;
+  letter-spacing: .06em;
   cursor: pointer;
-  align-self: stretch;
 }
-.setlists-row-band .setlists-row-copy:hover {
-  color: var(--rj-gold);
-  background: rgba(255,255,255,.08);
-}
-.setlists-empty {
-  font: 400 13px "Lora", serif;
-  font-style: italic;
-  color: rgba(236,234,230,.5);
-}
-.setlists-my-hint {
-  font: 400 12px "Lora", serif;
-  font-style: italic;
-  color: rgba(236,234,230,.45);
-  margin: -6px 0 12px;
-}
-.setlists-my-actions {
+.rj-library-new-setlist,
+.rj-library-open-setlist,
+.rj-library-add-song {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 12px;
+  gap: 6px;
   flex-wrap: wrap;
 }
-.setlists-my-actions input[type="text"] {
+/*
+  [hidden] companions: these three toggle via the native hidden attribute
+  (song_library.js sets .hidden = true/false), but the plain-class rule
+  above sets `display` with the same specificity as the browser's own
+  [hidden] { display:none } UA rule — author beats user-agent at equal
+  specificity regardless of source order, so without this, hidden="true"
+  stops hiding them once display:flex is added. Same gotcha documented
+  elsewhere in this file for #rjLibrary.rj-library and #setlistEditor.
+*/
+#newSetlistRow[hidden],
+#openSetlistTools[hidden],
+#addSongRow[hidden],
+#setlistsBackBtn[hidden],
+#setlistNameInput[hidden],
+#setlistPrintBtn[hidden],
+#setlistCopyBtn[hidden],
+#setlistExportBtn[hidden],
+#setlistDeleteBtn[hidden] {
+  display: none;
+}
+.rj-library-new-setlist input[type="text"],
+.rj-library-name-input,
+.rj-library-add-song input[type="search"] {
   flex: 1;
-  min-width: 160px;
-  height: 40px;
+  min-width: 110px;
+  height: 36px;
   box-sizing: border-box;
-  padding: 0 12px;
+  padding: 0 10px;
   background: #262626;
   border: 1px solid rgba(255,255,255,.1);
-  border-radius: 8px;
+  border-radius: 7px;
   color: #dedcd8;
-  font: 500 13px "Montserrat", sans-serif;
+  font: 500 12.5px "Montserrat", sans-serif;
 }
-.setlists-action-btn {
-  height: 40px;
-  padding: 0 16px;
+.rj-library-name-input {
+  color: #eceae6;
+  font-weight: 700;
+}
+.rj-library-tool-btn {
+  height: 36px;
+  padding: 0 12px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   background: #2f2f2f;
   border: 1px solid rgba(255,255,255,.1);
-  border-radius: 8px;
+  border-radius: 7px;
   color: #dedcd8;
-  font: 600 12px "Montserrat", sans-serif;
+  font: 600 11.5px "Montserrat", sans-serif;
   cursor: pointer;
   white-space: nowrap;
 }
-.setlists-action-btn:hover {
+.rj-library-tool-btn:hover {
   border-color: var(--rj-gold);
   color: var(--rj-gold);
 }
-.setlists-action-danger:hover {
+.rj-library-tool-danger:hover {
   border-color: #a8442f;
   color: #ca486d;
 }
-.setlists-import-label input[type="file"] {
+.rj-library-import-label input[type="file"] {
   display: none;
 }
-
-/* ============================================================
-   Setlist editor (personal setlists)
-   ============================================================ */
-/*
-  #setlistEditor.setlists-editor (not just .setlists-editor): this element
-  carries .hideOnprint (see the #rjLibrary.rj-library comment above) AND is
-  toggled via the native hidden attribute. Any author rule that sets
-  `display` beats the browser's own [hidden] handling regardless of
-  specificity — author always beats user-agent — so the id-qualified
-  [hidden] companion rule below is required too, or the hidden attribute
-  stops hiding this element at all once display:flex is added.
-*/
-#setlistEditor.setlists-editor {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 16px;
-  margin-bottom: 20px;
-  background: #1f1f1f;
-  border: 1px solid rgba(255,255,255,.1);
-  border-radius: 10px;
-}
-#setlistEditor.setlists-editor[hidden] {
-  display: none;
-}
-.setlists-editor-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.setlists-name-input {
-  flex: 1;
-  min-width: 160px;
-  height: 40px;
-  box-sizing: border-box;
-  padding: 0 12px;
-  background: #262626;
-  border: 1px solid rgba(255,255,255,.1);
-  border-radius: 8px;
-  color: #eceae6;
-  font: 700 14px "Montserrat", sans-serif;
-}
-.setlists-editor-row input[type="search"] {
-  flex: 1;
-  min-width: 160px;
-  height: 38px;
-  box-sizing: border-box;
-  padding: 0 12px;
-  background: #262626;
-  border: 1px solid rgba(255,255,255,.1);
-  border-radius: 8px;
-  color: #dedcd8;
-  font: 500 13px "Montserrat", sans-serif;
-}
-.setlists-add-song-results {
+.rj-library-add-song-results {
+  flex-basis: 100%;
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
-.setlists-add-song-result {
+.rj-library-add-song-result {
   text-align: left;
   padding: 8px 10px;
   background: #262626;
@@ -1054,88 +996,125 @@ video.video {
   font: 500 12.5px "Montserrat", sans-serif;
   cursor: pointer;
 }
-.setlists-add-song-result:hover {
+.rj-library-add-song-result:hover {
   border-color: var(--rj-gold);
   color: var(--rj-gold);
 }
-.setlists-song-edit-rows {
+
+/*
+  Setlist rows in #songList (setlists-home) and setlist-song rows (an open
+  setlist) reuse .song-list-item's base look, layered with flex/grid for
+  their extra controls. Selectors below are .song-list-item-qualified (not
+  just .setlist-row / .setlist-song-row alone): both carry the plain
+  .song-list-item class too, and .song-list-item's own `display: block`
+  (defined later in this file) would otherwise win a same-specificity,
+  source-order tiebreak against a single-class selector here.
+*/
+.song-list-item.setlist-row {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 4px;
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
 }
-.setlists-edit-row {
+.setlist-row-main {
+  flex: 1;
+  text-align: left;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  padding: 10px 4px;
+}
+.setlist-row:hover .setlist-row-main {
+  color: var(--rj-hover);
+}
+.setlist-row-copy {
+  flex: none;
+  padding: 0 10px;
+  background: none;
+  border: none;
+  border-left: 1px solid rgba(255,255,255,.1);
+  color: rgba(236,234,230,.5);
+  font: 600 10.5px "Montserrat", sans-serif;
+  cursor: pointer;
+}
+.setlist-row-copy:hover {
+  color: var(--rj-gold);
+}
+.song-list-item.setlist-song-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 10px;
-  background: #262626;
-  border: 1px solid rgba(255,255,255,.08);
-  border-radius: 8px;
+  padding: 8px 4px;
 }
-.setlists-edit-row-title {
+.setlist-song-number {
+  flex: none;
+  width: 16px;
+  font: 600 11px "JetBrains Mono", monospace;
+  color: var(--rj-gold);
+}
+.setlist-song-title {
   flex: 1;
   min-width: 0;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font: 500 13px "Montserrat", sans-serif;
   color: #dedcd8;
+  font: 500 13px "Montserrat", sans-serif;
+  cursor: pointer;
 }
-.setlists-edit-row-key {
-  width: 48px;
-  height: 30px;
+.setlist-song-title:hover {
+  color: var(--rj-hover);
+}
+.setlist-song-key-badge {
+  flex: none;
+  font: 600 11px "JetBrains Mono", monospace;
+  color: rgba(230,228,224,.4);
+}
+.setlist-song-key-input {
+  flex: none;
+  width: 40px;
+  height: 26px;
   box-sizing: border-box;
-  padding: 0 6px;
+  padding: 0 4px;
   background: #1f1f1f;
   border: 1px solid rgba(255,255,255,.1);
   border-radius: 6px;
   color: var(--rj-gold);
-  font: 600 12px "JetBrains Mono", monospace;
+  font: 600 11px "JetBrains Mono", monospace;
   text-align: center;
 }
-.setlists-edit-row-btn {
-  width: 28px;
-  height: 28px;
+.setlist-song-btn {
   flex: none;
+  width: 22px;
+  height: 22px;
   display: grid;
   place-items: center;
   background: #1f1f1f;
   border: 1px solid rgba(255,255,255,.1);
-  border-radius: 6px;
+  border-radius: 5px;
   color: rgba(236,234,230,.7);
   cursor: pointer;
-  font-size: 13px;
+  font-size: 11px;
+  padding: 0;
 }
-.setlists-edit-row-btn:hover:not(:disabled) {
+.setlist-song-btn:hover:not(:disabled) {
   border-color: var(--rj-gold);
   color: var(--rj-gold);
 }
-.setlists-edit-row-btn:disabled {
+.setlist-song-btn:disabled {
   opacity: .3;
   cursor: default;
 }
-.setlists-edit-row-remove:hover {
+.setlist-song-remove:hover {
   border-color: #a8442f !important;
   color: #ca486d !important;
-}
-/*
-  #setlistBackBtn.setlists-back (not just .setlists-back): also carries
-  .hideOnprint — see the #rjLibrary.rj-library comment above.
-*/
-#setlistBackBtn.setlists-back {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin: 0 0 16px;
-  padding: 8px 4px;
-  background: none;
-  border: none;
-  color: var(--rj-gold);
-  font: 600 12px/1 "Montserrat", sans-serif;
-  text-transform: uppercase;
-  letter-spacing: .06em;
-  cursor: pointer;
 }
 .setlist-view-title {
   font: 700 22px/1.2 "Montserrat", sans-serif;
