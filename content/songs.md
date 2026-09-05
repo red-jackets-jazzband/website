@@ -38,6 +38,7 @@ aliases: ["/setlists/", "/songbook/"]
     </div>
     <div class="rj-library-add-song" id="addSongRow" hidden>
       <input type="search" id="setlistAddSongSearch" placeholder="Add a song&hellip;" autocomplete="off">
+      <button type="button" id="setlistAddBreakBtn" class="rj-library-tool-btn">Add break</button>
       <div id="setlistAddSongResults" class="rj-library-add-song-results"></div>
     </div>
   </div>

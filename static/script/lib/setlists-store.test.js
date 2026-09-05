@@ -8,6 +8,8 @@ import {
   addSongToPersonalSetlist,
   removeSongFromPersonalSetlist,
   updateSongKeyInPersonalSetlist,
+  addDividerToPersonalSetlist,
+  updateDividerLabelInPersonalSetlist,
   moveSongInPersonalSetlist,
   copyBandSetlistToPersonal,
   exportPersonalSetlistText,
@@ -69,6 +71,34 @@ test("moveSongInPersonalSetlist swaps neighbors and no-ops at the ends", () => {
   moveSongInPersonalSetlist(storage, entry.id, 0, -1); // already first — no-op
   var files2 = listPersonalSetlists(storage)[0].songs.map((s) => s.file);
   assert.deepEqual(files2, ["a.abc", "c.abc", "b.abc"]);
+});
+
+test("addDividerToPersonalSetlist / updateDividerLabelInPersonalSetlist manage set breaks", () => {
+  var storage = makeStorage();
+  var entry = createPersonalSetlist(storage, "My List");
+  addSongToPersonalSetlist(storage, entry.id, { file: "a.abc", key: "" });
+  addDividerToPersonalSetlist(storage, entry.id);
+  addSongToPersonalSetlist(storage, entry.id, { file: "b.abc", key: "" });
+
+  assert.deepEqual(listPersonalSetlists(storage)[0].songs, [
+    { file: "a.abc", key: "" },
+    { divider: "" },
+    { file: "b.abc", key: "" },
+  ]);
+
+  updateDividerLabelInPersonalSetlist(storage, entry.id, 1, "Second set");
+  assert.equal(listPersonalSetlists(storage)[0].songs[1].divider, "Second set");
+
+  // Refuses to relabel a non-divider index.
+  updateDividerLabelInPersonalSetlist(storage, entry.id, 0, "nope");
+  assert.deepEqual(listPersonalSetlists(storage)[0].songs[0], { file: "a.abc", key: "" });
+
+  // A divider survives export/import as a "# break" line.
+  var text = exportPersonalSetlistText(storage, entry.id);
+  assert.match(text, /# break,Second set/);
+  var deviceB = makeStorage();
+  var imported = importPersonalSetlistText(deviceB, text, "fallback");
+  assert.equal(imported.songs[1].divider, "Second set");
 });
 
 test("renamePersonalSetlist updates the name", () => {
