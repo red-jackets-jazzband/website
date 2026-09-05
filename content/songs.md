@@ -41,15 +41,21 @@ date: 2019-03-16T16:26:50+01:00
 
 <!-- <img src="/images/redjackets_logo.png" id="printLogo" class="printLogo hideOnScreen" /> -->
 <div id="sheetmenu" class="hideOnprint">
-<a id="printLink" title="Print this page" href="#">Print</a> |
-Transpose
-<input type="number" id="transpose" name="quantity" value="0" min="-12" max="12">
-<span id="audioControls" style="display:none;">|
-<button id="playPauseBtn" class="audio-btn-inline" disabled title="Play"><i class="fa-solid fa-play"></i></button>
-<button id="stopBtn" class="audio-btn-inline" disabled title="Stop"><i class="fa-solid fa-stop"></i></button>
-<button id="melodyOffBtn" class="audio-btn-inline" disabled title="Mute melody"><span class="fa-stack"><i class="fa-solid fa-music fa-stack-1x"></i><i class="fa-solid fa-slash fa-stack-1x"></i></span></button>
-<span class="audio-loading" id="audioLoadingLabel">...</span>
-</span> | 
+  <div id="sheetStatus" class="sheet-status"></div>
+  <button id="playPauseBtn" class="sheet-play-btn" disabled title="Play"><i class="fa-solid fa-play"></i></button>
+  <button id="overflowToggle" class="sheet-overflow-toggle" type="button" title="More options" aria-haspopup="true" aria-expanded="false">&#8942;</button>
+  <div id="overflowMenu" class="sheet-overflow-menu" hidden>
+    <a id="printLink" title="Print this page" href="#">Print</a>
+    <div class="overflow-row">
+      <label for="transpose">Transpose</label>
+      <input type="number" id="transpose" name="quantity" value="0" min="-12" max="12">
+    </div>
+    <div class="overflow-row">
+      <button id="stopBtn" class="audio-btn-inline" disabled title="Stop"><i class="fa-solid fa-stop"></i></button>
+      <button id="melodyOffBtn" class="audio-btn-inline" disabled title="Mute melody"><span class="fa-stack"><i class="fa-solid fa-music fa-stack-1x"></i><i class="fa-solid fa-slash fa-stack-1x"></i></span></button>
+      <span class="audio-loading" id="audioLoadingLabel">...</span>
+    </div>
+  </div>
 </div>
 <div id="abc-player-container" style="display:none;"></div>
 

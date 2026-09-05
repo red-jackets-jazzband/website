@@ -64,8 +64,10 @@ export function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, ti
 
   // Don't use valueAsNumber to let IE users also enjoy transposing
   transpose_steps = Number(transpose_steps);
+  var manualTransposeSteps = transpose_steps;
   var instrumentSelect = document.getElementById("instrument");
   document.getElementById("instrumentText").innerHTML = instrumentSelect.options[instrumentSelect.selectedIndex].text.toLowerCase();
+  updateSheetStatusLine(instrumentSelect, manualTransposeSteps);
 
   // Check if there are voice definitions with instrument-related attributes
   const hasInstrumentVoices = text.match(/^V:\d+.*(clef=|transpose=|name=)/gm);
@@ -369,9 +371,8 @@ function add_inspiration_link(url) {
       link.href = url;
       link.target = "_blank";
       link.id = "inspirationLink";
-      var menu = document.getElementById("sheetmenu");
-      menu.appendChild(document.createTextNode(" | "));
-      menu.appendChild(link);
+      var menu = document.getElementById("overflowMenu");
+      if (menu) menu.appendChild(link);
     }
   } else {
     var link = document.getElementById("inspirationLink");
@@ -383,7 +384,7 @@ function add_inspiration_link(url) {
 
 /*
    Funcion: add_irealpro_link
-   Adds a link to the sheetmenu for devices that could have irealpro
+   Adds a link to the overflow menu for devices that could have irealpro
 */
 function add_irealpro_link(song, chords) {
 
@@ -399,9 +400,8 @@ function add_irealpro_link(song, chords) {
       link.href = url
       /* link.target = "_blank"; */
       link.id = "iRealPro";
-      var menu = document.getElementById("sheetmenu");
-      menu.appendChild(document.createTextNode(" | "));
-      menu.appendChild(link);
+      var menu = document.getElementById("overflowMenu");
+      if (menu) menu.appendChild(link);
     }
   }
 }
@@ -478,6 +478,60 @@ function initSheetControls() {
 
   var melodyBtn = document.getElementById("melodyOffBtn");
   if (melodyBtn) melodyBtn.addEventListener("click", toggleMelody);
+
+  var overflowToggle = document.getElementById("overflowToggle");
+  if (overflowToggle) {
+    overflowToggle.addEventListener("click", function(e) {
+      e.stopPropagation();
+      toggleOverflowMenu();
+    });
+  }
+  document.addEventListener("click", function(e) {
+    var menu = document.getElementById("overflowMenu");
+    if (menu && !menu.hidden && !menu.contains(e.target) && e.target !== overflowToggle) {
+      closeOverflowMenu();
+    }
+  });
+}
+
+/*
+   Funcion: updateSheetStatusLine
+   Fills the compact "instrument · transpose" status line shown next to the
+   persistent Play button. Separate from #instrumentText, which still feeds
+   the print footer.
+*/
+function updateSheetStatusLine(instrumentSelect, manualTransposeSteps) {
+  var statusEl = document.getElementById("sheetStatus");
+  if (!statusEl) return;
+  var parts = [instrumentSelect.options[instrumentSelect.selectedIndex].text];
+  if (manualTransposeSteps) {
+    parts.push((manualTransposeSteps > 0 ? "+" : "") + manualTransposeSteps + " semitones");
+  }
+  statusEl.textContent = parts.join(" · ");
+}
+
+function toggleOverflowMenu() {
+  var menu = document.getElementById("overflowMenu");
+  if (!menu) return;
+  if (menu.hidden) {
+    openOverflowMenu();
+  } else {
+    closeOverflowMenu();
+  }
+}
+
+function openOverflowMenu() {
+  var menu = document.getElementById("overflowMenu");
+  var toggle = document.getElementById("overflowToggle");
+  if (menu) menu.hidden = false;
+  if (toggle) toggle.setAttribute("aria-expanded", "true");
+}
+
+function closeOverflowMenu() {
+  var menu = document.getElementById("overflowMenu");
+  var toggle = document.getElementById("overflowToggle");
+  if (menu) menu.hidden = true;
+  if (toggle) toggle.setAttribute("aria-expanded", "false");
 }
 
 /*
@@ -530,8 +584,10 @@ export function createInstrumentDropdown() {
     storeInstrument(select.value);
   });
 
-  var abc_menu = document.getElementById("sheetmenu");
-  abc_menu.appendChild(div);
+  // The songs page has an overflow menu for the instrument picker; the
+  // songbook page (no overflow menu) still appends it straight to #sheetmenu.
+  var menu = document.getElementById("overflowMenu") || document.getElementById("sheetmenu");
+  menu.appendChild(div);
 }
 
 /*
@@ -758,10 +814,6 @@ function initAudioForTune(visualObj) {
   updateMelodyButton();
   setPlayerButtonsDisabled(true);
   setAudioLoadingVisible(true);
-
-  // Show the inline player controls
-  var controls = document.getElementById("audioControls");
-  if (controls) controls.style.display = "";
 
   // Pre-compute note-to-time map for click-to-seek
   buildTimingMap(visualObj);
