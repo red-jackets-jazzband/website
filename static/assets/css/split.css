@@ -675,72 +675,24 @@ video.video {
   color: #222222 !important;
 }
 
-.sheet-overflow-toggle {
+/*
+  Print / Export / iRealPro: icon-only 44px buttons (same footprint and
+  secondary styling as Stop / Mute-melody), grouped so they wrap together
+  when #sheetmenu runs out of width. iRealPro is appended here at runtime
+  by add_irealpro_link. These replace the old "More" overflow menu.
+*/
+.sheet-actions {
   flex: none;
-  height: 44px;
-  padding: 0 14px;
-  display: grid;
-  place-items: center;
-  background: #2f2f2f;
-  border: 1px solid rgba(255,255,255,.11);
-  border-radius: 8px;
-  color: rgba(236,234,230,.72);
-  font: 600 12px/1 "Montserrat", sans-serif;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-}
-.sheet-overflow-toggle:hover {
-  background: var(--rj-gold);
-  color: #222222;
-}
-
-.sheet-overflow-menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 16px;
-  z-index: 5;
   display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 16px;
-  background: #1f1f1f;
-  border: 1px solid rgba(255,255,255,.1);
-  border-radius: 10px;
-  box-shadow: 0 12px 32px rgba(0,0,0,.45);
-  min-width: 230px;
-  text-align: left;
-  text-transform: none;
-  letter-spacing: normal;
-  font-size: small;
+  align-items: center;
+  gap: 8px;
 }
-.sheet-overflow-menu[hidden] {
-  display: none;
-}
-.sheet-overflow-menu a,
-.overflow-link-btn {
-  color: var(--rj-gold);
+.sheet-actions .sheet-icon-btn {
+  color: rgba(236,234,230,.72);
   text-decoration: none;
-  transition: color 0.15s;
 }
-.sheet-overflow-menu a:hover,
-.overflow-link-btn:hover {
-  color: var(--rj-hover);
-}
-.overflow-link-btn {
-  display: block;
-  background: none;
-  border: none;
-  padding: 0;
-  text-align: left;
-  font: inherit;
-  cursor: pointer;
-}
-.overflow-link-btn:disabled {
-  opacity: .35;
-  cursor: not-allowed;
-}
-.overflow-action {
-  display: block;
+.sheet-actions .sheet-icon-btn:hover {
+  color: #222222;
 }
 
 /* ============================================================
@@ -1567,7 +1519,7 @@ body:has(#rjLibrary) .split-bio {
   }
 
   /*
-    Key + Tempo steppers plus Play/Inspiration/More don't fit on one line at
+    Key + Tempo steppers plus Play/Inspiration/Print don't fit on one line at
     phone widths — wrapping #sheetmenu (rather than shrinking every control
     to the point of being unreadable) keeps every control thumb-sized. The
     instrument caption takes its own first line since it's the widest,

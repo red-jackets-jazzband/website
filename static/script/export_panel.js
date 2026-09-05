@@ -46,8 +46,6 @@ export function initExportPanel() {
 }
 
 function openPanel() {
-  var overflow = document.getElementById("overflowMenu");
-  if (overflow) overflow.hidden = true;
   document.getElementById("exportPanel").hidden = false;
 }
 
