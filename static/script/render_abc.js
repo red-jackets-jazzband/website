@@ -9,8 +9,7 @@ import { youtubeEmbedUrl } from "./lib/youtube.js";
 /*
    Funcion: renderSong
    `path` is always a bare .abc filename (from a hash link or the library
-   list) — always resolved against /songs/, regardless of which page this
-   runs on (both /songs/ and /setlists/ share this module).
+   list) — always resolved against /songs/.
 */
 export function renderSong(path) {
   readFile("/songs/" + path, function(text) {
@@ -489,8 +488,7 @@ export function loadSongs() {
 
 /*
    Funcion: initPrintLink
-   Wires up the (shared) #printLink to window.print(), used on both the
-   songs page and the setlists page.
+   Wires up the (shared) #printLink to window.print().
 */
 export function initPrintLink() {
   var link = document.getElementById("printLink");
@@ -504,9 +502,8 @@ export function initPrintLink() {
 
 /*
    Funcion: initSheetControls
-   Wires up the songs-page-only sheet controls (transpose input, audio
-   buttons) that used to carry inline onclick/oninput attributes. Not
-   called on the setlists page, which has none of these elements.
+   Wires up the sheet controls (transpose input, audio buttons) that used
+   to carry inline onclick/oninput attributes.
 */
 function initSheetControls() {
   var transpose = document.getElementById("transpose");
@@ -662,9 +659,8 @@ function applyTempo() {
 }
 
 /*
-   Instrument profile persistence (localStorage). Shared by the songs page
-   and the setlists page: whichever instrument you last picked on either
-   page is what both preselect next time. Guarded with try/catch so private
+   Instrument profile persistence (localStorage): whichever instrument you
+   last picked is what the sheet preselects next time. Guarded with try/catch so private
    browsing / disabled storage degrades to today's no-persistence behavior
    instead of throwing.
 */

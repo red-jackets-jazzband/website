@@ -38,12 +38,12 @@ function storage() {
 
 /*
    Funcion: initSongLibrary
-   Bootstraps the shared library sidebar used by both the songs page and the
-   setlists page: a Library tab (search-first full song list, unchanged from
-   before) and a Setlists tab (band + personal setlists, opening one shows
-   its songs through the exact same interactive sheet a library song opens
-   in — no more separate "dump everything" view). Which tab starts active is
-   read from the page's own data-default-tab attribute.
+   Bootstraps the library sidebar on the songs page: a Library tab
+   (search-first full song list) and a Setlists tab (band + personal
+   setlists, opening one shows its songs through the exact same interactive
+   sheet a library song opens in — no more separate "dump everything" view).
+   Which tab starts active is read from the page's own data-default-tab
+   attribute (defaults to "library" when absent).
 */
 export function initSongLibrary() {
   var listEl = document.getElementById("songList");
