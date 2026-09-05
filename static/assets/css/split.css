@@ -853,14 +853,124 @@ video.video {
   }
 }
 
+/*
+  The setlist print booklet is built (and its songs engraved by abcjs) while
+  it sits off-screen, then revealed only for print. It must NOT be
+  display:none while abcjs renders into it — a display:none subtree reports
+  zero text metrics, so every staff line comes out zero-height and the staves
+  vanish from the printed songbook. Parking it off-screen with
+  visibility:hidden keeps it laid out and measurable but invisible and
+  inert. (The ID + !important beats the .hideOnScreen { display:none } it
+  also carries, which is what the other hideOnScreen elements still use.)
+*/
+@media screen {
+  #setlistPrintBooklet {
+    display: block !important;
+    position: fixed;
+    left: -10000px;
+    top: 0;
+    width: 718px;
+    visibility: hidden;
+    pointer-events: none;
+  }
+}
+
 @media print {
   /*
-    Setlist "Print booklet" stacks every song into #setlistPrintBooklet; the
-    currently-open single song in #rjSheet has no print-hiding class of its
-    own, so without this it would print alongside the booklet too.
+    The three "Print …" buttons on an open setlist all feed
+    #setlistPrintBooklet; the currently-open single song in #rjSheet has no
+    print-hiding class of its own, so without this it would print alongside
+    the booklet too.
   */
   body.export-booklet-mode #rjSheet {
     display: none !important;
+  }
+  #setlistPrintBooklet {
+    position: static;
+    left: auto;
+    top: auto;
+    width: auto;
+    visibility: visible;
+    /* The single-sheet print gets black ink from .rj-sheet-paper; the booklet
+       has no such ancestor, so without this it prints in the site's gold body
+       colour (abcjs staves included, via fill/stroke="currentColor"). */
+    color: #000;
+    background: #fff;
+  }
+
+  /*
+    "Print setlist" — just the stage list. Hide the stacked per-song charts
+    (and their "Set N" page headings, and any cover page); the stage list
+    carries its own headings.
+  */
+  body.export-mode-setlist #setlistPrintBooklet .setlist-booklet-song,
+  body.export-mode-setlist #setlistPrintBooklet .setlist-booklet-set-heading,
+  body.export-mode-setlist #setlistPrintBooklet .setlist-cover {
+    display: none !important;
+  }
+  /* The stage list is only for "Print setlist"; the other two stack charts. */
+  body:not(.export-mode-setlist) #setlistPrintBooklet .setlist-stage-list {
+    display: none;
+  }
+
+  /* The setlist-name heading is near-white for the dark on-screen UI; the
+     cover blurb is a <p>, which the sitewide `p { color: gold }` catches. */
+  #setlistPrintBooklet .setlist-view-title {
+    color: #000;
+    text-align: center;
+  }
+  #setlistPrintBooklet p {
+    color: #000;
+  }
+  /* A setlist with a `desc` gets a full cover page carrying its own big
+     title — drop the plain heading so the name isn't printed twice. */
+  #setlistPrintBooklet:has(.setlist-cover) .setlist-view-title {
+    display: none;
+  }
+
+  /* "Print chordbook" — same stacked layout as the songbook, staves removed.
+     Without the staves each song is only a title + a chord grid, so let them
+     flow several to a page (kept whole) instead of one-per-page. */
+  body.export-mode-chordbook #setlistPrintBooklet .notation {
+    display: none !important;
+  }
+  body.export-mode-chordbook #setlistPrintBooklet .setlist-booklet-song {
+    page-break-before: auto;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    padding-top: 18px;
+  }
+
+  /* Keep the title, chord grid and each engraved staff line whole across a
+     page break rather than sliced through the middle. (A long song still
+     paginates — just between its lines, like the single-sheet print.) */
+  #setlistPrintBooklet .songtitle,
+  #setlistPrintBooklet .chordtable,
+  #setlistPrintBooklet .notation > *,
+  #setlistPrintBooklet .notation svg {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  /* Mirror the single-sheet print's header/chord-grid tightening (those
+     rules are keyed to #chordtable / #songtitle ids; the booklet uses the
+     same-named classes). */
+  #setlistPrintBooklet .songtitle {
+    padding: 4px 0 8px;
+  }
+  #setlistPrintBooklet .chordtable {
+    line-height: 1.2;
+  }
+  #setlistPrintBooklet .chordtable > .chordGrid {
+    width: 100%;
+    margin: 4px auto;
+  }
+  #setlistPrintBooklet .chordtable .chordDiv {
+    height: auto;
+    min-height: 0;
+  }
+  #setlistPrintBooklet .notation svg {
+    max-width: 100%;
+    height: auto;
   }
 }
 
@@ -1031,7 +1141,6 @@ video.video {
 #addSongRow[hidden],
 #setlistsBackBtn[hidden],
 #setlistNameInput[hidden],
-#setlistPrintBtn[hidden],
 #setlistExportBtn[hidden],
 #setlistDeleteBtn[hidden] {
   display: none;
@@ -1284,6 +1393,34 @@ video.video {
   text-align: center;
   margin: 0 0 12px;
   padding-top: 8px;
+}
+/* "Print setlist" — the big glanceable stage list (song titles only). */
+.setlist-stage-list {
+  color: #000;
+}
+.setlist-stage-list ol {
+  margin: 0 0 20px;
+  padding-left: 1.7em;
+  font: 500 21px/1.7 "Montserrat", sans-serif;
+  /* An unscoped `.bookIndexList > ul, li` rule elsewhere kills list markers
+     on every <li> site-wide — put them back for this list. */
+  list-style: decimal;
+}
+.setlist-stage-list li {
+  list-style: decimal;
+  padding-left: 4px;
+}
+.setlist-stage-set-heading {
+  font: 700 22px "Montserrat", sans-serif;
+  color: #000;
+  margin: 22px 0 10px;
+}
+.setlist-stage-set-heading:first-child {
+  margin-top: 0;
+}
+.setlist-stage-key {
+  font-weight: 700;
+  margin-left: 8px;
 }
 .printLogo {
   display: block;
