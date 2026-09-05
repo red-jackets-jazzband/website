@@ -185,41 +185,6 @@ export function readFile(file, callback) {
   f.send(null);
 }
 
-/*
-   Funcion: create_song_link
-   From a entry in index_of_songs.txt parse the fields and add link to page
-   Parameters:
-       song - A string containing line from index_of_songs.txt
-*/
-function create_song_link_text(song) {
-  var song_parts = song.split(",");
-  var song_name = song_parts[0];
-  var song_path = song_parts[1];
-  var song_title = song_path ? song_path.split(".")[0] : "";
-
-  if (song_title != "") {
-    return (
-      '<a href="#s=' +
-      song_title +
-      '" onclick="renderSong(\'' +
-      song_path +
-      "'); closeDropdowns()\" >" +
-      song_name +
-      "</a>"
-    );
-  }
-
-  return "";
-}
-
-function closeDropdowns() {
-  var contents = document.querySelectorAll('.dropdown-content');
-  contents.forEach(function(el) { el.style.display = 'none'; });
-  setTimeout(function() {
-    contents.forEach(function(el) { el.style.display = ''; });
-  }, 300);
-}
-
 function string_to_abc_tune(text, transpose_steps) {
   var tunes = ABCJS.parseOnly(text, { visualTranspose: transpose_steps });
   return tunes[0];
@@ -474,7 +439,6 @@ export function loadSongs() {
   document.getElementById("instrument").addEventListener("change", rerenderFile);
   initPrintLink();
   initSheetControls();
-  readFile("index_of_songs.txt", createAllDropdowns);
 
   if (window.location.hash) {
     parse_song_from_hash(window.location.hash);
@@ -567,53 +531,6 @@ export function createInstrumentDropdown() {
   });
 
   var abc_menu = document.getElementById("sheetmenu");
-  abc_menu.appendChild(div);
-}
-
-function createAllDropdowns(data) {
-  var songs = data.split("\n");
-
-  var songMap = createMapFromSongList(songs);
-
-  for (var letter in songMap) {
-    createLetterDropDown(letter, songMap[letter]);
-  }
-}
-
-function createMapFromSongList(songList) {
-  var songMap = {};
-  var i = 0;
-  for (; i < songList.length; ++i) {
-    if (songMap[songList[i].charAt(0)] === undefined) {
-      songMap[songList[i].charAt(0)] = [songList[i]];
-    } else {
-      songMap[songList[i].charAt(0)].push(songList[i]);
-    }
-  }
-
-  return songMap;
-}
-
-function createLetterDropDown(letter, songs) {
-  var div = document.createElement("DIV");
-  div.classList.add("dropdown");
-
-  var btn = document.createElement("BUTTON");
-  btn.classList.add("dropbtn");
-  btn.innerText = letter;
-  div.appendChild(btn);
-
-  var contentDiv = document.createElement("DIV");
-  contentDiv.classList.add("dropdown-content");
-
-  var i;
-  for (i = 0; i < songs.length; i++) {
-    contentDiv.innerHTML += create_song_link_text(songs[i]);
-  }
-
-  div.appendChild(contentDiv);
-
-  var abc_menu = document.getElementById("abc_menu");
   abc_menu.appendChild(div);
 }
 
@@ -947,12 +864,3 @@ function setupNotationClickHandler() {
   notation._abcClickHandlerSet = true;
   notation.addEventListener("click", handleNotationClick);
 }
-
-// TEMPORARY: create_song_link_text() generates raw onclick="renderSong(...)"
-// / onclick="closeDropdowns()" markup for the letter-dropdown song list.
-// Inline event handler attributes always run in the global scope, even
-// though this file is now an ES module, so these two need an explicit
-// window assignment for now. Milestone 3 replaces the letter-dropdown list
-// with addEventListener-based rendering and removes this.
-window.renderSong = renderSong;
-window.closeDropdowns = closeDropdowns;

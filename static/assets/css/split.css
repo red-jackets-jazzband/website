@@ -519,6 +519,179 @@ video.video {
   margin-right: auto;
 }
 
+/* ============================================================
+   Songs page: library sidebar + sheet
+   ============================================================ */
+
+/*
+  The theme's own article column caps out at 800px (.split-content-vertically-center),
+  which is far too narrow for a library sidebar sitting next to a lead sheet.
+  Widen it for the songs page only, scoped via :has() so no template
+  override is needed. The sitewide 30% masthead image column is untouched.
+*/
+body:has(#rjLibrary) .fs-split .split-content-vertically-center {
+  max-width: none;
+  width: 100%;
+  padding: 32px;
+  box-sizing: border-box;
+}
+
+.rj-songs-layout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.rj-library {
+  width: 300px;
+  flex: none;
+  background: var(--rj-ground);
+  border: 1px solid rgba(255,255,255,.09);
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 64px);
+  font-family: "Montserrat", sans-serif;
+}
+
+.rj-library-masthead {
+  position: relative;
+  height: 110px;
+  flex: none;
+  overflow: hidden;
+}
+.rj-library-masthead > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 30%;
+  display: block;
+}
+.rj-library-masthead-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(20,20,20,.25), rgba(20,20,20,.92));
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 12px 16px;
+}
+.rj-library-logo {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  flex: none;
+  display: block;
+}
+.rj-library-title {
+  font: 700 14px/1 "Montserrat", sans-serif;
+  color: #f4f2ee;
+}
+.rj-library-count {
+  font: 500 10px/1.4 "JetBrains Mono", monospace;
+  color: rgba(244,242,238,.6);
+  margin-top: 3px;
+}
+
+.rj-library-search {
+  padding: 14px 16px 10px;
+  flex: none;
+}
+.rj-library-search input {
+  width: 100%;
+  box-sizing: border-box;
+  height: 40px;
+  padding: 0 12px;
+  background: #262626;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 8px;
+  color: #dedcd8;
+  font: 500 13px "Montserrat", sans-serif;
+}
+.rj-library-search input::placeholder {
+  color: rgba(230,228,224,.42);
+}
+
+.rj-library-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+  padding-bottom: 12px;
+}
+.rj-library-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 16px;
+}
+.song-list-letter {
+  font: 700 11px/1 "Montserrat", sans-serif;
+  color: var(--rj-gold);
+  letter-spacing: .14em;
+  padding: 14px 0 6px;
+  position: sticky;
+  top: 0;
+  background: var(--rj-ground);
+}
+.song-list-item {
+  display: block;
+  padding: 10px 4px;
+  border-bottom: 1px solid rgba(255,255,255,.05);
+  font: 500 13px/1.3 "Montserrat", sans-serif;
+  color: #dedcd8;
+  text-decoration: none;
+}
+.song-list-item:hover {
+  color: var(--rj-hover);
+}
+.song-list-empty {
+  padding: 20px 4px;
+  font: 400 12px "Lora", serif;
+  font-style: italic;
+  color: rgba(230,228,224,.5);
+}
+.rj-library-rail {
+  flex: none;
+  width: 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+.rj-library-rail button {
+  background: none;
+  border: none;
+  color: rgba(230,228,224,.4);
+  font: 600 9px "Montserrat", sans-serif;
+  cursor: pointer;
+  padding: 2px 0;
+}
+.rj-library-rail button:hover {
+  color: var(--rj-gold);
+}
+
+.rj-sheet {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Interim mobile safety net until Milestone 5's proper list<->sheet stacking */
+@media (max-width: 800px) {
+  .rj-songs-layout {
+    flex-direction: column;
+  }
+  .rj-library {
+    width: 100%;
+    max-height: 420px;
+  }
+}
+
 .chordCell {
   border-width: 1px;
   border-style: solid;
@@ -691,28 +864,6 @@ video.video {
 .dropdown {
   position: relative;
   display: inline-block;
-}
-
-.dropdown-content {
-  display: none;
-  position: absolute;
-  background-color: #f9f9f9;
-  min-width: 300px;
-  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-  z-index: 1;
-}
-
-.dropdown-content a {
-  color: black;
-  padding: 12px 16px;
-  text-decoration: none;
-  display: block;
-}
-
-.dropdown-content a:hover {background-color: #f1f1f1}
-
-.dropdown:hover .dropdown-content {
-  display: block;
 }
 
 .dropdown:hover .dropbtn {
