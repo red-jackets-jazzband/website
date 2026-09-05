@@ -37,6 +37,10 @@ date: 2019-03-16T16:26:50+01:00
     <div class="rj-library-list" id="songList"></div>
     <div class="rj-library-rail" id="songRail"></div>
   </div>
+  <div class="rj-library-profile">
+    <div class="rj-library-profile-label">Your instrument</div>
+    <div id="rjLibraryProfile"></div>
+  </div>
 </div>
 
 <div id="rjSheet" class="rj-sheet">
@@ -45,20 +49,37 @@ date: 2019-03-16T16:26:50+01:00
 <!-- <img src="/images/redjackets_logo.png" id="printLogo" class="printLogo hideOnScreen" /> -->
 <div id="sheetmenu" class="hideOnprint">
   <div id="sheetStatus" class="sheet-status"></div>
+
+  <div class="sheet-stepper" id="keyStepper" title="Key">
+    <button type="button" id="keyDownBtn" class="sheet-stepper-btn" aria-label="Lower key">&minus;</button>
+    <div class="sheet-stepper-value">
+      <input type="number" id="transpose" name="quantity" value="0" min="-12" max="12" aria-label="Key, in semitones from concert pitch">
+      <span class="sheet-stepper-label">key</span>
+    </div>
+    <button type="button" id="keyUpBtn" class="sheet-stepper-btn" aria-label="Raise key">&plus;</button>
+  </div>
+
+  <div class="sheet-stepper" id="tempoStepper" title="Tempo">
+    <button type="button" id="tempoDownBtn" class="sheet-stepper-btn" aria-label="Slower">&minus;</button>
+    <div class="sheet-stepper-value">
+      <span id="tempoValueLabel">100%</span>
+      <span class="sheet-stepper-label">tempo</span>
+    </div>
+    <button type="button" id="tempoUpBtn" class="sheet-stepper-btn" aria-label="Faster">&plus;</button>
+  </div>
+
   <button id="playPauseBtn" class="sheet-play-btn" disabled title="Play"><i class="fa-solid fa-play"></i></button>
-  <button id="overflowToggle" class="sheet-overflow-toggle" type="button" title="More options" aria-haspopup="true" aria-expanded="false">&#8942;</button>
+
+  <span id="inspirationSlot"></span>
+
+  <button id="overflowToggle" class="sheet-overflow-toggle" type="button" title="More options" aria-haspopup="true" aria-expanded="false">More</button>
   <div id="overflowMenu" class="sheet-overflow-menu" hidden>
-    <a id="printLink" title="Print this page" href="#">Print</a>
-    <button id="exportOpenBtn" type="button" class="overflow-link-btn">Export&hellip;</button>
-    <div class="overflow-row">
-      <label for="transpose">Transpose</label>
-      <input type="number" id="transpose" name="quantity" value="0" min="-12" max="12">
-    </div>
-    <div class="overflow-row">
-      <button id="stopBtn" class="audio-btn-inline" disabled title="Stop"><i class="fa-solid fa-stop"></i></button>
-      <button id="melodyOffBtn" class="audio-btn-inline" disabled title="Mute melody"><span class="fa-stack"><i class="fa-solid fa-music fa-stack-1x"></i><i class="fa-solid fa-slash fa-stack-1x"></i></span></button>
-      <span class="audio-loading" id="audioLoadingLabel">...</span>
-    </div>
+    <button id="melodyOffBtn" class="overflow-toggle-row" type="button" disabled>Mute melody</button>
+    <div class="overflow-divider"></div>
+    <a id="printLink" class="overflow-action" title="Print this page" href="#">Print</a>
+    <button id="exportOpenBtn" type="button" class="overflow-action overflow-link-btn">Export&hellip;</button>
+    <button id="stopBtn" class="overflow-action overflow-link-btn" disabled title="Stop and reset to the start">Stop</button>
+    <span class="audio-loading" id="audioLoadingLabel">...</span>
   </div>
 </div>
 <div id="abc-player-container" style="display:none;"></div>

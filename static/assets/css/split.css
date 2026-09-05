@@ -531,18 +531,106 @@ video.video {
   cursor: not-allowed;
 }
 
+/*
+  Key/Tempo steppers: the two things you touch while the music is on the
+  stand, so they stay always-visible next to Play rather than a tap deep
+  inside "More". Same visual pattern for both.
+*/
+.sheet-stepper {
+  flex: none;
+  display: flex;
+  align-items: stretch;
+  height: 44px;
+  background: #2f2f2f;
+  border: 1px solid rgba(255,255,255,.11);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.sheet-stepper-btn {
+  flex: none;
+  width: 26px;
+  display: grid;
+  place-items: center;
+  background: none;
+  border: none;
+  color: rgba(236,234,230,.7);
+  font-size: 15px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.sheet-stepper-btn:hover {
+  background: var(--rj-gold);
+  color: #222222;
+}
+.sheet-stepper-value {
+  flex: none;
+  width: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  border-left: 1px solid rgba(255,255,255,.1);
+  border-right: 1px solid rgba(255,255,255,.1);
+  padding: 0 4px;
+}
+.sheet-stepper-value #tempoValueLabel {
+  font: 600 13px/1 "Montserrat", sans-serif;
+  color: var(--rj-gold);
+}
+.sheet-stepper-label {
+  font: 600 8px/1 "Montserrat", sans-serif;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: rgba(236,234,230,.4);
+}
+#transpose {
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--rj-gold);
+  font: 600 13px/1 "Montserrat", sans-serif;
+  text-align: center;
+  padding: 0;
+  -moz-appearance: textfield;
+}
+#transpose::-webkit-inner-spin-button,
+#transpose::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.sheet-inspiration-link {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: 44px;
+  padding: 0 14px;
+  background: #2f2f2f;
+  border: 1px solid rgba(255,255,255,.11);
+  border-radius: 8px;
+  color: var(--rj-gold) !important;
+  font: 600 12px/1 "Montserrat", sans-serif;
+  text-decoration: none !important;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+.sheet-inspiration-link:hover {
+  background: var(--rj-gold);
+  color: #222222 !important;
+}
+
 .sheet-overflow-toggle {
   flex: none;
-  width: 44px;
   height: 44px;
+  padding: 0 14px;
   display: grid;
   place-items: center;
   background: #2f2f2f;
   border: 1px solid rgba(255,255,255,.11);
   border-radius: 8px;
   color: rgba(236,234,230,.72);
-  font-size: 18px;
-  line-height: 1;
+  font: 600 12px/1 "Montserrat", sans-serif;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
 }
@@ -592,10 +680,38 @@ video.video {
   font: inherit;
   cursor: pointer;
 }
-.overflow-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.overflow-link-btn:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+}
+.overflow-toggle-row {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 6px 0;
+  text-align: left;
+  font: 600 13px/1.2 "Montserrat", sans-serif;
+  color: rgba(236,234,230,.72);
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.overflow-toggle-row:hover:not(:disabled) {
+  color: var(--rj-gold);
+}
+.overflow-toggle-row.active {
+  color: var(--rj-gold);
+}
+.overflow-toggle-row:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+}
+.overflow-divider {
+  height: 1px;
+  background: rgba(255,255,255,.09);
+}
+.overflow-action {
+  display: block;
 }
 
 /* ============================================================
@@ -1257,6 +1373,21 @@ body:has(#rjLibrary) .fs-split .split-content-vertically-center {
     letter-spacing: .06em;
     cursor: pointer;
   }
+
+  /*
+    Key + Tempo steppers plus Play/Inspiration/More don't fit on one line at
+    phone widths — wrapping #sheetmenu (rather than shrinking every control
+    to the point of being unreadable) keeps every control thumb-sized. The
+    instrument caption takes its own first line since it's the widest,
+    least-interactive item.
+  */
+  #sheetmenu {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+  .sheet-status {
+    flex-basis: 100%;
+  }
 }
 
 .chordCell {
@@ -1455,94 +1586,55 @@ body:has(#rjLibrary) .fs-split .split-content-vertically-center {
   color: black;
 }
 
+/*
+  Library sidebar profile row: the instrument picker's one, persistent home
+  (moved out of the per-song overflow menu — see #rjLibraryProfile in
+  createInstrumentDropdown). "A fact about the player, set once."
+*/
+.rj-library-profile {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px 16px;
+  border-top: 1px solid rgba(255,255,255,.09);
+}
+.rj-library-profile-label {
+  flex: none;
+  font: 600 9px/1.2 "Montserrat", sans-serif;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: rgba(230,228,224,.4);
+}
+.rj-library-profile .dropdown {
+  flex: 1;
+  min-width: 0;
+}
+/*
+  #rjLibraryProfile #instrument (not just .rj-library-profile .dropbtn): the
+  select also carries the plain #instrument rule (padding/font reset, for
+  its other possible mount point on the setlists page), whose id-selector
+  specificity would otherwise beat this class-based one regardless of source
+  order — id-qualifying here restores the intended cascade.
+*/
+.rj-library-profile .dropbtn,
+#rjLibraryProfile #instrument {
+  width: 100%;
+  background: #262626;
+  border: 1px solid rgba(255,255,255,.1) !important;
+  border-radius: 8px;
+  color: #dedcd8;
+  font: 500 12px "Montserrat", sans-serif;
+  padding: 8px 10px;
+}
+.rj-library-profile .dropdown:hover .dropbtn {
+  background: var(--rj-gold);
+  color: #1b1b1b;
+}
+
 /* ============================================================
    Audio Player (inline in sheetmenu)
    ============================================================ */
-#sheetmenu input[type="number"] {
-  vertical-align: middle;
-  margin: 0 4px;
-  padding: 0 2px;
-  background: #3a3a3a;
-  color: var(--rj-gold);
-  border: 1px solid #555;
-  font: inherit;
-  font-size: 1em;
-  line-height: 1;
-  height: 1.6em;
-  box-sizing: border-box;
-  text-align: center;
-  width: 4em;
-  transition: background 0.15s, color 0.15s;
-}
-
-#sheetmenu input[type="number"]::-webkit-inner-spin-button,
-#sheetmenu input[type="number"]::-webkit-outer-spin-button {
-  opacity: 1;
-  background-color: #3a3a3a;
-}
-
-#sheetmenu input[type="number"]:hover {
-  background: var(--rj-gold);
-  color: #222222;
-}
-
-#sheetmenu input[type="number"]:hover::-webkit-inner-spin-button,
-#sheetmenu input[type="number"]:hover::-webkit-outer-spin-button {
-  background-color: var(--rj-gold);
-}
-
-.audio-btn-inline i {
-  font-style: normal;
-}
-
-#melodyOffBtn .fa-stack {
-  font-size: inherit;
-  height: 1em;
-  line-height: 1;
-  width: 1.25em;
-  vertical-align: middle;
-}
-
-.audio-btn-inline {
-  background: none;
-  border: 1px solid transparent;
-
-  color: var(--rj-gold);
-  cursor: pointer;
-  font-size: 1.3em;
-  line-height: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 5px;
-  opacity: 0.85;
-  vertical-align: middle;
-  transition: background 0.15s, border-color 0.15s, opacity 0.15s;
-}
-
-.audio-btn-inline:hover:not(:disabled):not(.active) {
-  opacity: 1;
-  background: rgba(226, 157, 15, 0.15);
-  border-color: var(--rj-gold);
-}
-
-.audio-btn-inline.active {
-  background: var(--rj-gold);
-  color: #222222;
-  border-color: var(--rj-gold);
-  opacity: 1;
-}
-
-.audio-btn-inline.active:hover:not(:disabled) {
-  background: #f0b030;
-  border-color: #f0b030;
-}
-
-.audio-btn-inline:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
 .audio-loading {
   color: var(--rj-gold);
   font-size: 1em;
