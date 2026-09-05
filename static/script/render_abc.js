@@ -440,7 +440,7 @@ function add_irealpro_link(song, chords) {
     link.href = url;
   } else {
     link = document.createElement("A");
-    link.innerHTML = '<span class="fa-solid fa-mobile-screen-button" aria-hidden="true"></span>';
+    link.innerHTML = '<img src="/images/irealpro_mark_white.webp" alt="" aria-hidden="true" class="irealpro-logo">';
     link.href = url;
     link.id = "iRealPro";
     link.className = "sheet-icon-btn";
