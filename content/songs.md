@@ -95,16 +95,16 @@ aliases: ["/setlists/", "/songbook/"]
   </div>
 
   <div class="sheet-transport">
-    <button id="playPauseBtn" class="sheet-play-btn" disabled title="Play"><i class="fa-solid fa-play"></i></button>
-    <button id="stopBtn" class="sheet-icon-btn" type="button" disabled title="Stop and reset to the start" aria-label="Stop and reset to the start"><i class="fa-solid fa-stop"></i></button>
-    <button id="melodyOffBtn" class="sheet-icon-btn" type="button" disabled title="Mute melody" aria-label="Mute melody"><i class="fa-solid fa-volume-high"></i></button>
+    <button id="playPauseBtn" class="sheet-play-btn" disabled title="Play" aria-label="Play"><span class="fa-solid fa-play" aria-hidden="true"></span></button>
+    <button id="stopBtn" class="sheet-icon-btn" type="button" disabled title="Stop and reset to the start" aria-label="Stop and reset to the start"><span class="fa-solid fa-stop" aria-hidden="true"></span></button>
+    <button id="melodyOffBtn" class="sheet-icon-btn" type="button" disabled title="Mute melody" aria-label="Mute melody"><span class="fa-solid fa-volume-high" aria-hidden="true"></span></button>
   </div>
 
   <span id="inspirationSlot"></span>
 
   <div class="sheet-actions" id="sheetActions">
-    <a id="printLink" class="sheet-icon-btn" href="#" title="Print this page" aria-label="Print this page"><i class="fa-solid fa-print"></i></a>
-    <button id="exportOpenBtn" class="sheet-icon-btn" type="button" title="Export&hellip;" aria-label="Export"><i class="fa-solid fa-file-export"></i></button>
+    <a id="printLink" class="sheet-icon-btn" href="#" title="Print this page" aria-label="Print this page"><span class="fa-solid fa-print" aria-hidden="true"></span></a>
+    <button id="exportOpenBtn" class="sheet-icon-btn" type="button" title="Export&hellip;" aria-label="Export"><span class="fa-solid fa-file-export" aria-hidden="true"></span></button>
   </div>
   <span class="audio-loading" id="audioLoadingLabel">...</span>
 </div>
@@ -154,9 +154,9 @@ Retrieved from www.redjackets.nl - <span id="instrumentText"></span>
 
 <div id="inspirationPanel" class="inspiration-panel hideOnprint" hidden>
   <div class="inspiration-panel-header" id="inspirationPanelHeader">
-    <i class="fa-solid fa-grip-lines inspiration-panel-grip" aria-hidden="true"></i>
+    <span class="fa-solid fa-grip-lines inspiration-panel-grip" aria-hidden="true"></span>
     <span class="inspiration-panel-title" id="inspirationPanelTitle">Inspiration</span>
-    <a id="inspirationExpandBtn" class="inspiration-panel-icon-btn" href="#" target="_blank" rel="noopener" title="Open on YouTube" aria-label="Open on YouTube"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+    <a id="inspirationExpandBtn" class="inspiration-panel-icon-btn" href="#" target="_blank" rel="noopener" title="Open on YouTube" aria-label="Open on YouTube"><span class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></span></a>
     <button type="button" id="inspirationCloseBtn" class="inspiration-panel-icon-btn" aria-label="Close">&times;</button>
   </div>
   <div class="inspiration-panel-video">
