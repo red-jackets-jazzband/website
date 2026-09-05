@@ -2,6 +2,7 @@
 title: "Red Jackets Jazzband"
 tagline: "Songs"
 date: 2019-03-16T16:26:50+01:00
+aliases: ["/setlists/", "/songbook/"]
 ---
 
 <script src="/script/abcjs_midi_6.6.3-min.js" type="text/javascript"></script>

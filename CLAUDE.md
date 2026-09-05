@@ -23,7 +23,7 @@ The site itself has no build step beyond Hugo — it's a pure static site, and `
 - Deployed to a separate GitHub Pages repo (`red-jackets-jazzband.github.io`) via GitHub Actions on push to `master`
 
 ### Music interactive pages
-`/songs/` and `/setlists/` ([content/songs.md](content/songs.md), [content/setlists.md](content/setlists.md)) share one interactive shell — a library sidebar with a **Library / Setlists** tab switcher, plus a single-song sheet — rather than being two unrelated apps. Both pages load the same bootstrap (`render_abc.js`, `song_library.js`, `export_panel.js`); the only difference is which tab starts active (`data-default-tab` on `.rj-songs-layout`).
+`/songs/` ([content/songs.md](content/songs.md)) is one interactive shell — a library sidebar with a **Library / Setlists** tab switcher, plus a single-song sheet. It loads the bootstrap `render_abc.js`, `song_library.js`, `export_panel.js`. Which tab starts active is set by `data-default-tab` on `.rj-songs-layout` (defaults to `library`). The old `/setlists/` and `/songbook/` routes are now Hugo aliases redirecting to `/songs/`.
 
 **Library tab** ([static/script/song_library.js](static/script/song_library.js) + [static/script/render_abc.js](static/script/render_abc.js), ~1,730 lines):
 - Loads ABC notation files from [static/songs/](static/songs/) (146+ songs) via XHR, index at `static/songs/index_of_songs.txt`
