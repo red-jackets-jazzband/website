@@ -513,8 +513,6 @@ function buildSetlistPrintBooklet(name, songs, desc) {
   var container = document.getElementById("setlistPrintBooklet");
   if (!container) return;
   container.innerHTML = "";
-  var exportBooklet = document.getElementById("exportBooklet");
-  if (exportBooklet) exportBooklet.innerHTML = "";
 
   var heading = document.createElement("DIV");
   heading.className = "setlist-view-title";
