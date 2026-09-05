@@ -654,6 +654,18 @@ video.video {
   margin: 0;
 }
 
+/*
+  Runtime mount point for the Inspiration button — a bare <div> (not a
+  <span>: a lone inline element on its own line in songs.md gets wrapped
+  in a <p> by Goldmark, and that <p>'s margin threw the button ~10px
+  above the sibling 44px controls). Centered flex so the mounted button
+  lines up with everything else in #sheetmenu.
+*/
+#inspirationSlot {
+  display: flex;
+  align-items: center;
+}
+
 .sheet-inspiration-link {
   flex: none;
   display: inline-flex;
