@@ -90,6 +90,15 @@ export function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, ti
     add_irealpro_link(song, chords);
   }
 
+  // Phone layout: #rjSheet (and #notation inside it) starts display:none
+  // until a song is active. Must happen before ABCJS.renderAbc() runs below
+  // — its "responsive: resize" mode measures the container's width at
+  // render time, and a display:none container measures as 0, producing a
+  // degenerate zero-height SVG that a later display change won't fix.
+  if (notationElt === "notation") {
+    document.body.classList.add("rj-sheet-active");
+  }
+
   var abcParams = {
     visualTranspose: transpose_steps,
     responsive: "resize",
@@ -139,7 +148,9 @@ export function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, ti
 
   var chordtable = document.getElementById(chordTableElt);
   create_chord_table(displayChords, chordtable);
-  if (notationElt === "notation") updateRepeatBoundaries();
+  if (notationElt === "notation") {
+    updateRepeatBoundaries();
+  }
 
   /* Add own title, above chordTable */
   var songtitle = document.getElementById(songTitleElt);
@@ -303,9 +314,6 @@ function convertChordsToRoman(chords, song) {
        chords - A list of lists with the chords per measure
 */
 function create_chord_table(chords, chordtable) {
-  var table = document.createElement("TABLE");
-  table.border = "1";
-
   chords = simplifyBlues(chords);
   chords = simplifySong(chords, 8);
 
@@ -313,47 +321,52 @@ function create_chord_table(chords, chordtable) {
   if (chords.length > 4 * 4) {
     cols = 8;
   }
-  var rows = Math.ceil(chords.length / cols);
 
-  for (var y = 0; y < rows; y++) {
-    var row = table.insertRow(-1);
-    for (var x = 0; x < cols; x++) {
-      var chord_idx = x + y * cols;
-      if (chord_idx < chords.length) {
-        var cell = row.insertCell(-1);
-        var chordDiv = document.createElement("DIV");
-        chordDiv.classList.add("chordDiv");
-        chordDiv.innerHTML = chords[chord_idx].text;
-        cell.appendChild(chordDiv);
-        cell.classList.add("chordCell");
+  // A CSS grid rather than a <table>: cells are a flat sequence in the same
+  // left-to-right, top-to-bottom order the old row/col math produced, but
+  // how many columns they wrap into is controlled by CSS (and can change
+  // at narrow widths) instead of being baked into the DOM at render time.
+  // Cell order/count must stay exactly this sequence — playback highlighting
+  // (cursorControl.onEvent) looks up chord cells by flat index.
+  var grid = document.createElement("DIV");
+  grid.classList.add("chordGrid");
+  grid.style.setProperty("--chord-cols", cols);
 
-        if (chords[chord_idx].doubeThinBarLeft !== undefined) {
-          cell.classList.add("chordCellDoubleThinBarLeft");
-        }
-        if (chords[chord_idx].doubeThinBarRight !== undefined) {
-          cell.classList.add("chordCellDoubleThinBarRight");
-        }
+  for (var i = 0; i < chords.length; i++) {
+    var cell = document.createElement("DIV");
+    var chordDiv = document.createElement("DIV");
+    chordDiv.classList.add("chordDiv");
+    chordDiv.innerHTML = chords[i].text;
+    cell.appendChild(chordDiv);
+    cell.classList.add("chordCell");
 
-        if (chords[chord_idx].rightRepeat !== undefined) {
-          cell.classList.add("chordCellRightRepeat");
-          var span = document.createElement("span");
-          span.classList.add("chordRightRepeatSign");
-          span.innerHTML = ":";
-          chordDiv.appendChild(span);
-        }
-        if (chords[chord_idx].leftRepeat !== undefined) {
-          cell.classList.add("chordCellLeftRepeat");
-          var span = document.createElement("span");
-          span.classList.add("chordLeftRepeatSign");
-          span.innerHTML = ":";
-          chordDiv.insertBefore(span, chordDiv.childNodes[0]);
-        }
-      }
+    if (chords[i].doubeThinBarLeft !== undefined) {
+      cell.classList.add("chordCellDoubleThinBarLeft");
     }
+    if (chords[i].doubeThinBarRight !== undefined) {
+      cell.classList.add("chordCellDoubleThinBarRight");
+    }
+
+    if (chords[i].rightRepeat !== undefined) {
+      cell.classList.add("chordCellRightRepeat");
+      var rightSpan = document.createElement("span");
+      rightSpan.classList.add("chordRightRepeatSign");
+      rightSpan.innerHTML = ":";
+      chordDiv.appendChild(rightSpan);
+    }
+    if (chords[i].leftRepeat !== undefined) {
+      cell.classList.add("chordCellLeftRepeat");
+      var leftSpan = document.createElement("span");
+      leftSpan.classList.add("chordLeftRepeatSign");
+      leftSpan.innerHTML = ":";
+      chordDiv.insertBefore(leftSpan, chordDiv.childNodes[0]);
+    }
+
+    grid.appendChild(cell);
   }
 
   chordtable.innerHTML = "";
-  chordtable.appendChild(table);
+  chordtable.appendChild(grid);
 }
 
 /*
@@ -478,6 +491,13 @@ function initSheetControls() {
 
   var melodyBtn = document.getElementById("melodyOffBtn");
   if (melodyBtn) melodyBtn.addEventListener("click", toggleMelody);
+
+  var backBtn = document.getElementById("sheetBackBtn");
+  if (backBtn) {
+    backBtn.addEventListener("click", function() {
+      document.body.classList.remove("rj-sheet-active");
+    });
+  }
 
   var overflowToggle = document.getElementById("overflowToggle");
   if (overflowToggle) {
