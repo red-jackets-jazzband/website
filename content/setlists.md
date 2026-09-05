@@ -94,17 +94,18 @@ aliases: ["/songbook/"]
     <button type="button" id="tempoUpBtn" class="sheet-stepper-btn" aria-label="Faster">&plus;</button>
   </div>
 
-  <button id="playPauseBtn" class="sheet-play-btn" disabled title="Play"><i class="fa-solid fa-play"></i></button>
+  <div class="sheet-transport">
+    <button id="playPauseBtn" class="sheet-play-btn" disabled title="Play"><i class="fa-solid fa-play"></i></button>
+    <button id="stopBtn" class="sheet-icon-btn" type="button" disabled title="Stop and reset to the start" aria-label="Stop and reset to the start"><i class="fa-solid fa-stop"></i></button>
+    <button id="melodyOffBtn" class="sheet-icon-btn" type="button" disabled title="Mute melody" aria-label="Mute melody"><i class="fa-solid fa-volume-high"></i></button>
+  </div>
 
   <span id="inspirationSlot"></span>
 
   <button id="overflowToggle" class="sheet-overflow-toggle" type="button" title="More options" aria-haspopup="true" aria-expanded="false">More</button>
   <div id="overflowMenu" class="sheet-overflow-menu" hidden>
-    <button id="melodyOffBtn" class="overflow-toggle-row" type="button" disabled>Mute melody</button>
-    <div class="overflow-divider"></div>
     <a id="printLink" class="overflow-action" title="Print this page" href="#">Print</a>
     <button id="exportOpenBtn" type="button" class="overflow-action overflow-link-btn">Export&hellip;</button>
-    <button id="stopBtn" class="overflow-action overflow-link-btn" disabled title="Stop and reset to the start">Stop</button>
     <span class="audio-loading" id="audioLoadingLabel">...</span>
   </div>
 </div>
