@@ -19,16 +19,6 @@ aliases: ["/setlists/", "/songbook/"]
 <div class="rj-songs-layout" data-default-tab="library">
 
 <div id="rjLibrary" class="rj-library hideOnprint">
-  <div class="rj-library-masthead">
-    <img src="/images/quedlinburg_back.jpg" alt="Red Jackets Jazzband parade" />
-    <div class="rj-library-masthead-overlay">
-      <img class="rj-library-logo" src="/images/redjackets_logo_small.png" alt="" />
-      <div>
-        <div class="rj-library-title">Fakebook</div>
-        <div class="rj-library-count" id="songCount"></div>
-      </div>
-    </div>
-  </div>
   <div class="rj-library-tabs" id="libraryTabs">
     <button type="button" class="rj-library-tab" data-tab="library">Library</button>
     <button type="button" class="rj-library-tab" data-tab="setlists">Setlists</button>
@@ -68,9 +58,7 @@ aliases: ["/setlists/", "/songbook/"]
 </div>
 
 <div id="rjSheet" class="rj-sheet">
-
 <button id="sheetBackBtn" class="rj-sheet-back hideOnprint" type="button">&larr; Songs</button>
-<!-- <img src="/images/redjackets_logo.png" id="printLogo" class="printLogo hideOnScreen" /> -->
 <div id="sheetmenu" class="hideOnprint">
   <div id="sheetStatus" class="sheet-status"></div>
 
