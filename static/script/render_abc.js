@@ -3,6 +3,7 @@
 import { INSTRUMENTS, offsetForInstrument, changeClefForInstrument } from "./lib/instruments.js";
 import { parseChordScheme, simplifyBlues, simplifySong, computeChordOffset } from "./lib/chords.js";
 import { irealProFromAbc } from "./lib/irealpro.js";
+import { convertChordsToRoman } from "./lib/music-theory.js";
 
 export function renderSong(path) {
   document.getElementById("transpose").value = 0;
@@ -51,22 +52,26 @@ function stylePartMarkers(containerId) {
    Parameters:
        text - String containing (valid) abc file
 */
-export function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, titlePrefix, add_link) {
+export function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, titlePrefix, add_link, extraTransposeSteps) {
 
   notationElt = (typeof notationElt !== 'undefined') ?  notationElt : "notation";
   chordTableElt = (typeof chordTableElt !== 'undefined') ?  chordTableElt : "chordtable";
   songTitleElt = (typeof songTitleElt !== 'undefined') ?  songTitleElt : "songtitle";
   titlePrefix = (typeof titlePrefix !== 'undefined') ?  titlePrefix : "";
   add_link = (typeof add_link !== 'undefined') ?  add_link : true;
+  extraTransposeSteps = (typeof extraTransposeSteps !== 'undefined') ? Number(extraTransposeSteps) : 0;
 
   var transpose_steps = document.getElementById("transpose");
   transpose_steps = (transpose_steps !== null) ? transpose_steps.value : 0;
 
   // Don't use valueAsNumber to let IE users also enjoy transposing
-  transpose_steps = Number(transpose_steps);
+  transpose_steps = Number(transpose_steps) + extraTransposeSteps;
   var manualTransposeSteps = transpose_steps;
   var instrumentSelect = document.getElementById("instrument");
-  document.getElementById("instrumentText").innerHTML = instrumentSelect.options[instrumentSelect.selectedIndex].text.toLowerCase();
+  var instrumentTextEl = document.getElementById("instrumentText");
+  if (instrumentTextEl) {
+    instrumentTextEl.innerHTML = instrumentSelect.options[instrumentSelect.selectedIndex].text.toLowerCase();
+  }
   updateSheetStatusLine(instrumentSelect, manualTransposeSteps);
 
   // Check if there are voice definitions with instrument-related attributes
@@ -184,13 +189,17 @@ export function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, ti
    Parameters:
        file - Path to file to read
        callback - Function to call with data if loaded succesfully
+       onError - Optional, called with the HTTP status if the request fails
+                 (e.g. a setlist referencing a .abc file that doesn't exist)
 */
-export function readFile(file, callback) {
+export function readFile(file, callback, onError) {
   var f = new XMLHttpRequest();
   f.onreadystatechange = function() {
     if (f.readyState === 4) {
       if (f.status === 200 || f.status === 0) {
         callback(f.responseText);
+      } else if (onError) {
+        onError(f.status);
       }
     }
   };
@@ -201,110 +210,6 @@ export function readFile(file, callback) {
 function string_to_abc_tune(text, transpose_steps) {
   var tunes = ABCJS.parseOnly(text, { visualTranspose: transpose_steps });
   return tunes[0];
-}
-
-// ============================================================
-// Roman Numeral Conversion
-// ============================================================
-
-function noteChroma(noteName) {
-  var normalized = noteName.replace(/♭/g, 'b').replace(/♯/g, '#');
-  if (typeof Tonal !== 'undefined' && Tonal.Note) {
-    try {
-      var n = Tonal.Note.get(normalized);
-      if (typeof n.chroma === 'number') return n.chroma;
-    } catch(e) {}
-  }
-  var CHROMAS = {C:0,D:2,E:4,F:5,G:7,A:9,B:11};
-  var letter = normalized[0].toUpperCase();
-  var rest = normalized.slice(1);
-  var c = (CHROMAS[letter] !== undefined) ? CHROMAS[letter] : 0;
-  for (var i = 0; i < rest.length; i++) {
-    if (rest[i] === 'b') c--;
-    else if (rest[i] === '#') c++;
-  }
-  return ((c % 12) + 12) % 12;
-}
-
-function chordToRomanNumeral(chordStr, keyRoot, keyMode) {
-  if (!chordStr || chordStr === ' % ') return chordStr;
-
-  var match = chordStr.match(/^([A-G][♭♯b#]?)(.*)/);
-  if (!match) return chordStr;
-  var chordRoot = match[1];
-  var suffix    = match[2] || '';
-
-  var interval = ((noteChroma(chordRoot) - noteChroma(keyRoot)) + 12) % 12;
-  var isMinorKey = keyMode && keyMode !== '' && keyMode !== 'major' && keyMode !== 'maj';
-
-  var MAJOR_MAP = {0:[0,''],1:[1,'♭'],2:[1,''],3:[2,'♭'],4:[2,''],5:[3,''],
-                   6:[3,'♯'],7:[4,''],8:[5,'♭'],9:[5,''],10:[6,'♭'],11:[6,'']};
-  var MINOR_MAP = {0:[0,''],1:[1,'♭'],2:[1,''],3:[2,''],4:[2,'♯'],5:[3,''],
-                   6:[4,'♭'],7:[4,''],8:[5,''],9:[5,'♯'],10:[6,''],11:[6,'♯']};
-
-  var entry    = (isMinorKey ? MINOR_MAP : MAJOR_MAP)[interval] || [0,''];
-  var ROMANS   = ['I','II','III','IV','V','VI','VII'];
-  var romanBase  = ROMANS[entry[0]];
-  var accidental = entry[1];
-
-  var isMinorChord = /^(m|min|-)(?!aj)/i.test(suffix);
-  var isHalfDim    = /^(Ø|ø|m7[b♭]5)/i.test(suffix);
-  var isDim        = /^(°|dim)/i.test(suffix);
-  var isAug        = /^(\+|aug)/i.test(suffix);
-  var isMaj7       = /maj7|Δ/.test(suffix);
-  var numExt       = (suffix.match(/\d+/) || [])[0] || '';
-
-  var roman;
-  if (isHalfDim)       roman = romanBase.toLowerCase() + 'ø7';
-  else if (isDim)      roman = romanBase.toLowerCase() + '°';
-  else if (isMinorChord) roman = romanBase.toLowerCase() + numExt;
-  else if (isAug)      roman = romanBase + '+';
-  else if (isMaj7)     roman = romanBase + 'maj7';
-  else                 roman = romanBase + numExt;
-
-  return accidental + roman;
-}
-
-function convertChordsToRoman(chords, song) {
-  if (!chords || !chords.length || !song.lines || !song.lines[0]) return chords;
-
-  // Build a per-line key map so key changes mid-song are handled
-  var lineKeys = song.lines.map(function(line) {
-    return (line.staff && line.staff[0] && line.staff[0].key) || null;
-  });
-
-  // Walk lines again to propagate: each line inherits the last known key
-  var resolvedKeys = [];
-  var lastKey = (lineKeys[0]) || {root:'C', acc:'', mode:''};
-  for (var i = 0; i < lineKeys.length; i++) {
-    if (lineKeys[i] && lineKeys[i].root) lastKey = lineKeys[i];
-    resolvedKeys.push(lastKey);
-  }
-
-  // Count measures per line so we can map measure index → key
-  var measureKeyMap = [];
-  for (var li = 0; li < song.lines.length; li++) {
-    var line = song.lines[li];
-    if (!line.staff || !line.staff[0] || !line.staff[0].voices) continue;
-    var voice   = line.staff[0].voices[0] || [];
-    var lineKey = resolvedKeys[li];
-    var currentKey = lineKey;
-    for (var j = 0; j < voice.length; j++) {
-      var el = voice[j];
-      if (el.el_type === 'keySignature' && el.key && el.key.root) currentKey = el.key;
-      if (el.el_type === 'bar') measureKeyMap.push(currentKey);
-    }
-  }
-
-  return chords.map(function(measure, idx) {
-    var key    = measureKeyMap[idx] || resolvedKeys[0] || {root:'C', acc:'', mode:''};
-    var keyRoot = key.root + (key.acc || '');
-    var keyMode = key.mode || '';
-    var romanText = measure.text.map(function(chordStr) {
-      return chordToRomanNumeral(chordStr, keyRoot, keyMode);
-    });
-    return Object.assign({}, measure, {text: romanText});
-  });
 }
 
 /*
