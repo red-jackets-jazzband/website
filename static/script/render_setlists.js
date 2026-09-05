@@ -138,7 +138,7 @@ function openBandSetlist(file, fallbackName) {
   readFile("/setlists/" + file, function(text) {
     var setlist = parseSetlistFile(text);
     currentPersonalId = null;
-    showSetlistView(setlist.name || fallbackName, setlist.songs);
+    showSetlistView(setlist.name || fallbackName, setlist.songs, null, setlist.desc);
   }, function(status) {
     console.warn("Could not load setlist " + file + " (status " + status + ")");
   });
@@ -148,10 +148,10 @@ function openPersonalSetlist(id) {
   var entry = getPersonalSetlist(storage(), id);
   if (!entry) return;
   currentPersonalId = id;
-  showSetlistView(entry.name, entry.songs, entry);
+  showSetlistView(entry.name, entry.songs, entry, entry.desc);
 }
 
-function showSetlistView(name, songs, personalEntry) {
+function showSetlistView(name, songs, personalEntry, desc) {
   var home = document.getElementById("setlistsHome");
   var view = document.getElementById("setlistView");
   if (home) home.hidden = true;
@@ -166,10 +166,17 @@ function showSetlistView(name, songs, personalEntry) {
     });
   }
 
-  renderSetlistSongs(name, songs);
+  renderSetlistSongs(name, songs, desc);
 }
 
-function renderSetlistSongs(name, songs) {
+/*
+   Funcion: renderSetlistSongs
+   Renders the on-screen heading, a print-only booklet cover page (name +
+   desc, shown only when the setlist has a desc — this is what replaced the
+   old Songbook page's cover), then each song via the same
+   renderAbcFile(..., add_link=false) reuse pattern render_book.js used to.
+*/
+function renderSetlistSongs(name, songs, desc) {
   var songsEl = document.getElementById("setlistSongs");
   songsEl.innerHTML = "";
 
@@ -177,6 +184,27 @@ function renderSetlistSongs(name, songs) {
   heading.className = "setlist-view-title";
   heading.textContent = name;
   songsEl.appendChild(heading);
+
+  if (desc) {
+    var cover = document.createElement("DIV");
+    cover.className = "bookContent hideOnScreen setlist-cover";
+
+    var coverTitle = document.createElement("H1");
+    coverTitle.textContent = name;
+    cover.appendChild(coverTitle);
+
+    var coverDesc = document.createElement("P");
+    coverDesc.textContent = desc;
+    cover.appendChild(coverDesc);
+
+    var qr = document.createElement("IMG");
+    qr.src = "/images/songbook_qr.png";
+    qr.height = 100;
+    qr.width = 100;
+    cover.appendChild(qr);
+
+    songsEl.appendChild(cover);
+  }
 
   songs.forEach(function(song, index) {
     var n = index + 1;
@@ -233,7 +261,7 @@ function refreshOpenPersonalSetlist() {
     return;
   }
   renderEditor(entry);
-  renderSetlistSongs(entry.name, entry.songs);
+  renderSetlistSongs(entry.name, entry.songs, entry.desc);
 }
 
 function renderEditor(entry) {

@@ -33,13 +33,16 @@ The most complex parts of the site are the two interactive music pages:
 - Audio playback via ABCjs SynthController with FatBoy soundfont (trumpet)
 - iRealPro URL generation for mobile musicians
 
-**Songbook page** ([static/script/render_book.js](static/script/render_book.js)):
-- Generates printable songbooks from ABC files across instrument transpositions
+**Setlists page** ([static/script/render_setlists.js](static/script/render_setlists.js)):
+- Band setlists are plain-text files in [static/setlists/](static/setlists/) (indexed by `index_of_setlists.txt`), read-only, with an optional key override per song and an optional `desc` line rendered as a print-only booklet cover page
+- Personal setlists are stored in the browser's `localStorage` (`rj.setlists.v1`), fully editable (create/rename/delete, add/remove/reorder songs, per-song key overrides), and portable between devices only via manual `.txt` export/import — never synced to the server
+- Opening either kind reuses `renderAbcFile(..., add_link=false)` per song (the same reuse pattern the old Songbook page pioneered), so printing a setlist produces a transposed booklet in the visitor's chosen instrument
 
 ### Static assets layout
 - `static/songs/` — ABC notation files (one per song)
-- `static/script/` — All JavaScript: ABCjs library, Tonal.js, render_abc.js, render_book.js, render_agenda.js
-  - `static/script/lib/` — pure, side-effect-free ES modules (instrument table, chord parsing, iRealPro URL building), each with a colocated `*.test.js`. Loaded via `import` from `render_abc.js`/`render_book.js`, which are themselves `type="module"` scripts. This is where new pure logic belongs; DOM/ABCjs orchestration stays in the per-page scripts.
+- `static/setlists/` — plain-text setlist files (one per band setlist) + `index_of_setlists.txt` manifest
+- `static/script/` — All JavaScript: ABCjs library, Tonal.js, render_abc.js, render_setlists.js, export_panel.js, song_library.js, render_agenda.js
+  - `static/script/lib/` — pure, side-effect-free ES modules (instrument table, chord parsing, iRealPro URL building, song-index/setlist-file parsing, music theory), each with a colocated `*.test.js`. Loaded via `import` from the per-page scripts, which are themselves `type="module"`. This is where new pure logic belongs; DOM/ABCjs orchestration stays in the per-page scripts.
 - `static/assets/css/split.css` — Theme overrides/customizations
 - `static/agenda/` — Event data files
 

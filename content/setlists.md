@@ -2,6 +2,7 @@
 title: "Red Jackets Jazzband"
 tagline: "Setlists"
 date: 2026-09-05T00:00:00+02:00
+aliases: ["/songbook/"]
 ---
 
 <script src="/script/abcjs_midi_6.6.3-min.js" type="text/javascript"></script>
