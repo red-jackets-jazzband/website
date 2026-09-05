@@ -755,10 +755,233 @@ video.video {
   border-color: var(--rj-gold);
   color: var(--rj-gold);
 }
+.setlists-row-band {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: default;
+  padding: 0;
+  overflow: hidden;
+}
+.setlists-row-band .setlists-row-main {
+  flex: 1;
+  text-align: left;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  padding: 16px 18px;
+}
+.setlists-row-band:hover .setlists-row-main {
+  color: var(--rj-gold);
+}
+.setlists-row-band .setlists-row-copy {
+  flex: none;
+  height: 100%;
+  padding: 0 16px;
+  background: rgba(255,255,255,.05);
+  border: none;
+  border-left: 1px solid rgba(255,255,255,.1);
+  color: rgba(236,234,230,.6);
+  font: 600 11px "Montserrat", sans-serif;
+  cursor: pointer;
+  align-self: stretch;
+}
+.setlists-row-band .setlists-row-copy:hover {
+  color: var(--rj-gold);
+  background: rgba(255,255,255,.08);
+}
 .setlists-empty {
   font: 400 13px "Lora", serif;
   font-style: italic;
   color: rgba(236,234,230,.5);
+}
+.setlists-my-hint {
+  font: 400 12px "Lora", serif;
+  font-style: italic;
+  color: rgba(236,234,230,.45);
+  margin: -6px 0 12px;
+}
+.setlists-my-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.setlists-my-actions input[type="text"] {
+  flex: 1;
+  min-width: 160px;
+  height: 40px;
+  box-sizing: border-box;
+  padding: 0 12px;
+  background: #262626;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 8px;
+  color: #dedcd8;
+  font: 500 13px "Montserrat", sans-serif;
+}
+.setlists-action-btn {
+  height: 40px;
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #2f2f2f;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 8px;
+  color: #dedcd8;
+  font: 600 12px "Montserrat", sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.setlists-action-btn:hover {
+  border-color: var(--rj-gold);
+  color: var(--rj-gold);
+}
+.setlists-action-danger:hover {
+  border-color: #a8442f;
+  color: #ca486d;
+}
+.setlists-import-label input[type="file"] {
+  display: none;
+}
+
+/* ============================================================
+   Setlist editor (personal setlists)
+   ============================================================ */
+/*
+  #setlistEditor.setlists-editor (not just .setlists-editor): this element
+  carries .hideOnprint (see the #rjLibrary.rj-library comment above) AND is
+  toggled via the native hidden attribute. Any author rule that sets
+  `display` beats the browser's own [hidden] handling regardless of
+  specificity — author always beats user-agent — so the id-qualified
+  [hidden] companion rule below is required too, or the hidden attribute
+  stops hiding this element at all once display:flex is added.
+*/
+#setlistEditor.setlists-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  margin-bottom: 20px;
+  background: #1f1f1f;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 10px;
+}
+#setlistEditor.setlists-editor[hidden] {
+  display: none;
+}
+.setlists-editor-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.setlists-name-input {
+  flex: 1;
+  min-width: 160px;
+  height: 40px;
+  box-sizing: border-box;
+  padding: 0 12px;
+  background: #262626;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 8px;
+  color: #eceae6;
+  font: 700 14px "Montserrat", sans-serif;
+}
+.setlists-editor-row input[type="search"] {
+  flex: 1;
+  min-width: 160px;
+  height: 38px;
+  box-sizing: border-box;
+  padding: 0 12px;
+  background: #262626;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 8px;
+  color: #dedcd8;
+  font: 500 13px "Montserrat", sans-serif;
+}
+.setlists-add-song-results {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.setlists-add-song-result {
+  text-align: left;
+  padding: 8px 10px;
+  background: #262626;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 6px;
+  color: #dedcd8;
+  font: 500 12.5px "Montserrat", sans-serif;
+  cursor: pointer;
+}
+.setlists-add-song-result:hover {
+  border-color: var(--rj-gold);
+  color: var(--rj-gold);
+}
+.setlists-song-edit-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+.setlists-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: #262626;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 8px;
+}
+.setlists-edit-row-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 500 13px "Montserrat", sans-serif;
+  color: #dedcd8;
+}
+.setlists-edit-row-key {
+  width: 48px;
+  height: 30px;
+  box-sizing: border-box;
+  padding: 0 6px;
+  background: #1f1f1f;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 6px;
+  color: var(--rj-gold);
+  font: 600 12px "JetBrains Mono", monospace;
+  text-align: center;
+}
+.setlists-edit-row-btn {
+  width: 28px;
+  height: 28px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  background: #1f1f1f;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 6px;
+  color: rgba(236,234,230,.7);
+  cursor: pointer;
+  font-size: 13px;
+}
+.setlists-edit-row-btn:hover:not(:disabled) {
+  border-color: var(--rj-gold);
+  color: var(--rj-gold);
+}
+.setlists-edit-row-btn:disabled {
+  opacity: .3;
+  cursor: default;
+}
+.setlists-edit-row-remove:hover {
+  border-color: #a8442f !important;
+  color: #ca486d !important;
 }
 /*
   #setlistBackBtn.setlists-back (not just .setlists-back): also carries
