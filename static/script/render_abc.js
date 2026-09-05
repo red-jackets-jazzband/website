@@ -871,10 +871,14 @@ function updateMelodyButton() {
   if (!btn) return;
   if (audioPlayer.melodOff) {
     btn.classList.add("active");
-    btn.textContent = "Unmute melody";
+    btn.innerHTML = '<i class="fa-solid fa-volume-xmark"></i>';
+    btn.title = "Unmute melody";
+    btn.setAttribute("aria-label", "Unmute melody");
   } else {
     btn.classList.remove("active");
-    btn.textContent = "Mute melody";
+    btn.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
+    btn.title = "Mute melody";
+    btn.setAttribute("aria-label", "Mute melody");
   }
 }
 

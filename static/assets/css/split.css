@@ -540,6 +540,51 @@ video.video {
 }
 
 /*
+  Play + Stop + Mute-melody travel together as one transport cluster, so
+  they wrap onto the next line as a group (like a stepper) rather than
+  splitting up when #sheetmenu runs out of width in the split-view sheet.
+*/
+.sheet-transport {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/*
+  Stop / Mute-melody: the two remaining playback controls, promoted out of
+  "More" to sit right next to Play as icon-only 44px buttons (same footprint
+  as Play, secondary styling like the steppers). Mute-melody flips to .active
+  — gold fill — while the melody voice is silenced.
+*/
+.sheet-icon-btn {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  background: #2f2f2f;
+  border: 1px solid rgba(255,255,255,.11);
+  border-radius: 8px;
+  color: rgba(236,234,230,.72);
+  font-size: 15px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.sheet-icon-btn:hover:not(:disabled) {
+  background: var(--rj-gold);
+  color: #222222;
+}
+.sheet-icon-btn.active {
+  background: var(--rj-gold);
+  color: #222222;
+}
+.sheet-icon-btn:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+}
+
+/*
   Key/Tempo steppers: the two things you touch while the music is on the
   stand, so they stay always-visible next to Play rather than a tap deep
   inside "More". Same visual pattern for both.
@@ -693,32 +738,6 @@ video.video {
 .overflow-link-btn:disabled {
   opacity: .35;
   cursor: not-allowed;
-}
-.overflow-toggle-row {
-  display: block;
-  width: 100%;
-  background: none;
-  border: none;
-  padding: 6px 0;
-  text-align: left;
-  font: 600 13px/1.2 "Montserrat", sans-serif;
-  color: rgba(236,234,230,.72);
-  cursor: pointer;
-  transition: color 0.15s;
-}
-.overflow-toggle-row:hover:not(:disabled) {
-  color: var(--rj-gold);
-}
-.overflow-toggle-row.active {
-  color: var(--rj-gold);
-}
-.overflow-toggle-row:disabled {
-  opacity: .35;
-  cursor: not-allowed;
-}
-.overflow-divider {
-  height: 1px;
-  background: rgba(255,255,255,.09);
 }
 .overflow-action {
   display: block;
