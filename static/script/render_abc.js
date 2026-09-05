@@ -7,6 +7,8 @@ import { convertChordsToRoman } from "./lib/music-theory.js";
 
 export function renderSong(path) {
   document.getElementById("transpose").value = 0;
+  tempoPercent = 100;
+  updateTempoLabel();
   audioPlayer.melodOff = false;
   readFile(path, renderAbcFile);
 }
@@ -66,13 +68,12 @@ export function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, ti
 
   // Don't use valueAsNumber to let IE users also enjoy transposing
   transpose_steps = Number(transpose_steps) + extraTransposeSteps;
-  var manualTransposeSteps = transpose_steps;
   var instrumentSelect = document.getElementById("instrument");
   var instrumentTextEl = document.getElementById("instrumentText");
   if (instrumentTextEl) {
     instrumentTextEl.innerHTML = instrumentSelect.options[instrumentSelect.selectedIndex].text.toLowerCase();
   }
-  updateSheetStatusLine(instrumentSelect, manualTransposeSteps);
+  updateSheetStatusLine(instrumentSelect);
 
   // Check if there are voice definitions with instrument-related attributes
   const hasInstrumentVoices = text.match(/^V:\d+.*(clef=|transpose=|name=)/gm);
@@ -285,12 +286,13 @@ function add_inspiration_link(url) {
       link.href = url;
     } else {
       link = document.createElement("A");
-      link.innerHTML = "inspiration";
+      link.innerHTML = "Inspiration";
       link.href = url;
       link.target = "_blank";
       link.id = "inspirationLink";
-      var menu = document.getElementById("overflowMenu");
-      if (menu) menu.appendChild(link);
+      link.className = "sheet-inspiration-link";
+      var slot = document.getElementById("inspirationSlot");
+      if (slot) slot.appendChild(link);
     }
   } else {
     var link = document.getElementById("inspirationLink");
@@ -388,6 +390,16 @@ function initSheetControls() {
   var transpose = document.getElementById("transpose");
   if (transpose) transpose.addEventListener("input", rerenderFile);
 
+  var keyUpBtn = document.getElementById("keyUpBtn");
+  if (keyUpBtn) keyUpBtn.addEventListener("click", function() { stepTranspose(1); });
+  var keyDownBtn = document.getElementById("keyDownBtn");
+  if (keyDownBtn) keyDownBtn.addEventListener("click", function() { stepTranspose(-1); });
+
+  var tempoUpBtn = document.getElementById("tempoUpBtn");
+  if (tempoUpBtn) tempoUpBtn.addEventListener("click", function() { stepTempo(10); });
+  var tempoDownBtn = document.getElementById("tempoDownBtn");
+  if (tempoDownBtn) tempoDownBtn.addEventListener("click", function() { stepTempo(-10); });
+
   var playBtn = document.getElementById("playPauseBtn");
   if (playBtn) playBtn.addEventListener("click", playPause);
 
@@ -421,18 +433,16 @@ function initSheetControls() {
 
 /*
    Funcion: updateSheetStatusLine
-   Fills the compact "instrument · transpose" status line shown next to the
-   persistent Play button. Separate from #instrumentText, which still feeds
-   the print footer.
+   Shows the current instrument as a read-only caption next to the sheet
+   controls. The instrument picker itself lives in the library sidebar's
+   profile row (a fact about the player, set once) — Key and Tempo are the
+   per-song steppers that live next to Play. Separate from #instrumentText,
+   which still feeds the print footer.
 */
-function updateSheetStatusLine(instrumentSelect, manualTransposeSteps) {
+function updateSheetStatusLine(instrumentSelect) {
   var statusEl = document.getElementById("sheetStatus");
   if (!statusEl) return;
-  var parts = [instrumentSelect.options[instrumentSelect.selectedIndex].text];
-  if (manualTransposeSteps) {
-    parts.push((manualTransposeSteps > 0 ? "+" : "") + manualTransposeSteps + " semitones");
-  }
-  statusEl.textContent = parts.join(" · ");
+  statusEl.textContent = instrumentSelect.options[instrumentSelect.selectedIndex].text;
 }
 
 function toggleOverflowMenu() {
@@ -457,6 +467,69 @@ function closeOverflowMenu() {
   var toggle = document.getElementById("overflowToggle");
   if (menu) menu.hidden = true;
   if (toggle) toggle.setAttribute("aria-expanded", "false");
+}
+
+/*
+   Funcion: stepTranspose
+   Nudges the Key stepper's underlying #transpose value by one semitone and
+   dispatches an "input" event, reusing the existing listener that re-renders
+   the chart — the stepper buttons are a visual restyle, not a new code path.
+*/
+function stepTranspose(delta) {
+  var input = document.getElementById("transpose");
+  if (!input) return;
+  var next = Number(input.value || 0) + delta;
+  next = Math.max(Number(input.min), Math.min(Number(input.max), next));
+  input.value = next;
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+// ============================================================
+// Tempo control (playback speed only — the engraved notation is unaffected)
+// ============================================================
+
+var tempoPercent = 100;
+var TEMPO_MIN = 50;
+var TEMPO_MAX = 150;
+
+function stepTempo(delta) {
+  tempoPercent = Math.max(TEMPO_MIN, Math.min(TEMPO_MAX, tempoPercent + delta));
+  updateTempoLabel();
+  applyTempo();
+}
+
+function updateTempoLabel() {
+  var label = document.getElementById("tempoValueLabel");
+  if (label) label.textContent = tempoPercent + "%";
+}
+
+/*
+   Funcion: applyTempo
+   Applies the current tempo percentage by reloading the tune into the live
+   SynthController with a scaled `qpm` option (percentage of the tune's own
+   Q: field, read once into audioPlayer.nativeQpm when the tune first loads).
+   SynthController does expose a `setWarp` instance method, but it's wired to
+   ABCJS's own built-in tempo-slider DOM element (created only when
+   `displayWarp: true`) and throws when that element doesn't exist — confirmed
+   by testing it directly, which is why this goes through setTune's `qpm`
+   option instead. Resumes playback afterward if it was already playing.
+*/
+function applyTempo() {
+  var ctrl = audioPlayer.synthController;
+  if (!ctrl || !audioPlayer.currentVisualObj) return;
+  var wasPlaying = audioPlayer.isPlaying;
+  ctrl.setTune(audioPlayer.currentVisualObj, false, currentAudioParams())
+    .then(function() {
+      if (ctrl !== audioPlayer.synthController) return;
+      if (wasPlaying) {
+        ctrl.play();
+        audioPlayer.isPlaying = true;
+        updatePlayButton();
+      }
+    })
+    .catch(function(err) {
+      console.warn("Tempo change failed:", err);
+    });
 }
 
 /*
@@ -509,9 +582,14 @@ export function createInstrumentDropdown() {
     storeInstrument(select.value);
   });
 
-  // The songs page has an overflow menu for the instrument picker; the
-  // setlists page (no overflow menu) still appends it straight to #sheetmenu.
-  var menu = document.getElementById("overflowMenu") || document.getElementById("sheetmenu");
+  // The instrument is a fact about the player, not a per-song setting, so it
+  // lives in the library sidebar's persistent profile row (#rjLibraryProfile)
+  // rather than the per-song overflow menu. The setlists page doesn't have
+  // that sidebar (yet — see the unification milestone), so it still falls
+  // back to appending straight into #sheetmenu.
+  var menu = document.getElementById("rjLibraryProfile") ||
+    document.getElementById("overflowMenu") ||
+    document.getElementById("sheetmenu");
   menu.appendChild(div);
 }
 
@@ -547,6 +625,7 @@ var audioPlayer = {
   isPlaying: false,
   totalMs: 0,
   currentVisualObj: null,
+  nativeQpm: null,
   melodOff: false,
   repeatStart: undefined,
   repeatEnd: undefined
@@ -560,6 +639,9 @@ var audioParams = {
 function currentAudioParams() {
   var params = Object.assign({}, audioParams);
   if (audioPlayer.melodOff) params.voicesOff = true;
+  if (tempoPercent !== 100 && audioPlayer.nativeQpm) {
+    params.qpm = Math.round(audioPlayer.nativeQpm * tempoPercent / 100);
+  }
   return params;
 }
 
@@ -657,10 +739,10 @@ function updateMelodyButton() {
   if (!btn) return;
   if (audioPlayer.melodOff) {
     btn.classList.add("active");
-    btn.title = "Unmute melody";
+    btn.textContent = "Unmute melody";
   } else {
     btn.classList.remove("active");
-    btn.title = "Mute melody";
+    btn.textContent = "Mute melody";
   }
 }
 
@@ -735,6 +817,7 @@ function initAudioForTune(visualObj) {
   audioPlayer.isPlaying = false;
   audioPlayer.totalMs = 0;
   audioPlayer.currentVisualObj = visualObj;
+  audioPlayer.nativeQpm = (visualObj.metaText && visualObj.metaText.tempo && visualObj.metaText.tempo.bpm) || null;
   updatePlayButton();
   updateMelodyButton();
   setPlayerButtonsDisabled(true);
