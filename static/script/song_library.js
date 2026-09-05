@@ -170,7 +170,17 @@ function renderRail(railEl, groups) {
     btn.title = "Jump to " + group.letter;
     btn.addEventListener("click", function() {
       var target = document.getElementById("letter-" + group.letter);
-      if (target) target.scrollIntoView({ block: "start" });
+      var list = document.getElementById("songList");
+      if (!target) return;
+      if (!list) { target.scrollIntoView({ block: "start" }); return; }
+      // Not scrollIntoView, and not a single offsetTop read: the letter
+      // headings are position: sticky, so both a rect read and offsetTop
+      // report a heading's *stuck* position, not its layout position — a
+      // jump back up to a letter that's currently pinned at the top then
+      // does nothing. Resetting scrollTop to 0 first unsticks every
+      // heading, making the offsetTop read that follows honest.
+      list.scrollTop = 0;
+      list.scrollTop = target.offsetTop;
     });
     railEl.appendChild(btn);
   });

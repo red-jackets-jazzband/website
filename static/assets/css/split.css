@@ -1407,6 +1407,19 @@ body:has(#rjLibrary) .split-bio {
   min-height: 0;
   overflow-y: auto;
   padding: 0 16px;
+  /* offset parent for the rail's jump-to-letter math (see renderRail) —
+     the letter headings are position: sticky, so scrollIntoView / rect
+     reads report their stuck position and can't scroll back up to a
+     letter that's currently pinned at the top; offsetTop stays honest. */
+  position: relative;
+  /* Hide the scrollbar — the A-Z rail sits right against this edge and a
+     native scrollbar wedged between them reads as a stray slider. Still
+     scrolls by wheel/drag/touch and via the rail. */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.rj-library-list::-webkit-scrollbar {
+  display: none;
 }
 .song-list-letter {
   font: 700 11px/1 "Montserrat", sans-serif;
@@ -1447,18 +1460,30 @@ body:has(#rjLibrary) .split-bio {
   width: 22px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: space-between;
+  align-items: stretch;
   overflow: hidden;
   padding: 4px 0;
 }
+/*
+  Each letter is a flex:1 slice of the full rail height, so the whole rail
+  is a gapless column of hit targets — the earlier `justify-content:
+  space-between` spread the letters out with dead space between them, and a
+  22px-wide rail already gives a ~6px-wide glyph almost nothing to aim at,
+  so most clicks landed on nothing and the rail felt inert.
+*/
 .rj-library-rail button {
+  flex: 1 1 0;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   border: none;
   color: rgba(230,228,224,.4);
   font: 600 9px/1 "Montserrat", sans-serif;
   cursor: pointer;
-  padding: 1px 0;
+  padding: 0;
 }
 .rj-library-rail button:hover {
   color: var(--rj-gold);
