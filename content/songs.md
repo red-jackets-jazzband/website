@@ -154,3 +154,15 @@ Retrieved from www.redjackets.nl - <span id="instrumentText"></span>
 </div>
 <div id="exportBooklet" class="hideOnScreen"></div>
 <div id="setlistPrintBooklet" class="hideOnScreen"></div>
+
+<div id="inspirationPanel" class="inspiration-panel hideOnprint" hidden>
+  <div class="inspiration-panel-header" id="inspirationPanelHeader">
+    <i class="fa-solid fa-grip-lines inspiration-panel-grip" aria-hidden="true"></i>
+    <span class="inspiration-panel-title" id="inspirationPanelTitle">Inspiration</span>
+    <a id="inspirationExpandBtn" class="inspiration-panel-icon-btn" href="#" target="_blank" rel="noopener" title="Open on YouTube" aria-label="Open on YouTube"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+    <button type="button" id="inspirationCloseBtn" class="inspiration-panel-icon-btn" aria-label="Close">&times;</button>
+  </div>
+  <div class="inspiration-panel-video">
+    <iframe id="inspirationVideoFrame" src="" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen title="Inspiration video" loading="lazy"></iframe>
+  </div>
+</div>

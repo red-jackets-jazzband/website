@@ -4,6 +4,7 @@ import { INSTRUMENTS, offsetForInstrument, changeClefForInstrument } from "./lib
 import { parseChordScheme, simplifyBlues, simplifySong, computeChordOffset } from "./lib/chords.js";
 import { irealProFromAbc } from "./lib/irealpro.js";
 import { convertChordsToRoman } from "./lib/music-theory.js";
+import { youtubeEmbedUrl } from "./lib/youtube.js";
 
 /*
    Funcion: renderSong
@@ -112,7 +113,7 @@ export function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, ti
   audioPlayer.chordOffset = computeChordOffset(song);
 
   if (add_link) {
-    add_inspiration_link(song.metaText.url);
+    add_inspiration_link(song.metaText.url, song.metaText.title);
     add_irealpro_link(song, chords);
   }
 
@@ -297,29 +298,119 @@ function create_chord_table(chords, chordtable) {
 
 /*
    Funcion: add_inspiration_link
-   Adds a link to the sheetmenu if anabc tune contains a F field
+   Adds a button to the sheetmenu if an abc tune contains a F field. The
+   button opens the reference recording in the docked picture-in-picture
+   panel (see openInspirationPanel below) rather than leaving the page —
+   it just updates its own url/title in place if the currently-open song
+   changes; it never touches an already-open panel, so a video someone is
+   playing along to keeps playing while they browse to a different song.
 */
-function add_inspiration_link(url) {
+function add_inspiration_link(url, title) {
+  var btn = document.getElementById("inspirationLink");
   if (url !== undefined) {
-    var link = document.getElementById("inspirationLink");
-    if (link !== null) {
-      link.href = url;
-    } else {
-      link = document.createElement("A");
-      link.innerHTML = "Inspiration";
-      link.href = url;
-      link.target = "_blank";
-      link.id = "inspirationLink";
-      link.className = "sheet-inspiration-link";
+    if (btn === null) {
+      btn = document.createElement("BUTTON");
+      btn.type = "button";
+      btn.innerHTML = "Inspiration";
+      btn.id = "inspirationLink";
+      btn.className = "sheet-inspiration-link";
+      btn.addEventListener("click", function() {
+        toggleInspirationPanel(btn.dataset.url, btn.dataset.title);
+      });
       var slot = document.getElementById("inspirationSlot");
-      if (slot) slot.appendChild(link);
+      if (slot) slot.appendChild(btn);
     }
-  } else {
-    var link = document.getElementById("inspirationLink");
-    if (link !== null) {
-      link.parentNode.removeChild(link);
-    }
+    btn.dataset.url = url;
+    btn.dataset.title = title || "";
+  } else if (btn !== null) {
+    btn.parentNode.removeChild(btn);
   }
+}
+
+var inspirationPanelUrl = null;
+
+/*
+   Funcion: toggleInspirationPanel
+   Clicking Inspiration for the song already showing in the panel closes
+   it (stopping playback); clicking it for a different song swaps the
+   panel to that song's video, opening it if needed.
+*/
+function toggleInspirationPanel(url, title) {
+  var panel = document.getElementById("inspirationPanel");
+  if (!panel) return;
+  if (!panel.hidden && inspirationPanelUrl === url) {
+    closeInspirationPanel();
+  } else {
+    openInspirationPanel(url, title);
+  }
+}
+
+function openInspirationPanel(url, title) {
+  var panel = document.getElementById("inspirationPanel");
+  var frame = document.getElementById("inspirationVideoFrame");
+  if (!panel || !frame) return;
+  var embedUrl = youtubeEmbedUrl(url, true);
+  if (!embedUrl) return;
+
+  var titleEl = document.getElementById("inspirationPanelTitle");
+  if (titleEl) titleEl.textContent = title || "Inspiration";
+  var expandLink = document.getElementById("inspirationExpandBtn");
+  if (expandLink) expandLink.href = url;
+
+  frame.src = embedUrl;
+  inspirationPanelUrl = url;
+  panel.hidden = false;
+}
+
+function closeInspirationPanel() {
+  var panel = document.getElementById("inspirationPanel");
+  var frame = document.getElementById("inspirationVideoFrame");
+  if (!panel) return;
+  panel.hidden = true;
+  if (frame) frame.src = "";
+  inspirationPanelUrl = null;
+}
+
+/*
+   Funcion: initInspirationPanel
+   Wires the close button and lets the panel be dragged to any corner by
+   its header, per the design's "keeps playing while you switch songs"
+   picture-in-picture player. Position switches from the default
+   bottom-right anchor (right/bottom in CSS) to an explicit left/top pair
+   on the first drag.
+*/
+function initInspirationPanel() {
+  var panel = document.getElementById("inspirationPanel");
+  var header = document.getElementById("inspirationPanelHeader");
+  var closeBtn = document.getElementById("inspirationCloseBtn");
+  if (!panel || !header) return;
+
+  if (closeBtn) closeBtn.addEventListener("click", closeInspirationPanel);
+
+  var drag = null;
+  header.addEventListener("pointerdown", function(e) {
+    if (e.target.closest(".inspiration-panel-icon-btn")) return;
+    var rect = panel.getBoundingClientRect();
+    drag = { startX: e.clientX, startY: e.clientY, startLeft: rect.left, startTop: rect.top };
+    header.setPointerCapture(e.pointerId);
+    panel.classList.add("dragging");
+  });
+  header.addEventListener("pointermove", function(e) {
+    if (!drag) return;
+    var maxLeft = window.innerWidth - panel.offsetWidth - 8;
+    var maxTop = window.innerHeight - panel.offsetHeight - 8;
+    var left = Math.min(Math.max(8, drag.startLeft + (e.clientX - drag.startX)), Math.max(8, maxLeft));
+    var top = Math.min(Math.max(8, drag.startTop + (e.clientY - drag.startY)), Math.max(8, maxTop));
+    panel.style.left = left + "px";
+    panel.style.top = top + "px";
+    panel.style.right = "auto";
+    panel.style.bottom = "auto";
+  });
+  header.addEventListener("pointerup", function(e) {
+    drag = null;
+    panel.classList.remove("dragging");
+    if (header.hasPointerCapture(e.pointerId)) header.releasePointerCapture(e.pointerId);
+  });
 }
 
 /*
@@ -379,6 +470,7 @@ export function loadSongs() {
   document.getElementById("instrument").addEventListener("change", rerenderFile);
   initPrintLink();
   initSheetControls();
+  initInspirationPanel();
 
   if (window.location.hash) {
     parse_song_from_hash(window.location.hash);
