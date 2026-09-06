@@ -118,7 +118,7 @@ export function createAbcjsStub({ audioSupported = false } = {}) {
     synth: {
       supportsAudio: () => audioSupported,
       SynthController: function SynthController() {
-        // Mirrors ABCjs 6.6.3: play() toggles `isStarted` (resume/pause both
+        // Mirrors ABCjs 6.6.4: play() toggles `isStarted` (resume/pause both
         // go through it), setTune() resets it, pause() leaves it untouched.
         this.isStarted = false;
         this.load = () => {};
