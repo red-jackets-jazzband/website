@@ -1486,6 +1486,14 @@ function initAudioForTune(visualObj) {
   buildTimingMap: Use ABCJS.TimingCallbacks to pre-compute the time (ms) for
   every note element in the SVG, stored as el._abcSeekMs. Also records the
   total song duration for fraction-based seeking.
+
+  noteTimings walks the tune in *playback* order, so a `|: ... :|` section is
+  visited twice and its SVG elements would be tagged twice. We keep the first
+  visit's values (first-write-wins for _abcSeekMs, and when a repeat brings us
+  back to an already-tagged measure we snap `measureIdx` back to that measure's
+  stored index) so every element's _abcMeasureIdx stays a *visual* measure
+  number that lines up 1:1 with the chord-table cells — otherwise the repeated
+  bars (and everything after them) point at the wrong chord cell.
 */
 function buildTimingMap(visualObj) {
   if (typeof ABCJS.TimingCallbacks !== "function") return;
@@ -1504,6 +1512,21 @@ function buildTimingMap(visualObj) {
         if (t.measureStart && seenFirstEvent) measureIdx++;
         seenFirstEvent = true;
         if (t.milliseconds > maxMs) maxMs = t.milliseconds;
+        var taggedIdx;
+        for (var tv = 0; tv < t.elements.length && taggedIdx === undefined; tv++) {
+          for (var te = 0; te < t.elements[tv].length; te++) {
+            if (t.elements[tv][te]._abcMeasureIdx !== undefined) {
+              taggedIdx = t.elements[tv][te]._abcMeasureIdx;
+              break;
+            }
+          }
+        }
+        if (taggedIdx !== undefined) {
+          // Repeat brought us back to bars we've already tagged — realign the
+          // running measure counter and leave the first-pass tags in place.
+          measureIdx = taggedIdx;
+          continue;
+        }
         for (var v = 0; v < t.elements.length; v++) {
           for (var e = 0; e < t.elements[v].length; e++) {
             t.elements[v][e]._abcSeekMs = t.milliseconds;
