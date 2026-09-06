@@ -1,6 +1,6 @@
 "use strict";
 
-import { renderSong, renderSongTextWithOverride, readFile, renderAbcFile } from "./render_abc.js";
+import { renderSong, renderSongTextWithOverride, readFile, renderAbcFile, clearBookletPrintState } from "./render_abc.js";
 import { parseSongIndex, groupSongsByLetter, filterSongsByQuery, songTitleSlug } from "./lib/song-index.js";
 import { parseSetlistFile, isSetlistDivider } from "./lib/setlist-format.js";
 import { extractKeyFromAbc, semitonesBetweenKeys } from "./lib/music-theory.js";
@@ -853,6 +853,7 @@ var SETLIST_PRINT_MODES = ["setlist", "chordbook", "songbook"];
 
 function printSetlist(mode) {
   var body = document.body;
+  clearBookletPrintState(); // drop any stale mode a prior print left behind
   body.classList.add("export-booklet-mode");
   SETLIST_PRINT_MODES.forEach(function(m) {
     body.classList.toggle("export-mode-" + m, m === mode);

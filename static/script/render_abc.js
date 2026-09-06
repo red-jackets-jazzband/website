@@ -504,6 +504,21 @@ export function loadSongs() {
 }
 
 /*
+   Funcion: clearBookletPrintState
+   Strips any leftover setlist-booklet print classes from <body>. The setlist
+   "Print …" buttons add these and remove them again on "afterprint", but a
+   stale class (or a browser that skips the event) would otherwise drag the
+   last-built booklet into an unrelated single-song print.
+*/
+export function clearBookletPrintState() {
+  var body = document.body;
+  body.classList.remove("export-booklet-mode");
+  Array.prototype.slice.call(body.classList).forEach(function(cls) {
+    if (cls.indexOf("export-mode-") === 0) body.classList.remove(cls);
+  });
+}
+
+/*
    Funcion: initPrintLink
    Wires up the (shared) #printLink to window.print().
 */
@@ -512,6 +527,7 @@ export function initPrintLink() {
   if (link) {
     link.addEventListener("click", function(e) {
       e.preventDefault();
+      clearBookletPrintState();
       window.print();
     });
   }
