@@ -2310,20 +2310,60 @@ body:has(#rjLibrary) .split-bio {
 .rj-library-search {
   padding: 14px 16px 10px;
   flex: none;
+  position: relative;
 }
 .rj-library-search input {
   width: 100%;
   box-sizing: border-box;
   height: 40px;
-  padding: 0 12px;
+  padding: 0 30px 0 12px;
   background: #262626;
   border: 1px solid rgba(255,255,255,.1);
   border-radius: 8px;
   color: #dedcd8;
   font: 500 13px "Montserrat", sans-serif;
+  /* native "clear" button defaults to the UA accent (blue) in Firefox */
+  accent-color: #9a978f;
 }
 .rj-library-search input::placeholder {
   color: rgba(230,228,224,.42);
+}
+/* native "clear" button — recolour it grey/gold and line it up with where
+   the "/" hint sits (padding-right pushes it left, so pull it back right) */
+.rj-library-search input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-right: -19px;
+  cursor: pointer;
+  background-color: rgba(230,228,224,.5);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 6l12 12M18 6L6 18' stroke='black' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 6l12 12M18 6L6 18' stroke='black' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.rj-library-search input::-webkit-search-cancel-button:hover {
+  background-color: #f0b030;
+}
+.rj-search-hint {
+  position: absolute;
+  top: 50%;
+  right: 24px;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 4px;
+  color: rgba(230,228,224,.5);
+  font: 600 11px "Montserrat", sans-serif;
+  pointer-events: none;
+}
+.rj-library-search input:focus ~ .rj-search-hint,
+.rj-library-search input:not(:placeholder-shown) ~ .rj-search-hint {
+  display: none;
 }
 
 .rj-library-body {
@@ -2371,6 +2411,12 @@ body:has(#rjLibrary) .split-bio {
 }
 .song-list-item:hover {
   color: var(--rj-hover);
+}
+/* keyboard (up/down arrow) selection in the song list */
+.song-list-item.kbd-active {
+  color: var(--rj-hover);
+  background: rgba(255,255,255,.06);
+  border-radius: 6px;
 }
 .song-list-empty {
   padding: 20px 4px;
