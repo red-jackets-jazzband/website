@@ -14,10 +14,21 @@ export function extractYouTubeId(url) {
 // Builds a privacy-enhanced (youtube-nocookie.com) embed URL for the
 // Inspiration picture-in-picture player, or null if the url isn't a
 // recognizable YouTube link.
-export function youtubeEmbedUrl(url, autoplay) {
+//
+// `options` is an object { autoplay, jsApi, origin }; a bare `true` is also
+// accepted as shorthand for { autoplay: true }. `jsApi` adds enablejsapi=1 (+
+// playsinline=1, + origin=... when given) so the LoopTube toolbar can attach a
+// YT.Player to the iframe and drive seek / playback-rate.
+export function youtubeEmbedUrl(url, options) {
   var id = extractYouTubeId(url);
   if (!id) return null;
+  var opts = options === true ? { autoplay: true } : (options || {});
   var params = ["rel=0"];
-  if (autoplay) params.push("autoplay=1");
+  if (opts.autoplay) params.push("autoplay=1");
+  if (opts.jsApi) {
+    params.push("enablejsapi=1");
+    params.push("playsinline=1");
+    if (opts.origin) params.push("origin=" + encodeURIComponent(opts.origin));
+  }
   return "https://www.youtube-nocookie.com/embed/" + id + "?" + params.join("&");
 }
