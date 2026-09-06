@@ -24,7 +24,8 @@ function writeStorage(storage, list) {
 }
 
 function generateId() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  // crypto.randomUUID: available in every supported browser and in Node 22 (CI).
+  return Date.now().toString(36) + crypto.randomUUID().slice(0, 8);
 }
 
 function findEntry(list, id) {

@@ -450,10 +450,12 @@ function stackChord(voices) {
     let oct = 4;
     let mid = Tonal.Note.midi(voices[i].pc + oct);
     if (mid == null) mid = 60 + i * 3;
-    while (i > 0 && mid <= prevMidi) {
-      oct += 1;
-      const next = Tonal.Note.midi(voices[i].pc + oct);
-      mid = next == null ? mid + 12 : next;
+    if (i > 0) {
+      while (mid <= prevMidi) {
+        oct += 1;
+        const next = Tonal.Note.midi(voices[i].pc + oct);
+        mid = next == null ? mid + 12 : next;
+      }
     }
     prevMidi = mid;
     notes.push(Tonal.AbcNotation.scientificToAbcNotation(voices[i].pc + oct));
