@@ -99,6 +99,31 @@ test("parseChordScheme extracts one chord per measure", () => {
   assert.deepEqual(chords[1].text, ["F"]);
 });
 
+test("parseChordScheme keeps the final measure when the body has no trailing barline", () => {
+  const song = {
+    lines: [
+      {
+        staff: [
+          {
+            voices: [
+              [
+                { el_type: "note", chord: [{ name: "C" }] },
+                { el_type: "note" },
+                { el_type: "bar", type: "bar_thin" },
+                { el_type: "note", chord: [{ name: "G" }] },
+                { el_type: "note" },
+              ],
+            ],
+          },
+        ],
+      },
+    ],
+  };
+  const chords = parseChordScheme(song);
+  assert.equal(chords.length, 2);
+  assert.deepEqual(chords[1].text, ["G"]);
+});
+
 test("parseChordScheme returns an empty list when no valid chords were found", () => {
   const song = {
     lines: [

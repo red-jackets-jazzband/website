@@ -101,6 +101,67 @@ test("print(mode) stamps the body classes and the front-matter subtitle", async 
   }
 });
 
+// A setup whose reads are resolved by hand, so a test can interleave them
+// with a rebuild or a print() call.
+function manualSetup() {
+  const page = mountPage();
+  const sel = document.createElement("select");
+  sel.id = "instrument";
+  const o = document.createElement("option");
+  o.value = "concert_pitch";
+  sel.append(o);
+  document.getElementById("sheetStatus").append(sel);
+
+  const bookletRenders = [];
+  const reads = [];
+  const ctx = makeCtx({
+    songName: (f) => f.replace(".abc", "").toUpperCase(),
+    readFile: (path, onLoad) => {
+      const file = path.split("/").pop();
+      reads.push({ file, onLoad });
+    },
+    sheet: { renderIntoBooklet: (text, targets) => bookletRenders.push(targets) },
+  });
+  const print = createSetlistPrint(ctx);
+  return { print, bookletRenders, reads, cleanup: page.cleanup };
+}
+
+test("a stale read from a superseded booklet build is ignored", () => {
+  const { print, bookletRenders, reads, cleanup } = manualSetup();
+  try {
+    withAbcjs(createAbcjsStub(), () => {
+      print.buildBooklet("Gig", SONGS, "");
+      const stale = reads.shift(); // first song of build 1
+      reads.length = 0;
+      print.buildBooklet("Gig", SONGS, ""); // build 2 recreates the ids
+      const fresh = [...reads];
+      stale.onLoad(ABC[stale.file]); // late build-1 callback
+      fresh.forEach((r) => r.onLoad(ABC[r.file]));
+    });
+    // Only build 2's three reads rendered; the stale one was dropped.
+    assert.equal(bookletRenders.length, 3);
+  } finally {
+    cleanup();
+  }
+});
+
+test("print() waits for the booklet's song reads before opening the dialog", () => {
+  const { print, reads, cleanup } = manualSetup();
+  try {
+    let printed = 0;
+    window.print = () => { printed += 1; };
+    withAbcjs(createAbcjsStub(), () => {
+      print.buildBooklet("Gig", SONGS, "");
+      print.print("songbook");
+      assert.equal(printed, 0, "held while reads are outstanding");
+      reads.forEach((r) => r.onLoad(ABC[r.file]));
+    });
+    assert.equal(printed, 1, "fires once every read has landed");
+  } finally {
+    cleanup();
+  }
+});
+
 test("a personal-setlist desc adds a cover page", async () => {
   const { print, settle, cleanup } = setup();
   try {

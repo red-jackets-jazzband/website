@@ -55,6 +55,50 @@ test("init wires the close button without a player attached", () => {
   });
 });
 
+test("closePanel drops a pending video id so a late onReady can't play into a hidden panel", async () => {
+  const page = mountPage();
+  const { window } = page;
+  try {
+    let fireReady = null;
+    const loaded = [];
+    window.YT = {
+      Player: function FakePlayer(_el, opts) {
+        fireReady = opts.events.onReady;
+        this.loadVideoById = (id) => loaded.push(id);
+        this.stopVideo = () => {};
+        this.getCurrentTime = () => 0;
+        this.getPlaybackRate = () => 1;
+      },
+      PlayerState: { PLAYING: 1 },
+    };
+    const insp = createInspiration();
+    insp.init();
+    insp.updateLink("https://youtu.be/aaaaaaaaaaa", "A");
+    const btn = document.getElementById("inspirationLink");
+
+    // Open once: no player yet, so the frame src is set and the player is
+    // attached on the next microtask — but onReady hasn't fired.
+    btn.dispatchEvent(new window.Event("click"));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    // Switch to another video while the player is still not ready: its id is
+    // parked in pendingVideoId.
+    btn.dataset.url = "https://youtu.be/bbbbbbbbbbb";
+    btn.dispatchEvent(new window.Event("click"));
+
+    // Close before the player becomes ready.
+    document.getElementById("inspirationCloseBtn").dispatchEvent(new window.Event("click"));
+    assert.equal(document.getElementById("inspirationPanel").hidden, true);
+
+    // The late onReady must not start the parked video into the hidden panel.
+    fireReady();
+    assert.deepEqual(loaded, []);
+  } finally {
+    delete window.YT;
+    page.cleanup();
+  }
+});
+
 test("the size button steps the panel width and wraps back round", () => {
   inDom(({ window }) => {
     window.localStorage.clear();

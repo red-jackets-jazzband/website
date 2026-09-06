@@ -153,6 +153,9 @@ export function createInspiration() {
     if (!panel) return;
     panel.hidden = true;
     stopLoopPoll();
+    // Drop any id that was queued for a not-yet-ready player, so a late
+    // onReady doesn't start a video into the now-hidden panel.
+    pendingVideoId = null;
     if (player && playerReady && player.stopVideo) {
       player.stopVideo();
     } else {
