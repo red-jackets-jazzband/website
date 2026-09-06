@@ -84,7 +84,10 @@ test("setPersonalSetlistOrder ignores a non-permutation (wrong length, dup, out 
   setPersonalSetlistOrder(storage, entry.id, [0, 1]); // too short
   setPersonalSetlistOrder(storage, entry.id, [0, 1, 1]); // duplicate
   setPersonalSetlistOrder(storage, entry.id, [0, 1, 9]); // out of range
+  setPersonalSetlistOrder(storage, entry.id, [0, NaN, 1]); // NaN entry
+  setPersonalSetlistOrder(storage, entry.id, [0, 1.5, 2]); // fractional entry
   assert.deepEqual(listPersonalSetlists(storage)[0].songs.map((s) => s.file), original);
+  assert.ok(listPersonalSetlists(storage)[0].songs.every((s) => s != null));
 });
 
 test("addDividerToPersonalSetlist / updateDividerLabelInPersonalSetlist manage set breaks", () => {

@@ -32,7 +32,7 @@ export function createSetlistData(ctx) {
       }, onError);
     },
 
-    ensureSongsLoaded(callback) {
+    ensureSongsLoaded(callback, onError) {
       if (ctx.state.allSongsLoaded) {
         callback();
         return;
@@ -41,6 +41,8 @@ export function createSetlistData(ctx) {
         ctx.state.allSongs = parseSongIndex(data);
         ctx.state.allSongsLoaded = true;
         callback();
+      }, (status) => {
+        if (onError) onError(status);
       });
     },
   };

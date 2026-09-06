@@ -31,6 +31,16 @@ function semitoneFieldValue(raw) {
     : "";
 }
 
+// What a semitone <input> should persist as its override: "" unless the user
+// typed a whole number in the field's -12..12 range (HTML min/max/step don't
+// gate a change handler, so "1.5" or "40" reach us verbatim).
+function semitoneOverride(rawValue) {
+  const trimmed = String(rawValue == null ? "" : rawValue).trim();
+  if (!/^[+-]?\d+$/.test(trimmed)) return "";
+  const n = Number(trimmed);
+  return Number.isInteger(n) && n !== 0 && n >= -12 && n <= 12 ? String(n) : "";
+}
+
 function downloadText(filename, text) {
   const blob = new Blob([text], { type: "text/plain" });
   const url = URL.createObjectURL(blob);
@@ -54,6 +64,7 @@ export function createSetlistView(ctx) {
   let focusAddSongAfterRender = false;
   let focusHandleAfterRender = null; // draggable-row index to re-focus after a keyboard nudge
   let rowDrag = null;
+  let songLoadSeq = 0; // bumped per song open; a stale XHR callback checks it before rendering
 
   // ---- opening -----------------------------------------------------
 
@@ -70,8 +81,12 @@ export function createSetlistView(ctx) {
     const entry = getPersonalSetlist(ctx.storage(), id);
     if (!entry) return;
     ctx.state.currentPersonalId = id;
-    ctx.setlistData.ensureSongsLoaded(() => {
-      renderOpen(entry.name, entry.songs, entry, entry.desc);
+    const open = () => renderOpen(entry.name, entry.songs, entry, entry.desc);
+    ctx.setlistData.ensureSongsLoaded(open, (status) => {
+      // Index fetch failed: still open the setlist so it isn't a dead click —
+      // song titles just fall back to their filenames.
+      console.warn(`Song index failed to load (status ${status}); titles may show as filenames`);
+      open();
     });
   }
 
@@ -161,8 +176,7 @@ export function createSetlistView(ctx) {
       attrs: { "aria-label": `Transpose ${ctx.songName(song.file)}, in semitones` },
       on: {
         change: (e) => {
-          const n = parseInt(e.target.value, 10);
-          const stored = Number.isFinite(n) && n !== 0 ? String(n) : "";
+          const stored = semitoneOverride(e.target.value);
           updateSongKeyInPersonalSetlist(ctx.storage(), personalEntry.id, index, stored);
           refreshOpenPersonal();
         },
@@ -269,7 +283,9 @@ export function createSetlistView(ctx) {
         addSearch.value = addSongQuery;
         addSearch.focus();
         if (addSongQuery) {
-          ctx.setlistData.ensureSongsLoaded(() => renderAddSongResults(addSongQuery));
+          ctx.setlistData.ensureSongsLoaded(
+            () => renderAddSongResults(addSongQuery), showAddSongError,
+          );
         }
       }
     }
@@ -392,7 +408,11 @@ export function createSetlistView(ctx) {
     ctx.state.currentSongFile = song.file;
     ctx.state.currentSetlistSongIndex = index == null ? null : Number(index);
     highlightCurrent();
+    const seq = (songLoadSeq += 1);
     ctx.readFile(`/songs/${song.file}`, (text) => {
+      // A slower earlier request must not overwrite the sheet the user has
+      // since moved on to.
+      if (seq !== songLoadSeq) return;
       const extra = setlistTransposeSteps(song.key, extractKeyFromAbc(text));
       ctx.sheet.render(text, { transposeSemitones: extra });
     }, (status) => {
@@ -443,6 +463,17 @@ export function createSetlistView(ctx) {
 
   // ---- add-song / add-break tray --------------------------
 
+  function showAddSongError() {
+    const resultsEl = byId("setlistAddSongResults");
+    if (!resultsEl) return;
+    clear(resultsEl);
+    resultsEl.classList.add("is-open");
+    resultsEl.append(el("div", {
+      class: "rj-library-add-song-empty",
+      text: "Couldn’t load the song list — try again in a moment.",
+    }));
+  }
+
   function renderAddSongResults(query) {
     const resultsEl = byId("setlistAddSongResults");
     if (!resultsEl) return;
@@ -485,7 +516,9 @@ export function createSetlistView(ctx) {
       on: {
         input: (e) => {
           addSongQuery = e.target.value.trim();
-          ctx.setlistData.ensureSongsLoaded(() => renderAddSongResults(addSongQuery));
+          ctx.setlistData.ensureSongsLoaded(
+            () => renderAddSongResults(addSongQuery), showAddSongError,
+          );
         },
       },
     });

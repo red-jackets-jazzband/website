@@ -10,7 +10,11 @@ export function readFile(path, onLoad, onError) {
   const request = new XMLHttpRequest();
   request.onreadystatechange = () => {
     if (request.readyState !== 4) return;
-    if (request.status === 200 || request.status === 0) {
+    // A failed HTTP request also lands here with status 0; only a genuine
+    // `file:` read reports 0 on success, so accept 0 only in that case.
+    const localFileRead = request.status === 0
+      && window.location.protocol === "file:";
+    if (request.status === 200 || localFileRead) {
       onLoad(request.responseText);
     } else if (onError) {
       onError(request.status);

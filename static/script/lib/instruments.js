@@ -25,14 +25,17 @@ export function offsetForInstrument(instrumentValue) {
 }
 
 // Stamps `clef=bass middle=D` onto the ABC K: line for bass-clef instruments,
-// or strips it for everything else. Only touches the K: line itself, so it's
-// a no-op for files that already define their own per-voice clef (see
-// hasInstrumentVoices in render_abc.js, which bypasses this entirely).
+// or strips it for everything else. Only touches the header K: line itself
+// (line-start, never an inline `[K:...]` change), so it's a no-op for files
+// that already define their own per-voice clef (see hasInstrumentVoices in
+// render_abc.js, which bypasses this entirely). It also strips any clef it
+// stamped before re-adding one, so repeated calls are idempotent — sheet.js
+// hands back its own already-transformed ABC on every rerender.
 export function changeClefForInstrument(instrumentValue, text) {
   const entry = findInstrument(instrumentValue);
   const clef = entry ? entry.clef : "treble";
-  if (clef === "bass") {
-    return text.replace(/(K:\s*\w+)/g, "$1 clef=bass middle=D");
-  }
-  return text.replace(/clef=bass middle=D/g, "");
+  return text.replace(/^K:(.*)$/m, (_match, keyLine) => {
+    const bare = keyLine.replace(/\s*clef=bass middle=D/g, "");
+    return `K:${bare}${clef === "bass" ? " clef=bass middle=D" : ""}`;
+  });
 }

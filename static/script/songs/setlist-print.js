@@ -23,6 +23,25 @@ const bookletSetHeading = (text) =>
 export function createSetlistPrint(ctx) {
   const instrument = () => (byId("instrument") ? byId("instrument").value : "concert_pitch");
 
+  // Each buildBooklet() clears #setlistPrintBooklet and recreates its per-song
+  // ids, while the .abc reads that fill them are async. `bookletSeq` lets a
+  // callback from a superseded build bail instead of writing stale content
+  // into the new ids; `pendingReads` / `onBookletReady` let print() wait until
+  // every read for the current build has landed.
+  let bookletSeq = 0;
+  let pendingReads = 0;
+  let onBookletReady = null;
+
+  function readSettled(seq) {
+    if (seq !== bookletSeq) return;
+    pendingReads -= 1;
+    if (pendingReads === 0 && onBookletReady) {
+      const ready = onBookletReady;
+      onBookletReady = null;
+      ready();
+    }
+  }
+
   // ---- "Print setlist": the numbered stage list ----------------------
 
   function stageTable(songs) {
@@ -136,7 +155,7 @@ export function createSetlistPrint(ctx) {
 
   // ---- one engraved song block ------------------------------------
 
-  function songBlock(entry) {
+  function songBlock(entry, seq) {
     const n = entry.songCount;
     const block = el("div", { class: "setlist-booklet-song" }, [
       el("div", { id: `setlistPrintTitle-${n}`, class: "songtitle" }),
@@ -145,18 +164,23 @@ export function createSetlistPrint(ctx) {
     ]);
     if (!entry.followsHeading) block.classList.add("pageBreakBefore");
 
+    pendingReads += 1;
     ctx.readFile(`/songs/${entry.item.file}`, (text) => {
-      const extra = setlistTransposeSteps(entry.item.key, extractKeyFromAbc(text));
-      ctx.sheet.renderIntoBooklet(text, {
-        notationId: `setlistPrintNotation-${n}`,
-        chordId: `setlistPrintChord-${n}`,
-        titleId: `setlistPrintTitle-${n}`,
-        titlePrefix: `${entry.displayNumber}. `,
-        extraTransposeSteps: extra,
-      });
-      fillSongMeta(n, resolvedExportSongMeta(text, entry.item, instrument()));
+      if (seq === bookletSeq) {
+        const extra = setlistTransposeSteps(entry.item.key, extractKeyFromAbc(text));
+        ctx.sheet.renderIntoBooklet(text, {
+          notationId: `setlistPrintNotation-${n}`,
+          chordId: `setlistPrintChord-${n}`,
+          titleId: `setlistPrintTitle-${n}`,
+          titlePrefix: `${entry.displayNumber}. `,
+          extraTransposeSteps: extra,
+        });
+        fillSongMeta(n, resolvedExportSongMeta(text, entry.item, instrument()));
+      }
+      readSettled(seq);
     }, (status) => {
       console.warn(`Setlist references a missing song file: ${entry.item.file} (status ${status})`);
+      readSettled(seq);
     });
 
     return block;
@@ -165,6 +189,8 @@ export function createSetlistPrint(ctx) {
   function buildBooklet(name, songs, desc) {
     const container = byId("setlistPrintBooklet");
     if (!container) return;
+    const seq = (bookletSeq += 1);
+    pendingReads = 0;
     clear(container);
 
     container.append(el("div", { class: "setlist-view-title", text: name }));
@@ -173,7 +199,7 @@ export function createSetlistPrint(ctx) {
 
     walkSetlist(songs).entries.forEach((entry) => {
       if (entry.kind === "set-heading") container.append(bookletSetHeading(entry.label));
-      else container.append(songBlock(entry));
+      else container.append(songBlock(entry, seq));
     });
 
     // Appended after the (hidden-in-setlist-mode) chart stack: for "Print
@@ -182,6 +208,12 @@ export function createSetlistPrint(ctx) {
   }
 
   function print(mode) {
+    // The booklet's charts/keys/tempos are filled by async .abc reads; hold
+    // the print dialog until they've all landed or it prints half-empty pages.
+    if (pendingReads > 0) {
+      onBookletReady = () => print(mode);
+      return;
+    }
     clearBookletPrintState();
     const sub = byId("setlistBookletFmSub");
     if (sub) sub.textContent = PRINT_MODE_LABELS[mode] || "Songbook";

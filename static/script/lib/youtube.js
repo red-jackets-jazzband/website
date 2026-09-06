@@ -1,12 +1,34 @@
+// Hostnames we treat as YouTube. Anything else — including a lookalike like
+// `notyoutube.com` or `youtube.com.evil.example` — is rejected outright so a
+// stray F: field can't point the Inspiration player at an arbitrary site.
+const YOUTUBE_HOSTS = new Set([
+  "youtube.com", "www.youtube.com", "m.youtube.com",
+  "youtube-nocookie.com", "www.youtube-nocookie.com",
+  "youtu.be", "www.youtu.be",
+]);
+
+const VIDEO_ID = /^[A-Za-z0-9_-]{11}$/;
+
 // Pulls the 11-character video id out of the handful of YouTube URL shapes
-// that show up in songs' ABC F: fields (watch?v=, youtu.be/, with trailing
-// &list=/&t= params attached). Returns null for anything else.
+// that show up in songs' ABC F: fields (watch?v=, youtu.be/, /embed/, /shorts/,
+// with trailing &list=/&t= params attached). Returns null for anything else.
 export function extractYouTubeId(url) {
   if (typeof url !== "string") return null;
-  const match = url.trim().match(
-    /(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:watch\?(?:.*&)?v=|embed\/|v\/|shorts\/))([A-Za-z0-9_-]{11})/,
-  );
-  return match ? match[1] : null;
+  let parsed;
+  try {
+    parsed = new URL(url.trim());
+  } catch {
+    return null;
+  }
+  const host = parsed.hostname.toLowerCase();
+  if (!YOUTUBE_HOSTS.has(host)) return null;
+
+  const id = host === "youtu.be" || host === "www.youtu.be"
+    ? parsed.pathname.slice(1)
+    : parsed.searchParams.get("v")
+      || (parsed.pathname.match(/^\/(?:embed|v|shorts)\/([^/?#]+)/) || [])[1]
+      || "";
+  return VIDEO_ID.test(id) ? id : null;
 }
 
 // Builds a privacy-enhanced (youtube-nocookie.com) embed URL for the

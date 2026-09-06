@@ -126,7 +126,7 @@ export function setPersonalSetlistOrder(storage, id, order) {
     const seen = {};
     const valid = Array.isArray(order) && order.length === songs.length &&
       order.every((i) => {
-        if (typeof i !== "number" || i < 0 || i >= songs.length || seen[i]) return false;
+        if (!Number.isInteger(i) || i < 0 || i >= songs.length || seen[i]) return false;
         seen[i] = true;
         return true;
       });

@@ -33,9 +33,21 @@ test("changeClefForInstrument adds a bass clef only for sousaphone/trombone", ()
 });
 
 test("changeClefForInstrument strips an existing bass clef marker for treble instruments", () => {
-  // Faithful to the original switch-statement behavior: only the
-  // "clef=bass middle=D" text is stripped, not the space before it that
-  // changeClefForInstrument("sousaphone"/"trombone", ...) inserts.
   const input = "K:Bb clef=bass middle=D\nC D E F|";
-  assert.equal(changeClefForInstrument("trumpet", input), "K:Bb \nC D E F|");
+  assert.equal(changeClefForInstrument("trumpet", input), "K:Bb\nC D E F|");
+});
+
+test("changeClefForInstrument is idempotent across repeated conversions", () => {
+  const treble = "K:Bb\nC D E F|";
+  const bass = changeClefForInstrument("sousaphone", treble);
+  assert.equal(changeClefForInstrument("sousaphone", bass), bass);
+  assert.equal(changeClefForInstrument("trumpet", bass), treble);
+});
+
+test("changeClefForInstrument leaves inline [K:...] key changes untouched", () => {
+  const input = "K:C\nC D|[K:G]G A|";
+  assert.equal(
+    changeClefForInstrument("trombone", input),
+    "K:C clef=bass middle=D\nC D|[K:G]G A|",
+  );
 });

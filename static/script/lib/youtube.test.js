@@ -21,8 +21,18 @@ test("extractYouTubeId trims surrounding whitespace", () => {
   assert.equal(extractYouTubeId(" https://youtu.be/T5YViTLS00Q "), "T5YViTLS00Q");
 });
 
+test("extractYouTubeId handles /embed/ urls", () => {
+  assert.equal(extractYouTubeId("https://www.youtube.com/embed/q3HADwaCnkE"), "q3HADwaCnkE");
+});
+
 test("extractYouTubeId returns null for non-YouTube urls", () => {
   assert.equal(extractYouTubeId("https://example.com/song.mp3"), null);
+});
+
+test("extractYouTubeId rejects lookalike hostnames that merely contain youtube.com", () => {
+  assert.equal(extractYouTubeId("https://notyoutube.com/watch?v=q3HADwaCnkE"), null);
+  assert.equal(extractYouTubeId("https://youtube.com.evil.example/watch?v=q3HADwaCnkE"), null);
+  assert.equal(extractYouTubeId("https://evil.example/?u=https://www.youtube.com/watch?v=q3HADwaCnkE"), null);
 });
 
 test("extractYouTubeId returns null for non-string input", () => {

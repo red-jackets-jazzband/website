@@ -79,6 +79,14 @@ export function parseChordScheme(song) {
     }
   }
 
+  // An ABC body that ends without a closing barline never reaches the bar
+  // flush above, so the final measure's chords are still sitting unpushed in
+  // currentMeasure — flush them here or the chord table (and comping) loses
+  // the last bar.
+  if (!inAlternativeEnding && currentMeasure.text.length > 0) {
+    chords.push(currentMeasure);
+  }
+
   // Prevent returning only % % % % % ....
   if (!parsedValidChord) {
     chords = [];

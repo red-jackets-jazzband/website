@@ -104,6 +104,50 @@ test("the per-song semitone field writes a signed integer back to storage", () =
   }
 });
 
+test("the per-song semitone field rejects fractional and out-of-range input", () => {
+  const { view, entry, storage, cleanup } = setup({ songs: [{ file: "a.abc", key: "4" }] });
+  try {
+    view.renderOpen(entry.name, entry.songs, entry, "");
+    const field = document.querySelector(".setlist-song-semitones");
+
+    field.value = "1.5";
+    field.dispatchEvent(new window.Event("change"));
+    assert.equal(getPersonalSetlist(storage, entry.id).songs[0].key, "");
+
+    view.renderOpen(entry.name, getPersonalSetlist(storage, entry.id).songs, entry, "");
+    document.querySelector(".setlist-song-semitones").value = "40";
+    document.querySelector(".setlist-song-semitones").dispatchEvent(new window.Event("change"));
+    assert.equal(getPersonalSetlist(storage, entry.id).songs[0].key, "");
+  } finally {
+    cleanup();
+  }
+});
+
+test("openPersonal still renders the setlist when the song index fails to load", () => {
+  const page = mountPage();
+  const storage = memoryStorage();
+  const entry = createPersonalSetlist(storage, "My Set");
+  addSongToPersonalSetlist(storage, entry.id, { file: "a.abc", key: "" });
+
+  const ctx = makeCtx({
+    storage: () => storage,
+    songName: (f) => f.replace(".abc", ""),
+    state: { currentPersonalId: null, allSongs: [], allSongsLoaded: false },
+    setlistData: { loadBand: () => {}, ensureSongsLoaded: (_cb, onError) => onError(500) },
+    setlistHome: { show: () => {}, render: () => {} },
+    setlistModal: { init: () => {} },
+    setlistPrint: { buildBooklet: () => {}, print: () => {} },
+    sheet: { render: () => {}, renderFromFile: () => {} },
+  });
+  const view = createSetlistView(ctx);
+  try {
+    view.openPersonal(entry.id);
+    assert.equal(document.querySelectorAll(".setlist-song-row").length, 1);
+  } finally {
+    page.cleanup();
+  }
+});
+
 test("keyboard nudge on a drag handle persists the new order", () => {
   const { view, entry, storage, cleanup } = setup({
     songs: [{ file: "a.abc" }, { file: "b.abc" }, { file: "c.abc" }],
@@ -130,6 +174,29 @@ test("clicking a song title opens it in the sheet with the resolved transpose", 
     assert.equal(rendered.length, 1);
     assert.equal(ctx.state.currentSongFile, "a.abc");
     assert.equal(ctx.state.currentSetlistSongIndex, 0);
+  } finally {
+    cleanup();
+  }
+});
+
+test("a slow earlier song load can't overwrite the sheet the user moved on to", () => {
+  const { view, entry, ctx, rendered, cleanup } = setup({
+    songs: [{ file: "a.abc", key: "" }, { file: "b.abc", key: "" }],
+  });
+  try {
+    const calls = [];
+    ctx.readFile = (path, onLoad) => calls.push({ path, onLoad });
+    view.renderOpen(entry.name, entry.songs, entry, "");
+
+    const [titleA, titleB] = document.querySelectorAll(".setlist-song-title");
+    titleA.dispatchEvent(new window.Event("click")); // start loading A
+    titleB.dispatchEvent(new window.Event("click")); // switch to B before A lands
+
+    calls[1].onLoad("X:1\nK:F\nF2|"); // B resolves
+    calls[0].onLoad("X:1\nK:Bb\nB2|"); // stale A resolves afterwards
+
+    assert.equal(rendered.length, 1, "only the still-current request renders");
+    assert.equal(ctx.state.currentSongFile, "b.abc");
   } finally {
     cleanup();
   }
