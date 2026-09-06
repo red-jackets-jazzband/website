@@ -542,12 +542,44 @@ video.video {
   Play + Stop + Mute-melody travel together as one transport cluster, so
   they wrap onto the next line as a group (like a stepper) rather than
   splitting up when #sheetmenu runs out of width in the split-view sheet.
+  Styled as one bordered field (same shell as the Key/Tempo steppers) with
+  the three buttons as flush subfields divided by hairlines; overflow:hidden
+  clips the corners. Play sits flat like its siblings (just a gold glyph) and
+  only fills gold while it's actually playing.
 */
 .sheet-transport {
   flex: none;
   display: flex;
-  align-items: center;
-  gap: 8px;
+  align-items: stretch;
+  height: 44px;
+  background: #2f2f2f;
+  border: 1px solid rgba(255,255,255,.11);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.sheet-transport .sheet-play-btn,
+.sheet-transport .sheet-icon-btn,
+#sheetmenu .sheet-transport .sheet-icon-btn {
+  box-sizing: border-box;
+  width: 42px;
+  height: 100%;
+  border: none;
+  border-radius: 0;
+}
+#sheetmenu .sheet-transport > * + * {
+  border-left: 1px solid rgba(255,255,255,.1);
+}
+.sheet-transport .sheet-play-btn {
+  background: #2f2f2f;
+  color: var(--rj-gold);
+}
+.sheet-transport .sheet-play-btn:hover:not(:disabled),
+.sheet-transport .sheet-play-btn.playing {
+  background: var(--rj-gold);
+  color: #222222;
+}
+.sheet-transport .sheet-play-btn:disabled {
+  opacity: .35;
 }
 
 /*
