@@ -25,6 +25,7 @@ export function makeCtx(overrides = {}) {
     storage: overrides.storage || (() => null),
     songName: overrides.songName || ((file) => file),
     openLibrarySong: overrides.openLibrarySong || (() => {}),
+    setSheetBackLabel: overrides.setSheetBackLabel || (() => {}),
     switchTab: overrides.switchTab || (() => {}),
     sheet: {
       render: () => {},
