@@ -20,7 +20,7 @@ aliases: ["/setlists/", "/songbook/"]
 
 <div id="rjLibrary" class="rj-library hideOnprint">
   <div class="rj-library-tabs" id="libraryTabs">
-    <button type="button" class="rj-library-tab" data-tab="library">Library</button>
+    <button type="button" class="rj-library-tab" data-tab="library">Songs</button>
     <button type="button" class="rj-library-tab" data-tab="setlists">Setlists</button>
   </div>
 
