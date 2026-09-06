@@ -54,3 +54,64 @@ test("init wires the close button without a player attached", () => {
     assert.equal(panel.hidden, true);
   });
 });
+
+test("the size button steps the panel width and wraps back round", () => {
+  inDom(({ window }) => {
+    window.localStorage.clear();
+    const insp = createInspiration();
+    insp.init();
+    const panel = document.getElementById("inspirationPanel");
+    const btn = document.getElementById("inspirationSizeBtn");
+
+    assert.equal(panel.style.width, "320px");
+    const widths = [];
+    for (let i = 0; i < 4; i += 1) {
+      btn.dispatchEvent(new window.Event("click"));
+      widths.push(panel.style.width);
+    }
+    assert.deepEqual(widths, ["420px", "540px", "680px", "320px"]);
+  });
+});
+
+test("init restores a persisted panel width", () => {
+  inDom(({ window }) => {
+    window.localStorage.setItem("rj.inspirationWidth", "540");
+    const insp = createInspiration();
+    insp.init();
+    assert.equal(document.getElementById("inspirationPanel").style.width, "540px");
+    window.localStorage.clear();
+  });
+});
+
+test("dragging the left edge resizes the panel and persists the new width", () => {
+  inDom(({ window }) => {
+    window.localStorage.clear();
+    const insp = createInspiration();
+    insp.init();
+    const panel = document.getElementById("inspirationPanel");
+    const handle = document.getElementById("inspirationResizeHandle");
+    panel.getBoundingClientRect = () => ({ right: 800, left: 480, width: 320, top: 100, bottom: 400, height: 300 });
+
+    handle.dispatchEvent(new window.PointerEvent("pointerdown", { pointerId: 1, clientX: 480 }));
+    handle.dispatchEvent(new window.PointerEvent("pointermove", { pointerId: 1, clientX: 300 }));
+    assert.equal(panel.style.width, "500px");
+
+    handle.dispatchEvent(new window.PointerEvent("pointerup", { pointerId: 1, clientX: 300 }));
+    assert.equal(window.localStorage.getItem("rj.inspirationWidth"), "500");
+  });
+});
+
+test("edge resize floors the panel at MIN_PANEL_WIDTH", () => {
+  inDom(({ window }) => {
+    window.localStorage.clear();
+    const insp = createInspiration();
+    insp.init();
+    const panel = document.getElementById("inspirationPanel");
+    const handle = document.getElementById("inspirationResizeHandle");
+    panel.getBoundingClientRect = () => ({ right: 800, left: 480, width: 320, top: 100, bottom: 400, height: 300 });
+
+    handle.dispatchEvent(new window.PointerEvent("pointerdown", { pointerId: 1, clientX: 480 }));
+    handle.dispatchEvent(new window.PointerEvent("pointermove", { pointerId: 1, clientX: 790 }));
+    assert.equal(panel.style.width, "240px");
+  });
+});

@@ -810,12 +810,46 @@ video.video {
   border-radius: 12px;
   box-shadow: 0 18px 44px rgba(0,0,0,.6);
   overflow: hidden;
+  transition: width 0.15s ease;
 }
 #inspirationPanel.inspiration-panel[hidden] {
   display: none;
 }
-#inspirationPanel.inspiration-panel.dragging {
+#inspirationPanel.inspiration-panel.dragging,
+#inspirationPanel.inspiration-panel.resizing {
   user-select: none;
+  transition: none;
+}
+/* While the left edge is being dragged, keep the pointer stream off the
+   YouTube iframe so the drag isn't swallowed as it passes over the video. */
+#inspirationPanel.inspiration-panel.resizing .inspiration-panel-video {
+  pointer-events: none;
+}
+.inspiration-resize-handle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 11px;
+  z-index: 3;
+  cursor: ew-resize;
+  touch-action: none;
+}
+.inspiration-resize-handle::before {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 50%;
+  width: 3px;
+  height: 36px;
+  transform: translateY(-50%);
+  border-radius: 2px;
+  background: rgba(236,234,230,.16);
+  transition: background 0.15s;
+}
+.inspiration-resize-handle:hover::before,
+#inspirationPanel.inspiration-panel.resizing .inspiration-resize-handle::before {
+  background: var(--rj-gold);
 }
 .inspiration-panel-header {
   display: flex;

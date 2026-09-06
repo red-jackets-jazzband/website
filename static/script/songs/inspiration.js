@@ -1,5 +1,6 @@
 import { byId, on } from "../lib/dom.js";
 import { youtubeEmbedUrl, extractYouTubeId } from "../lib/youtube.js";
+import { PREF_KEYS, readPref, writePref } from "../lib/preferences.js";
 import {
   formatClock, timeToFraction, fractionToTime, normalizeLoop,
   clampHandleDrag, stepPlaybackRate, loopLeadSeconds, shouldLoopSeek,
@@ -8,6 +9,13 @@ import {
 const LOOP_POLL_MS = 80;
 const LOOP_MIN_GAP = 1; // seconds — the shortest loop the toggle will accept
 const EDGE_MARGIN = 8; // px — how close to a window edge the panel may be dragged
+
+// The panel (and the video with it — everything below the header is
+// width-driven) can be resized by dragging its left edge, or stepped through
+// these presets with the size button. MIN_PANEL_WIDTH floors both; the ceiling
+// is the viewport minus the edge margin.
+const PANEL_WIDTHS = [320, 420, 540, 680];
+const MIN_PANEL_WIDTH = 240;
 
 /*
   The Inspiration picture-in-picture panel: a docked, draggable YouTube player
@@ -29,6 +37,7 @@ export function createInspiration() {
   let loopEnabled = false;
   let loopPollId = null;
   let loopDragging = null; // "a" | "b" | null
+  let panelWidth = PANEL_WIDTHS[0];
 
   // ---- YouTube IFrame API --------------------------------------------
 
@@ -369,6 +378,90 @@ export function createInspiration() {
     });
   }
 
+  // ---- panel size ------------------------------------------------
+
+  // Keep an explicitly-positioned (already dragged) panel fully on screen after
+  // it grows. A still-corner-anchored panel needs nothing — right/bottom hold it
+  // in place and max-width caps it to the viewport.
+  function clampPanelIntoView(panel) {
+    if (!panel.style.left && !panel.style.top) return;
+    const maxLeft = Math.max(EDGE_MARGIN, window.innerWidth - panel.offsetWidth - EDGE_MARGIN);
+    const maxTop = Math.max(EDGE_MARGIN, window.innerHeight - panel.offsetHeight - EDGE_MARGIN);
+    panel.style.left = `${Math.min(Math.max(EDGE_MARGIN, parseFloat(panel.style.left) || 0), maxLeft)}px`;
+    panel.style.top = `${Math.min(Math.max(EDGE_MARGIN, parseFloat(panel.style.top) || 0), maxTop)}px`;
+  }
+
+  function maxPanelWidth() {
+    return Math.max(MIN_PANEL_WIDTH, window.innerWidth - EDGE_MARGIN * 2);
+  }
+
+  function clampWidth(width) {
+    return Math.round(Math.min(maxPanelWidth(), Math.max(MIN_PANEL_WIDTH, width)));
+  }
+
+  function updateSizeButtonIcon() {
+    const icon = byId("inspirationSizeBtn")?.querySelector("span");
+    if (!icon) return;
+    const atMax = panelWidth >= PANEL_WIDTHS[PANEL_WIDTHS.length - 1];
+    icon.className = atMax
+      ? "fa-solid fa-down-left-and-up-right-to-center"
+      : "fa-solid fa-up-right-and-down-left-from-center";
+  }
+
+  // The single writer for the panel width: clamp it, put it on the element,
+  // keep the size button's icon honest and (optionally) persist it.
+  function setPanelWidth(panel, width, persist) {
+    panelWidth = clampWidth(width);
+    panel.style.width = `${panelWidth}px`;
+    updateSizeButtonIcon();
+    if (persist) writePref(PREF_KEYS.inspirationWidth, String(panelWidth));
+    clampPanelIntoView(panel);
+  }
+
+  function readStoredWidth() {
+    const stored = Number(readPref(PREF_KEYS.inspirationWidth));
+    if (Number.isFinite(stored) && stored >= MIN_PANEL_WIDTH) return Math.min(stored, maxPanelWidth());
+    return PANEL_WIDTHS[0];
+  }
+
+  // The size button jumps to the next preset wider than the current width
+  // (which may be an in-between value left by an edge drag), wrapping round.
+  function cyclePanelSize(panel) {
+    const next = PANEL_WIDTHS.find((w) => w > panelWidth + 1) ?? PANEL_WIDTHS[0];
+    setPanelWidth(panel, next, true);
+  }
+
+  // Drag the panel's left edge to resize. The right edge stays put: a
+  // corner-anchored panel is held there by its CSS `right`, a dragged one by
+  // rewriting `left` as the width changes.
+  function initResize(panel, handle) {
+    let resize = null;
+    handle.addEventListener("pointerdown", (e) => {
+      const rect = panel.getBoundingClientRect();
+      resize = { right: rect.right, positioned: Boolean(panel.style.left) };
+      handle.setPointerCapture(e.pointerId);
+      panel.classList.add("resizing");
+      e.preventDefault();
+    });
+    handle.addEventListener("pointermove", (e) => {
+      if (!resize) return;
+      // Never let a positioned panel's left edge cross the viewport margin.
+      const ceiling = resize.positioned ? resize.right - EDGE_MARGIN : maxPanelWidth();
+      panelWidth = Math.min(clampWidth(resize.right - e.clientX), ceiling);
+      panel.style.width = `${panelWidth}px`;
+      if (resize.positioned) panel.style.left = `${resize.right - panelWidth}px`;
+      updateSizeButtonIcon();
+    });
+    handle.addEventListener("pointerup", (e) => {
+      if (!resize) return;
+      resize = null;
+      panel.classList.remove("resizing");
+      if (handle.hasPointerCapture(e.pointerId)) handle.releasePointerCapture(e.pointerId);
+      writePref(PREF_KEYS.inspirationWidth, String(panelWidth));
+      clampPanelIntoView(panel);
+    });
+  }
+
   // The panel can be dragged to any corner by its header; position switches
   // from the default bottom-right anchor to an explicit left/top on first drag.
   function initDrag(panel, header) {
@@ -404,7 +497,11 @@ export function createInspiration() {
     if (!panel || !header) return;
     initLoopBar();
     on("inspirationCloseBtn", "click", closePanel);
+    on("inspirationSizeBtn", "click", () => cyclePanelSize(panel));
+    setPanelWidth(panel, readStoredWidth(), false);
     initDrag(panel, header);
+    const resizeHandle = byId("inspirationResizeHandle");
+    if (resizeHandle) initResize(panel, resizeHandle);
   }
 
   return { updateLink, init };

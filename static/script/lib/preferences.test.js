@@ -27,6 +27,7 @@ test("PREF_KEYS pins the persisted key names", () => {
     instrument: "rj.instrument",
     comping: "rj.comping",
     sheetAdvanced: "rj.sheetAdvanced",
+    inspirationWidth: "rj.inspirationWidth",
   });
 });
 
