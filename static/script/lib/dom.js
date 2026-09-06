@@ -5,10 +5,11 @@
 
 export const byId = (id) => document.getElementById(id);
 
-export const qs = (selector, root = document) => root.querySelector(selector);
+export const qs = (selector, root = document) =>
+  (root ? root.querySelector(selector) : null);
 
 export const qsa = (selector, root = document) =>
-  Array.from(root.querySelectorAll(selector));
+  (root ? Array.from(root.querySelectorAll(selector)) : []);
 
 // Empty a node; returns it for chaining. No-op on null.
 export function clear(node) {

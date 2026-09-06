@@ -7,14 +7,7 @@ aliases: ["/setlists/", "/songbook/"]
 
 <script src="/script/abcjs_midi_6.6.3-min.js" type="text/javascript"></script>
 <script src="/script/tonal.4.6.9-min.js" type="text/javascript"></script>
-<script type="module">
-    import { loadSongs } from "/script/render_abc.js";
-    import { initSongLibrary } from "/script/song_library.js";
-    window.addEventListener("load", function () {
-        loadSongs();
-        initSongLibrary();
-    });
-</script>
+<script type="module" src="/script/songs-page.js"></script>
 
 <div class="rj-songs-layout" data-default-tab="library">
 

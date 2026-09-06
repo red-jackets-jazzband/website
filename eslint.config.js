@@ -5,14 +5,6 @@ import globals from "globals";
 // Strict, project-wide config for the site's authored JavaScript: the pure
 // lib/ modules, the songs/ + agenda orchestration, the page entry points and
 // the test suite. Vendored bundles (abcjs, tonal) and Hugo output are ignored.
-//
-// Legacy files still mid-migration to the modular structure are parked in
-// `LEGACY` below and drop out of it as they are replaced.
-const LEGACY = [
-  "static/script/render_abc.js",
-  "static/script/song_library.js",
-  "static/script/render_agenda.js",
-];
 
 const STRICT_RULES = {
   "no-var": "error",
@@ -52,7 +44,6 @@ export default [
       "static/script/*min.js",
       "static/script/abcjs*.js",
       "static/script/tonal*.js",
-      ...LEGACY,
     ],
   },
   js.configs.recommended,
