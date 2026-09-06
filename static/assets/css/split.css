@@ -909,12 +909,14 @@ video.video {
   }
 
   /*
-    "Print setlist" — just the stage list. Hide the stacked per-song charts
-    (and their "Set N" page headings, and any cover page); the stage list
-    carries its own headings.
+    "Print setlist" — the front-matter block (title, "Setlist", instrument,
+    date) followed by the stage list. Hide the stacked per-song charts (and
+    their "Set N" page headings, and any cover page), and the front matter's
+    numbered index — the stage list is that list.
   */
   body.export-mode-setlist #setlistPrintBooklet .setlist-booklet-song,
   body.export-mode-setlist #setlistPrintBooklet .setlist-booklet-set-heading,
+  body.export-mode-setlist #setlistPrintBooklet .setlist-booklet-index,
   body.export-mode-setlist #setlistPrintBooklet .setlist-cover {
     display: none !important;
   }
@@ -922,20 +924,83 @@ video.video {
   body:not(.export-mode-setlist) #setlistPrintBooklet .setlist-stage-list {
     display: none;
   }
-
-  /* The setlist-name heading is near-white for the dark on-screen UI; the
-     cover blurb is a <p>, which the sitewide `p { color: gold }` catches. */
-  #setlistPrintBooklet .setlist-view-title {
-    color: #000;
-    text-align: center;
+  /* No page break after the front matter on a stage list — it's one flow. */
+  body.export-mode-setlist #setlistPrintBooklet .setlist-booklet-frontmatter {
+    page-break-after: auto;
+    break-after: auto;
   }
+
+  /* Every form opens with the front-matter block (title, which form it is, the
+     instrument it's transposed for, the date). It carries the title, so the
+     plain heading is always dropped. */
+  #setlistPrintBooklet .setlist-booklet-frontmatter {
+    color: #000;
+    page-break-after: always;
+    break-after: page;
+  }
+  /* When a desc cover page precedes the front matter (songbook of a band
+     setlist), end it so the front matter starts on its own page. The break
+     lives here, not on the front matter's `-before`, so the front matter can
+     still be the first printed page without a blank one ahead of it. */
+  body:not(.export-mode-setlist) #setlistPrintBooklet .setlist-cover {
+    page-break-after: always;
+  }
+  #setlistPrintBooklet .setlist-view-title {
+    display: none;
+  }
+  .setlist-booklet-fm-title {
+    font: 400 34px "MuseJazzText", "Georgia", serif;
+    text-align: center;
+    margin: 18px 0 4px;
+  }
+  .setlist-booklet-fm-sub {
+    font: 400 17px "MuseJazzText", "Georgia", serif;
+    letter-spacing: .12em;
+    text-align: center;
+    color: #333;
+  }
+  .setlist-booklet-fm-meta {
+    margin: 8px 0 20px;
+    text-align: center;
+    font: 400 15px/1.45 "MuseJazzText", "Georgia", serif;
+    color: #444;
+  }
+  .setlist-booklet-index {
+    max-width: 640px;
+    margin: 0 auto;
+    columns: 2;
+    column-gap: 44px;
+    font-family: "MuseJazzText", "Georgia", serif;
+  }
+  .setlist-booklet-index-heading {
+    font: 400 15px "MuseJazzText", "Georgia", serif;
+    letter-spacing: .08em;
+    margin: 0 0 4px;
+    break-after: avoid;
+  }
+  .setlist-booklet-index ol {
+    margin: 0 0 12px;
+    padding-left: 2em;
+    font: 400 15px/1.5 "MuseJazzText", "Georgia", serif;
+    list-style: decimal;
+  }
+  .setlist-booklet-index li {
+    list-style: decimal;
+    break-inside: avoid;
+  }
+  .setlist-booklet-index-name {
+    padding-left: 4px;
+  }
+  .setlist-booklet-index-key {
+    white-space: nowrap;
+  }
+  .setlist-booklet-index-key:not(:empty)::before {
+    content: " — ";
+  }
+
+  /* The cover blurb is a <p>, which the sitewide `p { color: gold }` catches. */
   #setlistPrintBooklet p {
     color: #000;
-  }
-  /* A setlist with a `desc` gets a full cover page carrying its own big
-     title — drop the plain heading so the name isn't printed twice. */
-  #setlistPrintBooklet:has(.setlist-cover) .setlist-view-title {
-    display: none;
   }
 
   /* "Print chordbook" — same stacked DOM as the songbook, staves removed.
@@ -957,6 +1022,35 @@ video.video {
     page: chordbook;
     display: flow-root; /* contain the tile floats without a clearfix */
     width: 279mm;
+  }
+  /* The chordbook front matter is a full-width band (2× A5) floated at the top
+     of page 1, so two chart tiles pack in beneath it rather than it burning a
+     whole landscape sheet on a short index. The first "Set N" heading / song
+     after it must not then force its own page (see the `+` rules below). */
+  body.export-mode-chordbook #setlistPrintBooklet .setlist-booklet-frontmatter {
+    float: left;
+    clear: both;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 4mm 12mm 2mm;
+    page-break-after: auto;
+    break-after: auto;
+  }
+  body.export-mode-chordbook #setlistPrintBooklet .setlist-booklet-frontmatter + .setlist-booklet-set-heading,
+  body.export-mode-chordbook #setlistPrintBooklet .setlist-booklet-frontmatter + .setlist-booklet-song {
+    page-break-before: avoid;
+    break-before: avoid;
+  }
+  body.export-mode-chordbook #setlistPrintBooklet .setlist-booklet-fm-title {
+    margin: 4px 0 2px;
+  }
+  body.export-mode-chordbook #setlistPrintBooklet .setlist-booklet-fm-meta {
+    margin: 6px 0 12px;
+  }
+  body.export-mode-chordbook #setlistPrintBooklet .setlist-booklet-index {
+    max-width: none;
+    columns: 3;
+    column-gap: 48px;
   }
   body.export-mode-chordbook #setlistPrintBooklet .notation {
     display: none !important;
@@ -987,7 +1081,7 @@ video.video {
   }
   body.export-mode-chordbook #setlistPrintBooklet .setlist-view-title,
   body.export-mode-chordbook #setlistPrintBooklet .setlist-cover {
-    display: none; /* no cover/heading page — the chordbook is just the tiles */
+    display: none; /* the front-matter page stands in for the plain heading and the desc cover */
   }
   body.export-mode-chordbook #setlistPrintBooklet .songtitle {
     font-size: x-large;
@@ -1900,39 +1994,74 @@ body.setlist-dragging {
 }
 /* "Set N" heading between song blocks in the printed booklet. */
 .setlist-booklet-set-heading {
-  font: 700 20px "Montserrat", sans-serif;
+  font: 400 24px "MuseJazzText", "Georgia", serif;
   color: #000;
   text-align: center;
   margin: 0 0 12px;
   padding-top: 8px;
 }
-/* "Print setlist" — the big glanceable stage list (song titles only). */
+/* "Print setlist" — the glanceable stage list: a table of song titles with a
+   "Concert" key column and, when the export is for a transposing instrument, a
+   second column of that instrument's keys (headed by its name), plus tempo. */
 .setlist-stage-list {
   color: #000;
+  font-family: "MuseJazzText", "Georgia", serif;
 }
-.setlist-stage-list ol {
-  margin: 0 0 20px;
-  padding-left: 1.7em;
-  font: 500 21px/1.7 "Montserrat", sans-serif;
-  /* An unscoped `.bookIndexList > ul, li` rule elsewhere kills list markers
-     on every <li> site-wide — put them back for this list. */
-  list-style: decimal;
-}
-.setlist-stage-list li {
-  list-style: decimal;
-  padding-left: 4px;
-}
-.setlist-stage-set-heading {
-  font: 700 22px "Montserrat", sans-serif;
+.setlist-stage-table {
+  width: 100%;
+  border-collapse: collapse;
+  font: 400 20px/1.4 "MuseJazzText", "Georgia", serif;
   color: #000;
-  margin: 22px 0 10px;
 }
-.setlist-stage-set-heading:first-child {
-  margin-top: 0;
+.setlist-stage-table thead th {
+  font: 400 12px/1 "MuseJazzText", "Georgia", serif;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: #555;
+  text-align: right;
+  padding: 0 0 5px 34px;
+  border-bottom: 1.5px solid #333;
+  white-space: nowrap;
 }
-.setlist-stage-key {
-  font-weight: 700;
-  margin-left: 8px;
+.setlist-stage-table thead th.stage-c-num,
+.setlist-stage-table thead th.stage-c-song {
+  text-align: left;
+}
+.setlist-stage-table tbody td {
+  padding: 4px 0 4px 34px;
+  vertical-align: baseline;
+  border-bottom: 1px dotted #cfcfcf;
+}
+.setlist-stage-table td.stage-c-num {
+  padding-left: 0;
+  padding-right: 8px;
+  text-align: right;
+  color: #555;
+  white-space: nowrap;
+}
+.setlist-stage-table td.stage-c-song {
+  width: 100%;
+  padding-left: 0;
+}
+.setlist-stage-table td.stage-c-concert,
+.setlist-stage-table td.stage-c-instr,
+.setlist-stage-table td.stage-c-tempo {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.setlist-stage-table td.stage-c-tempo {
+  color: #555;
+}
+.setlist-stage-table .setlist-stage-set-row th {
+  text-align: left;
+  font: 400 22px "MuseJazzText", "Georgia", serif;
+  color: #000;
+  padding: 18px 0 5px;
+  border-bottom: 1.5px solid #333;
+}
+.setlist-stage-table tbody tr.setlist-stage-set-row:first-child th {
+  padding-top: 2px;
 }
 .printLogo {
   display: block;
@@ -2381,6 +2510,21 @@ body:has(#rjLibrary) .split-bio {
 
   @page { size: A4 portrait;
           /* margin: 0mm; */
+  }
+
+  /* Re-declared here, AFTER the unnamed `@page { size: A4 portrait }` above:
+     Chromium resolves conflicting @page size by source order rather than page-
+     selector specificity, so the landscape size must come last to win for the
+     chordbook's named pages. Paired with `body.export-mode-chordbook { page:
+     chordbook }` this puts the WHOLE chordbook print on landscape sheets — the
+     empty page wrappers around the booklet included — so there's no page-
+     context switch spawning a blank portrait sheet before and after it. */
+  @page chordbook {
+    size: A4 landscape;
+    margin: 9mm;
+  }
+  body.export-mode-chordbook {
+    page: chordbook;
   }
 
   .bookContent {
