@@ -5,11 +5,13 @@
   "description": "Dev tooling (lint + unit tests) for the Red Jackets Jazzband Hugo site's vanilla JS. Not part of the Hugo build or the GitHub Pages deploy.",
   "scripts": {
     "lint": "eslint static/script/lib",
-    "test": "node --test static/script/lib/*.test.js"
+    "test": "node --test \"static/script/lib/*.test.js\" \"static/script/songs/*.test.js\" \"tests/**/*.test.js\""
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@stylistic/eslint-plugin": "^5.10.0",
     "eslint": "^10.10.0",
-    "globals": "^17.12.0"
+    "globals": "^17.12.0",
+    "jsdom": "^30.0.1"
   }
 }
