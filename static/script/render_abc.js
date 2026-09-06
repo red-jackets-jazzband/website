@@ -82,11 +82,17 @@ export function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, ti
   add_link = (typeof add_link !== 'undefined') ?  add_link : true;
   extraTransposeSteps = (typeof extraTransposeSteps !== 'undefined') ? Number(extraTransposeSteps) : 0;
 
-  var transpose_steps = document.getElementById("transpose");
-  transpose_steps = (transpose_steps !== null) ? transpose_steps.value : 0;
-
+  // A booklet/export render (any target other than the on-screen "notation")
+  // must be reproducible from the setlist alone: its transposition comes only
+  // from the setlist's own per-song key override (extraTransposeSteps) plus
+  // the selected instrument's offset folded in below — never from the Key
+  // stepper's transient on-screen value, which belongs to whichever single
+  // song happens to be open in the sheet.
+  var isBookletRender = notationElt !== "notation";
+  var transposeInput = document.getElementById("transpose");
   // Don't use valueAsNumber to let IE users also enjoy transposing
-  transpose_steps = Number(transpose_steps) + extraTransposeSteps;
+  var stepperSteps = (!isBookletRender && transposeInput !== null) ? Number(transposeInput.value) : 0;
+  var transpose_steps = stepperSteps + extraTransposeSteps;
   // The Key stepper (+ a setlist's key override) is a real request to hear
   // the song in a different key, so it should shift the audio too — stash
   // it before the instrument's own offset is folded in below, since that
@@ -95,7 +101,7 @@ export function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, ti
   // sounds (every instrument's audio plays back in the same concert pitch).
   // Guarded to the main sheet's own render so a booklet/export pass over
   // other songs never clobbers it for the song actually on screen.
-  if (notationElt === "notation") {
+  if (!isBookletRender) {
     audioPlayer.transposeSemitones = transpose_steps;
   }
   var instrumentSelect = document.getElementById("instrument");
@@ -144,7 +150,7 @@ export function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, ti
   //   2. its width comes from measuring the container, which is brittle for a
   //      box that's only ever visible during printing.
   // A fixed staffwidth sized to the A4 print column sidesteps both.
-  var isBookletRender = notationElt !== "notation";
+  // (isBookletRender is computed near the top of this function.)
 
   var abcParams = {
     visualTranspose: transpose_steps,

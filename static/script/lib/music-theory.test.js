@@ -7,6 +7,8 @@ import {
   semitonesBetweenKeys,
   setlistTransposeSteps,
   formatSetlistKeyLabel,
+  transposeKeyName,
+  tempoBpmFromAbc,
 } from "./music-theory.js";
 
 // No `Tonal` global in Node, so these exercise the manual fallback table.
@@ -84,4 +86,24 @@ test("formatSetlistKeyLabel signs a semitone offset and passes a key name throug
   assert.equal(formatSetlistKeyLabel("0"), "");
   assert.equal(formatSetlistKeyLabel(""), "");
   assert.equal(formatSetlistKeyLabel("Bb"), "Bb");
+});
+
+test("tempoBpmFromAbc reads the common Q: field forms", () => {
+  assert.equal(tempoBpmFromAbc("X:1\nQ:1/4=120\nK:C\n"), 120);
+  assert.equal(tempoBpmFromAbc("Q:120"), 120);
+  assert.equal(tempoBpmFromAbc("Q:1/4 132"), 132);
+  assert.equal(tempoBpmFromAbc('Q:"Swing" 1/4=134'), 134);
+  assert.equal(tempoBpmFromAbc("Q: 3/8=60"), 60);
+  assert.equal(tempoBpmFromAbc("X:1\nK:C\n"), null);
+  assert.equal(tempoBpmFromAbc(""), null);
+});
+
+test("transposeKeyName spells the resulting key, flats for black notes", () => {
+  assert.equal(transposeKeyName("Bb", 2), "C");
+  assert.equal(transposeKeyName("C", -3), "A");
+  assert.equal(transposeKeyName("C", 1), "D♭");
+  assert.equal(transposeKeyName("C", 0), "C");
+  assert.equal(transposeKeyName("F", 2), "G");
+  assert.equal(transposeKeyName("Ebmaj", 0), "E♭"); // mode word ignored
+  assert.equal(transposeKeyName("C", 14), "D"); // wraps past an octave
 });

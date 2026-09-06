@@ -3,7 +3,8 @@
 import { renderSong, renderSongTextWithOverride, readFile, renderAbcFile, clearBookletPrintState } from "./render_abc.js";
 import { parseSongIndex, groupSongsByLetter, filterSongsByQuery, songTitleSlug } from "./lib/song-index.js";
 import { parseSetlistFile, isSetlistDivider } from "./lib/setlist-format.js";
-import { extractKeyFromAbc, setlistTransposeSteps, formatSetlistKeyLabel } from "./lib/music-theory.js";
+import { extractKeyFromAbc, setlistTransposeSteps, formatSetlistKeyLabel, transposeKeyName, tempoBpmFromAbc } from "./lib/music-theory.js";
+import { findInstrument, offsetForInstrument } from "./lib/instruments.js";
 import {
   listPersonalSetlists,
   getPersonalSetlist,
@@ -29,6 +30,8 @@ var activeTab = "library"; // "library" | "setlists"
 var setlistsView = "home"; // "home" | "open"
 var currentPersonalId = null; // set while an editable personal setlist is open
 var currentOpenSongs = null; // songs array of the currently open setlist
+var currentOpenSetlistName = ""; // its name, kept so a rebuild (e.g. instrument change) can reuse it
+var currentOpenSetlistDesc = ""; // its optional `desc` cover blurb, same reason
 var currentSongFile = null; // .abc file of the song currently in the sheet
 var currentSetlistSongIndex = null; // its position in currentOpenSongs, when opened from the setlist list
 var focusAddSongAfterRender = false; // return focus to the add-song box after a re-render
@@ -216,7 +219,14 @@ function songNameFor(file) {
   var match = allSongs.find(function(song) {
     return song.file === file;
   });
-  return match ? match.name : file;
+  if (match) return match.name;
+  // Not in the library index (e.g. a setlist referencing an unregistered
+  // .abc): fall back to a readable form of the filename rather than the raw
+  // "some_song.abc".
+  return String(file || "")
+    .replace(/\.abc$/i, "")
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, function(c) { return c.toUpperCase(); });
 }
 
 function ensureSongsLoaded(callback) {
@@ -594,6 +604,8 @@ function refreshOpenPersonalSetlist() {
 function renderOpenSetlist(name, songs, personalEntry, desc) {
   setlistsView = "open";
   currentOpenSongs = songs;
+  currentOpenSetlistName = name;
+  currentOpenSetlistDesc = desc || "";
 
   var isPersonal = !!personalEntry;
   if (!isPersonal) addSongQuery = "";
@@ -1011,49 +1023,248 @@ function buildBookletSetHeading(text) {
   return el;
 }
 
-// The "Print setlist" form: a big, glanceable list of just the song titles,
-// numbered per set, for taping to a music stand. No song files are fetched.
+function selectedInstrumentValue() {
+  var sel = document.getElementById("instrument");
+  return sel ? sel.value : "concert_pitch";
+}
+
+// Label of the instrument the sheet is currently set to — the whole booklet
+// is engraved (and transposed) for it, so it's named on the front-matter page.
+function selectedInstrumentLabel() {
+  var found = findInstrument(selectedInstrumentValue());
+  return found ? found.label : "Concert pitch";
+}
+
+// True when the selected instrument reads in a different key from concert
+// (trumpet, clarinet, saxes, sousaphone). Concert pitch, Concert + Roman and
+// trombone all read concert, so the stage list shows a single key column.
+function exportInstrumentTransposes() {
+  return offsetForInstrument(selectedInstrumentValue()) !== 0;
+}
+
+// The front-matter line naming what the export is engraved for.
+function exportInstrumentLine() {
+  var value = selectedInstrumentValue();
+  if (value === "concert_pitch" || value === "concert_+_roman") return "Concert pitch";
+  if (exportInstrumentTransposes()) return "Transposed for " + selectedInstrumentLabel();
+  return selectedInstrumentLabel() + " — concert pitch"; // e.g. trombone (bass clef, no transpose)
+}
+
+/*
+   Per-song facts the printed forms show, resolved once the .abc has loaded,
+   with keys spelled out ("B♭") and always shown — even for C — since on stage
+   you call the key, not a semitone offset:
+     concert    — the tune's K: plus the setlist's per-song override only
+     instrument — also folds in the selected instrument's offset (what that
+                  player reads; matches the engraved chordbook / songbook)
+     bpm        — the tune's Q: tempo
+   Both keys fall back to the raw override badge with no readable K:.
+*/
+function resolvedExportSongMeta(abcText, song) {
+  var bpm = tempoBpmFromAbc(abcText);
+  var nativeKey = extractKeyFromAbc(abcText);
+  if (!nativeKey) {
+    var fallback = formatSetlistKeyLabel(song.key);
+    return { concert: fallback, instrument: fallback, bpm: bpm };
+  }
+  var overrideSteps = setlistTransposeSteps(song.key, nativeKey);
+  return {
+    concert: transposeKeyName(nativeKey, overrideSteps),
+    instrument: transposeKeyName(nativeKey, overrideSteps + offsetForInstrument(selectedInstrumentValue())),
+    bpm: bpm,
+  };
+}
+
+// Fills the per-song slots for song `n` once its .abc file has loaded: the
+// stage table's Concert / instrument / tempo cells, and the front-matter
+// index (which tracks the charts, so it gets the instrument key).
+function fillBookletSongMeta(n, meta) {
+  function set(id, value) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = value || "";
+  }
+  set("setlistStageConcert-" + n, meta.concert);
+  set("setlistStageInstr-" + n, meta.instrument);
+  set("setlistStageTempo-" + n, meta.bpm ? (meta.bpm + " bpm") : "");
+  set("setlistIndexKey-" + n, meta.instrument);
+}
+
+/*
+   The "Print setlist" form: a table of song titles for taping to a music
+   stand, numbered per set. Columns: number, title, a "Concert" key column
+   and — only when the export is for a transposing instrument — that
+   instrument's own key column (headed by its name), then tempo. The key/tempo
+   cells (ids setlistStage{Concert,Instr,Tempo}-<n>, <n> matching the booklet
+   body's per-song counter) are filled once each .abc loads.
+*/
 function buildSetlistStageList(container, songs) {
   var list = document.createElement("DIV");
   list.className = "setlist-stage-list";
 
+  var showInstrCol = exportInstrumentTransposes();
+  var columns = ["num", "song", "concert"];
+  if (showInstrCol) columns.push("instr");
+  columns.push("tempo");
+  var headings = {
+    num: "", song: "", concert: "Concert",
+    instr: selectedInstrumentLabel(), tempo: "bpm",
+  };
+
+  var table = document.createElement("TABLE");
+  table.className = "setlist-stage-table";
+
+  var thead = document.createElement("THEAD");
+  var headRow = document.createElement("TR");
+  columns.forEach(function(col) {
+    var th = document.createElement("TH");
+    th.className = "stage-c-" + col;
+    th.textContent = headings[col];
+    headRow.appendChild(th);
+  });
+  thead.appendChild(headRow);
+  table.appendChild(thead);
+
+  var tbody = document.createElement("TBODY");
+
+  function appendSetRow(label) {
+    var tr = document.createElement("TR");
+    tr.className = "setlist-stage-set-row";
+    var th = document.createElement("TH");
+    th.setAttribute("colspan", String(columns.length));
+    th.textContent = label;
+    tr.appendChild(th);
+    tbody.appendChild(tr);
+  }
+
   var hasDividers = songs.some(isSetlistDivider);
   var setNumber = 1;
-  var current = document.createElement("OL"); // a fresh <ol> per set restarts numbering at 1
+  var songInSet = 0;
+  var n = 0; // matches the booklet body's per-song counter
 
   if (hasDividers && !(songs.length > 0 && isSetlistDivider(songs[0]))) {
-    var firstHeading = document.createElement("DIV");
-    firstHeading.className = "setlist-stage-set-heading";
-    firstHeading.textContent = "Set 1";
-    list.appendChild(firstHeading);
+    appendSetRow("Set 1");
   }
-  list.appendChild(current);
 
   songs.forEach(function(song) {
     if (isSetlistDivider(song)) {
       setNumber += 1;
-      var heading = document.createElement("DIV");
-      heading.className = "setlist-stage-set-heading";
-      heading.textContent = song.divider || ("Set " + setNumber);
-      list.appendChild(heading);
-      current = document.createElement("OL");
-      list.appendChild(current);
+      songInSet = 0;
+      appendSetRow(song.divider || ("Set " + setNumber));
       return;
     }
-    var li = document.createElement("LI");
-    li.textContent = songNameFor(song.file);
-    var keyLabel = formatSetlistKeyLabel(song.key);
-    if (keyLabel) {
-      var key = document.createElement("SPAN");
-      key.className = "setlist-stage-key";
-      key.textContent = keyLabel;
-      li.appendChild(document.createTextNode(" "));
-      li.appendChild(key);
+    n += 1;
+    songInSet += 1;
+    var tr = document.createElement("TR");
+
+    var numCell = document.createElement("TD");
+    numCell.className = "stage-c-num";
+    numCell.textContent = songInSet + ".";
+    tr.appendChild(numCell);
+
+    var nameCell = document.createElement("TD");
+    nameCell.className = "stage-c-song";
+    nameCell.textContent = songNameFor(song.file);
+    tr.appendChild(nameCell);
+
+    var concertCell = document.createElement("TD");
+    concertCell.className = "stage-c-concert";
+    concertCell.id = "setlistStageConcert-" + n;
+    concertCell.textContent = formatSetlistKeyLabel(song.key); // provisional
+    tr.appendChild(concertCell);
+
+    if (showInstrCol) {
+      var instrCell = document.createElement("TD");
+      instrCell.className = "stage-c-instr";
+      instrCell.id = "setlistStageInstr-" + n;
+      tr.appendChild(instrCell);
     }
-    current.appendChild(li);
+
+    var tempoCell = document.createElement("TD");
+    tempoCell.className = "stage-c-tempo";
+    tempoCell.id = "setlistStageTempo-" + n;
+    tr.appendChild(tempoCell);
+
+    tbody.appendChild(tr);
   });
 
+  table.appendChild(tbody);
+  list.appendChild(table);
   container.appendChild(list);
+}
+
+// Front-matter page for the chordbook / songbook exports: setlist name, which
+// form it is, the instrument it's transposed for, the date, and a numbered
+// index of the songs (per-set numbering, same as the body). Hidden by CSS for
+// the plain "Print setlist" form.
+function buildSetlistBookletFrontMatter(name, songs) {
+  var fm = document.createElement("DIV");
+  fm.className = "setlist-booklet-frontmatter";
+
+  var title = document.createElement("H1");
+  title.className = "setlist-booklet-fm-title";
+  title.textContent = name;
+  fm.appendChild(title);
+
+  var sub = document.createElement("DIV");
+  sub.className = "setlist-booklet-fm-sub";
+  sub.id = "setlistBookletFmSub";
+  sub.textContent = "Songbook"; // set per-mode by printSetlist()
+  fm.appendChild(sub);
+
+  var meta = document.createElement("DIV");
+  meta.className = "setlist-booklet-fm-meta";
+  var instr = document.createElement("DIV");
+  instr.textContent = exportInstrumentLine();
+  meta.appendChild(instr);
+  var when = document.createElement("DIV");
+  when.textContent = new Date().toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+  meta.appendChild(when);
+  fm.appendChild(meta);
+
+  var index = document.createElement("DIV");
+  index.className = "setlist-booklet-index";
+  var hasDividers = songs.some(isSetlistDivider);
+  var setNumber = 1;
+  var n = 0;
+  var songInSet = 0;
+  var ol = document.createElement("OL");
+
+  function indexHeading(text) {
+    var h = document.createElement("DIV");
+    h.className = "setlist-booklet-index-heading";
+    h.textContent = text;
+    return h;
+  }
+
+  if (hasDividers && !(songs.length > 0 && isSetlistDivider(songs[0]))) {
+    index.appendChild(indexHeading("Set 1"));
+  }
+  index.appendChild(ol);
+  songs.forEach(function(song) {
+    if (isSetlistDivider(song)) {
+      setNumber += 1;
+      songInSet = 0;
+      index.appendChild(indexHeading(song.divider || ("Set " + setNumber)));
+      ol = document.createElement("OL");
+      index.appendChild(ol);
+      return;
+    }
+    n += 1;
+    songInSet += 1;
+    var li = document.createElement("LI");
+    li.value = hasDividers ? songInSet : n;
+    var nm = document.createElement("SPAN");
+    nm.className = "setlist-booklet-index-name";
+    nm.textContent = songNameFor(song.file);
+    li.appendChild(nm);
+    var k = document.createElement("SPAN");
+    k.className = "setlist-booklet-index-key";
+    k.id = "setlistIndexKey-" + n;
+    li.appendChild(k);
+    ol.appendChild(li);
+  });
+  fm.appendChild(index);
+  return fm;
 }
 
 function buildSetlistPrintBooklet(name, songs, desc) {
@@ -1087,7 +1298,12 @@ function buildSetlistPrintBooklet(name, songs, desc) {
     container.appendChild(cover);
   }
 
-  buildSetlistStageList(container, songs);
+  // Front matter first — every form opens with it. The stage list is appended
+  // last (see below) so it sits immediately after the front matter for "Print
+  // setlist" (the hidden chart stack between them collapses to nothing), while
+  // leaving the front matter directly adjacent to the first chart for the
+  // chordbook's `frontmatter + heading` page-break rule.
+  container.appendChild(buildSetlistBookletFrontMatter(name, songs));
 
   var hasDividers = songs.some(isSetlistDivider);
   var setNumber = 1;
@@ -1110,6 +1326,7 @@ function buildSetlistPrintBooklet(name, songs, desc) {
     }
     n += 1;
     songInSet += 1;
+    var slotN = n; // captured by the async readFile callback below (n itself keeps mutating)
     var songNumber = hasDividers ? songInSet : n; // captured by the async readFile callback below
     var titleId = "setlistPrintTitle-" + n;
     var chordId = "setlistPrintChord-" + n;
@@ -1140,17 +1357,26 @@ function buildSetlistPrintBooklet(name, songs, desc) {
     readFile("/songs/" + song.file, function(text) {
       var extraTransposeSteps = setlistTransposeSteps(song.key, extractKeyFromAbc(text));
       renderAbcFile(text, notationId, chordId, titleId, songNumber + ". ", false, extraTransposeSteps);
+      fillBookletSongMeta(slotN, resolvedExportSongMeta(text, song));
     }, function(status) {
       console.warn("Setlist references a missing song file: " + song.file + " (status " + status + ")");
     });
   });
+
+  // Appended after the (hidden-in-setlist-mode) chart stack: for "Print
+  // setlist" the stack collapses and this lands right under the front matter.
+  buildSetlistStageList(container, songs);
 }
 
 var SETLIST_PRINT_MODES = ["setlist", "chordbook", "songbook"];
 
+var SETLIST_PRINT_MODE_LABELS = { setlist: "Setlist", chordbook: "Chordbook", songbook: "Songbook" };
+
 function printSetlist(mode) {
   var body = document.body;
   clearBookletPrintState(); // drop any stale mode a prior print left behind
+  var sub = document.getElementById("setlistBookletFmSub");
+  if (sub) sub.textContent = SETLIST_PRINT_MODE_LABELS[mode] || "Songbook";
   body.classList.add("export-booklet-mode");
   SETLIST_PRINT_MODES.forEach(function(m) {
     body.classList.toggle("export-mode-" + m, m === mode);
@@ -1310,6 +1536,19 @@ function initSetlistControls() {
     var btn = document.getElementById(pair[0]);
     if (btn) btn.addEventListener("click", function() { printSetlist(pair[1]); });
   });
+
+  // The print booklet is engraved and transposed for whichever instrument the
+  // sheet is on. render_abc.js already re-renders the on-screen sheet when the
+  // instrument changes; do the same for the (off-screen) booklet so a later
+  // "Print …" reflects the current instrument, not the one selected on open.
+  var instrumentSelect = document.getElementById("instrument");
+  if (instrumentSelect) {
+    instrumentSelect.addEventListener("change", function() {
+      if (setlistsView === "open" && currentOpenSongs) {
+        buildSetlistPrintBooklet(currentOpenSetlistName, currentOpenSongs, currentOpenSetlistDesc);
+      }
+    });
+  }
 
   var exportBtn = document.getElementById("setlistExportBtn");
   if (exportBtn) {

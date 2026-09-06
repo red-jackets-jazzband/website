@@ -126,6 +126,24 @@ export function extractKeyFromAbc(text) {
   return match ? match[1] + match[2] : null;
 }
 
+/*
+   Reads the tempo in beats per minute off an ABC file's Q: field, for the
+   printed setlist's "134 bpm" hint. Handles the common forms:
+   "Q:120", "Q:1/4=120", "Q:1/4 120", 'Q:"Swing" 1/4=132', "Q: 3/8=60".
+   Returns null when there's no Q: field or no number to read.
+*/
+export function tempoBpmFromAbc(text) {
+  var line = String(text || "").match(/^Q:\s*(.+?)\s*$/m);
+  if (!line) return null;
+  var body = line[1].replace(/"[^"]*"/g, " ").trim();
+  var afterEquals = body.match(/=\s*(\d+(?:\.\d+)?)/);
+  if (afterEquals) return Math.round(parseFloat(afterEquals[1]));
+  // No "=": a bare "Q:120" or "Q:1/4 120" — take a number that isn't the
+  // denominator of a note-length fraction.
+  var bare = body.match(/(?:^|\s)(\d+(?:\.\d+)?)(?!\s*\/)/);
+  return bare ? Math.round(parseFloat(bare[1])) : null;
+}
+
 // Shortest signed semitone distance to transpose `fromKeyStr` to
 // `toKeyStr` (range roughly -6..+6, rather than always 0..11) — e.g. going
 // from Bb to Ab is -2, not +10. Mode suffixes (m, maj, min, ...) on either
@@ -158,6 +176,24 @@ export function setlistTransposeSteps(rawOverride, nativeKey) {
     return Number.isFinite(n) ? n : 0;
   }
   return semitonesBetweenKeys(nativeKey || "C", trimmed);
+}
+
+// Names each pitch class the way a jazz chart tends to spell a key — flats
+// for the black notes (D♭, E♭, G♭, A♭, B♭). Good enough for a setlist key
+// badge you call on stage; not a full key-signature speller.
+var KEY_NAME_BY_CHROMA = ["C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B"];
+
+/*
+   Transpose a key name (letter + optional accidental; any trailing mode word
+   is ignored) by a signed semitone count and return the resulting key name.
+   Used for the printed setlist / chordbook / songbook, where musicians want
+   the key spelled out ("B♭") rather than a raw semitone offset ("+2").
+*/
+export function transposeKeyName(keyStr, semitones) {
+  var base = noteChroma(keyStr || "C");
+  var n = Math.round(Number(semitones) || 0);
+  var idx = (((base + n) % 12) + 12) % 12;
+  return KEY_NAME_BY_CHROMA[idx];
 }
 
 // Human-readable badge for a setlist override column: a signed "+2" / "−3"
