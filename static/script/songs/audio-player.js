@@ -242,16 +242,27 @@ export function createAudioPlayer(ctx) {
 
   // ---- transport ------------------------------------------------------
 
+  /*
+    ABCjs's SynthController.play() is itself a toggle keyed on its internal
+    `isStarted` flag — calling it resumes if paused and pauses if playing. Its
+    pause() does NOT flip that flag, so mixing the two (pause() to pause,
+    play() to resume) desyncs the controller and the first play() after a
+    pause just toggles the flag back without restarting the audio, needing
+    extra presses to recover. So drive both directions through play() and read
+    the real state back from `isStarted` once its promise settles.
+  */
   function playPause() {
-    if (!state.synthController) return;
-    if (state.isPlaying) {
-      state.synthController.pause();
-      state.isPlaying = false;
-    } else {
-      state.synthController.play();
-      state.isPlaying = true;
-    }
-    updatePlayButton();
+    const sc = state.synthController;
+    if (!sc || typeof sc.play !== "function") return;
+    const btn = byId("playPauseBtn");
+    if (btn && btn.disabled) return; // audio still loading / mid-reset
+    Promise.resolve(sc.play())
+      .then(() => {
+        if (sc !== state.synthController) return;
+        state.isPlaying = Boolean(sc.isStarted);
+        updatePlayButton();
+      })
+      .catch((err) => console.warn("Play/pause failed:", err));
   }
 
   function stop() {

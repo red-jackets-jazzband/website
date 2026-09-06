@@ -6,7 +6,7 @@ import { initSheetControls, clearBookletPrintState } from "./sheet-controls.js";
 
 function setup(overrides = {}) {
   const page = mountPage();
-  const calls = { rerender: 0, tempo: [] };
+  const calls = { rerender: 0, tempo: [], playPause: 0 };
   const ctx = makeCtx({
     sheet: { rerender: () => { calls.rerender += 1; } },
     audio: {
@@ -17,7 +17,7 @@ function setup(overrides = {}) {
       setupNotationClickHandler: () => {},
       updateTempoLabel: () => {},
       stepTempo: (d) => calls.tempo.push(d),
-      playPause: () => {},
+      playPause: () => { calls.playPause += 1; },
       stop: () => {},
       toggleMelody: () => {},
     },
@@ -25,6 +25,12 @@ function setup(overrides = {}) {
   });
   initSheetControls(ctx);
   return { page, ctx, calls, cleanup: page.cleanup };
+}
+
+function pressSpace(target) {
+  (target || document.body).dispatchEvent(
+    new window.KeyboardEvent("keydown", { key: " ", bubbles: true, cancelable: true }),
+  );
 }
 
 test("the Key stepper buttons clamp #transpose and fire an input event", () => {
@@ -77,6 +83,25 @@ test("the back button leaves the sheet view", () => {
     document.body.classList.add("rj-sheet-active");
     document.getElementById("sheetBackBtn").dispatchEvent(new window.Event("click"));
     assert.equal(document.body.classList.contains("rj-sheet-active"), false);
+  } finally {
+    cleanup();
+  }
+});
+
+test("Spacebar toggles play/pause while the sheet is open", () => {
+  const { calls, cleanup } = setup();
+  try {
+    pressSpace();
+    assert.equal(calls.playPause, 0); // no sheet open yet
+
+    document.body.classList.add("rj-sheet-active");
+    pressSpace();
+    assert.equal(calls.playPause, 1);
+
+    // ignored when typing in a field or focused on a button
+    pressSpace(document.getElementById("songSearch"));
+    pressSpace(document.getElementById("playPauseBtn"));
+    assert.equal(calls.playPause, 1);
   } finally {
     cleanup();
   }

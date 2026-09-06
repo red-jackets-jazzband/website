@@ -60,6 +60,27 @@ function initPrintLink() {
 }
 
 /*
+  Spacebar toggles play/pause while a sheet is open, matching every audio
+  player's convention. Skipped when the caret is in a text field or the focus
+  is on a button/link (so Space still activates the focused control instead of
+  double-toggling), and preventDefault stops the page from scrolling.
+*/
+function initSpacebarPlayPause(ctx) {
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== " " && e.key !== "Spacebar") return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (!document.body.classList.contains("rj-sheet-active")) return;
+    const t = e.target;
+    if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT"
+      || t.isContentEditable || (t.closest && t.closest("button, a, [role=button]")))) {
+      return;
+    }
+    e.preventDefault();
+    ctx.audio.playPause();
+  });
+}
+
+/*
   Wire the sheet toolbar: the Key / Tempo steppers, the transport buttons, the
   "back to list" button, the advanced-controls toggle and the print link. The
   instrument / comping <select>s are built and wired in selects.js.
@@ -77,4 +98,5 @@ export function initSheetControls(ctx) {
 
   initAdvancedToggle(ctx);
   initPrintLink();
+  initSpacebarPlayPause(ctx);
 }
