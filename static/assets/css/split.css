@@ -2522,18 +2522,22 @@ body:has(#rjLibrary) .split-bio {
 }
 
 /*
-  Phone layout: the library and the sheet become two full-width screens —
+  Narrow layout: the library and the sheet become two full-width screens —
   list first, tap a song to see the sheet, tap back to return — instead of
   a cramped side-by-side split. body.rj-sheet-active (set whenever a song
   actually renders, from any entry point: list click, hash deep-link, or
   reload) is what switches which of the two is showing.
+
+  The switch fires at 1024px, not the sitewide 800px: the three columns
+  (300px list + 22px A-Z rail + the sheet) leave the sheet too little room
+  for a chord grid / staff well before 800px, so we stack sooner.
 
   Every selector here that toggles `display` on #rjLibrary/#rjSheet/
   #sheetBackBtn is id-qualified to match the specificity of their base
   rules above (see the #rjLibrary.rj-library comment) — otherwise these
   overrides would lose to the base rule instead of the intended cascade.
 */
-@media (max-width: 800px) {
+@media (max-width: 1024px) {
   body:has(#rjLibrary) .fs-split .split-content-vertically-center {
     height: auto;
   }
