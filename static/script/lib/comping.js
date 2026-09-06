@@ -10,8 +10,13 @@ import { computeChordOffset } from "./chords.js";
    Given a lead sheet's chord scheme, this turns each bar into a rhythmic,
    three-note accompaniment figure (root / third / fifth) using one of a set
    of predefined rhythm patterns, and returns a new ABC tune string that adds
-   the comping as a *second staff* (three coloured voices merged onto one
-   staff) below the untouched melody.
+   the comping as a *second staff* below the untouched melody.
+
+   The comping is a single voice of block chords — one stem per hit — with the
+   three chord tones drawn as one chord token "[root third fifth]", always
+   stacked in root position so the printed noteheads read bottom-to-top as
+   root / third / fifth. split.css then colour-keys the noteheads by their
+   abcjs-chord-pos-N class (N counts up from the bottom).
 
    `buildCompingTune` is the entry point. Everything here is pure: it needs
    only the parsed chord scheme + key (from the caller's ABCjs parse) and the
@@ -23,9 +28,9 @@ import { computeChordOffset } from "./chords.js";
 // ---------------------------------------------------------------------------
 // Each builder returns an ABC bar fragment in eighth-note units (one 4/4 bar =
 // 8 slots; `half` = 4 slots, used when two chords share a bar). Builders take
-// up to four ABC note tokens: n (the chord tone), nd / nu (one diatonic scale
-// step below / above it) and nu2 (two steps above). Patterns that don't need
-// the step tones just ignore the extra arguments.
+// up to four ABC chord tokens: n (the triad "[ceg]"), nd / nu (the whole
+// triad planed one diatonic scale step below / above) and nu2 (two steps
+// above). Patterns that don't need the step tokens just ignore the extras.
 
 const PATTERNS = {
   on_2_and_4: {
@@ -197,10 +202,11 @@ export function measureBarSlots(segment, lnum, lden) {
   return matched ? total : 0;
 }
 
-// Split an ABC bar fragment into note / rest / annotation tokens.
+// Split an ABC bar fragment into note / chord / rest / annotation tokens.
 export function tokenizeBar(str) {
   const tokens = [];
-  const re = /"[^"]*"|[_^=]*[A-Ga-gxz][',]*\d*\/?\d*-?/g;
+  const re =
+    /"[^"]*"|\[(?:[_^=]*[A-Ga-g][',]*)+\]\d*\/?\d*-?|[_^=]*[A-Ga-gxz][',]*\d*\/?\d*-?/g;
   let m;
   while ((m = re.exec(str)) !== null) {
     const t = m[0];
@@ -213,7 +219,7 @@ export function tokenizeBar(str) {
     const dm = body.match(/(\d+)$/);
     const dur = dm ? parseInt(dm[1], 10) : 1;
     const pitch = dm ? body.slice(0, -dm[1].length) : body;
-    const head = pitch.replace(/^[_^=]+/, "")[0];
+    const head = pitch[0] === "[" ? "[" : pitch.replace(/^[_^=]+/, "")[0];
     tokens.push({ pitch, dur, tie, rest: head === "z" || head === "x" });
   }
   return tokens;
@@ -400,76 +406,81 @@ function keyScaleNotes(key) {
   return notes;
 }
 
-// Pitch class -> ABC pitch token, clustering root/third/fifth around one octave.
-function toAbc(noteName) {
-  if (!noteName) return "z";
-  const abc = Tonal.AbcNotation.scientificToAbcNotation(noteName + "4");
-  return noteName.charCodeAt(0) >= "C".charCodeAt(0) ? abc.toLowerCase() : abc;
-}
-
-// Shift an ABC pitch token up one octave (used to break voice unisons).
-function abcOctaveUp(note) {
-  const m = note.match(/^([_^=]*)([A-Ga-g])([,']*)$/);
-  if (!m) return note;
-  const [, acc, letter, marks] = m;
-  if (marks.indexOf(",") !== -1) return acc + letter + marks.slice(1);
-  if (letter === letter.toUpperCase()) return acc + letter.toLowerCase() + marks;
-  return acc + letter + marks + "'";
+// Pitch class -> chroma 0..11 (Tonal.Note.chroma isn't in the test stub).
+function pcChromaVal(pc) {
+  const mid = Tonal.Note.midi(pc + "4");
+  return mid == null ? 0 : ((mid % 12) + 12) % 12;
 }
 
 /*
-   For a chord tone, return [main, stepDown, stepUp, stepUp2] as ABC tokens:
-   the tone itself plus its diatonic neighbours one/two scale steps away,
-   each picked at the octave closest to the main note so the step figures
-   never leap.
+   Move a pitch class `steps` diatonic scale steps along `keyScale`. A tone
+   that isn't in the key is first snapped to the nearest scale degree (by
+   pitch-class distance) so chromatic chord roots still plane sensibly.
 */
-function noteArgs(pc, keyScale) {
-  const mainAbc = toAbc(pc);
-  const mainSci = Tonal.AbcNotation.abcToScientificNotation(mainAbc);
-  const mainMidi =
-    (mainSci && Tonal.Note.midi(mainSci)) || Tonal.Note.midi(pc + "4") || 60;
-
-  function step(delta) {
-    const sign = delta > 0 ? 1 : -1;
-    const idx = keyScale.indexOf(pc);
-    let candidates = [];
-    if (idx !== -1) {
-      const stepPc =
-        keyScale[((idx + delta) % keyScale.length + keyScale.length) % keyScale.length];
-      for (let oct = 2; oct <= 6; oct++) {
-        const mid = Tonal.Note.midi(stepPc + oct);
-        if (mid) candidates.push({ note: stepPc + oct, dist: sign * (mid - mainMidi) });
-      }
-    } else {
-      for (let si = 0; si < keyScale.length; si++) {
-        for (let oct = 2; oct <= 6; oct++) {
-          const mid = Tonal.Note.midi(keyScale[si] + oct);
-          if (mid) candidates.push({ note: keyScale[si] + oct, dist: sign * (mid - mainMidi) });
-        }
+function scaleShift(pc, keyScale, steps) {
+  if (!steps || !keyScale.length) return pc;
+  let idx = keyScale.indexOf(pc);
+  if (idx === -1) {
+    const target = pcChromaVal(pc);
+    let best = 0;
+    let bestDist = 99;
+    for (let i = 0; i < keyScale.length; i++) {
+      const raw = Math.abs(pcChromaVal(keyScale[i]) - target);
+      const dist = Math.min(raw, 12 - raw);
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = i;
       }
     }
-    candidates = candidates.filter((c) => c.dist > 0);
-    if (!candidates.length) return mainAbc;
-    candidates.sort((a, b) => a.dist - b.dist);
-    return Tonal.AbcNotation.scientificToAbcNotation(candidates[0].note);
+    idx = best;
   }
-
-  return [mainAbc, step(-1), step(1), step(2)];
+  const n = keyScale.length;
+  return keyScale[(((idx + steps) % n) + n) % n];
 }
 
-// noteArgs for the three voices, nudging octaves so no slot has two voices in unison.
-function resolvedNoteArgs(pc0, pc1, pc2, keyScale) {
-  const a0 = noteArgs(pc0, keyScale);
-  const a1 = noteArgs(pc1, keyScale);
-  const a2 = noteArgs(pc2, keyScale);
-  for (let s = 0; s < 4; s++) {
-    if (a1[s] === a0[s]) a1[s] = abcOctaveUp(a1[s]);
-    if (a2[s] === a0[s] || a2[s] === a1[s]) a2[s] = abcOctaveUp(a2[s]);
+/*
+   Build an ABC chord token "[low mid high]" from three voiced chord tones
+   (each { pc, fn }) given bottom-to-top. Each tone is placed at the lowest
+   octave that keeps the stack ascending, starting around middle C — so the
+   printed noteheads read bottom-to-top in the given voice order, whatever
+   inversion the voice-leading picked. ABCjs then tags them
+   .abcjs-chord-pos-1/2/3 (up from the bottom), and render_abc.js colours each
+   by the matching voice's fn (root / third / fifth).
+*/
+function stackChord(voices) {
+  const notes = [];
+  let prevMidi = -Infinity;
+  for (let i = 0; i < voices.length; i++) {
+    let oct = 4;
+    let mid = Tonal.Note.midi(voices[i].pc + oct);
+    if (mid == null) mid = 60 + i * 3;
+    while (i > 0 && mid <= prevMidi) {
+      oct += 1;
+      const next = Tonal.Note.midi(voices[i].pc + oct);
+      mid = next == null ? mid + 12 : next;
+    }
+    prevMidi = mid;
+    notes.push(Tonal.AbcNotation.scientificToAbcNotation(voices[i].pc + oct));
   }
-  return [a0, a1, a2];
+  return "[" + notes.join("") + "]";
 }
 
-// Chord scheme -> per-bar arrays of [root, third, fifth] pitch-class triples.
+/*
+   For a voiced triad ([{pc,fn}] bottom-to-top), return [main, down1, up1, up2]
+   as ABC chord tokens: the triad itself plus the whole triad planed
+   one/one/two diatonic scale steps below/above, each re-stacked. Planing keeps
+   the voice order, so the colour order (voices.map(fn)) is the same for all
+   four.
+*/
+function chordArgs(voices, keyScale) {
+  const plane = (steps) =>
+    stackChord(voices.map((v) => ({ pc: scaleShift(v.pc, keyScale, steps), fn: v.fn })));
+  return [plane(0), plane(-1), plane(1), plane(2)];
+}
+
+const FN_LABELS = ["R", "3", "5"];
+
+// Chord scheme -> per-bar arrays of triads, each triad [{pc,fn}] (root/3rd/5th).
 function extractChordNotes(chords) {
   const result = [];
   let last = "C";
@@ -482,29 +493,37 @@ function extractChordNotes(chords) {
       last = name;
       let notes = Tonal.Chord.get(name).notes.slice(0, 3);
       while (notes.length < 3) notes.push(notes[0] || "C");
-      row.push(notes);
+      row.push(notes.map((pc, i) => ({ pc, fn: FN_LABELS[i] })));
     }
     result.push(row);
   }
   return result;
 }
 
-// Per bar, pick the inversion of each chord that moves least from the previous.
-function voiceLead(chordNotes) {
-  function semitones(a, b) {
+/*
+   Per bar, choose the octave placement of each chord that moves its three
+   voices least from the previous chord (nearest-tone assignment). Returns the
+   same shape as extractChordNotes but with each triad's { pc, fn } objects
+   re-ordered bottom-to-top as the voice-leading placed them, so a chord can
+   come out in any inversion.
+*/
+function voiceLead(bars) {
+  function semis(a, b) {
     const up = Tonal.Interval.semitones(Tonal.Interval.distance(a, b));
     const down = Tonal.Interval.semitones(Tonal.Interval.distance(b, a));
     return Math.min(up, down);
   }
   let prev =
-    chordNotes[0] && chordNotes[0][0] ? chordNotes[0][0].slice(0, 3) : ["C", "E", "G"];
+    bars[0] && bars[0][0] ? bars[0][0].map((v) => v.pc) : ["C", "E", "G"];
   const out = [];
-  for (const bar of chordNotes) {
+  for (const bar of bars) {
     const voicedBar = [];
     for (const curr of bar) {
       const cost = [];
       for (let p = 0; p < 3; p++) {
-        for (let n = 0; n < 3; n++) cost.push({ p, n, d: semitones(prev[p], curr[n]) });
+        for (let n = 0; n < 3; n++) {
+          cost.push({ p, n, d: semis(prev[p], curr[n].pc) });
+        }
       }
       cost.sort((x, y) => x.d - y.d);
       const usedP = new Set();
@@ -517,11 +536,16 @@ function voiceLead(chordNotes) {
         usedN.add(c.n);
       }
       voicedBar.push(pick);
-      prev = pick;
+      prev = pick.map((v) => v.pc);
     }
     out.push(voicedBar);
   }
   return out;
+}
+
+// The [ tokens in an ABC bar fragment == the chord onsets ABCjs will draw.
+function countChords(fragment) {
+  return (String(fragment).match(/\[/g) || []).length;
 }
 
 // ---------------------------------------------------------------------------
@@ -541,8 +565,15 @@ function voiceLead(chordNotes) {
      song   - the ABCjs parseOnly tune (concert pitch).
      pattern- a COMPING_PATTERNS value.
 
-   Returns the augmented ABC string, or null when comping can't apply (no
-   chords, an unsupported meter, an already multi-voiced tune, no K: line).
+   Returns { abc, palette }, or null when comping can't apply (no chords, an
+   unsupported meter, an already multi-voiced tune, no K: line):
+     abc     - the augmented ABC (melody as V:1, one block-chord comping voice
+               as V:2)
+     palette - one entry per chord onset ABCjs will draw in the comping voice,
+               in reading order: ["R","3","5"] giving the chord-tone function
+               of each notehead bottom-to-top (voice-leading can invert a
+               chord, so this is not always root/third/fifth). render_abc.js
+               zips it against the rendered noteheads and colours each.
 */
 export function buildCompingTune(text, chords, song, pattern) {
   const pat = PATTERNS[pattern];
@@ -564,44 +595,48 @@ export function buildCompingTune(text, chords, song, pattern) {
 
   const voiced = voiceLead(extractChordNotes(chords));
 
-  // Three parallel voices, each a list of bar fragments.
-  const voices = [[], [], []];
+  // One comping voice: each pattern slot is a block chord "[low mid high]".
+  // compBars[i] is bar i's ABC fragment; compPalettes[i] is a colour order
+  // (["R","3","5"] bottom-to-top) per chord onset in that fragment.
+  const compBars = [];
+  const compPalettes = [];
   for (let bar = 0; bar < voiced.length; bar++) {
     const cb = voiced[bar];
-    for (let vk = 0; vk < 3; vk++) {
-      let fragment;
-      if (cb.length === 1) {
-        const fn = bar % 2 === 0 ? pat.twobar1 : pat.twobar2;
-        const ra = resolvedNoteArgs(cb[0][0], cb[0][1], cb[0][2], keyScale);
-        fragment = fn.apply(null, ra[vk]);
-      } else if (cb.length === 2) {
-        const ra0 = resolvedNoteArgs(cb[0][0], cb[0][1], cb[0][2], keyScale);
-        const ra1 = resolvedNoteArgs(cb[1][0], cb[1][1], cb[1][2], keyScale);
-        fragment = pat.half.apply(null, ra0[vk]) + " " + pat.half.apply(null, ra1[vk]);
-      } else {
-        const durs = distribute(8, cb.length);
-        fragment = cb
-          .map((triple, i) => {
-            const ra = resolvedNoteArgs(triple[0], triple[1], triple[2], keyScale);
-            return ra[vk][0] + durs[i];
-          })
-          .join(" ");
-      }
-      // The three voices share one rhythm; showing every rest three times
-      // over is noise, so only the root voice draws them — the third and
-      // fifth use invisible rests.
-      if (vk > 0) fragment = fragment.replace(/z/g, "x");
-      voices[vk].push(rebeamBar(fragment, lnum, lden));
+    let fragment;
+    let barPalette;
+    if (cb.length === 1) {
+      const fn = bar % 2 === 0 ? pat.twobar1 : pat.twobar2;
+      fragment = fn.apply(null, chordArgs(cb[0], keyScale));
+      const order = cb[0].map((v) => v.fn);
+      barPalette = Array(countChords(fragment)).fill(order);
+    } else if (cb.length === 2) {
+      const fragA = pat.half.apply(null, chordArgs(cb[0], keyScale));
+      const fragB = pat.half.apply(null, chordArgs(cb[1], keyScale));
+      fragment = fragA + " " + fragB;
+      barPalette = Array(countChords(fragA))
+        .fill(cb[0].map((v) => v.fn))
+        .concat(Array(countChords(fragB)).fill(cb[1].map((v) => v.fn)));
+    } else {
+      const durs = distribute(8, cb.length);
+      fragment = cb
+        .map((triple, i) => chordArgs(triple, keyScale)[0] + durs[i])
+        .join(" ");
+      barPalette = cb.map((triple) => triple.map((v) => v.fn));
     }
+    compBars.push(rebeamBar(fragment, lnum, lden));
+    compPalettes.push(barPalette);
   }
 
   const leadingRestBars = computeChordOffset(song) || 0;
-  // Invisible rest: keeps the comping voices bar-aligned with the melody
+  // Invisible rest: keeps the comping voice bar-aligned with the melody
   // through pickup / intro / tail bars without drawing anything.
   const restToken = "x" + formatDuration(8, lnum, lden);
-  const bodies = voices.map((bars) =>
-    buildVoiceBody(split.body, bars, leadingRestBars, restToken, lnum, lden).trim()
-  );
+  const compBody = buildVoiceBody(
+    split.body, compBars, leadingRestBars, restToken, lnum, lden
+  ).trim();
+  // buildVoiceBody consumes compBars in order (leading/tail bars use the plain
+  // rest), so the drawn chord onsets are compPalettes flattened in bar order.
+  const palette = compPalettes.flat();
 
   const clefSuffix = bassClef ? " clef=bass middle=D" : "";
   const label = PATTERN_LABEL[pattern] || pattern;
@@ -619,20 +654,18 @@ export function buildCompingTune(text, chords, song, pattern) {
   headerOut.push("L:" + lnum + "/" + lden);
   // %%staves (not %%score) so ABCjs draws the barlines connecting the melody
   // staff to the comping staff — they read as one system. The bracket [ ]
-  // groups them; ( ) merges the three comping voices onto one staff.
-  headerOut.push("%%staves [1 (2 3 4)]");
+  // groups them.
+  headerOut.push("%%staves [1 2]");
   headerOut.push("V:1");
-  headerOut.push('V:2 name="R"' + clefSuffix);
-  headerOut.push('V:3 name="3"' + clefSuffix);
-  headerOut.push('V:4 name="5"' + clefSuffix);
+  // Stacked R / 3 / 5 label at the staff's left, naming the chord tones the
+  // three notehead colours pick out (root / third / fifth, bottom to top).
+  headerOut.push('V:2 name="R\\n3\\n5"' + clefSuffix);
   headerOut.push(split.kLine);
 
   const melodyBody = split.body.replace(/\s+$/, "");
-  return (
+  const abc =
     headerOut.join("\n") +
     "\nV:1\n" + melodyBody +
-    "\nV:2\n" + bodies[0] +
-    "\nV:3\n" + bodies[1] +
-    "\nV:4\n" + bodies[2] + "\n"
-  );
+    "\nV:2\n" + compBody + "\n";
+  return { abc, palette };
 }
