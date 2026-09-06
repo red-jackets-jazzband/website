@@ -1164,16 +1164,35 @@ video.video {
   gap: 8px;
   padding: 12px 16px 0;
 }
-.rj-library-back-btn {
-  align-self: flex-start;
+/*
+  Breadcrumb "up" affordance for an open setlist. It's navigation, not an
+  action, so it deliberately does NOT look like the pill buttons below it:
+  a full-bleed strip (negative side margins cancel the toolbar's 16px pad)
+  pinned to the top of the tools column, set off from the Print/Export/Delete
+  controls by a hairline underline.
+*/
+.rj-setlist-crumb {
+  align-self: stretch;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: -2px -16px 4px;
+  padding: 4px 16px 12px;
   background: none;
   border: none;
-  padding: 0;
-  color: var(--rj-gold);
-  font: 600 11px "Montserrat", sans-serif;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+  color: rgba(230,228,224,.55);
+  font: 600 10.5px/1 "Montserrat", sans-serif;
   text-transform: uppercase;
-  letter-spacing: .06em;
+  letter-spacing: .07em;
   cursor: pointer;
+  transition: color 0.15s;
+}
+.rj-setlist-crumb .fa-chevron-left {
+  font-size: 9px;
+}
+.rj-setlist-crumb:hover {
+  color: var(--rj-gold);
 }
 .rj-library-new-setlist,
 .rj-library-open-setlist,
@@ -1240,6 +1259,49 @@ video.video {
 .rj-library-tool-danger:hover {
   border-color: #a8442f;
   color: #ca486d;
+}
+/*
+  The three "Print …" targets read as one control: a shared "Print" caption
+  on its own line (same small-caps look as the sheet steppers' labels), then
+  the three destinations butted together as an equal-width segmented row that
+  spans the toolbar — at 300px there isn't room for "Print" plus three words
+  on one line.
+*/
+.rj-library-print-group {
+  flex-basis: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.rj-library-print-label {
+  color: #9a978f;
+  font: 700 10px "Montserrat", sans-serif;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.rj-library-print-seg {
+  display: flex;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 7px;
+  overflow: hidden;
+}
+.rj-library-print-btn {
+  flex: 1;
+  height: 34px;
+  padding: 0 6px;
+  background: #2f2f2f;
+  border: 0;
+  color: #dedcd8;
+  font: 600 11px "Montserrat", sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.rj-library-print-btn + .rj-library-print-btn {
+  border-left: 1px solid rgba(255,255,255,.1);
+}
+.rj-library-print-btn:hover {
+  background: #383838;
+  color: var(--rj-gold);
 }
 /* Icon-only variant, used by the new-setlist / import row in the Yours list. */
 .rj-library-tool-icon {

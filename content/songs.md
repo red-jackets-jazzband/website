@@ -29,12 +29,17 @@ aliases: ["/setlists/", "/songbook/"]
   </div>
 
   <div class="rj-library-setlist-tools" id="setlistTools" hidden>
-    <button type="button" class="rj-library-tool-btn rj-library-back-btn" id="setlistsBackBtn" hidden>&larr; All setlists</button>
+    <button type="button" class="rj-setlist-crumb" id="setlistsBackBtn" hidden><span class="fa-solid fa-chevron-left" aria-hidden="true"></span><span>All setlists</span></button>
     <div class="rj-library-open-setlist" id="openSetlistTools" hidden>
       <input type="text" id="setlistNameInput" class="rj-library-name-input" hidden>
-      <button type="button" id="printSetlistBtn" class="rj-library-tool-btn">Print setlist</button>
-      <button type="button" id="printChordbookBtn" class="rj-library-tool-btn">Print chordbook</button>
-      <button type="button" id="printSongbookBtn" class="rj-library-tool-btn">Print songbook</button>
+      <div class="rj-library-print-group" role="group" aria-labelledby="rjPrintLabel">
+        <span class="rj-library-print-label" id="rjPrintLabel">Print</span>
+        <div class="rj-library-print-seg">
+          <button type="button" id="printSetlistBtn" class="rj-library-print-btn">Setlist</button>
+          <button type="button" id="printChordbookBtn" class="rj-library-print-btn">Chordbook</button>
+          <button type="button" id="printSongbookBtn" class="rj-library-print-btn">Songbook</button>
+        </div>
+      </div>
       <button type="button" id="setlistExportBtn" class="rj-library-tool-btn" hidden>Export</button>
       <button type="button" id="setlistDeleteBtn" class="rj-library-tool-btn rj-library-tool-danger" hidden>Delete</button>
     </div>
