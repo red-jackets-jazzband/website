@@ -209,6 +209,12 @@ export function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, ti
     }
   };
 
+  // The .abcjs-v1/v2/v3 colour rules (split.css) exist only for the comping
+  // staff. Gate them behind this class so an ordinary multi-voice tune (e.g.
+  // Big Chief's trumpet + sousaphone) doesn't get its second voice recoloured
+  // and — because those rules add a `stroke` to fill-only paths — thickened.
+  document.getElementById(notationElt).classList.toggle("comping-active", compingActive);
+
   var visualObjs = ABCJS.renderAbc(notationElt, renderText, abcParams);
 
   /* Hide title below chord table */

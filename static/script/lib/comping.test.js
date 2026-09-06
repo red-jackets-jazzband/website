@@ -7,6 +7,7 @@ import {
   rebeamBar,
   buildVoiceBody,
   buildCompingTune,
+  measureBarSlots,
 } from "./comping.js";
 
 // ---------------------------------------------------------------------------
@@ -148,6 +149,24 @@ test("buildVoiceBody ignores lyric and part lines", () => {
   const melody = 'P:A\n"C" c8 | "G" d8 |\nw: la la la la';
   const out = buildVoiceBody(melody, ["B1", "B2"], 0, "x8");
   assert.equal(out.replace(/\s+/g, " ").trim(), "B1 | B2 |");
+});
+
+test("measureBarSlots sums a bar segment in eighth slots", () => {
+  // L:1/8 — one slot per unit
+  assert.equal(measureBarSlots("c c c c", 1, 8), 4);
+  assert.equal(measureBarSlots('"C" c4 c4', 1, 8), 8);
+  assert.equal(measureBarSlots("[CEG]2 [CEG]2", 1, 8), 4);
+  // L:1/4 — two slots per unit; a two-eighth pickup is one slot each
+  assert.equal(measureBarSlots("B/2=A/2", 1, 4), 2);
+  assert.equal(measureBarSlots("B2 G B/2=A/2", 1, 4), 8);
+  assert.equal(measureBarSlots("   ", 1, 4), 0);
+});
+
+test("buildVoiceBody matches a short pickup's length when given L", () => {
+  // Bellamina: a two-eighth pickup at L:1/4 before the first chorded bar
+  const melody = "B/2=A/2 || B2 G B/2=A/2 | B2 G B/2=A/2 |";
+  const out = buildVoiceBody(melody, ["P1", "P2"], 1, "x", 1, 4);
+  assert.equal(out.trim(), "x || P1 | P2 |");
 });
 
 // ---------------------------------------------------------------------------
