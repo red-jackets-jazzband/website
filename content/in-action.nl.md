@@ -1,12 +1,12 @@
 ---
 title: "Red Jackets Jazzband"
-tagline: "In Action"
+tagline: "In Actie"
 date: 2019-03-16T10:25:31+01:00
 ---
 
 <div class="rj-action">
 
-<p class="rj-action-lead">Out on the street, between the people. Photos, film and our playlist on SoundCloud.</p>
+<p class="rj-action-lead">Op straat, tussen de mensen. Foto's, film en onze playlist op SoundCloud.</p>
 
 <div class="rj-action-mosaic rj-action-mosaic--hero">
 <figure class="rj-action-photo rj-action-photo--lead">
@@ -23,7 +23,7 @@ date: 2019-03-16T10:25:31+01:00
 </figure>
 </div>
 
-<div class="rj-action-head">On film</div>
+<div class="rj-action-head">Op film</div>
 
 <div class="rj-action-videos">
 {{< youtube q2kOF8ef24A >}}
@@ -32,8 +32,8 @@ date: 2019-03-16T10:25:31+01:00
 </div>
 
 <div class="rj-action-record">
-<div class="rj-action-record-head">On record</div>
-<p>The Red Jackets playlist on SoundCloud.</p>
+<div class="rj-action-record-head">Opnames</div>
+<p>De playlist van de Red Jackets op SoundCloud.</p>
 <iframe class="rj-action-soundcloud" width="100%" height="300" scrolling="no" frameborder="no" allow="autoplay" src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/4099638&color=%23e29d0f&auto_play=false&hide_related=false&show_comments=false&show_user=true&show_reposts=false&show_teaser=true&visual=true"></iframe>
 </div>
 

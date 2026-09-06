@@ -4,7 +4,9 @@ import {
   parseShowLine,
   parseShowList,
   formatShowDate,
+  formatShowDateLong,
   isUpcoming,
+  splitShows,
 } from "./showlist.js";
 
 test("parseShowLine reads date, name and location", () => {
@@ -33,6 +35,27 @@ test("parseShowList skips blank lines", () => {
 test("formatShowDate is unpadded d/m/yyyy, with the range suffix", () => {
   assert.equal(formatShowDate(parseShowLine("2026/06/20,A,X")), "20/6/2026");
   assert.equal(formatShowDate(parseShowLine("2022/05/06-7,A,X")), "6-7/5/2022");
+});
+
+test("formatShowDateLong is 'd Mon yyyy', keeping the range suffix", () => {
+  assert.equal(formatShowDateLong(parseShowLine("2026/06/20,A,X")), "20 Jun 2026");
+  assert.equal(formatShowDateLong(parseShowLine("2022/05/06-7,A,X")), "6-7 May 2022");
+});
+
+test("formatShowDateLong localises the month name", () => {
+  assert.equal(formatShowDateLong(parseShowLine("2026/03/20,A,X"), "nl"), "20 mrt 2026");
+  assert.equal(formatShowDateLong(parseShowLine("2026/03/20,A,X"), "de"), "20 März 2026");
+  assert.equal(formatShowDateLong(parseShowLine("2026/03/20,A,X"), "fr"), "20 Mar 2026");
+});
+
+test("splitShows partitions into upcoming and past, keeping source order", () => {
+  const now = new Date("2026-06-15T12:00:00");
+  const shows = parseShowList(
+    "2026/06/20,Next,X\n2026/06/10,Just gone,Y\n2025/09/20,Older,Z\n",
+  );
+  const { upcoming, past } = splitShows(shows, now);
+  assert.deepEqual(upcoming.map((s) => s.name), ["Next"]);
+  assert.deepEqual(past.map((s) => s.name), ["Just gone", "Older"]);
 });
 
 test("isUpcoming compares against the start of today", () => {
