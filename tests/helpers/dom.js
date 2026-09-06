@@ -32,6 +32,12 @@ export function mountPage({ html, url = "https://example.test/songs/" } = {}) {
   if (!dom.window.Element.prototype.getBBox) {
     dom.window.Element.prototype.getBBox = () => ({ x: 0, y: 0, width: 0, height: 0 });
   }
+  // jsdom ships no Pointer Capture API; the panel drag/resize handlers call it.
+  for (const method of ["setPointerCapture", "releasePointerCapture", "hasPointerCapture"]) {
+    if (!dom.window.Element.prototype[method]) {
+      dom.window.Element.prototype[method] = method === "hasPointerCapture" ? () => false : () => {};
+    }
+  }
 
   const saved = new Map();
   for (const key of EXPOSED) {

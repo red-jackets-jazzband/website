@@ -9,6 +9,7 @@ export const PREF_KEYS = {
   instrument: "rj.instrument",
   comping: "rj.comping",
   sheetAdvanced: "rj.sheetAdvanced",
+  inspirationWidth: "rj.inspirationWidth",
 };
 
 // The raw Storage object, or null when it can't be reached. Callers that hand
