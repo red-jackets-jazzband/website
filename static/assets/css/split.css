@@ -470,14 +470,14 @@ video.video {
     box-sizing: border-box;
 }
 
-/* Reflow to fewer columns at narrow widths regardless of the desktop
-   4-vs-8 column count, so cells stay readable rather than shrinking to
-   near-illegible width. Cell order/count is unchanged — .chordCell is a
-   flat sequence read positionally by playback highlighting, only the
-   number of columns it wraps into changes. */
+/* Narrow screens keep the desktop 4-or-8 column count: when that grid is too
+   wide for the viewport, fitChordTable (songs/chord-table.js) measures it and
+   sets an inline transform: scale() so the whole grid and its text shrink to
+   fit, rather than reflowing to fewer columns or clipping cell text. A phone
+   rotation re-fits it. */
 @media (max-width: 480px) {
   .chordtable > .chordGrid {
-    grid-template-columns: repeat(2, 1fr);
+    width: 100%;
   }
 }
 #sheetmenu{
@@ -2928,8 +2928,13 @@ body:has(#rjLibrary) .split-bio {
 }
 
 @media print {
+  /* Drop any on-screen fit zoom (songs/chord-table.js) — the printed page has
+     its own width and the grid should engrave full size. */
   .chordtable > .chordGrid {
     font-size: xx-large;
+    zoom: 1 !important;
+    width: 90% !important;
+    margin: 10px auto !important;
   }
 }
 
