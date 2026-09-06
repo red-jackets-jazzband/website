@@ -74,6 +74,43 @@ test("toggleMelody flips the flag, updates the button and re-renders", () => {
   }
 });
 
+test("playPause resumes on the first press after pausing (ABCjs play() is a toggle)", async () => {
+  const { audio, cleanup } = setup();
+  const abcjs = createAbcjsStub({ audioSupported: true });
+  try {
+    withAbcjs(abcjs, () => audio.initForTune({ metaText: {} }));
+    await flush(); // setTune resolves -> transport buttons enabled
+
+    audio.playPause();
+    await flush();
+    assert.equal(audio.isPlaying, true);
+
+    audio.playPause(); // pause
+    await flush();
+    assert.equal(audio.isPlaying, false);
+
+    audio.playPause(); // resume — a single press must restart playback
+    await flush();
+    assert.equal(audio.isPlaying, true);
+  } finally {
+    cleanup();
+  }
+});
+
+test("playPause is a no-op while the transport buttons are disabled", async () => {
+  const { audio, cleanup } = setup();
+  const abcjs = createAbcjsStub({ audioSupported: true });
+  try {
+    withAbcjs(abcjs, () => audio.initForTune({ metaText: {} }));
+    // still loading: setTune hasn't resolved, buttons disabled
+    audio.playPause();
+    assert.equal(audio.isPlaying, false);
+    await flush();
+  } finally {
+    cleanup();
+  }
+});
+
 test("initForTune is inert when the browser can't play audio (stub: false)", () => {
   const { audio, cleanup } = setup();
   const abcjs = createAbcjsStub(); // supportsAudio -> false
