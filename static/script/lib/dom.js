@@ -54,7 +54,13 @@ const PROP_HANDLERS = {
   html: (node, value) => { node.innerHTML = value; },
   innerHTML: (node, value) => { node.innerHTML = value; },
   dataset: (node, value) => Object.assign(node.dataset, value),
-  style: (node, value) => Object.assign(node.style, value),
+  style: (node, value) => {
+    for (const [prop, val] of Object.entries(value)) {
+      // Custom properties (--x) only take through setProperty, not assignment.
+      if (prop.startsWith("--")) node.style.setProperty(prop, val);
+      else node.style[prop] = val;
+    }
+  },
   attrs: (node, value) => {
     for (const [name, val] of Object.entries(value)) {
       if (val != null) node.setAttribute(name, val);

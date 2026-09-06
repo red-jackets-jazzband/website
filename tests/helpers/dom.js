@@ -25,6 +25,14 @@ export function mountPage({ html, url = "https://example.test/songs/" } = {}) {
     pretendToBeVisual: true,
   });
 
+  // jsdom implements neither of these; the orchestration calls both.
+  if (!dom.window.Element.prototype.scrollIntoView) {
+    dom.window.Element.prototype.scrollIntoView = () => {};
+  }
+  if (!dom.window.Element.prototype.getBBox) {
+    dom.window.Element.prototype.getBBox = () => ({ x: 0, y: 0, width: 0, height: 0 });
+  }
+
   const saved = new Map();
   for (const key of EXPOSED) {
     saved.set(key, Object.getOwnPropertyDescriptor(globalThis, key));

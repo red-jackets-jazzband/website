@@ -91,7 +91,7 @@ export function withTonal(fn) {
 // minimum shape the orchestration reads.
 // ---------------------------------------------------------------------------
 
-export function createAbcjsStub() {
+export function createAbcjsStub({ audioSupported = false } = {}) {
   const calls = { renderAbc: [], parseOnly: [] };
 
   function fakeTune(text) {
@@ -116,12 +116,13 @@ export function createAbcjsStub() {
       this.noteTimings = [];
     },
     synth: {
-      supportsAudio: () => false,
+      supportsAudio: () => audioSupported,
       SynthController: function SynthController() {
+        this.isStarted = false;
         this.load = () => {};
         this.setTune = () => Promise.resolve();
-        this.play = () => {};
-        this.pause = () => {};
+        this.play = () => { this.isStarted = true; };
+        this.pause = () => { this.isStarted = false; };
         this.setWarp = () => Promise.resolve();
       },
     },
