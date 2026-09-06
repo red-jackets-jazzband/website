@@ -76,6 +76,19 @@ export function initSongLibrary() {
     searchInput.addEventListener("input", function() {
       renderLibraryList(searchInput.value);
     });
+
+    // "/" focuses the song search, unless the user is already typing somewhere
+    document.addEventListener("keydown", function(e) {
+      if (e.key !== "/" || e.ctrlKey || e.metaKey || e.altKey) return;
+      var t = e.target;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      if (activeTab !== "library") switchTab("library");
+      e.preventDefault();
+      searchInput.focus();
+      searchInput.select();
+    });
+
+    initLibraryKeyNav(searchInput);
   }
 
   initTabs();
@@ -209,6 +222,62 @@ function buildSongRow(song) {
     renderSong(song.file);
   });
   return link;
+}
+
+/*
+   Up/Down arrow navigation of the Library list. The highlight (.kbd-active)
+   is a roving pointer, not real focus — it stays put while focus remains in
+   the search box, so you can type, then arrow through the results, then hit
+   Enter to open one. Also works when a list row itself is tab-focused.
+*/
+function initLibraryKeyNav(searchInput) {
+  function libraryRows() {
+    if (activeTab !== "library") return [];
+    var list = document.getElementById("songList");
+    if (!list) return [];
+    return Array.prototype.slice.call(list.querySelectorAll("a.song-list-item"));
+  }
+
+  function moveHighlight(rows, delta, fromEnd) {
+    var cur = rows.findIndex(function(r) { return r.classList.contains("kbd-active"); });
+    var next;
+    if (cur < 0) next = fromEnd ? rows.length - 1 : 0;
+    else next = Math.min(Math.max(cur + delta, 0), rows.length - 1);
+    rows.forEach(function(r) { r.classList.remove("kbd-active"); });
+    var row = rows[next];
+    if (row) {
+      row.classList.add("kbd-active");
+      row.scrollIntoView({ block: "nearest" });
+    }
+  }
+
+  document.addEventListener("keydown", function(e) {
+    if (activeTab !== "library") return;
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp" && e.key !== "Enter") return;
+    var t = e.target;
+    var inField = t === searchInput || (t && t.closest && t.closest("#songList"));
+    if (!inField) return;
+    var rows = libraryRows();
+    if (!rows.length) return;
+
+    if (e.key === "Enter") {
+      // Enter opens the highlighted row, or the sole result of a search
+      var isSearching = searchInput.value.trim().length > 0;
+      var target = rows.find(function(r) { return r.classList.contains("kbd-active"); });
+      if (!target && isSearching && rows.length === 1) target = rows[0];
+      if (target) {
+        e.preventDefault();
+        target.click();
+        if (isSearching) {
+          searchInput.value = "";
+          renderLibraryList("");
+        }
+      }
+      return;
+    }
+    e.preventDefault();
+    moveHighlight(rows, e.key === "ArrowDown" ? 1 : -1, e.key === "ArrowUp");
+  });
 }
 
 // ============================================================

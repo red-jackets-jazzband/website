@@ -26,6 +26,7 @@ aliases: ["/setlists/", "/songbook/"]
 
   <div class="rj-library-search" id="librarySearchRow">
     <input type="search" id="songSearch" placeholder="Search lead sheets" autocomplete="off" aria-label="Search lead sheets" />
+    <kbd class="rj-search-hint" aria-hidden="true">/</kbd>
   </div>
 
   <div class="rj-library-setlist-tools" id="setlistTools" hidden>
