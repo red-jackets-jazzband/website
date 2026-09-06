@@ -1550,6 +1550,27 @@ function initSetlistControls() {
     });
   }
 
+  // Live sheet -> setlist: while a personal setlist's song is open in the
+  // sheet, nudging the Key stepper writes that semitone offset straight back
+  // into the setlist's per-song override, so the set stays in the keys the
+  // band actually settled on. Same store (and same signed-int encoding) as
+  // the row's own semitone field in buildSetlistSongRow; a legacy key-name
+  // override is replaced by the number, exactly as editing that field does.
+  var transposeInput = document.getElementById("transpose");
+  if (transposeInput) {
+    transposeInput.addEventListener("input", function() {
+      if (setlistsView !== "open" || !currentPersonalId) return;
+      if (currentSetlistSongIndex == null || !currentOpenSongs) return;
+      var song = currentOpenSongs[currentSetlistSongIndex];
+      if (!song || isSetlistDivider(song) || song.file !== currentSongFile) return;
+      var n = parseInt(transposeInput.value, 10);
+      var stored = Number.isFinite(n) && n !== 0 ? String(n) : "";
+      if (stored === String(song.key == null ? "" : song.key)) return;
+      updateSongKeyInPersonalSetlist(storage(), currentPersonalId, currentSetlistSongIndex, stored);
+      refreshOpenPersonalSetlist();
+    });
+  }
+
   var exportBtn = document.getElementById("setlistExportBtn");
   if (exportBtn) {
     exportBtn.addEventListener("click", function() {
