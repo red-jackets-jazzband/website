@@ -1,5 +1,0 @@
-# name,Zeeland Jazz 2026
-# desc,Our set for the Zeeland Jazz festival stage.
-basin_street.abc,C
-auld_lang_syne.abc,
-aint_my_fault.abc,Am

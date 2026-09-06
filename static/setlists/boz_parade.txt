@@ -1,3 +1,0 @@
-# name,Bergen op Zoom Parade
-amazing_grace.abc,
-indiana.abc,

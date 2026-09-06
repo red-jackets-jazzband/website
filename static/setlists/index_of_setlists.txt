@@ -1,3 +1,2 @@
-Zeeland Jazz 2026,zeeland_jazz_2026.txt
-Bergen op Zoom Parade,boz_parade.txt
 N.O.A.D.S. Songbook,noads_songbook.txt
+Setlist 2026,setlist_2026.txt
