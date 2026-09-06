@@ -2618,11 +2618,113 @@ body:has(#rjLibrary) .split-bio {
   color: var(--rj-gold);
   font: 600 12px "Montserrat", sans-serif;
   padding: 0 14px;
+  /* Render the popup's own chrome (scrollbar, fallback highlight) dark so it
+     doesn't flash a white OS list on open. */
+  color-scheme: dark;
 }
 .sheet-status .dropdown:hover .dropbtn,
 .sheet-comping .dropdown:hover .dropbtn {
   background: var(--rj-gold);
   color: #222222;
+}
+
+/* ------------------------------------------------------------------
+   Open option list for the Instrument / Comping dropdowns.
+   The closed control is styled above; the menu that drops down is a
+   separate surface. Firefox (Linux/GTK) paints it from the <select>'s
+   own colours and honours per-<option> padding and :checked, so spell
+   those out — otherwise the rows are cramped and the selected row gets
+   an OS-blue bar that clashes with the gold-on-charcoal sheet. Chromium
+   ignores all of this until the control opts into the customisable form
+   element (appearance: base-select), handled in the @supports block. */
+#instrument option,
+#comping option {
+  background-color: #262626;
+  color: var(--rj-gold);
+  padding: 9px 14px;
+  font: 600 12px "Montserrat", sans-serif;
+}
+#instrument optgroup,
+#comping optgroup {
+  background-color: #1f1f1f;
+  color: rgba(236,234,230,.55);
+  font: 700 10px "Montserrat", sans-serif;
+  letter-spacing: .08em;
+}
+#instrument option:checked,
+#comping option:checked {
+  background-color: var(--rj-gold);
+  color: #1b1b1b;
+}
+
+@supports (appearance: base-select) {
+  .sheet-status .dropbtn,
+  #sheetStatus #instrument,
+  .sheet-comping .dropbtn,
+  #compingSlot #comping,
+  #instrument::picker(select),
+  #comping::picker(select) {
+    appearance: base-select;
+  }
+  /* base-select turns the button into a flex box whose default cross-axis
+     alignment leaves the label riding at the top of the 44px control — pin it
+     to a single centred row with the picker icon pushed to the end. */
+  .sheet-status .dropbtn,
+  #sheetStatus #instrument,
+  .sheet-comping .dropbtn,
+  #compingSlot #comping {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  #instrument::selectedcontent,
+  #comping::selectedcontent {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  #instrument::picker(select),
+  #comping::picker(select) {
+    background: #222222;
+    border: 1px solid rgba(255,255,255,.14);
+    border-radius: 10px;
+    padding: 6px;
+    margin-top: 6px;
+    box-shadow: 0 14px 34px rgba(0,0,0,.5);
+  }
+  #instrument option,
+  #comping option {
+    border-radius: 6px;
+    padding: 8px 12px;
+    transition: background-color .12s ease, color .12s ease;
+  }
+  #instrument option:hover,
+  #comping option:hover,
+  #instrument option:focus,
+  #comping option:focus {
+    background-color: rgba(226,157,15,.16);
+    color: var(--rj-gold);
+  }
+  #instrument option:checked,
+  #comping option:checked {
+    background-color: var(--rj-gold);
+    color: #1b1b1b;
+  }
+  /* The gold fill is the selection cue; drop the native tick column. */
+  #instrument option::checkmark,
+  #comping option::checkmark {
+    display: none;
+  }
+  #instrument::picker-icon,
+  #comping::picker-icon {
+    color: var(--rj-gold);
+    transition: transform .15s ease;
+  }
+  #instrument:open::picker-icon,
+  #comping:open::picker-icon {
+    transform: rotate(180deg);
+  }
 }
 
 /* Comping staff: the three chord-tone voices below the melody, colour-keyed

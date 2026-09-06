@@ -756,7 +756,9 @@ export function createInstrumentDropdown() {
 
   var select = document.createElement("SELECT");
   select.classList.add("dropbtn");
-  select.innerText = "Instrument";
+  // aria-label only — a stray text node here leaks into the styleable
+  // (appearance: base-select) picker as a phantom first row.
+  select.setAttribute("aria-label", "Instrument");
   select.id = "instrument";
   div.appendChild(select);
 
