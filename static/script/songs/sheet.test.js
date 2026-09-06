@@ -102,8 +102,8 @@ test("a booklet render ignores the Key stepper and never touches audio", () => {
     const call = abcjs.calls.renderAbc.at(-1);
     assert.equal(call.target, "bk-n");
     assert.equal(call.params.visualTranspose, 2); // extra only, no stepper
-    assert.equal(call.params.responsive, undefined);
-    assert.equal(call.params.staffwidth, 700);
+    assert.equal(call.params.responsive, "resize");
+    assert.equal(call.params.staffwidth, 1000);
     assert.equal(audioCalls.tunes.length, 0);
     assert.equal(document.getElementById("bk-t").innerHTML, "1. Stub Tune");
   } finally {
