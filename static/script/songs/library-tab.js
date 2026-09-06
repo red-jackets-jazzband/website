@@ -112,6 +112,8 @@ export function createLibraryTab(ctx) {
       searchInput.value = "";
       render("");
     }
+    // Drop focus so Spacebar plays the song straight away instead of typing.
+    searchInput.blur();
     return true;
   }
 

@@ -119,9 +119,12 @@ test("Enter opens the sole search result and clears the query", () => {
     const search = document.getElementById("songSearch");
     search.value = "corrine";
     search.dispatchEvent(new window.Event("input"));
+    search.focus();
     search.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
     assert.equal(opened.at(-1).file, "corrine.abc");
     assert.equal(search.value, "");
+    // Focus leaves the field so Spacebar plays the song immediately.
+    assert.notEqual(document.activeElement, search);
   } finally {
     cleanup();
   }
