@@ -118,6 +118,15 @@ test("tokenizeBar reads notes, rests, ties and annotations", () => {
   assert.equal(tokenizeBar("_B,2 ^f'")[1].pitch, "^f'");
 });
 
+test("tokenizeBar reads chord tokens as one note", () => {
+  const toks = tokenizeBar("[CEG]2 [Bdf]-[Bdf]4");
+  assert.deepEqual(toks, [
+    { pitch: "[CEG]", dur: 2, tie: false, rest: false },
+    { pitch: "[Bdf]", dur: 1, tie: true, rest: false },
+    { pitch: "[Bdf]", dur: 4, tie: false, rest: false },
+  ]);
+});
+
 test("rebeamBar keeps eighths in groups of four and rescales durations", () => {
   // 8 straight eighths -> two beamed groups of four
   assert.equal(rebeamBar("c c c c c c c c", 1, 8), "cccc cccc");
@@ -220,34 +229,46 @@ const CHORDS = [
   { text: ["C"] },
 ];
 
-test("buildCompingTune adds a bracketed comping staff of three voices", () => {
+test("buildCompingTune adds a bracketed one-voice block-chord comping staff", () => {
   const out = withTonal(() => buildCompingTune(TUNE, CHORDS, fakeSong(), "whole_note"));
-  assert.ok(out, "produced a tune");
-  assert.match(out, /^%%staves \[1 \(2 3 4\)\]/m);
-  assert.match(out, /^V:2 name="R"/m);
-  assert.match(out, /^V:3 name="3"/m);
-  assert.match(out, /^V:4 name="5"/m);
+  assert.ok(out && out.abc, "produced a tune");
+  const abc = out.abc;
+  assert.match(abc, /^%%staves \[1 2\]/m);
+  assert.match(abc, /^V:2 name="R\\n3\\n5"$/m);
+  assert.doesNotMatch(abc, /^V:3/m);
   // melody body is kept verbatim under V:1, repeat included
-  assert.match(out, /V:1\n\|: "C" C8 \| "F" F8 \| "G7" G8 \| "C" C8 :\|/);
+  assert.match(abc, /V:1\n\|: "C" C8 \| "F" F8 \| "G7" G8 \| "C" C8 :\|/);
   // T: gets the pattern name appended
-  assert.match(out, /T:Test Tune {2}\(comping – Whole note\)/);
-  // comping voices carry the same repeat structure
-  const v2 = out.split("\nV:2\n")[1].split("\nV:3\n")[0];
+  assert.match(abc, /T:Test Tune {2}\(comping – Whole note\)/);
+  // the comping voice is block chords and carries the same repeat structure
+  const v2 = abc.split("\nV:2\n").pop().trim();
   assert.match(v2, /^\|:/);
   assert.match(v2, /:\|$/);
+  assert.match(v2, /\[[A-Ga-g][A-Ga-g][A-Ga-g]\]/);
+});
+
+test("buildCompingTune returns a colour palette, one entry per drawn chord onset", () => {
+  // whole_note draws one chord per bar (n8- / n8), 4 bars -> 4 onsets.
+  const out = withTonal(() => buildCompingTune(TUNE, CHORDS, fakeSong(), "whole_note"));
+  assert.equal(out.palette.length, 4);
+  for (const order of out.palette) {
+    assert.deepEqual([...order].sort(), ["3", "5", "R"]);
+  }
+  // first chord is voiced from the root-position seed, so bottom-to-top is R/3/5
+  assert.deepEqual(out.palette[0], ["R", "3", "5"]);
 });
 
 test("buildCompingTune transposes nothing itself (concert-pitch K: kept)", () => {
   const out = withTonal(() => buildCompingTune(TUNE, CHORDS, fakeSong(), "on_2_and_4"));
-  assert.match(out, /^K:C$/m);
+  assert.match(out.abc, /^K:C$/m);
 });
 
-test("buildCompingTune bass instrument stamps clef=bass on the comping voices", () => {
+test("buildCompingTune bass instrument stamps clef=bass on the comping voice", () => {
   const bassTune = TUNE.replace("K:C", "K:C clef=bass middle=D");
   const out = withTonal(() =>
     buildCompingTune(bassTune, CHORDS, fakeSong(), "whole_note")
   );
-  assert.match(out, /^V:2 name="R" clef=bass middle=D/m);
+  assert.match(out.abc, /^V:2 name="R\\n3\\n5" clef=bass middle=D/m);
 });
 
 test("buildCompingTune returns null when it cannot apply", () => {
@@ -266,8 +287,8 @@ test("buildCompingTune scales pattern durations to a L:1/4 tune", () => {
   const out = withTonal(() =>
     buildCompingTune(quarterTune, CHORDS, fakeSong(), "whole_note")
   );
-  assert.match(out, /^L:1\/4$/m);
+  assert.match(out.abc, /^L:1\/4$/m);
   // whole_note bar 1 is "n8-" in eighths -> "n4-" at L:1/4
-  const v2 = out.split("\nV:2\n")[1].split("\nV:3\n")[0];
+  const v2 = out.abc.split("\nV:2\n").pop();
   assert.match(v2, /4-/);
 });

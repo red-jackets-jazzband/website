@@ -128,12 +128,15 @@ export function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, ti
   audioPlayer.chordOffset = computeChordOffset(song);
 
   // Comping: on the live sheet only (never a setlist booklet), when a rhythm
-  // pattern is picked, add a second staff of three coloured chord-tone voices
-  // below the melody. It's generated from the tune in *concert* pitch (parsed
-  // fresh at visualTranspose 0) and injected into `text`, so the single
-  // visualTranspose passed to ABCJS.renderAbc below transposes the melody and
-  // the comping together — no separate transposition pass.
+  // pattern is picked, add a second staff below the melody — one voice of
+  // block chords, one black stem per hit, with each chord's noteheads
+  // colour-keyed by chord-tone function (root / third / fifth). It's generated
+  // from the tune in *concert* pitch (parsed fresh at visualTranspose 0) and
+  // injected into `text`, so the single visualTranspose passed to
+  // ABCJS.renderAbc below transposes the melody and the comping together — no
+  // separate transposition pass.
   var renderText = text;
+  var compingPalette = null;
   compingActive = false;
   var sheetMenuEl = document.getElementById("sheetmenu");
   var advancedOn = sheetMenuEl !== null && sheetMenuEl.classList.contains("show-advanced");
@@ -144,7 +147,8 @@ export function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, ti
     var concertChords = parseChordScheme(concertSong);
     var compingTune = buildCompingTune(text, concertChords, concertSong, compingValue);
     if (compingTune) {
-      renderText = compingTune;
+      renderText = compingTune.abc;
+      compingPalette = compingTune.palette;
       compingActive = true;
     }
   }
@@ -209,13 +213,20 @@ export function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, ti
     }
   };
 
-  // The .abcjs-v1/v2/v3 colour rules (split.css) exist only for the comping
-  // staff. Gate them behind this class so an ordinary multi-voice tune (e.g.
-  // Big Chief's trumpet + sousaphone) doesn't get its second voice recoloured
-  // and — because those rules add a `stroke` to fill-only paths — thickened.
+  // Marks the notation as carrying a comping staff (used for print tweaks).
   document.getElementById(notationElt).classList.toggle("comping-active", compingActive);
 
   var visualObjs = ABCJS.renderAbc(notationElt, renderText, abcParams);
+
+  // Colour the comping voice's chord noteheads by chord-tone function. ABCjs
+  // only exposes a notehead's *vertical* position within its chord
+  // (.abcjs-chord-pos-N), but voice-leading means position ≠ function, so we
+  // zip the rendered onsets against buildCompingTune's palette instead of
+  // using CSS. Safe against abcjs's resize handler (it rescales the SVG's
+  // viewBox, it doesn't re-render), and re-applied on every full re-render.
+  if (compingActive) {
+    applyCompingColors(notationElt, compingPalette);
+  }
 
   /* Hide title below chord table */
   document
@@ -867,6 +878,43 @@ export function createCompingDropdown() {
   });
 
   slot.appendChild(div);
+}
+
+/*
+  applyCompingColors: colour the comping voice's chord noteheads by chord-tone
+  function. `palette` (from buildCompingTune) has one ["R","3","5"] entry per
+  chord onset in the comping voice, bottom-to-top; ABCjs renders those onsets
+  left-to-right as `g.abcjs-note.abcjs-v1` groups, each notehead / accidental
+  tagged `.abcjs-chord-pos-N` (N up from the bottom). We zip the two and set an
+  inline fill. The stacked "R / 3 / 5" voice label is tinted to match.
+*/
+var COMPING_FN_FILL = { R: "#222222", "3": "var(--rj-gold)", "5": "var(--rj-hover)" };
+
+function applyCompingColors(notationElt, palette) {
+  if (!palette || !palette.length) return;
+  var root = document.getElementById(notationElt);
+  var groups = root.querySelectorAll("g.abcjs-note.abcjs-v1");
+  var idx = 0;
+  groups.forEach(function (g) {
+    var marks = g.querySelectorAll('[class*="abcjs-chord-pos-"]');
+    if (!marks.length) return;
+    var order = palette[idx++];
+    if (!order) return;
+    marks.forEach(function (el) {
+      var m = /abcjs-chord-pos-(\d+)/.exec(el.getAttribute("class"));
+      if (!m) return;
+      var fn = order[parseInt(m[1], 10) - 1];
+      if (fn && COMPING_FN_FILL[fn]) el.style.fill = COMPING_FN_FILL[fn];
+    });
+  });
+
+  var label = root.querySelector("text.abcjs-voice-name.abcjs-v1");
+  if (label) {
+    var tspans = label.querySelectorAll("tspan");
+    ["R", "3", "5"].forEach(function (fn, i) {
+      if (tspans[i]) tspans[i].style.fill = COMPING_FN_FILL[fn];
+    });
+  }
 }
 
 /*

@@ -2727,25 +2727,13 @@ body:has(#rjLibrary) .split-bio {
   }
 }
 
-/* Comping staff: the three chord-tone voices below the melody, colour-keyed
-   root / third / fifth (melody stays .abcjs-v0). Gated on .comping-active
-   (set in render_abc.js) so an ordinary multi-voice tune isn't recoloured.
-   Confirm the voice indices against a live render — ABCjs numbers voices in
-   %%staves order.
-   `.abcjs-vN text` catches notes/rests (descendants of the voice group);
-   `text.abcjs-vN` catches the R/3/5 voice-name label, which carries the
-   class on the <text> element itself. */
-/* fill only — never `stroke`: an ABCjs notehead/stem/beam is a fill-only
-   path, so adding a stroke the same colour just makes the glyph look bold. */
-.notation.comping-active .abcjs-v1 path,
-.notation.comping-active .abcjs-v1 text,
-.notation.comping-active text.abcjs-v1 { fill: #222222; }
-.notation.comping-active .abcjs-v2 path,
-.notation.comping-active .abcjs-v2 text,
-.notation.comping-active text.abcjs-v2 { fill: var(--rj-gold); }
-.notation.comping-active .abcjs-v3 path,
-.notation.comping-active .abcjs-v3 text,
-.notation.comping-active text.abcjs-v3 { fill: var(--rj-hover); }
+/* Comping staff: one voice of block chords below the melody, one black stem
+   per hit, each chord's noteheads colour-keyed by chord-tone function — root
+   #222, third --rj-gold, fifth --rj-hover. The colouring is done in JS
+   (render_abc.js applyCompingColors), not here: voice-leading can invert a
+   chord, so a notehead's vertical position (ABCjs's .abcjs-chord-pos-N) isn't
+   its function, and only buildCompingTune knows the mapping. Kept as inline
+   fills that survive abcjs's resize (it rescales, doesn't re-render). */
 
 /* ============================================================
    Advanced controls toggle (double chevron in the sheet menu)
