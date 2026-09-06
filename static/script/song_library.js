@@ -1085,7 +1085,7 @@ function fillBookletSongMeta(n, meta) {
   }
   set("setlistStageConcert-" + n, meta.concert);
   set("setlistStageInstr-" + n, meta.instrument);
-  set("setlistStageTempo-" + n, meta.bpm ? (meta.bpm + " bpm") : "");
+  set("setlistStageTempo-" + n, meta.bpm ? String(meta.bpm) : ""); // column is headed "bpm"
   set("setlistIndexKey-" + n, meta.instrument);
 }
 

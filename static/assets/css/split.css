@@ -929,6 +929,24 @@ video.video {
     page-break-after: auto;
     break-after: auto;
   }
+  /* "Print setlist" aims to land the whole list on one sheet, so its front
+     matter is tighter than the booklet forms' full title page. */
+  body.export-mode-setlist #setlistPrintBooklet .setlist-booklet-fm-title {
+    font-size: 24px;
+    margin: 0 0 2px;
+  }
+  body.export-mode-setlist #setlistPrintBooklet .setlist-booklet-fm-sub {
+    font-size: 13px;
+  }
+  body.export-mode-setlist #setlistPrintBooklet .setlist-booklet-fm-meta {
+    margin: 4px 0 12px;
+    font-size: 12px;
+  }
+  /* ...and its rows sit a touch tighter, to keep a long list on one sheet. */
+  body.export-mode-setlist #setlistPrintBooklet .setlist-stage-table tbody td {
+    padding-top: 3px;
+    padding-bottom: 3px;
+  }
 
   /* Every form opens with the front-matter block (title, which form it is, the
      instrument it's transposed for, the date). It carries the title, so the
