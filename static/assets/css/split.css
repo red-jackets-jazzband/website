@@ -2581,7 +2581,8 @@ body:has(#rjLibrary) .split-bio {
   cursor: pointer;
 }
 
-#instrument {
+#instrument,
+#comping {
   padding: 0px;
   font: inherit;
   font-size: inherit;
@@ -2605,7 +2606,9 @@ body:has(#rjLibrary) .split-bio {
   cascade. Same gotcha as the rest of this file's [hidden] companions.
 */
 .sheet-status .dropbtn,
-#sheetStatus #instrument {
+#sheetStatus #instrument,
+.sheet-comping .dropbtn,
+#compingSlot #comping {
   width: 100%;
   height: 44px;
   box-sizing: border-box;
@@ -2616,9 +2619,59 @@ body:has(#rjLibrary) .split-bio {
   font: 600 12px "Montserrat", sans-serif;
   padding: 0 14px;
 }
-.sheet-status .dropdown:hover .dropbtn {
+.sheet-status .dropdown:hover .dropbtn,
+.sheet-comping .dropdown:hover .dropbtn {
   background: var(--rj-gold);
   color: #222222;
+}
+
+/* Comping staff: the three chord-tone voices below the melody, colour-keyed
+   root / third / fifth (melody stays .abcjs-v0). Confirm the voice indices
+   against a live render — ABCjs numbers voices in %%staves order.
+   `.abcjs-vN text` catches notes/rests (descendants of the voice group);
+   `text.abcjs-vN` catches the R/3/5 voice-name label, which carries the
+   class on the <text> element itself. */
+.notation .abcjs-v1 path { fill: #222222; stroke: #222222; }
+.notation .abcjs-v1 text,
+.notation text.abcjs-v1 { fill: #222222; }
+.notation .abcjs-v2 path { fill: var(--rj-gold); stroke: var(--rj-gold); }
+.notation .abcjs-v2 text,
+.notation text.abcjs-v2 { fill: var(--rj-gold); }
+.notation .abcjs-v3 path { fill: var(--rj-hover); stroke: var(--rj-hover); }
+.notation .abcjs-v3 text,
+.notation text.abcjs-v3 { fill: var(--rj-hover); }
+
+/* ============================================================
+   Advanced controls toggle (double chevron in the sheet menu)
+   ============================================================
+   The chevron button is the last control on the top row and is always
+   visible; "advanced" items (currently just the comping dropdown, more
+   later) sit on their own second row and stay hidden until it's expanded.
+   State lives on #sheetmenu.show-advanced, set/persisted by
+   initAdvancedToggle. */
+#sheetmenu:not(.show-advanced) .sheet-adv-item {
+  display: none;
+}
+/* Advanced items break onto their own row under the top toolbar and left-
+   align with the instrument dropdown above. */
+.sheet-adv-item {
+  flex: 0 0 100%;
+  order: 1;
+}
+#compingSlot .dropdown {
+  display: block;
+  width: 100%;
+  max-width: 280px;
+}
+/* Same 44px box as Stop / Mute / Print so it aligns on the top row. */
+.sheet-advanced-toggle {
+  order: 1;
+}
+.sheet-advanced-toggle .fa-angles-right {
+  transition: transform 0.15s ease;
+}
+#sheetmenu.show-advanced .sheet-advanced-toggle .fa-angles-right {
+  transform: rotate(90deg);
 }
 
 /* ============================================================
