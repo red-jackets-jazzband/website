@@ -1,5 +1,3 @@
-"use strict";
-
 // Parses the "Name,file.abc" per-line index format shared by
 // index_of_songs.txt / index_of_songbook.txt / (later) index_of_setlists.txt.
 export function parseSongIndex(text) {

@@ -266,7 +266,7 @@ test("buildCompingTune transposes nothing itself (concert-pitch K: kept)", () =>
 test("buildCompingTune bass instrument stamps clef=bass on the comping voice", () => {
   const bassTune = TUNE.replace("K:C", "K:C clef=bass middle=D");
   const out = withTonal(() =>
-    buildCompingTune(bassTune, CHORDS, fakeSong(), "whole_note")
+    buildCompingTune(bassTune, CHORDS, fakeSong(), "whole_note"),
   );
   assert.match(out.abc, /^V:2 name="R\\n3\\n5" clef=bass middle=D/m);
 });
@@ -285,7 +285,7 @@ test("buildCompingTune returns null when it cannot apply", () => {
 test("buildCompingTune scales pattern durations to a L:1/4 tune", () => {
   const quarterTune = TUNE.replace("L:1/8", "L:1/4").replace(/C8/g, "C4").replace(/F8/, "F4").replace(/G8/, "G4");
   const out = withTonal(() =>
-    buildCompingTune(quarterTune, CHORDS, fakeSong(), "whole_note")
+    buildCompingTune(quarterTune, CHORDS, fakeSong(), "whole_note"),
   );
   assert.match(out.abc, /^L:1\/4$/m);
   // whole_note bar 1 is "n8-" in eighths -> "n4-" at L:1/4

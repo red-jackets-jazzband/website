@@ -9,7 +9,7 @@ test("extractYouTubeId handles watch?v= urls", () => {
 test("extractYouTubeId handles watch?v= urls with trailing params", () => {
   assert.equal(
     extractYouTubeId("https://www.youtube.com/watch?v=Kso7bHUq9A8&list=RDKso7bHUq9A8"),
-    "Kso7bHUq9A8"
+    "Kso7bHUq9A8",
   );
 });
 
@@ -32,14 +32,14 @@ test("extractYouTubeId returns null for non-string input", () => {
 test("youtubeEmbedUrl builds a privacy-enhanced embed url", () => {
   assert.equal(
     youtubeEmbedUrl("https://www.youtube.com/watch?v=q3HADwaCnkE"),
-    "https://www.youtube-nocookie.com/embed/q3HADwaCnkE?rel=0"
+    "https://www.youtube-nocookie.com/embed/q3HADwaCnkE?rel=0",
   );
 });
 
 test("youtubeEmbedUrl adds autoplay=1 when requested", () => {
   assert.equal(
     youtubeEmbedUrl("https://youtu.be/AqL60Xv_Sbc", true),
-    "https://www.youtube-nocookie.com/embed/AqL60Xv_Sbc?rel=0&autoplay=1"
+    "https://www.youtube-nocookie.com/embed/AqL60Xv_Sbc?rel=0&autoplay=1",
   );
 });
 
@@ -50,13 +50,13 @@ test("youtubeEmbedUrl returns null for an unrecognized url", () => {
 test("youtubeEmbedUrl adds the JS API params when jsApi is set", () => {
   assert.equal(
     youtubeEmbedUrl("https://youtu.be/AqL60Xv_Sbc", { autoplay: true, jsApi: true }),
-    "https://www.youtube-nocookie.com/embed/AqL60Xv_Sbc?rel=0&autoplay=1&enablejsapi=1&playsinline=1"
+    "https://www.youtube-nocookie.com/embed/AqL60Xv_Sbc?rel=0&autoplay=1&enablejsapi=1&playsinline=1",
   );
 });
 
 test("youtubeEmbedUrl appends an encoded origin when given", () => {
   assert.equal(
     youtubeEmbedUrl("https://youtu.be/AqL60Xv_Sbc", { jsApi: true, origin: "https://www.redjackets.nl" }),
-    "https://www.youtube-nocookie.com/embed/AqL60Xv_Sbc?rel=0&enablejsapi=1&playsinline=1&origin=https%3A%2F%2Fwww.redjackets.nl"
+    "https://www.youtube-nocookie.com/embed/AqL60Xv_Sbc?rel=0&enablejsapi=1&playsinline=1&origin=https%3A%2F%2Fwww.redjackets.nl",
   );
 });

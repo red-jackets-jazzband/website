@@ -1,5 +1,3 @@
-"use strict";
-
 // The instruments a chart can be read as. `value` matches the <option>
 // value historically produced by lowercasing/underscoring the label (kept
 // stable since it's part of the localStorage schema from Milestone 2

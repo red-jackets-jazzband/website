@@ -1,16 +1,12 @@
-"use strict";
-
-/* global Tonal */
-
 // Pitch class (0-11) of a note name. Prefers Tonal.js (loaded as a global
 // classic script alongside this module in the browser) for full enharmonic
 // handling, falling back to a small manual table so this still works in
 // Node (unit tests) or if Tonal fails to load.
 export function noteChroma(noteName) {
-  var normalized = noteName.replace(/♭/g, "b").replace(/♯/g, "#");
+  const normalized = noteName.replace(/♭/g, "b").replace(/♯/g, "#");
   if (typeof Tonal !== "undefined" && Tonal.Note) {
     try {
-      var n = Tonal.Note.get(normalized);
+      const n = Tonal.Note.get(normalized);
       // Tonal represents an unparseable note (e.g. "Am" — a chord, not a
       // plain note name — passed in when a setlist key override carries a
       // mode suffix) as chroma: NaN, not undefined. typeof NaN is still
@@ -21,11 +17,11 @@ export function noteChroma(noteName) {
       // fall through to the manual table below
     }
   }
-  var CHROMAS = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
-  var letter = normalized[0].toUpperCase();
-  var rest = normalized.slice(1);
-  var c = CHROMAS[letter] !== undefined ? CHROMAS[letter] : 0;
-  for (var i = 0; i < rest.length; i++) {
+  const CHROMAS = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+  const letter = normalized[0].toUpperCase();
+  const rest = normalized.slice(1);
+  let c = CHROMAS[letter] !== undefined ? CHROMAS[letter] : 0;
+  for (let i = 0; i < rest.length; i++) {
     if (rest[i] === "b") c--;
     else if (rest[i] === "#") c++;
   }
@@ -35,36 +31,36 @@ export function noteChroma(noteName) {
 export function chordToRomanNumeral(chordStr, keyRoot, keyMode) {
   if (!chordStr || chordStr === " % ") return chordStr;
 
-  var match = chordStr.match(/^([A-G][♭♯b#]?)(.*)/);
+  const match = chordStr.match(/^([A-G][♭♯b#]?)(.*)/);
   if (!match) return chordStr;
-  var chordRoot = match[1];
-  var suffix = match[2] || "";
+  const chordRoot = match[1];
+  const suffix = match[2] || "";
 
-  var interval = (noteChroma(chordRoot) - noteChroma(keyRoot) + 12) % 12;
-  var isMinorKey = keyMode && keyMode !== "" && keyMode !== "major" && keyMode !== "maj";
+  const interval = (noteChroma(chordRoot) - noteChroma(keyRoot) + 12) % 12;
+  const isMinorKey = keyMode && keyMode !== "" && keyMode !== "major" && keyMode !== "maj";
 
-  var MAJOR_MAP = {
+  const MAJOR_MAP = {
     0: [0, ""], 1: [1, "♭"], 2: [1, ""], 3: [2, "♭"], 4: [2, ""], 5: [3, ""],
     6: [3, "♯"], 7: [4, ""], 8: [5, "♭"], 9: [5, ""], 10: [6, "♭"], 11: [6, ""],
   };
-  var MINOR_MAP = {
+  const MINOR_MAP = {
     0: [0, ""], 1: [1, "♭"], 2: [1, ""], 3: [2, ""], 4: [2, "♯"], 5: [3, ""],
     6: [4, "♭"], 7: [4, ""], 8: [5, ""], 9: [5, "♯"], 10: [6, ""], 11: [6, "♯"],
   };
 
-  var entry = (isMinorKey ? MINOR_MAP : MAJOR_MAP)[interval] || [0, ""];
-  var ROMANS = ["I", "II", "III", "IV", "V", "VI", "VII"];
-  var romanBase = ROMANS[entry[0]];
-  var accidental = entry[1];
+  const entry = (isMinorKey ? MINOR_MAP : MAJOR_MAP)[interval] || [0, ""];
+  const ROMANS = ["I", "II", "III", "IV", "V", "VI", "VII"];
+  const romanBase = ROMANS[entry[0]];
+  const accidental = entry[1];
 
-  var isMinorChord = /^(m|min|-)(?!aj)/i.test(suffix);
-  var isHalfDim = /^(Ø|ø|m7[b♭]5)/i.test(suffix);
-  var isDim = /^(°|dim)/i.test(suffix);
-  var isAug = /^(\+|aug)/i.test(suffix);
-  var isMaj7 = /maj7|Δ/.test(suffix);
-  var numExt = (suffix.match(/\d+/) || [])[0] || "";
+  const isMinorChord = /^(m|min|-)(?!aj)/i.test(suffix);
+  const isHalfDim = /^(Ø|ø|m7[b♭]5)/i.test(suffix);
+  const isDim = /^(°|dim)/i.test(suffix);
+  const isAug = /^(\+|aug)/i.test(suffix);
+  const isMaj7 = /maj7|Δ/.test(suffix);
+  const numExt = (suffix.match(/\d+/) || [])[0] || "";
 
-  var roman;
+  let roman;
   if (isHalfDim) roman = romanBase.toLowerCase() + "ø7";
   else if (isDim) roman = romanBase.toLowerCase() + "°";
   else if (isMinorChord) roman = romanBase.toLowerCase() + numExt;
@@ -79,38 +75,38 @@ export function convertChordsToRoman(chords, song) {
   if (!chords || !chords.length || !song.lines || !song.lines[0]) return chords;
 
   // Build a per-line key map so key changes mid-song are handled
-  var lineKeys = song.lines.map(function(line) {
+  const lineKeys = song.lines.map((line) => {
     return (line.staff && line.staff[0] && line.staff[0].key) || null;
   });
 
   // Walk lines again to propagate: each line inherits the last known key
-  var resolvedKeys = [];
-  var lastKey = lineKeys[0] || { root: "C", acc: "", mode: "" };
-  for (var i = 0; i < lineKeys.length; i++) {
+  const resolvedKeys = [];
+  let lastKey = lineKeys[0] || { root: "C", acc: "", mode: "" };
+  for (let i = 0; i < lineKeys.length; i++) {
     if (lineKeys[i] && lineKeys[i].root) lastKey = lineKeys[i];
     resolvedKeys.push(lastKey);
   }
 
   // Count measures per line so we can map measure index → key
-  var measureKeyMap = [];
-  for (var li = 0; li < song.lines.length; li++) {
-    var line = song.lines[li];
+  const measureKeyMap = [];
+  for (let li = 0; li < song.lines.length; li++) {
+    const line = song.lines[li];
     if (!line.staff || !line.staff[0] || !line.staff[0].voices) continue;
-    var voice = line.staff[0].voices[0] || [];
-    var lineKey = resolvedKeys[li];
-    var currentKey = lineKey;
-    for (var j = 0; j < voice.length; j++) {
-      var el = voice[j];
+    const voice = line.staff[0].voices[0] || [];
+    const lineKey = resolvedKeys[li];
+    let currentKey = lineKey;
+    for (let j = 0; j < voice.length; j++) {
+      const el = voice[j];
       if (el.el_type === "keySignature" && el.key && el.key.root) currentKey = el.key;
       if (el.el_type === "bar") measureKeyMap.push(currentKey);
     }
   }
 
-  return chords.map(function(measure, idx) {
-    var key = measureKeyMap[idx] || resolvedKeys[0] || { root: "C", acc: "", mode: "" };
-    var keyRoot = key.root + (key.acc || "");
-    var keyMode = key.mode || "";
-    var romanText = measure.text.map(function(chordStr) {
+  return chords.map((measure, idx) => {
+    const key = measureKeyMap[idx] || resolvedKeys[0] || { root: "C", acc: "", mode: "" };
+    const keyRoot = key.root + (key.acc || "");
+    const keyMode = key.mode || "";
+    const romanText = measure.text.map((chordStr) => {
       return chordToRomanNumeral(chordStr, keyRoot, keyMode);
     });
     return Object.assign({}, measure, { text: romanText });
@@ -122,7 +118,7 @@ export function convertChordsToRoman(chords, song) {
 // "K:Bbmaj" doesn't get misread as "Bbm". Returns null if there's no K:
 // line to read (e.g. malformed input).
 export function extractKeyFromAbc(text) {
-  var match = text.match(/^K:\s*([A-Ga-g])([#b]?)/m);
+  const match = text.match(/^K:\s*([A-Ga-g])([#b]?)/m);
   return match ? match[1] + match[2] : null;
 }
 
@@ -133,14 +129,14 @@ export function extractKeyFromAbc(text) {
    Returns null when there's no Q: field or no number to read.
 */
 export function tempoBpmFromAbc(text) {
-  var line = String(text || "").match(/^Q:\s*(.+?)\s*$/m);
+  const line = String(text || "").match(/^Q:\s*(.+?)\s*$/m);
   if (!line) return null;
-  var body = line[1].replace(/"[^"]*"/g, " ").trim();
-  var afterEquals = body.match(/=\s*(\d+(?:\.\d+)?)/);
+  const body = line[1].replace(/"[^"]*"/g, " ").trim();
+  const afterEquals = body.match(/=\s*(\d+(?:\.\d+)?)/);
   if (afterEquals) return Math.round(parseFloat(afterEquals[1]));
   // No "=": a bare "Q:120" or "Q:1/4 120" — take a number that isn't the
   // denominator of a note-length fraction.
-  var bare = body.match(/(?:^|\s)(\d+(?:\.\d+)?)(?!\s*\/)/);
+  const bare = body.match(/(?:^|\s)(\d+(?:\.\d+)?)(?!\s*\/)/);
   return bare ? Math.round(parseFloat(bare[1])) : null;
 }
 
@@ -150,7 +146,7 @@ export function tempoBpmFromAbc(text) {
 // string are ignored; only the tonic pitch class matters for transposition.
 export function semitonesBetweenKeys(fromKeyStr, toKeyStr) {
   if (!fromKeyStr || !toKeyStr) return 0;
-  var diff = (noteChroma(toKeyStr) - noteChroma(fromKeyStr) + 12) % 12;
+  let diff = (noteChroma(toKeyStr) - noteChroma(fromKeyStr) + 12) % 12;
   if (diff > 6) diff -= 12;
   return diff;
 }
@@ -169,10 +165,10 @@ function isSemitoneOffset(raw) {
    0 for a blank/zero override.
 */
 export function setlistTransposeSteps(rawOverride, nativeKey) {
-  var trimmed = String(rawOverride == null ? "" : rawOverride).trim();
+  const trimmed = String(rawOverride == null ? "" : rawOverride).trim();
   if (!trimmed) return 0;
   if (isSemitoneOffset(trimmed)) {
-    var n = parseInt(trimmed, 10);
+    const n = parseInt(trimmed, 10);
     return Number.isFinite(n) ? n : 0;
   }
   return semitonesBetweenKeys(nativeKey || "C", trimmed);
@@ -181,7 +177,7 @@ export function setlistTransposeSteps(rawOverride, nativeKey) {
 // Names each pitch class the way a jazz chart tends to spell a key — flats
 // for the black notes (D♭, E♭, G♭, A♭, B♭). Good enough for a setlist key
 // badge you call on stage; not a full key-signature speller.
-var KEY_NAME_BY_CHROMA = ["C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B"];
+const KEY_NAME_BY_CHROMA = ["C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B"];
 
 /*
    Transpose a key name (letter + optional accidental; any trailing mode word
@@ -190,9 +186,9 @@ var KEY_NAME_BY_CHROMA = ["C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭
    the key spelled out ("B♭") rather than a raw semitone offset ("+2").
 */
 export function transposeKeyName(keyStr, semitones) {
-  var base = noteChroma(keyStr || "C");
-  var n = Math.round(Number(semitones) || 0);
-  var idx = (((base + n) % 12) + 12) % 12;
+  const base = noteChroma(keyStr || "C");
+  const n = Math.round(Number(semitones) || 0);
+  const idx = (((base + n) % 12) + 12) % 12;
   return KEY_NAME_BY_CHROMA[idx];
 }
 
@@ -200,10 +196,10 @@ export function transposeKeyName(keyStr, semitones) {
 // for a semitone offset (real minus sign), the key name as-is otherwise,
 // and "" for a blank or zero override (nothing to show).
 export function formatSetlistKeyLabel(rawOverride) {
-  var trimmed = String(rawOverride == null ? "" : rawOverride).trim();
+  const trimmed = String(rawOverride == null ? "" : rawOverride).trim();
   if (!trimmed) return "";
   if (isSemitoneOffset(trimmed)) {
-    var n = parseInt(trimmed, 10);
+    const n = parseInt(trimmed, 10);
     if (!Number.isFinite(n) || n === 0) return "";
     return (n > 0 ? "+" : "−") + Math.abs(n);
   }

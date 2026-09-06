@@ -4,7 +4,7 @@
   "type": "module",
   "description": "Dev tooling (lint + unit tests) for the Red Jackets Jazzband Hugo site's vanilla JS. Not part of the Hugo build or the GitHub Pages deploy.",
   "scripts": {
-    "lint": "eslint static/script/lib",
+    "lint": "eslint --max-warnings 0 static/script tests eslint.config.js",
     "test": "node --test \"static/script/lib/*.test.js\" \"static/script/songs/*.test.js\" \"tests/**/*.test.js\""
   },
   "devDependencies": {

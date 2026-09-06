@@ -47,7 +47,7 @@ test("clampHandleDrag keeps A left of B and B right of A", () => {
 });
 
 test("stepPlaybackRate walks the available rates and clamps", () => {
-  var rates = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+  const rates = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
   assert.equal(stepPlaybackRate(1, -1, rates), 0.75);
   assert.equal(stepPlaybackRate(1, 1, rates), 1.25);
   assert.equal(stepPlaybackRate(0.25, -1, rates), 0.25);

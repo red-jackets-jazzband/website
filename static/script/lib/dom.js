@@ -43,43 +43,43 @@ function appendChildren(node, children) {
   }
 }
 
+// Named prop handlers for `el`; anything not listed is set as a direct
+// property (id, type, href, disabled, ...).
+const PROP_HANDLERS = {
+  class: (node, value) => { node.className = value; },
+  className: (node, value) => { node.className = value; },
+  text: (node, value) => { node.textContent = value; },
+  textContent: (node, value) => { node.textContent = value; },
+  html: (node, value) => { node.innerHTML = value; },
+  innerHTML: (node, value) => { node.innerHTML = value; },
+  dataset: (node, value) => Object.assign(node.dataset, value),
+  style: (node, value) => Object.assign(node.style, value),
+  attrs: (node, value) => {
+    for (const [name, val] of Object.entries(value)) {
+      if (val != null) node.setAttribute(name, val);
+    }
+  },
+  on: (node, value) => {
+    for (const [event, handler] of Object.entries(value)) {
+      node.addEventListener(event, handler);
+    }
+  },
+};
+
 /*
-  Element factory. `props` keys:
-    class / className   -> element.className
-    text / textContent  -> element.textContent
-    html / innerHTML    -> element.innerHTML (trusted markup only)
-    dataset             -> Object.assign(element.dataset, value)
-    style               -> Object.assign(element.style, value)
-    attrs               -> setAttribute for each entry (nullish skipped)
-    on                  -> addEventListener for each { event: handler } entry
-    anything else       -> assigned as a direct property (id, type, href, ...)
-  `children` is a node, a string, or an array of them; nullish / false skipped.
+  Element factory. `props` keys: class/className, text/textContent,
+  html/innerHTML (trusted markup only), dataset, style, attrs (setAttribute per
+  entry, nullish skipped), on ({ event: handler } listeners); any other key is
+  assigned as a direct DOM property. `children` is a node, a string, or an
+  array of them; nullish / false entries are skipped.
 */
 export function el(tag, props = {}, children) {
   const node = document.createElement(tag);
   for (const [key, value] of Object.entries(props)) {
     if (value == null) continue;
-    if (key === "class" || key === "className") {
-      node.className = value;
-    } else if (key === "text" || key === "textContent") {
-      node.textContent = value;
-    } else if (key === "html" || key === "innerHTML") {
-      node.innerHTML = value;
-    } else if (key === "dataset") {
-      Object.assign(node.dataset, value);
-    } else if (key === "style") {
-      Object.assign(node.style, value);
-    } else if (key === "attrs") {
-      for (const [name, val] of Object.entries(value)) {
-        if (val != null) node.setAttribute(name, val);
-      }
-    } else if (key === "on") {
-      for (const [event, handler] of Object.entries(value)) {
-        node.addEventListener(event, handler);
-      }
-    } else {
-      node[key] = value;
-    }
+    const handler = PROP_HANDLERS[key];
+    if (handler) handler(node, value);
+    else node[key] = value;
   }
   appendChildren(node, children);
   return node;
