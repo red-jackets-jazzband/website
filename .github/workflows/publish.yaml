@@ -4,6 +4,12 @@ on:
   push:
     branches:
       - '**'
+  pull_request:
+
+# On branches/PRs, cancel superseded runs; never cancel a master run mid-deploy.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 
 permissions:
   contents: read
@@ -16,6 +22,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
       - run: npm ci
       - run: npm run lint
       - run: npm test
@@ -42,6 +49,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
     - build
+    if: github.ref == 'refs/heads/master'
     permissions:
       id-token: write
     steps:
@@ -52,7 +60,6 @@ jobs:
           path: public/
       - name: Publish
         uses: tsunematsu21/actions-publish-gh-pages@v1.0.2
-        if: github.ref == 'refs/heads/master'
         with:
           dir: public
           repo: red-jackets-jazzband/red-jackets-jazzband.github.io
