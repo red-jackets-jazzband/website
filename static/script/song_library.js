@@ -18,7 +18,6 @@ import {
   setPersonalSetlistOrder,
   copyBandSetlistToPersonal,
   exportPersonalSetlistText,
-  importPersonalSetlistText,
 } from "./lib/setlists-store.js";
 
 var allSongs = []; // [{ name, file }] from index_of_songs.txt, shared by both tabs
@@ -237,8 +236,8 @@ function showSetlistsHome() {
   currentPersonalId = null;
   currentOpenSongs = null;
 
-  // Home view has no top toolbar — "new setlist" and "import" live as a row
-  // at the bottom of the Yours list (see buildNewSetlistRow).
+  // Home view has no top toolbar — the "New setlist" button sits at the foot
+  // of the Yours list (buildNewSetlistButton) and opens #setlistModal.
   var setlistTools = document.getElementById("setlistTools");
   if (setlistTools) setlistTools.hidden = true;
 
@@ -276,35 +275,58 @@ function renderSetlistsHome() {
       listEl.appendChild(buildPersonalSetlistRow(entry));
     });
   }
-  listEl.appendChild(buildNewSetlistRow());
+  listEl.appendChild(buildNewSetlistButton());
 }
 
 /*
-   A fill-in-the-blank row at the foot of the Yours list: a name field plus
-   an icon to create it and an icon to import a .txt. There's no persistent
-   "new setlist name" box in a toolbar — a name is only needed at the moment
-   you make one.
+   A single "New setlist" button at the foot of the Yours list. It opens the
+   New-setlist modal (buildNewSetlistButton -> openSetlistModal), which is
+   where the name and the "start from" choice (empty / remix another setlist
+   / upload a .txt) are settled — a name is only ever needed at the moment
+   you make one, so the home list stays a clean shelf of setlists.
 */
-function buildNewSetlistRow() {
-  var row = document.createElement("DIV");
-  row.className = "rj-library-new-setlist";
+function buildNewSetlistButton() {
+  var btn = document.createElement("BUTTON");
+  btn.type = "button";
+  btn.className = "rj-library-new-setlist-btn";
+  btn.innerHTML =
+    '<span class="fa-solid fa-plus" aria-hidden="true"></span>' +
+    '<span>New setlist</span>';
+  btn.addEventListener("click", openSetlistModal);
+  return btn;
+}
 
-  var nameInput = document.createElement("INPUT");
-  nameInput.type = "text";
-  nameInput.placeholder = "New setlist name";
-  nameInput.autocomplete = "off";
-  row.appendChild(nameInput);
+// ============================================================
+// New-setlist modal (#setlistModal) — name + one of three starting points:
+//   empty  — a blank personal setlist
+//   remix  — seed it with a band or personal setlist's songs
+//   upload — import a .txt export (this device's or one carried over)
+// Created setlists are always personal and always editable; a created one
+// opens straight away in the same sheet a Library song opens in.
+// ============================================================
 
-  // "Start from existing" — seed the new (always personal, always editable)
-  // setlist with another one's songs. This replaces the old per-row
-  // "Copy to mine" button on band setlists.
-  var fromSelect = document.createElement("SELECT");
-  fromSelect.className = "rj-library-new-setlist-from";
-  fromSelect.setAttribute("aria-label", "Start from an existing setlist");
-  var blankOpt = document.createElement("OPTION");
-  blankOpt.value = "";
-  blankOpt.textContent = "Start from scratch";
-  fromSelect.appendChild(blankOpt);
+var modalChoice = "empty"; // "empty" | "remix" | "upload"
+
+function setModalChoice(choice) {
+  modalChoice = choice;
+  var choices = document.getElementById("setlistModalChoices");
+  if (choices) {
+    choices.querySelectorAll(".rj-modal-choice").forEach(function(btn) {
+      var on = btn.dataset.choice === choice;
+      btn.classList.toggle("active", on);
+      btn.setAttribute("aria-checked", on ? "true" : "false");
+    });
+  }
+  var remix = document.getElementById("setlistModalRemix");
+  var upload = document.getElementById("setlistModalUpload");
+  if (remix) remix.hidden = choice !== "remix";
+  if (upload) upload.hidden = choice !== "upload";
+}
+
+function populateModalSources() {
+  var select = document.getElementById("setlistModalSource");
+  if (!select) return;
+  select.innerHTML = "";
   if (setlistIndex.length) {
     var bandGroup = document.createElement("OPTGROUP");
     bandGroup.label = "From the band";
@@ -314,7 +336,7 @@ function buildNewSetlistRow() {
       opt.textContent = entry.name;
       bandGroup.appendChild(opt);
     });
-    fromSelect.appendChild(bandGroup);
+    select.appendChild(bandGroup);
   }
   var mine = listPersonalSetlists(storage());
   if (mine.length) {
@@ -326,82 +348,126 @@ function buildNewSetlistRow() {
       opt.textContent = entry.name;
       mineGroup.appendChild(opt);
     });
-    fromSelect.appendChild(mineGroup);
+    select.appendChild(mineGroup);
   }
-  row.appendChild(fromSelect);
+  if (!select.options.length) {
+    var opt = document.createElement("OPTION");
+    opt.value = "";
+    opt.textContent = "No setlists to remix";
+    opt.disabled = true;
+    select.appendChild(opt);
+  }
+}
 
-  function openNew(entry) {
-    nameInput.value = "";
-    fromSelect.value = "";
-    openPersonalSetlist(entry.id);
+function openSetlistModal() {
+  var overlay = document.getElementById("setlistModal");
+  if (!overlay) return;
+  var nameInput = document.getElementById("setlistModalName");
+  var fileInput = document.getElementById("setlistModalFile");
+  if (nameInput) nameInput.value = "";
+  if (fileInput) fileInput.value = "";
+  populateModalSources();
+  setModalChoice("empty");
+  overlay.hidden = false;
+  if (nameInput) nameInput.focus();
+}
+
+function closeSetlistModal() {
+  var overlay = document.getElementById("setlistModal");
+  if (overlay) overlay.hidden = true;
+}
+
+function openCreatedSetlist(entry) {
+  closeSetlistModal();
+  openPersonalSetlist(entry.id);
+}
+
+function createFromModal() {
+  var name = (document.getElementById("setlistModalName").value || "").trim();
+
+  if (modalChoice === "upload") {
+    var fileInput = document.getElementById("setlistModalFile");
+    var file = fileInput && fileInput.files[0];
+    if (!file) { if (fileInput) fileInput.click(); return; }
+    var reader = new FileReader();
+    reader.onload = function() {
+      var parsed = parseSetlistFile(String(reader.result));
+      openCreatedSetlist(copyBandSetlistToPersonal(storage(), {
+        name: name || parsed.name || file.name.replace(/\.txt$/i, ""),
+        desc: parsed.desc,
+        songs: parsed.songs,
+      }));
+    };
+    reader.readAsText(file);
+    return;
   }
 
-  function create() {
-    var name = (nameInput.value || "").trim();
-    var source = fromSelect.value;
-
-    if (!source) {
-      openNew(createPersonalSetlist(storage(), name || "New setlist"));
-      return;
-    }
+  if (modalChoice === "remix") {
+    var source = document.getElementById("setlistModalSource").value;
+    if (!source) return;
     if (source.indexOf("mine:") === 0) {
       var src = getPersonalSetlist(storage(), source.slice(5));
       if (!src) return;
-      openNew(copyBandSetlistToPersonal(storage(), {
+      openCreatedSetlist(copyBandSetlistToPersonal(storage(), {
         name: name || (src.name + " copy"),
         desc: src.desc,
         songs: src.songs,
       }));
       return;
     }
-    var file = source.slice(5); // "band:"
-    loadBandSetlist(file, function(parsed) {
-      openNew(copyBandSetlistToPersonal(storage(), {
-        name: name || parsed.name || file.replace(/\.txt$/i, ""),
+    var bandFile = source.slice(5); // "band:"
+    loadBandSetlist(bandFile, function(parsed) {
+      openCreatedSetlist(copyBandSetlistToPersonal(storage(), {
+        name: name || parsed.name || bandFile.replace(/\.txt$/i, ""),
         desc: parsed.desc,
         songs: parsed.songs,
       }));
     });
+    return;
   }
 
-  var createBtn = document.createElement("BUTTON");
-  createBtn.type = "button";
-  createBtn.className = "rj-library-tool-btn rj-library-tool-icon";
-  createBtn.title = "Create setlist";
-  createBtn.setAttribute("aria-label", "Create setlist");
-  createBtn.innerHTML = '<span class="fa-solid fa-plus" aria-hidden="true"></span>';
-  createBtn.addEventListener("click", create);
-  row.appendChild(createBtn);
+  openCreatedSetlist(createPersonalSetlist(storage(), name || "New setlist"));
+}
 
-  nameInput.addEventListener("keydown", function(e) {
-    if (e.key === "Enter") { e.preventDefault(); create(); }
+function initSetlistModal() {
+  var overlay = document.getElementById("setlistModal");
+  if (!overlay) return;
+
+  overlay.addEventListener("click", function(e) {
+    if (e.target === overlay) closeSetlistModal();
+  });
+  document.addEventListener("keydown", function(e) {
+    if (e.key === "Escape" && !overlay.hidden) closeSetlistModal();
   });
 
-  var importLabel = document.createElement("LABEL");
-  importLabel.className = "rj-library-tool-btn rj-library-tool-icon rj-library-import-label";
-  importLabel.title = "Import a setlist .txt file";
-  importLabel.setAttribute("aria-label", "Import a setlist .txt file");
-  importLabel.innerHTML = '<span class="fa-solid fa-file-import" aria-hidden="true"></span>';
+  var closeBtn = document.getElementById("setlistModalClose");
+  var cancelBtn = document.getElementById("setlistModalCancel");
+  if (closeBtn) closeBtn.addEventListener("click", closeSetlistModal);
+  if (cancelBtn) cancelBtn.addEventListener("click", closeSetlistModal);
 
-  var importInput = document.createElement("INPUT");
-  importInput.type = "file";
-  importInput.accept = ".txt";
-  importInput.hidden = true;
-  importInput.addEventListener("change", function() {
-    var file = importInput.files[0];
-    if (!file) return;
-    var reader = new FileReader();
-    reader.onload = function() {
-      importPersonalSetlistText(storage(), String(reader.result), file.name.replace(/\.txt$/i, ""));
-      importInput.value = "";
-      renderSetlistsHome();
-    };
-    reader.readAsText(file);
-  });
-  importLabel.appendChild(importInput);
-  row.appendChild(importLabel);
+  var choices = document.getElementById("setlistModalChoices");
+  if (choices) {
+    choices.querySelectorAll(".rj-modal-choice").forEach(function(btn) {
+      btn.addEventListener("click", function() { setModalChoice(btn.dataset.choice); });
+    });
+  }
 
-  return row;
+  var createBtn = document.getElementById("setlistModalCreate");
+  if (createBtn) createBtn.addEventListener("click", createFromModal);
+
+  var nameInput = document.getElementById("setlistModalName");
+  if (nameInput) {
+    nameInput.addEventListener("keydown", function(e) {
+      if (e.key === "Enter") { e.preventDefault(); createFromModal(); }
+    });
+  }
+
+  var fileInput = document.getElementById("setlistModalFile");
+  if (fileInput) {
+    fileInput.addEventListener("change", function() {
+      if (fileInput.files[0]) setModalChoice("upload");
+    });
+  }
 }
 
 function buildEmptyRow(text) {
@@ -437,7 +503,7 @@ function loadBandSetlist(file, onLoad, onError) {
   }, onError);
 }
 
-function buildSetlistRow(title, count, onOpen) {
+function buildSetlistRow(title, count, onOpen, onDelete) {
   var row = document.createElement("DIV");
   row.className = "song-list-item setlist-row";
 
@@ -452,6 +518,22 @@ function buildSetlistRow(title, count, onOpen) {
   meta.className = "setlist-row-meta";
   if (count != null) meta.textContent = songCountLabel(count);
   row.appendChild(meta);
+
+  // Personal setlists carry a trash icon on their overview row — deleting one
+  // is a home-view action, not something buried inside the open setlist.
+  if (onDelete) {
+    var del = document.createElement("BUTTON");
+    del.type = "button";
+    del.className = "setlist-row-delete";
+    del.title = "Delete setlist";
+    del.setAttribute("aria-label", "Delete setlist “" + title + "”");
+    del.innerHTML = '<span class="fa-solid fa-trash-can" aria-hidden="true"></span>';
+    del.addEventListener("click", function(e) {
+      e.stopPropagation();
+      onDelete();
+    });
+    row.appendChild(del);
+  }
 
   return { row: row, meta: meta };
 }
@@ -469,6 +551,11 @@ function buildBandSetlistRow(entry) {
 function buildPersonalSetlistRow(entry) {
   return buildSetlistRow(entry.name, countSetlistSongs(entry.songs), function() {
     openPersonalSetlist(entry.id);
+  }, function() {
+    if (!window.confirm("Delete “" + entry.name + "”? This can't be undone.")) return;
+    deletePersonalSetlist(storage(), entry.id);
+    if (currentPersonalId === entry.id) currentPersonalId = null;
+    renderSetlistsHome();
   }).row;
 }
 
@@ -519,7 +606,6 @@ function renderOpenSetlist(name, songs, personalEntry, desc) {
   var nameInput = document.getElementById("setlistNameInput");
   var renameBtn = document.getElementById("setlistRenameBtn");
   var exportBtn = document.getElementById("setlistExportBtn");
-  var deleteBtn = document.getElementById("setlistDeleteBtn");
 
   if (setlistTools) setlistTools.hidden = false;
   if (backBtn) backBtn.hidden = false;
@@ -527,7 +613,7 @@ function renderOpenSetlist(name, songs, personalEntry, desc) {
 
   // The title drops below the "Print …" group, sitting directly on top of
   // the song list — for band setlists and for personal ones (whose title
-  // carries the editable field + pencil/export/delete cluster) alike.
+  // carries the editable field + pencil/export cluster) alike.
   if (titleRow && openTools) openTools.append(titleRow);
 
   // The name reads as a plain heading; the pencil (personal only), or a
@@ -539,7 +625,6 @@ function renderOpenSetlist(name, songs, personalEntry, desc) {
   if (nameInput) nameInput.hidden = true;
   if (renameBtn) renameBtn.hidden = !isPersonal;
   if (exportBtn) exportBtn.hidden = !isPersonal;
-  if (deleteBtn) deleteBtn.hidden = !isPersonal;
 
   var listEl = document.getElementById("songList");
   listEl.innerHTML = "";
@@ -1193,9 +1278,11 @@ function initSetlistControls() {
   var backBtn = document.getElementById("setlistsBackBtn");
   if (backBtn) backBtn.addEventListener("click", showSetlistsHome);
 
-  // "New setlist" and "Import" are rendered per-view at the foot of the Yours
-  // list (buildNewSetlistRow); "Add song"/"Add break" at the foot of an open
-  // setlist (buildAddSongRow) — so those handlers are wired there, not here.
+  // The "New setlist" button is rendered per-view at the foot of the Yours
+  // list (buildNewSetlistButton) and opens the modal wired by initSetlistModal
+  // below; "Add song"/"Add break" live at the foot of an open setlist
+  // (buildAddSongRow) — so those handlers are wired there, not here.
+  initSetlistModal();
 
   initSetlistRename();
 
@@ -1236,15 +1323,6 @@ function initSetlistControls() {
     });
   }
 
-  var deleteBtn = document.getElementById("setlistDeleteBtn");
-  if (deleteBtn) {
-    deleteBtn.addEventListener("click", function() {
-      if (!currentPersonalId) return;
-      if (!window.confirm("Delete this setlist? This can't be undone.")) return;
-      deletePersonalSetlist(storage(), currentPersonalId);
-      showSetlistsHome();
-    });
-  }
 }
 
 /*
