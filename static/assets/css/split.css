@@ -1204,7 +1204,6 @@ video.video {
 .rj-setlist-crumb:hover {
   color: var(--rj-gold);
 }
-.rj-library-new-setlist,
 .rj-library-open-setlist,
 .rj-library-add-song {
   display: flex;
@@ -1226,11 +1225,9 @@ video.video {
 #setlistsBackBtn[hidden],
 #setlistNameInput[hidden],
 #setlistRenameBtn[hidden],
-#setlistExportBtn[hidden],
-#setlistDeleteBtn[hidden] {
+#setlistExportBtn[hidden] {
   display: none;
 }
-.rj-library-new-setlist input[type="text"],
 .rj-library-add-song input[type="search"] {
   flex: 1;
   min-width: 110px;
@@ -1245,7 +1242,7 @@ video.video {
 }
 /*
   Open-setlist title: a plain heading (not a form field) with a pencil, plus
-  export / delete as icon buttons alongside — a double-click on the heading
+  export as an icon button alongside — a double-click on the heading
   or the pencil swaps in .rj-setlist-title-input. It's moved (in JS) to the
   foot of the tools column, so it needs a little breathing room above the
   song list that follows.
@@ -1300,32 +1297,6 @@ video.video {
   border-color: var(--rj-gold);
   color: var(--rj-gold);
 }
-.rj-setlist-title-btn-danger:hover {
-  border-color: #a8442f;
-  color: #ca486d;
-}
-.rj-library-tool-btn {
-  height: 36px;
-  padding: 0 12px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: #2f2f2f;
-  border: 1px solid rgba(255,255,255,.1);
-  border-radius: 7px;
-  color: #dedcd8;
-  font: 600 11.5px "Montserrat", sans-serif;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.rj-library-tool-btn:hover {
-  border-color: var(--rj-gold);
-  color: var(--rj-gold);
-}
-.rj-library-tool-danger:hover {
-  border-color: #a8442f;
-  color: #ca486d;
-}
 /*
   The three "Print …" targets read as one control: a shared "Print" caption
   on its own line (same small-caps look as the sheet steppers' labels), then
@@ -1369,43 +1340,187 @@ video.video {
   background: #383838;
   color: var(--rj-gold);
 }
-/* Icon-only variant, used by the new-setlist / import row in the Yours list. */
-.rj-library-tool-icon {
-  flex: none;
-  width: 36px;
-  padding: 0;
-  font-size: 12px;
+/*
+  A single "New setlist" button at the foot of the Yours list, inside the
+  scrolling #songList — set off from the setlist rows above by a hairline
+  rule. It opens #setlistModal; the name and the "start from" choice are
+  settled there, not inline.
+*/
+.rj-library-list .rj-library-new-setlist-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 38px;
+  box-sizing: border-box;
+  margin-top: 6px;
+  padding: 12px 4px;
+  background: none;
+  border: 1px dashed rgba(255,255,255,.18);
+  border-radius: 7px;
+  color: rgba(230,228,224,.7);
+  font: 600 12px "Montserrat", sans-serif;
+  cursor: pointer;
+  transition: color .15s, border-color .15s;
 }
-.rj-library-import-label input[type="file"] {
-  display: none;
+.rj-library-list .rj-library-new-setlist-btn > .fa-plus {
+  font-size: 10px;
+}
+.rj-library-list .rj-library-new-setlist-btn:hover {
+  border-color: var(--rj-gold);
+  color: var(--rj-gold);
 }
 
 /*
-  The new-setlist row sits at the foot of the Yours list inside the scrolling
-  #songList, not in the top toolbar — set it off from the setlist rows above.
+  New-setlist modal (#setlistModal). A centred dialog over a dimmed backdrop;
+  clicking the backdrop or pressing Escape closes it (see initSetlistModal).
 */
-.rj-library-list .rj-library-new-setlist {
-  padding: 12px 4px 4px;
-  margin-top: 4px;
-  border-top: 1px solid rgba(255,255,255,.06);
+.rj-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0,0,0,.62);
 }
-/* Name takes the first line on its own; "start from" + the two icons share
-   the second line. */
-.rj-library-list .rj-library-new-setlist input[type="text"] {
-  flex-basis: 100%;
+.rj-modal-overlay[hidden] {
+  display: none;
 }
-.rj-library-new-setlist-from {
-  flex: 1;
-  min-width: 110px;
-  height: 36px;
+.rj-modal {
+  width: 340px;
+  max-width: 100%;
   box-sizing: border-box;
-  padding: 0 8px;
+  padding: 20px;
+  background: #1b1b1b;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 12px;
+  box-shadow: 0 24px 60px rgba(0,0,0,.6);
+}
+.rj-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.rj-modal-title {
+  margin: 0;
+  color: #eceae6;
+  font: 700 16px "Montserrat", sans-serif;
+}
+.rj-modal-close {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  background: none;
+  border: none;
+  color: rgba(230,228,224,.55);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  transition: color .15s;
+}
+.rj-modal-close:hover {
+  color: var(--rj-gold);
+}
+.rj-modal-label {
+  display: block;
+  margin: 12px 0 5px;
+  color: rgba(230,228,224,.45);
+  font: 700 10px "Montserrat", sans-serif;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+}
+.rj-modal-label:first-of-type {
+  margin-top: 0;
+}
+.rj-modal-input {
+  width: 100%;
+  box-sizing: border-box;
+  height: 38px;
+  padding: 0 10px;
   background: #262626;
   border: 1px solid rgba(255,255,255,.1);
   border-radius: 7px;
   color: #dedcd8;
-  font: 500 12px "Montserrat", sans-serif;
+  font: 500 12.5px "Montserrat", sans-serif;
+}
+.rj-modal-input:focus {
+  outline: none;
+  border-color: var(--rj-gold);
+}
+select.rj-modal-input {
   cursor: pointer;
+}
+.rj-modal-choices {
+  display: flex;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 7px;
+  overflow: hidden;
+}
+.rj-modal-choice {
+  flex: 1;
+  height: 34px;
+  padding: 0 4px;
+  background: #2f2f2f;
+  border: 0;
+  color: rgba(230,228,224,.7);
+  font: 600 10.5px "Montserrat", sans-serif;
+  cursor: pointer;
+  transition: background-color .15s, color .15s;
+}
+.rj-modal-choice + .rj-modal-choice {
+  border-left: 1px solid rgba(255,255,255,.1);
+}
+.rj-modal-choice:hover {
+  color: var(--rj-gold);
+}
+.rj-modal-choice.active {
+  background: var(--rj-gold);
+  color: #1b1b1b;
+}
+.rj-modal-context {
+  margin-top: 10px;
+}
+.rj-modal-context[hidden] {
+  display: none;
+}
+.rj-modal-file {
+  width: 100%;
+  color: #dedcd8;
+  font: 500 12px "Montserrat", sans-serif;
+}
+.rj-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+.rj-modal-btn {
+  height: 36px;
+  padding: 0 16px;
+  background: #2f2f2f;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 7px;
+  color: #dedcd8;
+  font: 600 11.5px "Montserrat", sans-serif;
+  cursor: pointer;
+  transition: border-color .15s, color .15s;
+}
+.rj-modal-btn:hover {
+  border-color: var(--rj-gold);
+  color: var(--rj-gold);
+}
+.rj-modal-btn-primary {
+  background: var(--rj-gold);
+  border-color: var(--rj-gold);
+  color: #1b1b1b;
+}
+.rj-modal-btn-primary:hover {
+  color: #1b1b1b;
+  filter: brightness(1.08);
 }
 /*
   The "add to setlist" zone at the foot of an open personal setlist's song
@@ -1601,6 +1716,29 @@ video.video {
   padding: 0 10px;
   color: rgba(236,234,230,.4);
   font: 600 10.5px "Montserrat", sans-serif;
+}
+/* Trash icon on a personal setlist's overview row — muted until row hover. */
+.setlist-row-delete {
+  flex: none;
+  align-self: stretch;
+  width: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  border-left: 1px solid rgba(255,255,255,.06);
+  color: rgba(236,234,230,.25);
+  font-size: 12px;
+  cursor: pointer;
+  transition: color .15s, background-color .15s;
+}
+.setlist-row:hover .setlist-row-delete {
+  color: rgba(236,234,230,.5);
+}
+.setlist-row-delete:hover {
+  color: #ca486d;
+  background: rgba(202,72,109,.1);
 }
 .song-list-item.setlist-song-row {
   display: flex;

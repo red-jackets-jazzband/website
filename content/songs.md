@@ -36,7 +36,6 @@ aliases: ["/setlists/", "/songbook/"]
         <input type="text" id="setlistNameInput" class="rj-setlist-title-input" aria-label="Setlist name" hidden>
         <button type="button" id="setlistRenameBtn" class="rj-setlist-title-btn" title="Rename" aria-label="Rename setlist" hidden><span class="fa-solid fa-pencil" aria-hidden="true"></span></button>
         <button type="button" id="setlistExportBtn" class="rj-setlist-title-btn" title="Export as a .txt file" aria-label="Export setlist as a .txt file" hidden><span class="fa-solid fa-file-arrow-down" aria-hidden="true"></span></button>
-        <button type="button" id="setlistDeleteBtn" class="rj-setlist-title-btn rj-setlist-title-btn-danger" title="Delete setlist" aria-label="Delete setlist" hidden><span class="fa-solid fa-trash-can" aria-hidden="true"></span></button>
       </div>
       <div class="rj-library-print-group" role="group" aria-labelledby="rjPrintLabel">
         <span class="rj-library-print-label" id="rjPrintLabel">Print</span>
@@ -108,6 +107,33 @@ Retrieved from www.redjackets.nl - <span id="instrumentText"></span>
 </div>
 
 <div id="setlistPrintBooklet" class="hideOnScreen"></div>
+
+<div id="setlistModal" class="rj-modal-overlay" hidden>
+  <div class="rj-modal" role="dialog" aria-modal="true" aria-labelledby="setlistModalTitle">
+    <div class="rj-modal-head">
+      <h2 class="rj-modal-title" id="setlistModalTitle">New setlist</h2>
+      <button type="button" id="setlistModalClose" class="rj-modal-close" aria-label="Close">&times;</button>
+    </div>
+    <label class="rj-modal-label" for="setlistModalName">Name</label>
+    <input type="text" id="setlistModalName" class="rj-modal-input" placeholder="New setlist name" autocomplete="off">
+    <div class="rj-modal-label" id="setlistModalStartLabel">Start from</div>
+    <div class="rj-modal-choices" id="setlistModalChoices" role="radiogroup" aria-labelledby="setlistModalStartLabel">
+      <button type="button" class="rj-modal-choice active" data-choice="empty" role="radio" aria-checked="true">Empty</button>
+      <button type="button" class="rj-modal-choice" data-choice="remix" role="radio" aria-checked="false">Remix a setlist</button>
+      <button type="button" class="rj-modal-choice" data-choice="upload" role="radio" aria-checked="false">Upload a .txt</button>
+    </div>
+    <div class="rj-modal-context" id="setlistModalRemix" hidden>
+      <select id="setlistModalSource" class="rj-modal-input" aria-label="Setlist to remix"></select>
+    </div>
+    <div class="rj-modal-context" id="setlistModalUpload" hidden>
+      <input type="file" id="setlistModalFile" class="rj-modal-file" accept=".txt">
+    </div>
+    <div class="rj-modal-actions">
+      <button type="button" id="setlistModalCancel" class="rj-modal-btn">Cancel</button>
+      <button type="button" id="setlistModalCreate" class="rj-modal-btn rj-modal-btn-primary">Create</button>
+    </div>
+  </div>
+</div>
 
 <div id="inspirationPanel" class="inspiration-panel hideOnprint" hidden>
   <div class="inspiration-panel-header" id="inspirationPanelHeader">
