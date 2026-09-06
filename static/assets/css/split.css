@@ -1223,15 +1223,14 @@ video.video {
 */
 #setlistTools[hidden],
 #openSetlistTools[hidden],
-#addSongRow[hidden],
 #setlistsBackBtn[hidden],
 #setlistNameInput[hidden],
+#setlistRenameBtn[hidden],
 #setlistExportBtn[hidden],
 #setlistDeleteBtn[hidden] {
   display: none;
 }
 .rj-library-new-setlist input[type="text"],
-.rj-library-name-input,
 .rj-library-add-song input[type="search"] {
   flex: 1;
   min-width: 110px;
@@ -1244,9 +1243,66 @@ video.video {
   color: #dedcd8;
   font: 500 12.5px "Montserrat", sans-serif;
 }
-.rj-library-name-input {
+/*
+  Open-setlist title: a plain heading (not a form field) with a pencil, plus
+  export / delete as icon buttons alongside — a double-click on the heading
+  or the pencil swaps in .rj-setlist-title-input. It's moved (in JS) to the
+  foot of the tools column, so it needs a little breathing room above the
+  song list that follows.
+*/
+.rj-setlist-title-row {
+  flex-basis: 100%;
+  min-width: 0; /* let the nowrap title shrink instead of overflowing the panel */
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  padding-bottom: 10px;
+}
+.rj-setlist-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: #eceae6;
-  font-weight: 700;
+  font: 700 15px "Montserrat", sans-serif;
+  cursor: text;
+}
+.rj-setlist-title-input {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+  box-sizing: border-box;
+  padding: 0 8px;
+  background: #262626;
+  border: 1px solid var(--rj-gold);
+  border-radius: 7px;
+  color: #eceae6;
+  font: 700 14px "Montserrat", sans-serif;
+}
+.rj-setlist-title-btn {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 7px;
+  color: rgba(230,228,224,.6);
+  font-size: 12px;
+  cursor: pointer;
+  transition: color .15s, border-color .15s;
+}
+.rj-setlist-title-btn:hover {
+  border-color: var(--rj-gold);
+  color: var(--rj-gold);
+}
+.rj-setlist-title-btn-danger:hover {
+  border-color: #a8442f;
+  color: #ca486d;
 }
 .rj-library-tool-btn {
   height: 36px;
@@ -1351,23 +1407,161 @@ video.video {
   font: 500 12px "Montserrat", sans-serif;
   cursor: pointer;
 }
-.rj-library-add-song-results {
-  flex-basis: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+/*
+  The "add to setlist" zone at the foot of an open personal setlist's song
+  list (inside the scrolling #songList, below the last row). It is framed
+  exactly like the "New setlist" row at the foot of the Yours list — a
+  hairline rule, then content at the same 4px inset the song rows use, so
+  its left edge lines up with the drag handles above it rather than starting
+  a new indent level. The shared `.rj-library-add-song` flex-row rule is
+  overridden to a plain block here.
+
+  Everything inside sits on a 2-column grid: a 34px icon gutter (the search
+  magnifier, each result's +, and the break button's + all centre in it)
+  and a text column that starts at 34px (the placeholder, every result
+  title, and the break label all share that left edge). Every slot is 36px
+  tall with a 7px radius; the vertical rhythm is an 8px base (label→field 8,
+  field→break 6, results 4).
+*/
+.rj-library-list .rj-library-add-song-inline {
+  display: block;
+  margin-top: 8px;
+  padding: 12px 4px 4px;
+  border-top: 1px solid rgba(255,255,255,.06);
 }
-.rj-library-add-song-result {
-  text-align: left;
-  padding: 8px 10px;
+.rj-library-add-label {
+  color: rgba(230,228,224,.45);
+  font: 700 10px "Montserrat", sans-serif;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+  margin: 0 0 8px;
+}
+.rj-library-add-song-field {
+  display: block;
+}
+/* A leading magnifier, centred in the shared 34px icon gutter. */
+.rj-library-add-song-inputwrap {
+  position: relative;
+}
+.rj-library-add-song-inputwrap > .fa-magnifying-glass {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 34px;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  color: rgba(230,228,224,.4);
+  pointer-events: none;
+}
+.rj-library-list .rj-library-add-song-inline input[type="search"] {
+  width: 100%;
+  height: 36px;
+  box-sizing: border-box;
+  padding: 0 12px 0 34px;
   background: #262626;
-  border: 1px solid rgba(255,255,255,.08);
-  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 7px;
   color: #dedcd8;
   font: 500 12.5px "Montserrat", sans-serif;
+}
+.rj-library-list .rj-library-add-song-inline input[type="search"]:focus {
+  outline: none;
+  border-color: var(--rj-gold);
+}
+.rj-library-add-song-inline input[type="search"]::placeholder {
+  color: rgba(230,228,224,.4);
+}
+/*
+  Results open in normal flow between the field and the break button while
+  you type — the foot of the list can grow and #songList scrolls, which
+  keeps this clear of the scroll container's overflow clipping. The query
+  and its results survive each add (see song_library.js) so a run of songs
+  goes in with one search.
+*/
+.rj-library-add-song-results {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.rj-library-add-song-results.is-open {
+  margin-top: 4px;
+}
+.rj-library-add-song-result {
+  display: flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 12px 0 0;
+  text-align: left;
+  background: #242424;
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 6px;
+  color: #cbc9c4;
+  font: 500 12.5px "Montserrat", sans-serif;
   cursor: pointer;
+  transition: color .15s, border-color .15s;
+}
+.rj-library-add-song-result > .fa-plus {
+  flex: none;
+  width: 34px;
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  color: rgba(230,228,224,.3);
+}
+.rj-library-add-song-result-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .rj-library-add-song-result:hover {
+  border-color: var(--rj-gold);
+  color: var(--rj-gold);
+}
+.rj-library-add-song-result:hover > .fa-plus {
+  color: var(--rj-gold);
+}
+.rj-library-add-song-empty {
+  padding: 4px 0 0 34px;
+  font: 400 12px "Lora", serif;
+  font-style: italic;
+  color: rgba(230,228,224,.5);
+}
+/*
+  "Add a set break" — a peer slot to the search field (same height, radius
+  and 34px icon gutter, so the two line up), but a button, not a field:
+  transparent fill and it lifts to gold on hover.
+*/
+.rj-library-add-break {
+  width: 100%;
+  height: 36px;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px 0 0;
+  background: none;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 7px;
+  color: rgba(230,228,224,.6);
+  font: 600 12px "Montserrat", sans-serif;
+  cursor: pointer;
+  transition: color .15s, border-color .15s;
+}
+.rj-library-add-break > .fa-plus {
+  flex: none;
+  width: 34px;
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+}
+.rj-library-add-break > .rj-library-add-break-label {
+  flex: 1;
+  text-align: left;
+}
+.rj-library-add-break:hover {
   border-color: var(--rj-gold);
   color: var(--rj-gold);
 }
@@ -1442,18 +1636,64 @@ video.video {
   font: 600 11px "JetBrains Mono", monospace;
   color: rgba(230,228,224,.4);
 }
-.setlist-song-key-input {
+/* Per-song transpose, in semitones (personal setlists). A bare number field
+   — the spinners are hidden to keep it narrow; type or paste a signed int. */
+.setlist-song-semitones {
   flex: none;
-  width: 40px;
+  width: 42px;
   height: 26px;
   box-sizing: border-box;
-  padding: 0 4px;
+  padding: 0 2px 0 4px;
   background: #1f1f1f;
   border: 1px solid rgba(255,255,255,.1);
   border-radius: 6px;
   color: var(--rj-gold);
   font: 600 11px "JetBrains Mono", monospace;
   text-align: center;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.setlist-song-semitones::-webkit-outer-spin-button,
+.setlist-song-semitones::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+/* Drag handle for reordering rows in an open personal setlist. Drag it, or
+   focus it and press the up/down arrows. */
+.setlist-drag-handle {
+  flex: none;
+  align-self: stretch;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  color: rgba(236,234,230,.35);
+  font-size: 11px;
+  cursor: grab;
+  touch-action: none;
+}
+.setlist-drag-handle:hover {
+  color: var(--rj-gold);
+}
+.setlist-drag-handle:focus-visible {
+  outline: none;
+  color: var(--rj-gold);
+  box-shadow: 0 0 0 1px var(--rj-gold);
+}
+/* The row follows the pointer live (it's relocated in the DOM as you drag),
+   so it just needs to read as "picked up" while it moves. */
+.setlist-row-dragging {
+  opacity: .5;
+  background: rgba(226,157,15,.08);
+  box-shadow: inset 0 0 0 1px rgba(226,157,15,.35);
+  border-radius: 6px;
+}
+body.setlist-dragging {
+  cursor: grabbing;
+  user-select: none;
 }
 .setlist-song-btn {
   flex: none;
@@ -1469,13 +1709,9 @@ video.video {
   font-size: 11px;
   padding: 0;
 }
-.setlist-song-btn:hover:not(:disabled) {
+.setlist-song-btn:hover {
   border-color: var(--rj-gold);
   color: var(--rj-gold);
-}
-.setlist-song-btn:disabled {
-  opacity: .3;
-  cursor: default;
 }
 .setlist-song-remove:hover {
   border-color: #a8442f !important;
@@ -1488,7 +1724,7 @@ video.video {
 }
 /* Set dividers ("break") inside an open setlist. A read-only band setlist
    shows a plain "Set N" heading (reusing .song-list-letter); a personal one
-   shows an editable label plus the same move/remove controls as a song. */
+   shows an editable label plus the same drag/remove controls as a song. */
 .setlist-set-heading {
   border-top: 1px solid rgba(255,255,255,.08);
   margin-top: 6px;

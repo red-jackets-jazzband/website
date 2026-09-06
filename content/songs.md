@@ -31,7 +31,13 @@ aliases: ["/setlists/", "/songbook/"]
   <div class="rj-library-setlist-tools" id="setlistTools" hidden>
     <button type="button" class="rj-setlist-crumb" id="setlistsBackBtn" hidden><span class="fa-solid fa-chevron-left" aria-hidden="true"></span><span>All setlists</span></button>
     <div class="rj-library-open-setlist" id="openSetlistTools" hidden>
-      <input type="text" id="setlistNameInput" class="rj-library-name-input" hidden>
+      <div class="rj-setlist-title-row" id="setlistTitleRow">
+        <div class="rj-setlist-title" id="setlistTitleText" title="Double-click to rename"></div>
+        <input type="text" id="setlistNameInput" class="rj-setlist-title-input" aria-label="Setlist name" hidden>
+        <button type="button" id="setlistRenameBtn" class="rj-setlist-title-btn" title="Rename" aria-label="Rename setlist" hidden><span class="fa-solid fa-pencil" aria-hidden="true"></span></button>
+        <button type="button" id="setlistExportBtn" class="rj-setlist-title-btn" title="Export as a .txt file" aria-label="Export setlist as a .txt file" hidden><span class="fa-solid fa-file-arrow-down" aria-hidden="true"></span></button>
+        <button type="button" id="setlistDeleteBtn" class="rj-setlist-title-btn rj-setlist-title-btn-danger" title="Delete setlist" aria-label="Delete setlist" hidden><span class="fa-solid fa-trash-can" aria-hidden="true"></span></button>
+      </div>
       <div class="rj-library-print-group" role="group" aria-labelledby="rjPrintLabel">
         <span class="rj-library-print-label" id="rjPrintLabel">Print</span>
         <div class="rj-library-print-seg">
@@ -40,13 +46,6 @@ aliases: ["/setlists/", "/songbook/"]
           <button type="button" id="printSongbookBtn" class="rj-library-print-btn">Songbook</button>
         </div>
       </div>
-      <button type="button" id="setlistExportBtn" class="rj-library-tool-btn" hidden>Export</button>
-      <button type="button" id="setlistDeleteBtn" class="rj-library-tool-btn rj-library-tool-danger" hidden>Delete</button>
-    </div>
-    <div class="rj-library-add-song" id="addSongRow" hidden>
-      <input type="search" id="setlistAddSongSearch" placeholder="Add a song&hellip;" autocomplete="off">
-      <button type="button" id="setlistAddBreakBtn" class="rj-library-tool-btn">Add break</button>
-      <div id="setlistAddSongResults" class="rj-library-add-song-results"></div>
     </div>
   </div>
 

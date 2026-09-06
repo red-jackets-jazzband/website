@@ -111,18 +111,28 @@ export function updateSongKeyInPersonalSetlist(storage, id, index, key) {
   writeStorage(storage, list);
 }
 
-// Swaps the song at `index` with its neighbor at `index + direction`
-// (direction: -1 to move up, +1 to move down). No-op at the ends.
-export function moveSongInPersonalSetlist(storage, id, index, direction) {
+/*
+   Reorders the whole `songs` array (items and dividers alike) to match
+   `order`, a permutation of its indices — `order[k]` is the current index
+   of the item that should end up at position `k`. This is what both the
+   drag-to-reorder and the keyboard nudge produce: the UI works out the new
+   arrangement, then hands the finished permutation here. No-op unless
+   `order` is a genuine permutation of exactly `0..songs.length-1`.
+*/
+export function setPersonalSetlistOrder(storage, id, order) {
   var list = readStorage(storage);
   var entry = findEntry(list, id);
   if (entry) {
     var songs = entry.songs;
-    var target = index + direction;
-    if (target >= 0 && target < songs.length) {
-      var tmp = songs[index];
-      songs[index] = songs[target];
-      songs[target] = tmp;
+    var seen = {};
+    var valid = Array.isArray(order) && order.length === songs.length &&
+      order.every(function(i) {
+        if (typeof i !== "number" || i < 0 || i >= songs.length || seen[i]) return false;
+        seen[i] = true;
+        return true;
+      });
+    if (valid) {
+      entry.songs = order.map(function(i) { return songs[i]; });
     }
   }
   writeStorage(storage, list);

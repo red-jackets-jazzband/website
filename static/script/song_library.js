@@ -3,7 +3,7 @@
 import { renderSong, renderSongTextWithOverride, readFile, renderAbcFile, clearBookletPrintState } from "./render_abc.js";
 import { parseSongIndex, groupSongsByLetter, filterSongsByQuery, songTitleSlug } from "./lib/song-index.js";
 import { parseSetlistFile, isSetlistDivider } from "./lib/setlist-format.js";
-import { extractKeyFromAbc, semitonesBetweenKeys } from "./lib/music-theory.js";
+import { extractKeyFromAbc, setlistTransposeSteps, formatSetlistKeyLabel } from "./lib/music-theory.js";
 import {
   listPersonalSetlists,
   getPersonalSetlist,
@@ -15,7 +15,7 @@ import {
   updateSongKeyInPersonalSetlist,
   addDividerToPersonalSetlist,
   updateDividerLabelInPersonalSetlist,
-  moveSongInPersonalSetlist,
+  setPersonalSetlistOrder,
   copyBandSetlistToPersonal,
   exportPersonalSetlistText,
   importPersonalSetlistText,
@@ -30,6 +30,8 @@ var activeTab = "library"; // "library" | "setlists"
 var setlistsView = "home"; // "home" | "open"
 var currentPersonalId = null; // set while an editable personal setlist is open
 var currentOpenSongs = null; // songs array of the currently open setlist
+var focusAddSongAfterRender = false; // return focus to the add-song box after a re-render
+var addSongQuery = ""; // last add-a-song search text, re-applied after a re-render so a run of songs goes in with one search
 
 function storage() {
   try {
@@ -502,36 +504,41 @@ function renderOpenSetlist(name, songs, personalEntry, desc) {
   setlistsView = "open";
   currentOpenSongs = songs;
 
+  var isPersonal = !!personalEntry;
+  if (!isPersonal) addSongQuery = "";
+
   var setlistTools = document.getElementById("setlistTools");
   var backBtn = document.getElementById("setlistsBackBtn");
   var openTools = document.getElementById("openSetlistTools");
-  var addRow = document.getElementById("addSongRow");
+  var titleRow = document.getElementById("setlistTitleRow");
+  var titleText = document.getElementById("setlistTitleText");
   var nameInput = document.getElementById("setlistNameInput");
+  var renameBtn = document.getElementById("setlistRenameBtn");
   var exportBtn = document.getElementById("setlistExportBtn");
   var deleteBtn = document.getElementById("setlistDeleteBtn");
 
   if (setlistTools) setlistTools.hidden = false;
   if (backBtn) backBtn.hidden = false;
   if (openTools) openTools.hidden = false;
-  if (addRow) addRow.hidden = !personalEntry;
 
-  var isPersonal = !!personalEntry;
-  if (nameInput) {
-    nameInput.hidden = !isPersonal;
-    if (isPersonal && document.activeElement !== nameInput) nameInput.value = name;
+  // The title drops below the "Print …" group, sitting directly on top of
+  // the song list — for band setlists and for personal ones (whose title
+  // carries the editable field + pencil/export/delete cluster) alike.
+  if (titleRow && openTools) openTools.append(titleRow);
+
+  // The name reads as a plain heading; the pencil (personal only), or a
+  // double-click on it, swaps in the edit field — see initSetlistControls.
+  if (titleText) {
+    titleText.hidden = false;
+    titleText.textContent = name;
   }
+  if (nameInput) nameInput.hidden = true;
+  if (renameBtn) renameBtn.hidden = !isPersonal;
   if (exportBtn) exportBtn.hidden = !isPersonal;
   if (deleteBtn) deleteBtn.hidden = !isPersonal;
 
   var listEl = document.getElementById("songList");
   listEl.innerHTML = "";
-
-  if (!isPersonal) {
-    var heading = document.createElement("DIV");
-    heading.className = "song-list-letter";
-    heading.textContent = name;
-    listEl.appendChild(heading);
-  }
 
   // A setlist can be split into sets by "break" dividers (Set 1 before the
   // first break, Set 2 after it, …). When there's at least one, song numbers
@@ -547,55 +554,183 @@ function renderOpenSetlist(name, songs, personalEntry, desc) {
     if (isSetlistDivider(item)) {
       setNumber += 1;
       songInSet = 0;
-      listEl.appendChild(buildSetlistDividerRow(item, index, songs, personalEntry, setNumber));
+      listEl.appendChild(buildSetlistDividerRow(item, index, personalEntry, setNumber));
       return;
     }
     songInSet += 1;
-    listEl.appendChild(buildSetlistSongRow(item, index, songs, personalEntry, hasDividers ? songInSet : index + 1));
+    listEl.appendChild(buildSetlistSongRow(item, index, personalEntry, hasDividers ? songInSet : index + 1));
   });
 
   if (songs.length === 0) {
     listEl.appendChild(buildEmptyRow(isPersonal ? "No songs yet — add one below." : "This setlist has no songs."));
   }
 
+  if (isPersonal) {
+    listEl.appendChild(buildAddSongRow());
+    if (focusAddSongAfterRender) {
+      focusAddSongAfterRender = false;
+      var addSearch = document.getElementById("setlistAddSongSearch");
+      if (addSearch) {
+        addSearch.value = addSongQuery;
+        addSearch.focus();
+        if (addSongQuery) {
+          ensureSongsLoaded(function() { renderAddSongResults(addSongQuery); });
+        }
+      }
+    }
+    if (focusHandleAfterRender != null) {
+      var handles = listEl.querySelectorAll(".setlist-drag-handle");
+      if (handles[focusHandleAfterRender]) handles[focusHandleAfterRender].focus();
+      focusHandleAfterRender = null;
+    }
+  }
+
   buildSetlistPrintBooklet(name, songs, desc);
 }
 
-// Move-up / move-down / remove — the same three controls on both a setlist
-// song row and a set-divider row (personal setlists only).
-function appendMoveRemoveButtons(row, index, songs, personalEntry) {
-  var upBtn = document.createElement("BUTTON");
-  upBtn.type = "button";
-  upBtn.className = "setlist-song-btn";
-  upBtn.textContent = "↑";
-  upBtn.disabled = index === 0;
-  upBtn.addEventListener("click", function() {
-    moveSongInPersonalSetlist(storage(), personalEntry.id, index, -1);
-    refreshOpenPersonalSetlist();
+// A drag handle (personal setlists) plus a remove button — the shared tail
+// of a setlist song row and a set-divider row. Reorder by dragging the
+// handle (mouse or touch, see beginRowDrag) or, with it focused, the up/down
+// arrow keys.
+function appendRowControls(row, index, personalEntry) {
+  var handle = document.createElement("BUTTON");
+  handle.type = "button";
+  handle.className = "setlist-drag-handle";
+  handle.title = "Drag to reorder";
+  handle.setAttribute("aria-label", "Reorder — drag, or use the arrow keys");
+  handle.innerHTML = '<span class="fa-solid fa-grip-vertical" aria-hidden="true"></span>';
+  handle.addEventListener("pointerdown", function(e) {
+    beginRowDrag(e, handle, row, personalEntry.id);
   });
-  row.appendChild(upBtn);
-
-  var downBtn = document.createElement("BUTTON");
-  downBtn.type = "button";
-  downBtn.className = "setlist-song-btn";
-  downBtn.textContent = "↓";
-  downBtn.disabled = index === songs.length - 1;
-  downBtn.addEventListener("click", function() {
-    moveSongInPersonalSetlist(storage(), personalEntry.id, index, 1);
-    refreshOpenPersonalSetlist();
+  handle.addEventListener("keydown", function(e) {
+    var step = e.key === "ArrowUp" ? -1 : e.key === "ArrowDown" ? 1 : 0;
+    if (!step) return;
+    e.preventDefault();
+    nudgeRow(row, personalEntry.id, step);
   });
-  row.appendChild(downBtn);
+  row.insertBefore(handle, row.firstChild);
 
   var removeBtn = document.createElement("BUTTON");
   removeBtn.type = "button";
   removeBtn.className = "setlist-song-btn setlist-song-remove";
   removeBtn.textContent = "×";
   removeBtn.title = "Remove";
+  removeBtn.setAttribute("aria-label", "Remove");
   removeBtn.addEventListener("click", function() {
     removeSongFromPersonalSetlist(storage(), personalEntry.id, index);
     refreshOpenPersonalSetlist();
   });
   row.appendChild(removeBtn);
+}
+
+// ============================================================
+// Drag-to-reorder for an open personal setlist. Pointer events (not the
+// HTML5 drag API) so it works on touch as well as mouse. Song rows and
+// divider rows carry data-setlist-index (their position in the stored
+// `songs` array); the drag physically relocates the row among its siblings
+// as the pointer moves and renumbers live, then on drop reads the rows'
+// data-setlist-index back in DOM order to persist the new arrangement.
+// ============================================================
+
+var rowDrag = null;
+var focusHandleAfterRender = null; // draggable-row index to re-focus after a keyboard nudge
+
+function draggableRows() {
+  var listEl = document.getElementById("songList");
+  return listEl
+    ? Array.prototype.slice.call(listEl.querySelectorAll(".setlist-song-row, .setlist-divider-row"))
+    : [];
+}
+
+// Rewrites the "1, 2, 3 …" badges (and each divider's "Set N" placeholder)
+// straight from the current DOM order — used mid-drag, where no re-render
+// has happened yet. Mirrors renderOpenSetlist: numbers restart each set
+// when the list has any dividers, otherwise run 1..n across the whole list.
+function renumberOpenSetlist() {
+  var listEl = document.getElementById("songList");
+  if (!listEl) return;
+  var rows = listEl.querySelectorAll(".setlist-song-row, .setlist-divider-row, .setlist-set-heading");
+  var hasDividers = listEl.querySelector(".setlist-divider-row, .setlist-set-heading") != null;
+  var n = 0, songInSet = 0, setNumber = 1;
+  rows.forEach(function(row) {
+    if (row.classList.contains("setlist-song-row")) {
+      n += 1;
+      songInSet += 1;
+      var numEl = row.querySelector(".setlist-song-number");
+      if (numEl) numEl.textContent = hasDividers ? songInSet : n;
+    } else {
+      songInSet = 0;
+      if (row.classList.contains("setlist-divider-row")) {
+        setNumber += 1;
+        var input = row.querySelector(".setlist-divider-input");
+        if (input) input.placeholder = "Set " + setNumber;
+      }
+    }
+  });
+}
+
+// Keyboard equivalent of a one-slot drag: swap `row` with its neighbour one
+// step up or down (a divider counts as a position — nudging "past" one
+// crosses into the next set), then re-focus its handle where it landed.
+function nudgeRow(row, personalId, step) {
+  var rows = draggableRows();
+  var from = rows.indexOf(row);
+  var to = from + step;
+  if (from === -1 || to < 0 || to >= rows.length) return;
+  var order = rows.map(function(_row, i) { return i; });
+  order.splice(from, 1);
+  order.splice(to, 0, from);
+  focusHandleAfterRender = to;
+  setPersonalSetlistOrder(storage(), personalId, order.map(function(i) {
+    return Number(rows[i].dataset.setlistIndex);
+  }));
+  refreshOpenPersonalSetlist();
+}
+
+function beginRowDrag(e, handle, row, personalId) {
+  if (e.button != null && e.button !== 0) return;
+  e.preventDefault();
+  rowDrag = { personalId: personalId, row: row, moved: false };
+  row.classList.add("setlist-row-dragging");
+  document.body.classList.add("setlist-dragging");
+  // Capture keeps the move/up stream coming even when the finger or cursor
+  // slides off the handle; the events still bubble to these window listeners.
+  try { handle.setPointerCapture(e.pointerId); } catch (_e) { /* not fatal */ }
+  window.addEventListener("pointermove", onRowDragMove);
+  window.addEventListener("pointerup", endRowDrag, { once: true });
+  window.addEventListener("pointercancel", endRowDrag, { once: true });
+}
+
+function onRowDragMove(e) {
+  if (!rowDrag) return;
+  var dragged = rowDrag.row;
+  var others = draggableRows().filter(function(r) { return r !== dragged; });
+  if (others.length === 0) return;
+
+  var before = null; // the sibling the dragged row should sit in front of
+  for (var i = 0; i < others.length; i++) {
+    var box = others[i].getBoundingClientRect();
+    if (e.clientY < box.top + box.height / 2) { before = others[i]; break; }
+  }
+  var anchor = before || others[others.length - 1].nextSibling;
+  if (anchor !== dragged && dragged.nextSibling !== anchor) {
+    dragged.parentNode.insertBefore(dragged, anchor);
+    rowDrag.moved = true;
+    renumberOpenSetlist();
+  }
+}
+
+function endRowDrag() {
+  window.removeEventListener("pointermove", onRowDragMove);
+  if (!rowDrag) return;
+  var drag = rowDrag;
+  rowDrag = null;
+  drag.row.classList.remove("setlist-row-dragging");
+  document.body.classList.remove("setlist-dragging");
+  if (!drag.moved) return;
+  var order = draggableRows().map(function(r) { return Number(r.dataset.setlistIndex); });
+  setPersonalSetlistOrder(storage(), drag.personalId, order);
+  refreshOpenPersonalSetlist();
 }
 
 // A "Set N" band-style heading in the song list (read-only band setlists,
@@ -608,14 +743,15 @@ function buildSetHeaderRow(text) {
 }
 
 // A set divider: a plain heading for band setlists, an editable label +
-// move/remove controls for personal ones.
-function buildSetlistDividerRow(item, index, songs, personalEntry, setNumber) {
+// drag/remove controls for personal ones.
+function buildSetlistDividerRow(item, index, personalEntry, setNumber) {
   if (!personalEntry) {
     return buildSetHeaderRow(item.divider || ("Set " + setNumber));
   }
 
   var row = document.createElement("DIV");
   row.className = "song-list-item setlist-divider-row";
+  row.dataset.setlistIndex = index;
 
   var label = document.createElement("INPUT");
   label.type = "text";
@@ -628,13 +764,23 @@ function buildSetlistDividerRow(item, index, songs, personalEntry, setNumber) {
   });
   row.appendChild(label);
 
-  appendMoveRemoveButtons(row, index, songs, personalEntry);
+  appendRowControls(row, index, personalEntry);
   return row;
 }
 
-function buildSetlistSongRow(song, index, songs, personalEntry, displayNumber) {
+// Turns a semitone-override value (what personal setlists now store) into
+// the plain digits shown in the stepper — blank for none, and blank for a
+// legacy key-name override, which the number field can't represent (the
+// stored value is left intact until the musician sets a number).
+function semitoneFieldValue(raw) {
+  var trimmed = String(raw == null ? "" : raw).trim();
+  return /^[+-]?\d+$/.test(trimmed) && parseInt(trimmed, 10) !== 0 ? String(parseInt(trimmed, 10)) : "";
+}
+
+function buildSetlistSongRow(song, index, personalEntry, displayNumber) {
   var row = document.createElement("DIV");
   row.className = "song-list-item setlist-song-row";
+  row.dataset.setlistIndex = index;
 
   var number = document.createElement("SPAN");
   number.className = "setlist-song-number";
@@ -651,23 +797,33 @@ function buildSetlistSongRow(song, index, songs, personalEntry, displayNumber) {
   row.appendChild(title);
 
   if (personalEntry) {
-    var keyInput = document.createElement("INPUT");
-    keyInput.type = "text";
-    keyInput.className = "setlist-song-key-input";
-    keyInput.placeholder = "key";
-    keyInput.value = song.key || "";
-    keyInput.addEventListener("change", function() {
-      updateSongKeyInPersonalSetlist(storage(), personalEntry.id, index, keyInput.value.trim());
+    var stInput = document.createElement("INPUT");
+    stInput.type = "number";
+    stInput.className = "setlist-song-semitones";
+    stInput.min = "-12";
+    stInput.max = "12";
+    stInput.step = "1";
+    stInput.placeholder = "0";
+    stInput.title = "Transpose, in semitones";
+    stInput.setAttribute("aria-label", "Transpose " + songNameFor(song.file) + ", in semitones");
+    stInput.value = semitoneFieldValue(song.key);
+    stInput.addEventListener("change", function() {
+      var n = parseInt(stInput.value, 10);
+      var stored = Number.isFinite(n) && n !== 0 ? String(n) : "";
+      updateSongKeyInPersonalSetlist(storage(), personalEntry.id, index, stored);
       refreshOpenPersonalSetlist();
     });
-    row.appendChild(keyInput);
+    row.appendChild(stInput);
 
-    appendMoveRemoveButtons(row, index, songs, personalEntry);
-  } else if (song.key) {
-    var keyBadge = document.createElement("SPAN");
-    keyBadge.className = "setlist-song-key-badge";
-    keyBadge.textContent = song.key;
-    row.appendChild(keyBadge);
+    appendRowControls(row, index, personalEntry);
+  } else {
+    var badgeText = formatSetlistKeyLabel(song.key);
+    if (badgeText) {
+      var keyBadge = document.createElement("SPAN");
+      keyBadge.className = "setlist-song-key-badge";
+      keyBadge.textContent = badgeText;
+      row.appendChild(keyBadge);
+    }
   }
 
   return row;
@@ -682,11 +838,7 @@ function buildSetlistSongRow(song, index, songs, personalEntry, displayNumber) {
 */
 function openSetlistSong(song) {
   readFile("/songs/" + song.file, function(text) {
-    var extraTransposeSteps = 0;
-    if (song.key) {
-      var nativeKey = extractKeyFromAbc(text) || "C";
-      extraTransposeSteps = semitonesBetweenKeys(nativeKey, song.key);
-    }
+    var extraTransposeSteps = setlistTransposeSteps(song.key, extractKeyFromAbc(text));
     renderSongTextWithOverride(text, extraTransposeSteps);
   }, function(status) {
     console.warn("Setlist references a missing song file: " + song.file + " (status " + status + ")");
@@ -742,10 +894,11 @@ function buildSetlistStageList(container, songs) {
     }
     var li = document.createElement("LI");
     li.textContent = songNameFor(song.file);
-    if (song.key) {
+    var keyLabel = formatSetlistKeyLabel(song.key);
+    if (keyLabel) {
       var key = document.createElement("SPAN");
       key.className = "setlist-stage-key";
-      key.textContent = song.key;
+      key.textContent = keyLabel;
       li.appendChild(document.createTextNode(" "));
       li.appendChild(key);
     }
@@ -837,11 +990,7 @@ function buildSetlistPrintBooklet(name, songs, desc) {
     container.appendChild(songEl);
 
     readFile("/songs/" + song.file, function(text) {
-      var extraTransposeSteps = 0;
-      if (song.key) {
-        var nativeKey = extractKeyFromAbc(text) || "C";
-        extraTransposeSteps = semitonesBetweenKeys(nativeKey, song.key);
-      }
+      var extraTransposeSteps = setlistTransposeSteps(song.key, extractKeyFromAbc(text));
       renderAbcFile(text, notationId, chordId, titleId, songNumber + ". ", false, extraTransposeSteps);
     }, function(status) {
       console.warn("Setlist references a missing song file: " + song.file + " (status " + status + ")");
@@ -888,22 +1037,93 @@ function renderAddSongResults(query) {
   var resultsEl = document.getElementById("setlistAddSongResults");
   if (!resultsEl) return;
   resultsEl.innerHTML = "";
+  resultsEl.classList.toggle("is-open", !!query);
   if (!query) return;
 
   var matches = filterSongsByQuery(allSongs, query).slice(0, 8);
+  if (matches.length === 0) {
+    var empty = document.createElement("DIV");
+    empty.className = "rj-library-add-song-empty";
+    empty.textContent = "No songs match “" + query + "”";
+    resultsEl.appendChild(empty);
+    return;
+  }
   matches.forEach(function(song) {
     var btn = document.createElement("BUTTON");
     btn.type = "button";
     btn.className = "rj-library-add-song-result";
-    btn.textContent = song.name;
+    btn.innerHTML = '<span class="fa-solid fa-plus" aria-hidden="true"></span>';
+    var name = document.createElement("SPAN");
+    name.className = "rj-library-add-song-result-name";
+    name.textContent = song.name;
+    btn.appendChild(name);
     btn.addEventListener("click", function() {
       addSongToPersonalSetlist(storage(), currentPersonalId, { file: song.file, key: "" });
-      document.getElementById("setlistAddSongSearch").value = "";
-      resultsEl.innerHTML = "";
+      focusAddSongAfterRender = true; // keeps addSongQuery's results up for the next add
       refreshOpenPersonalSetlist();
     });
     resultsEl.appendChild(btn);
   });
+}
+
+/*
+   The compose zone at the foot of an open personal setlist's song list
+   (inside the scroll area) rather than in the top toolbar — you grow the
+   list where it ends, not away from it. A labelled tray holding a
+   search-to-add field (results open in flow below it) and, set apart as a
+   lighter dashed button, "Add a set break". Rebuilt on every render, so its
+   handlers are wired here.
+*/
+function buildAddSongRow() {
+  var wrap = document.createElement("DIV");
+  wrap.className = "rj-library-add-song rj-library-add-song-inline";
+
+  var label = document.createElement("DIV");
+  label.className = "rj-library-add-label";
+  label.textContent = "Add to setlist";
+  wrap.appendChild(label);
+
+  var field = document.createElement("DIV");
+  field.className = "rj-library-add-song-field";
+
+  var inputWrap = document.createElement("DIV");
+  inputWrap.className = "rj-library-add-song-inputwrap";
+  inputWrap.innerHTML = '<span class="fa-solid fa-magnifying-glass" aria-hidden="true"></span>';
+
+  var search = document.createElement("INPUT");
+  search.type = "search";
+  search.id = "setlistAddSongSearch";
+  search.placeholder = "Search songs to add…";
+  search.autocomplete = "off";
+  search.addEventListener("input", function() {
+    addSongQuery = search.value.trim();
+    ensureSongsLoaded(function() {
+      renderAddSongResults(addSongQuery);
+    });
+  });
+  inputWrap.appendChild(search);
+  field.appendChild(inputWrap);
+
+  var results = document.createElement("DIV");
+  results.id = "setlistAddSongResults";
+  results.className = "rj-library-add-song-results";
+  field.appendChild(results);
+  wrap.appendChild(field);
+
+  var breakBtn = document.createElement("BUTTON");
+  breakBtn.type = "button";
+  breakBtn.className = "rj-library-add-break";
+  breakBtn.innerHTML =
+    '<span class="fa-solid fa-plus" aria-hidden="true"></span>' +
+    '<span class="rj-library-add-break-label">Add a set break</span>';
+  breakBtn.addEventListener("click", function() {
+    if (!currentPersonalId) return;
+    addDividerToPersonalSetlist(storage(), currentPersonalId);
+    refreshOpenPersonalSetlist();
+  });
+  wrap.appendChild(breakBtn);
+
+  return wrap;
 }
 
 function initSetlistControls() {
@@ -911,16 +1131,10 @@ function initSetlistControls() {
   if (backBtn) backBtn.addEventListener("click", showSetlistsHome);
 
   // "New setlist" and "Import" are rendered per-view at the foot of the Yours
-  // list (buildNewSetlistRow), so their handlers are wired there, not here.
+  // list (buildNewSetlistRow); "Add song"/"Add break" at the foot of an open
+  // setlist (buildAddSongRow) — so those handlers are wired there, not here.
 
-  var nameInput = document.getElementById("setlistNameInput");
-  if (nameInput) {
-    nameInput.addEventListener("change", function() {
-      if (!currentPersonalId) return;
-      renamePersonalSetlist(storage(), currentPersonalId, nameInput.value.trim() || "Untitled setlist");
-      refreshOpenPersonalSetlist();
-    });
-  }
+  initSetlistRename();
 
   [
     ["printSetlistBtn", "setlist"],
@@ -952,22 +1166,50 @@ function initSetlistControls() {
       showSetlistsHome();
     });
   }
+}
 
-  var addBreakBtn = document.getElementById("setlistAddBreakBtn");
-  if (addBreakBtn) {
-    addBreakBtn.addEventListener("click", function() {
-      if (!currentPersonalId) return;
-      addDividerToPersonalSetlist(storage(), currentPersonalId);
-      refreshOpenPersonalSetlist();
-    });
+/*
+   The setlist name shows as a plain heading; a double-click on it, or the
+   pencil button beside it, swaps in an edit field. Enter or a blur commits,
+   Escape backs out. renderOpenSetlist re-asserts the heading/field
+   visibility on every (re)render, so this only has to handle the toggle.
+*/
+function initSetlistRename() {
+  var titleText = document.getElementById("setlistTitleText");
+  var nameInput = document.getElementById("setlistNameInput");
+  var renameBtn = document.getElementById("setlistRenameBtn");
+  if (!titleText || !nameInput) return;
+
+  function enterEdit() {
+    if (!currentPersonalId) return;
+    nameInput.value = titleText.textContent;
+    titleText.hidden = true;
+    if (renameBtn) renameBtn.hidden = true;
+    nameInput.hidden = false;
+    nameInput.focus();
+    nameInput.select();
   }
 
-  var addSearch = document.getElementById("setlistAddSongSearch");
-  if (addSearch) {
-    addSearch.addEventListener("input", function() {
-      ensureSongsLoaded(function() {
-        renderAddSongResults(addSearch.value.trim());
-      });
-    });
+  function leaveEdit() {
+    nameInput.hidden = true;
+    titleText.hidden = false;
+    if (renameBtn) renameBtn.hidden = false;
   }
+
+  function commit() {
+    if (!currentPersonalId) return;
+    renamePersonalSetlist(storage(), currentPersonalId, nameInput.value.trim() || "Untitled setlist");
+    refreshOpenPersonalSetlist();
+  }
+
+  titleText.addEventListener("dblclick", enterEdit);
+  if (renameBtn) renameBtn.addEventListener("click", enterEdit);
+  nameInput.addEventListener("keydown", function(e) {
+    if (e.key === "Enter") { e.preventDefault(); nameInput.blur(); }
+    else if (e.key === "Escape") { e.preventDefault(); leaveEdit(); }
+  });
+  nameInput.addEventListener("blur", function() {
+    if (nameInput.hidden) return; // already backed out via Escape
+    commit();
+  });
 }

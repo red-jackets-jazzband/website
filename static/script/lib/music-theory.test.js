@@ -5,6 +5,8 @@ import {
   chordToRomanNumeral,
   extractKeyFromAbc,
   semitonesBetweenKeys,
+  setlistTransposeSteps,
+  formatSetlistKeyLabel,
 } from "./music-theory.js";
 
 // No `Tonal` global in Node, so these exercise the manual fallback table.
@@ -65,4 +67,21 @@ test("semitonesBetweenKeys picks the shortest signed distance", () => {
 test("semitonesBetweenKeys defaults to 0 when a key is missing", () => {
   assert.equal(semitonesBetweenKeys(null, "C"), 0);
   assert.equal(semitonesBetweenKeys("C", ""), 0);
+});
+
+test("setlistTransposeSteps takes a bare integer literally, a key name relative to the tune", () => {
+  assert.equal(setlistTransposeSteps("2", "Bb"), 2);
+  assert.equal(setlistTransposeSteps("-3", "Bb"), -3);
+  assert.equal(setlistTransposeSteps("+1", "Bb"), 1);
+  assert.equal(setlistTransposeSteps("C", "Bb"), 2); // legacy key-name override
+  assert.equal(setlistTransposeSteps("", "Bb"), 0);
+  assert.equal(setlistTransposeSteps(null, "Bb"), 0);
+});
+
+test("formatSetlistKeyLabel signs a semitone offset and passes a key name through", () => {
+  assert.equal(formatSetlistKeyLabel("2"), "+2");
+  assert.equal(formatSetlistKeyLabel("-3"), "−3");
+  assert.equal(formatSetlistKeyLabel("0"), "");
+  assert.equal(formatSetlistKeyLabel(""), "");
+  assert.equal(formatSetlistKeyLabel("Bb"), "Bb");
 });
