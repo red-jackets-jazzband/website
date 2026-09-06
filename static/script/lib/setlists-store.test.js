@@ -10,7 +10,7 @@ import {
   updateSongKeyInPersonalSetlist,
   addDividerToPersonalSetlist,
   updateDividerLabelInPersonalSetlist,
-  moveSongInPersonalSetlist,
+  setPersonalSetlistOrder,
   copyBandSetlistToPersonal,
   exportPersonalSetlistText,
   importPersonalSetlistText,
@@ -57,20 +57,34 @@ test("updateSongKeyInPersonalSetlist changes just that song's key override", () 
   assert.equal(listPersonalSetlists(storage)[0].songs[0].key, "C");
 });
 
-test("moveSongInPersonalSetlist swaps neighbors and no-ops at the ends", () => {
+test("setPersonalSetlistOrder rearranges songs to match a permutation", () => {
+  var storage = makeStorage();
+  var entry = createPersonalSetlist(storage, "My List");
+  ["a.abc", "b.abc", "c.abc", "d.abc"].forEach(function(file) {
+    addSongToPersonalSetlist(storage, entry.id, { file: file, key: "" });
+  });
+
+  setPersonalSetlistOrder(storage, entry.id, [3, 0, 1, 2]); // d a b c
+  var files1 = listPersonalSetlists(storage)[0].songs.map((s) => s.file);
+  assert.deepEqual(files1, ["d.abc", "a.abc", "b.abc", "c.abc"]);
+
+  setPersonalSetlistOrder(storage, entry.id, [1, 0, 3, 2]); // a d c b
+  var files2 = listPersonalSetlists(storage)[0].songs.map((s) => s.file);
+  assert.deepEqual(files2, ["a.abc", "d.abc", "c.abc", "b.abc"]);
+});
+
+test("setPersonalSetlistOrder ignores a non-permutation (wrong length, dup, out of range)", () => {
   var storage = makeStorage();
   var entry = createPersonalSetlist(storage, "My List");
   ["a.abc", "b.abc", "c.abc"].forEach(function(file) {
     addSongToPersonalSetlist(storage, entry.id, { file: file, key: "" });
   });
+  var original = ["a.abc", "b.abc", "c.abc"];
 
-  moveSongInPersonalSetlist(storage, entry.id, 2, -1); // c up: a b c -> a c b
-  var files1 = listPersonalSetlists(storage)[0].songs.map((s) => s.file);
-  assert.deepEqual(files1, ["a.abc", "c.abc", "b.abc"]);
-
-  moveSongInPersonalSetlist(storage, entry.id, 0, -1); // already first — no-op
-  var files2 = listPersonalSetlists(storage)[0].songs.map((s) => s.file);
-  assert.deepEqual(files2, ["a.abc", "c.abc", "b.abc"]);
+  setPersonalSetlistOrder(storage, entry.id, [0, 1]); // too short
+  setPersonalSetlistOrder(storage, entry.id, [0, 1, 1]); // duplicate
+  setPersonalSetlistOrder(storage, entry.id, [0, 1, 9]); // out of range
+  assert.deepEqual(listPersonalSetlists(storage)[0].songs.map((s) => s.file), original);
 });
 
 test("addDividerToPersonalSetlist / updateDividerLabelInPersonalSetlist manage set breaks", () => {

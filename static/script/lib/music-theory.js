@@ -136,3 +136,40 @@ export function semitonesBetweenKeys(fromKeyStr, toKeyStr) {
   if (diff > 6) diff -= 12;
   return diff;
 }
+
+// True when a setlist key-override column holds a bare signed integer
+// (a semitone offset) rather than a target key name.
+function isSemitoneOffset(raw) {
+  return /^[+-]?\d+$/.test(String(raw == null ? "" : raw).trim());
+}
+
+/*
+   A setlist song's optional override column resolves to a signed semitone
+   transposition. Personal setlists now store that column as a literal
+   semitone offset ("2", "-3"); band setlists (and older exports) store a
+   target key name ("Bb"), diffed against the tune's own native key. Returns
+   0 for a blank/zero override.
+*/
+export function setlistTransposeSteps(rawOverride, nativeKey) {
+  var trimmed = String(rawOverride == null ? "" : rawOverride).trim();
+  if (!trimmed) return 0;
+  if (isSemitoneOffset(trimmed)) {
+    var n = parseInt(trimmed, 10);
+    return Number.isFinite(n) ? n : 0;
+  }
+  return semitonesBetweenKeys(nativeKey || "C", trimmed);
+}
+
+// Human-readable badge for a setlist override column: a signed "+2" / "−3"
+// for a semitone offset (real minus sign), the key name as-is otherwise,
+// and "" for a blank or zero override (nothing to show).
+export function formatSetlistKeyLabel(rawOverride) {
+  var trimmed = String(rawOverride == null ? "" : rawOverride).trim();
+  if (!trimmed) return "";
+  if (isSemitoneOffset(trimmed)) {
+    var n = parseInt(trimmed, 10);
+    if (!Number.isFinite(n) || n === 0) return "";
+    return (n > 0 ? "+" : "−") + Math.abs(n);
+  }
+  return trimmed;
+}
