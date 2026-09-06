@@ -5,6 +5,7 @@ import { parseChordScheme, simplifyBlues, simplifySong, computeChordOffset } fro
 import { irealProFromAbc } from "./lib/irealpro.js";
 import { convertChordsToRoman } from "./lib/music-theory.js";
 import { youtubeEmbedUrl } from "./lib/youtube.js";
+import { COMPING_PATTERNS, buildCompingTune } from "./lib/comping.js";
 
 /*
    Funcion: renderSong
@@ -126,6 +127,28 @@ export function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, ti
     : chords;
   audioPlayer.chordOffset = computeChordOffset(song);
 
+  // Comping: on the live sheet only (never a setlist booklet), when a rhythm
+  // pattern is picked, add a second staff of three coloured chord-tone voices
+  // below the melody. It's generated from the tune in *concert* pitch (parsed
+  // fresh at visualTranspose 0) and injected into `text`, so the single
+  // visualTranspose passed to ABCJS.renderAbc below transposes the melody and
+  // the comping together — no separate transposition pass.
+  var renderText = text;
+  compingActive = false;
+  var sheetMenuEl = document.getElementById("sheetmenu");
+  var advancedOn = sheetMenuEl !== null && sheetMenuEl.classList.contains("show-advanced");
+  var compingSelect = document.getElementById("comping");
+  var compingValue = compingSelect ? compingSelect.value : "off";
+  if (!isBookletRender && advancedOn && compingValue && compingValue !== "off" && chords.length > 0) {
+    var concertSong = string_to_abc_tune(text, 0);
+    var concertChords = parseChordScheme(concertSong);
+    var compingTune = buildCompingTune(text, concertChords, concertSong, compingValue);
+    if (compingTune) {
+      renderText = compingTune;
+      compingActive = true;
+    }
+  }
+
   if (add_link) {
     add_inspiration_link(song.metaText.url, song.metaText.title);
     add_irealpro_link(song, chords);
@@ -186,7 +209,7 @@ export function renderAbcFile(text, notationElt, chordTableElt, songTitleElt, ti
     }
   };
 
-  var visualObjs = ABCJS.renderAbc(notationElt, text, abcParams);
+  var visualObjs = ABCJS.renderAbc(notationElt, renderText, abcParams);
 
   /* Hide title below chord table */
   document
@@ -500,6 +523,8 @@ function parseQueryString(queryString) {
 export function loadSongs() {
   createInstrumentDropdown();
   document.getElementById("instrument").addEventListener("change", rerenderFile);
+  createCompingDropdown();
+  initAdvancedToggle();
   initPrintLink();
   initSheetControls();
   initInspirationPanel();
@@ -507,6 +532,47 @@ export function loadSongs() {
   if (window.location.hash) {
     parse_song_from_hash(window.location.hash);
   }
+}
+
+/*
+   Funcion: initAdvancedToggle
+   Wires the double-chevron button in the sheet menu that reveals the
+   "advanced" controls (currently just the comping dropdown; more later).
+   The open/closed state lives as `.show-advanced` on #sheetmenu and is
+   persisted in localStorage. Toggling re-renders so the comping staff
+   appears/disappears with the control.
+*/
+var ADVANCED_STORAGE_KEY = "rj.sheetAdvanced";
+
+function initAdvancedToggle() {
+  var btn = document.getElementById("advancedToggleBtn");
+  var menu = document.getElementById("sheetmenu");
+  if (!btn || !menu) return;
+
+  function apply(on) {
+    menu.classList.toggle("show-advanced", on);
+    btn.setAttribute("aria-expanded", on ? "true" : "false");
+    btn.title = on ? "Fewer controls" : "More controls";
+  }
+
+  var stored = false;
+  try {
+    stored = window.localStorage.getItem(ADVANCED_STORAGE_KEY) === "1";
+  } catch (e) {
+    stored = false;
+  }
+  apply(stored);
+
+  btn.addEventListener("click", function() {
+    var on = !menu.classList.contains("show-advanced");
+    apply(on);
+    try {
+      window.localStorage.setItem(ADVANCED_STORAGE_KEY, on ? "1" : "0");
+    } catch (e) {
+      // localStorage unavailable — the preference just won't persist.
+    }
+    rerenderFile();
+  });
 }
 
 /*
@@ -720,6 +786,82 @@ export function createInstrumentDropdown() {
 }
 
 /*
+   Comping selection persistence (localStorage): sticky across songs like the
+   instrument choice, guarded so private browsing degrades gracefully.
+*/
+var COMPING_STORAGE_KEY = "rj.comping";
+
+function readStoredComping() {
+  try {
+    return window.localStorage.getItem(COMPING_STORAGE_KEY);
+  } catch (e) {
+    return null;
+  }
+}
+
+function storeComping(value) {
+  try {
+    window.localStorage.setItem(COMPING_STORAGE_KEY, value);
+  } catch (e) {
+    // localStorage unavailable — the comping choice just won't persist.
+  }
+}
+
+/*
+   Funcion: createCompingDropdown
+   Builds the sheet's comping-pattern <select> (#comping): an "OFF" entry plus
+   the 15 predefined patterns from lib/comping.js, grouped into optgroups.
+   Changing it re-renders the current song, which is where buildCompingTune
+   turns the chord scheme into the coloured 3-voice comping staff.
+*/
+export function createCompingDropdown() {
+  var slot = document.getElementById("compingSlot");
+  if (!slot) return;
+
+  var div = document.createElement("DIV");
+  div.classList.add("dropdown");
+
+  var select = document.createElement("SELECT");
+  select.classList.add("dropbtn");
+  select.id = "comping";
+  div.appendChild(select);
+
+  var offOption = document.createElement("OPTION");
+  offOption.innerHTML = "COMPING: OFF";
+  offOption.value = "off";
+  select.appendChild(offOption);
+
+  var currentGroup = null;
+  var groupEl = null;
+  COMPING_PATTERNS.forEach(function(pattern) {
+    if (pattern.group !== currentGroup) {
+      currentGroup = pattern.group;
+      groupEl = document.createElement("OPTGROUP");
+      groupEl.label = pattern.group.toUpperCase();
+      select.appendChild(groupEl);
+    }
+    var option = document.createElement("OPTION");
+    option.innerHTML = pattern.label.toUpperCase();
+    option.value = pattern.value;
+    groupEl.appendChild(option);
+  });
+
+  var storedValue = readStoredComping();
+  if (storedValue &&
+      (storedValue === "off" ||
+       COMPING_PATTERNS.some(function(p) { return p.value === storedValue; }))) {
+    select.value = storedValue;
+  }
+
+  select.addEventListener("change", function() {
+    storeComping(select.value);
+    rerenderFile();
+  });
+
+  slot.appendChild(div);
+}
+
+/*
   updateRepeatBoundaries: reads chordCellLeftRepeat / chordCellRightRepeat CSS
   classes from the rendered chord table and stores the first and last repeat
   section indices in audioPlayer. Used by onEvent to wrap measure indices that
@@ -763,9 +905,14 @@ var audioParams = {
   program: 56  // Trumpet (GM)
 };
 
+// True while the on-screen sheet is showing a comping staff (set in
+// renderAbcFile). Used so the "mute melody" button silences only voice 0
+// (the melody) instead of the whole tune when there's a comping to hear.
+var compingActive = false;
+
 function currentAudioParams() {
   var params = Object.assign({}, audioParams);
-  if (audioPlayer.melodOff) params.voicesOff = true;
+  if (audioPlayer.melodOff) params.voicesOff = compingActive ? [0] : true;
   // Tempo is applied through SynthController.setWarp (see applyTempo), not a
   // synth option — `qpm` here is ignored by SynthController's playback path.
   if (audioPlayer.transposeSemitones) {

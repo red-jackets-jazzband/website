@@ -89,6 +89,12 @@ aliases: ["/setlists/", "/songbook/"]
     <a id="printLink" class="sheet-icon-btn" href="#" title="Print this page" aria-label="Print this page"><span class="fa-solid fa-print" aria-hidden="true"></span></a>
   </div>
   <span class="audio-loading" id="audioLoadingLabel">...</span>
+  <!-- Keep the next two on the same HTML block (no blank lines): a lone <button>
+       on its own line gets wrapped in a <p> by Goldmark, and that <p> becomes
+       the flex child instead of the button — knocking it out of the top-row
+       alignment (same gotcha as #inspirationSlot). -->
+  <button id="advancedToggleBtn" class="sheet-icon-btn sheet-advanced-toggle" type="button" title="More controls" aria-label="Show more controls" aria-expanded="false"><span class="fa-solid fa-angles-right" aria-hidden="true"></span></button>
+  <div id="compingSlot" class="sheet-comping sheet-adv-item"></div>
 </div>
 <div id="abc-player-container" style="display:none;"></div>
 
