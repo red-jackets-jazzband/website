@@ -5,7 +5,7 @@ date: 2019-03-16T16:26:50+01:00
 aliases: ["/setlists/", "/songbook/"]
 ---
 
-<script src="/script/abcjs_midi_6.6.3-min.js" type="text/javascript"></script>
+<script src="/script/abcjs_midi_6.6.4-min.js" type="text/javascript"></script>
 <script src="/script/tonal.4.6.9-min.js" type="text/javascript"></script>
 <script type="module" src="/script/songs-page.js"></script>
 
