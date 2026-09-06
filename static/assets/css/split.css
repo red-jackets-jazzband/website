@@ -1636,6 +1636,16 @@ video.video {
   font: 600 11px "JetBrains Mono", monospace;
   color: rgba(230,228,224,.4);
 }
+/* The setlist song currently open in the sheet — "you are here" in the set. */
+.song-list-item.setlist-song-row.is-current-song {
+  background: rgba(226,157,15,.14);
+  box-shadow: inset 3px 0 0 var(--rj-gold);
+  border-radius: 0 6px 6px 0;
+}
+.setlist-song-row.is-current-song .setlist-song-title {
+  color: #fff;
+  font-weight: 600;
+}
 /* Per-song transpose, in semitones (personal setlists). A bare number field
    — the spinners are hidden to keep it narrow; type or paste a signed int. */
 .setlist-song-semitones {

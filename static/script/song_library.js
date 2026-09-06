@@ -30,6 +30,8 @@ var activeTab = "library"; // "library" | "setlists"
 var setlistsView = "home"; // "home" | "open"
 var currentPersonalId = null; // set while an editable personal setlist is open
 var currentOpenSongs = null; // songs array of the currently open setlist
+var currentSongFile = null; // .abc file of the song currently in the sheet
+var currentSetlistSongIndex = null; // its position in currentOpenSongs, when opened from the setlist list
 var focusAddSongAfterRender = false; // return focus to the add-song box after a re-render
 var addSongQuery = ""; // last add-a-song search text, re-applied after a re-render so a run of songs goes in with one search
 
@@ -200,6 +202,8 @@ function buildSongRow(song) {
   link.addEventListener("click", function(e) {
     e.preventDefault();
     window.location.hash = "s=" + title;
+    currentSongFile = song.file;
+    currentSetlistSongIndex = null;
     renderSong(song.file);
   });
   return link;
@@ -586,6 +590,8 @@ function renderOpenSetlist(name, songs, personalEntry, desc) {
   }
 
   buildSetlistPrintBooklet(name, songs, desc);
+
+  highlightCurrentSetlistSong();
 }
 
 // A drag handle (personal setlists) plus a remove button — the shared tail
@@ -781,6 +787,7 @@ function buildSetlistSongRow(song, index, personalEntry, displayNumber) {
   var row = document.createElement("DIV");
   row.className = "song-list-item setlist-song-row";
   row.dataset.setlistIndex = index;
+  row.dataset.songFile = song.file;
 
   var number = document.createElement("SPAN");
   number.className = "setlist-song-number";
@@ -792,7 +799,7 @@ function buildSetlistSongRow(song, index, personalEntry, displayNumber) {
   title.className = "setlist-song-title";
   title.textContent = songNameFor(song.file);
   title.addEventListener("click", function() {
-    openSetlistSong(song);
+    openSetlistSong(song, index);
   });
   row.appendChild(title);
 
@@ -836,12 +843,68 @@ function buildSetlistSongRow(song, index, personalEntry, displayNumber) {
    setlists unification: a setlist is just a different song list feeding the
    same reader, not a separate flattened dump of every chart at once.
 */
-function openSetlistSong(song) {
+function openSetlistSong(song, index) {
+  currentSongFile = song.file;
+  currentSetlistSongIndex = index == null ? null : Number(index);
+  highlightCurrentSetlistSong();
   readFile("/songs/" + song.file, function(text) {
     var extraTransposeSteps = setlistTransposeSteps(song.key, extractKeyFromAbc(text));
     renderSongTextWithOverride(text, extraTransposeSteps);
   }, function(status) {
     console.warn("Setlist references a missing song file: " + song.file + " (status " + status + ")");
+  });
+}
+
+/*
+   Funcion: stepSetlistSong
+   Open the previous (dir < 0) or next (dir > 0) song of the open setlist in
+   the sheet, skipping set-break dividers and clamping at both ends. Wired to
+   the up/down arrow keys while a setlist is open (see initSetlistControls),
+   so a musician can walk the set without reaching for the mouse.
+*/
+function stepSetlistSong(dir) {
+  if (setlistsView !== "open" || !currentOpenSongs || !currentOpenSongs.length) return;
+  var songs = currentOpenSongs;
+  var songIndexes = [];
+  songs.forEach(function(item, i) {
+    if (!isSetlistDivider(item)) songIndexes.push(i);
+  });
+  if (!songIndexes.length) return;
+
+  var pos = songIndexes.indexOf(currentSetlistSongIndex);
+  var next;
+  if (pos === -1) {
+    next = dir > 0 ? songIndexes[0] : songIndexes[songIndexes.length - 1];
+  } else {
+    var np = pos + dir;
+    if (np < 0 || np >= songIndexes.length) return; // clamp at the ends
+    next = songIndexes[np];
+  }
+
+  openSetlistSong(songs[next], next);
+  var listEl = document.getElementById("songList");
+  var row = listEl && listEl.querySelector('.setlist-song-row[data-setlist-index="' + next + '"]');
+  if (row) row.scrollIntoView({ block: "nearest" });
+}
+
+/*
+   Funcion: highlightCurrentSetlistSong
+   Marks the row in the open setlist's song list that matches the song
+   currently shown in the sheet, so a musician can see where they are in the
+   set. Matches by .abc file; when the sheet was opened from a specific
+   setlist row, narrows to that exact position (a song can appear twice).
+*/
+function highlightCurrentSetlistSong() {
+  var listEl = document.getElementById("songList");
+  if (!listEl) return;
+  listEl.querySelectorAll(".setlist-song-row").forEach(function(row) {
+    var isCurrent = !!currentSongFile &&
+      row.dataset.songFile === currentSongFile &&
+      (currentSetlistSongIndex == null ||
+        Number(row.dataset.setlistIndex) === currentSetlistSongIndex);
+    row.classList.toggle("is-current-song", isCurrent);
+    if (isCurrent) row.setAttribute("aria-current", "true");
+    else row.removeAttribute("aria-current");
   });
 }
 
@@ -1135,6 +1198,22 @@ function initSetlistControls() {
   // setlist (buildAddSongRow) — so those handlers are wired there, not here.
 
   initSetlistRename();
+
+  // Up/down arrows walk the open setlist song-by-song — but only when the
+  // focus isn't in a field that wants the arrows itself (the Key/Tempo/
+  // semitone steppers, the instrument or divider inputs) or on a drag handle
+  // (arrows there reorder the row).
+  document.addEventListener("keydown", function(e) {
+    if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+    if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
+    if (setlistsView !== "open") return;
+    var el = e.target;
+    if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" ||
+        el.tagName === "SELECT" || el.isContentEditable ||
+        (el.closest && el.closest(".setlist-drag-handle")))) return;
+    e.preventDefault();
+    stepSetlistSong(e.key === "ArrowDown" ? 1 : -1);
+  });
 
   [
     ["printSetlistBtn", "setlist"],
