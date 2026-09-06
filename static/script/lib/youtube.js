@@ -1,12 +1,10 @@
-"use strict";
-
 // Pulls the 11-character video id out of the handful of YouTube URL shapes
 // that show up in songs' ABC F: fields (watch?v=, youtu.be/, with trailing
 // &list=/&t= params attached). Returns null for anything else.
 export function extractYouTubeId(url) {
   if (typeof url !== "string") return null;
-  var match = url.trim().match(
-    /(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:watch\?(?:.*&)?v=|embed\/|v\/|shorts\/))([A-Za-z0-9_-]{11})/
+  const match = url.trim().match(
+    /(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:watch\?(?:.*&)?v=|embed\/|v\/|shorts\/))([A-Za-z0-9_-]{11})/,
   );
   return match ? match[1] : null;
 }
@@ -20,10 +18,10 @@ export function extractYouTubeId(url) {
 // playsinline=1, + origin=... when given) so the LoopTube toolbar can attach a
 // YT.Player to the iframe and drive seek / playback-rate.
 export function youtubeEmbedUrl(url, options) {
-  var id = extractYouTubeId(url);
+  const id = extractYouTubeId(url);
   if (!id) return null;
-  var opts = options === true ? { autoplay: true } : (options || {});
-  var params = ["rel=0"];
+  const opts = options === true ? { autoplay: true } : (options || {});
+  const params = ["rel=0"];
   if (opts.autoplay) params.push("autoplay=1");
   if (opts.jsApi) {
     params.push("enablejsapi=1");

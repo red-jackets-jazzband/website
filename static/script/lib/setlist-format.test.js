@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { parseSetlistFile, serializeSetlistFile } from "./setlist-format.js";
 
 test("parseSetlistFile reads name, desc, and songs with optional key overrides", () => {
-  var text = [
+  const text = [
     "# name,Zeeland Jazz 2026",
     "# desc,Our main summer set.",
     "basin_street.abc,C",
@@ -11,7 +11,7 @@ test("parseSetlistFile reads name, desc, and songs with optional key overrides",
     "aint_my_fault.abc,Am",
   ].join("\n");
 
-  var setlist = parseSetlistFile(text);
+  const setlist = parseSetlistFile(text);
   assert.equal(setlist.name, "Zeeland Jazz 2026");
   assert.equal(setlist.desc, "Our main summer set.");
   assert.deepEqual(setlist.songs, [
@@ -22,20 +22,20 @@ test("parseSetlistFile reads name, desc, and songs with optional key overrides",
 });
 
 test("parseSetlistFile works with no name/desc comments at all", () => {
-  var setlist = parseSetlistFile("basin_street.abc,\n");
+  const setlist = parseSetlistFile("basin_street.abc,\n");
   assert.equal(setlist.name, null);
   assert.equal(setlist.desc, null);
   assert.deepEqual(setlist.songs, [{ file: "basin_street.abc", key: "" }]);
 });
 
 test("parseSetlistFile skips blank lines and unrecognized comment lines", () => {
-  var text = "# some other comment\n\nbasin_street.abc,\n\n";
-  var setlist = parseSetlistFile(text);
+  const text = "# some other comment\n\nbasin_street.abc,\n\n";
+  const setlist = parseSetlistFile(text);
   assert.deepEqual(setlist.songs, [{ file: "basin_street.abc", key: "" }]);
 });
 
 test("parseSetlistFile splits the list into sets on '# break' lines", () => {
-  var text = [
+  const text = [
     "# name,Festival night",
     "basin_street.abc,C",
     "# break",
@@ -44,7 +44,7 @@ test("parseSetlistFile splits the list into sets on '# break' lines", () => {
     "indiana.abc,",
   ].join("\n");
 
-  var setlist = parseSetlistFile(text);
+  const setlist = parseSetlistFile(text);
   assert.deepEqual(setlist.songs, [
     { file: "basin_street.abc", key: "C" },
     { divider: "" },
@@ -55,7 +55,7 @@ test("parseSetlistFile splits the list into sets on '# break' lines", () => {
 });
 
 test("serializeSetlistFile writes set dividers back as '# break' lines and round-trips", () => {
-  var original = {
+  const original = {
     name: "Three sets",
     desc: "",
     songs: [
@@ -66,14 +66,14 @@ test("serializeSetlistFile writes set dividers back as '# break' lines and round
       { file: "c.abc", key: "" },
     ],
   };
-  var text = serializeSetlistFile(original);
+  const text = serializeSetlistFile(original);
   assert.match(text, /\n# break\n/);
   assert.match(text, /\n# break,Last set\n/);
   assert.deepEqual(parseSetlistFile(text).songs, original.songs);
 });
 
 test("serializeSetlistFile round-trips through parseSetlistFile", () => {
-  var original = {
+  const original = {
     name: "Rehearsal Tuesday",
     desc: "",
     songs: [
@@ -81,8 +81,8 @@ test("serializeSetlistFile round-trips through parseSetlistFile", () => {
       { file: "tiger_rag.abc", key: "" },
     ],
   };
-  var text = serializeSetlistFile(original);
-  var parsed = parseSetlistFile(text);
+  const text = serializeSetlistFile(original);
+  const parsed = parseSetlistFile(text);
   assert.equal(parsed.name, original.name);
   assert.deepEqual(parsed.songs, original.songs);
 });

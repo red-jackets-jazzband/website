@@ -1,7 +1,3 @@
-"use strict";
-
-/* global Tonal */
-
 import { computeChordOffset } from "./chords.js";
 
 /*
@@ -138,9 +134,9 @@ const PATTERN_LABEL = COMPING_PATTERNS.reduce((acc, p) => {
 // Pure ABC / rhythm helpers (no Tonal)
 // ---------------------------------------------------------------------------
 
-function gcd(a, b) {
-  a = Math.abs(a);
-  b = Math.abs(b);
+function gcd(x, y) {
+  let a = Math.abs(x);
+  let b = Math.abs(y);
   while (b) {
     [a, b] = [b, a % b];
   }
@@ -330,7 +326,7 @@ const BARLINE = /:\|:|:\|\d+|\|\|:?|::|\|:|:\||\[\||\|\]|\|\d+|\[\d+(?:[-,]\d+)*
    comping voices stay bar-aligned with the melody.
 */
 export function buildVoiceBody(rawBody, barStrings, leadingRestBars, restToken, lnum, lden) {
-  restToken = restToken || "x8";
+  const rest = restToken || "x8";
   const body = stripNonMusicLines(rawBody);
   const parts = [];
   let lastIdx = 0;
@@ -363,7 +359,7 @@ export function buildVoiceBody(rawBody, barStrings, leadingRestBars, restToken, 
     const leadWs = (p.s.match(/^\s*/) || [""])[0];
     let content;
     if (seen < leadingRestBars) {
-      content = restToken;
+      content = rest;
       if (lnum && lden) {
         const slots = measureBarSlots(p.s, lnum, lden);
         if (slots > 0 && slots < 8) content = "x" + formatDuration(slots, lnum, lden);
@@ -371,7 +367,7 @@ export function buildVoiceBody(rawBody, barStrings, leadingRestBars, restToken, 
     } else if (patternIdx < barStrings.length) {
       content = barStrings[patternIdx++];
     } else {
-      content = restToken;
+      content = rest;
     }
     seen++;
     out += leadWs + (inlineFields ? inlineFields + " " : "") + content + " ";
@@ -491,7 +487,7 @@ function extractChordNotes(chords) {
       if (name === "%" || name === "") name = last;
       name = name.split("/")[0];
       last = name;
-      let notes = Tonal.Chord.get(name).notes.slice(0, 3);
+      const notes = Tonal.Chord.get(name).notes.slice(0, 3);
       while (notes.length < 3) notes.push(notes[0] || "C");
       row.push(notes.map((pc, i) => ({ pc, fn: FN_LABELS[i] })));
     }
@@ -632,7 +628,7 @@ export function buildCompingTune(text, chords, song, pattern) {
   // through pickup / intro / tail bars without drawing anything.
   const restToken = "x" + formatDuration(8, lnum, lden);
   const compBody = buildVoiceBody(
-    split.body, compBars, leadingRestBars, restToken, lnum, lden
+    split.body, compBars, leadingRestBars, restToken, lnum, lden,
   ).trim();
   // buildVoiceBody consumes compBars in order (leading/tail bars use the plain
   // rest), so the drawn chord onsets are compPalettes flattened in bar order.

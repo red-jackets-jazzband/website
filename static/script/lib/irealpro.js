@@ -1,5 +1,3 @@
-"use strict";
-
 // Builds an irealbook:// URL from a parsed abcjs tune and its chord-per-measure
 // array (the same array that feeds the on-page chord table).
 export function irealProFromAbc(song, chords) {

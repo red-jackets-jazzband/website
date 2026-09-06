@@ -1,5 +1,3 @@
-"use strict";
-
 const VALID_CHORD =
   /^[A-Ga-g]([#♯b♭])?(maj|m|min|dim|aug|sus|add)?(Ø)?(\d)?([#♯b♭])?(\d)?(\/[A-Ga-g]([#♯b♭])?(\d)?)?$/;
 

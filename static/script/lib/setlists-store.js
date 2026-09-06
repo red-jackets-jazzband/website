@@ -1,15 +1,13 @@
-"use strict";
-
 import { parseSetlistFile, serializeSetlistFile, isSetlistDivider } from "./setlist-format.js";
 
-var STORAGE_KEY = "rj.setlists.v1";
+const STORAGE_KEY = "rj.setlists.v1";
 
 function readStorage(storage) {
   if (!storage) return [];
   try {
-    var raw = storage.getItem(STORAGE_KEY);
+    const raw = storage.getItem(STORAGE_KEY);
     if (!raw) return [];
-    var parsed = JSON.parse(raw);
+    const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
   } catch (_e) {
     return [];
@@ -30,7 +28,7 @@ function generateId() {
 }
 
 function findEntry(list, id) {
-  return list.find(function(entry) {
+  return list.find((entry) => {
     return entry.id === id;
   });
 }
@@ -44,8 +42,8 @@ export function getPersonalSetlist(storage, id) {
 }
 
 function createEntry(storage, data) {
-  var list = readStorage(storage);
-  var entry = {
+  const list = readStorage(storage);
+  const entry = {
     id: generateId(),
     name: data.name,
     desc: data.desc || "",
@@ -57,33 +55,33 @@ function createEntry(storage, data) {
 }
 
 export function createPersonalSetlist(storage, name) {
-  return createEntry(storage, { name: name, desc: "", songs: [] });
+  return createEntry(storage, { name, desc: "", songs: [] });
 }
 
 export function deletePersonalSetlist(storage, id) {
-  var list = readStorage(storage).filter(function(entry) {
+  const list = readStorage(storage).filter((entry) => {
     return entry.id !== id;
   });
   writeStorage(storage, list);
 }
 
 export function renamePersonalSetlist(storage, id, name) {
-  var list = readStorage(storage);
-  var entry = findEntry(list, id);
+  const list = readStorage(storage);
+  const entry = findEntry(list, id);
   if (entry) entry.name = name;
   writeStorage(storage, list);
 }
 
 export function addSongToPersonalSetlist(storage, id, song) {
-  var list = readStorage(storage);
-  var entry = findEntry(list, id);
+  const list = readStorage(storage);
+  const entry = findEntry(list, id);
   if (entry) entry.songs.push(song);
   writeStorage(storage, list);
 }
 
 export function removeSongFromPersonalSetlist(storage, id, index) {
-  var list = readStorage(storage);
-  var entry = findEntry(list, id);
+  const list = readStorage(storage);
+  const entry = findEntry(list, id);
   if (entry) entry.songs.splice(index, 1);
   writeStorage(storage, list);
 }
@@ -91,22 +89,22 @@ export function removeSongFromPersonalSetlist(storage, id, index) {
 // Appends a set divider ("break") to the end of the list. Its label is left
 // blank — the UI shows an auto "Set N" caption until one is typed in.
 export function addDividerToPersonalSetlist(storage, id) {
-  var list = readStorage(storage);
-  var entry = findEntry(list, id);
+  const list = readStorage(storage);
+  const entry = findEntry(list, id);
   if (entry) entry.songs.push({ divider: "" });
   writeStorage(storage, list);
 }
 
 export function updateDividerLabelInPersonalSetlist(storage, id, index, label) {
-  var list = readStorage(storage);
-  var entry = findEntry(list, id);
+  const list = readStorage(storage);
+  const entry = findEntry(list, id);
   if (entry && isSetlistDivider(entry.songs[index])) entry.songs[index].divider = label;
   writeStorage(storage, list);
 }
 
 export function updateSongKeyInPersonalSetlist(storage, id, index, key) {
-  var list = readStorage(storage);
-  var entry = findEntry(list, id);
+  const list = readStorage(storage);
+  const entry = findEntry(list, id);
   if (entry && entry.songs[index]) entry.songs[index].key = key;
   writeStorage(storage, list);
 }
@@ -120,19 +118,19 @@ export function updateSongKeyInPersonalSetlist(storage, id, index, key) {
    `order` is a genuine permutation of exactly `0..songs.length-1`.
 */
 export function setPersonalSetlistOrder(storage, id, order) {
-  var list = readStorage(storage);
-  var entry = findEntry(list, id);
+  const list = readStorage(storage);
+  const entry = findEntry(list, id);
   if (entry) {
-    var songs = entry.songs;
-    var seen = {};
-    var valid = Array.isArray(order) && order.length === songs.length &&
-      order.every(function(i) {
+    const songs = entry.songs;
+    const seen = {};
+    const valid = Array.isArray(order) && order.length === songs.length &&
+      order.every((i) => {
         if (typeof i !== "number" || i < 0 || i >= songs.length || seen[i]) return false;
         seen[i] = true;
         return true;
       });
     if (valid) {
-      entry.songs = order.map(function(i) { return songs[i]; });
+      entry.songs = order.map((i) => { return songs[i]; });
     }
   }
   writeStorage(storage, list);
@@ -150,7 +148,7 @@ export function copyBandSetlistToPersonal(storage, bandSetlist) {
 }
 
 export function exportPersonalSetlistText(storage, id) {
-  var entry = getPersonalSetlist(storage, id);
+  const entry = getPersonalSetlist(storage, id);
   return entry ? serializeSetlistFile(entry) : null;
 }
 
@@ -158,7 +156,7 @@ export function exportPersonalSetlistText(storage, id) {
 // from another device) as a new personal entry. `fallbackName` is used
 // when the file has no "# name," comment line (e.g. hand-edited).
 export function importPersonalSetlistText(storage, text, fallbackName) {
-  var parsed = parseSetlistFile(text);
+  const parsed = parseSetlistFile(text);
   return createEntry(storage, {
     name: parsed.name || fallbackName,
     desc: parsed.desc || "",
