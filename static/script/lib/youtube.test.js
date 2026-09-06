@@ -46,3 +46,17 @@ test("youtubeEmbedUrl adds autoplay=1 when requested", () => {
 test("youtubeEmbedUrl returns null for an unrecognized url", () => {
   assert.equal(youtubeEmbedUrl("https://example.com/song.mp3"), null);
 });
+
+test("youtubeEmbedUrl adds the JS API params when jsApi is set", () => {
+  assert.equal(
+    youtubeEmbedUrl("https://youtu.be/AqL60Xv_Sbc", { autoplay: true, jsApi: true }),
+    "https://www.youtube-nocookie.com/embed/AqL60Xv_Sbc?rel=0&autoplay=1&enablejsapi=1&playsinline=1"
+  );
+});
+
+test("youtubeEmbedUrl appends an encoded origin when given", () => {
+  assert.equal(
+    youtubeEmbedUrl("https://youtu.be/AqL60Xv_Sbc", { jsApi: true, origin: "https://www.redjackets.nl" }),
+    "https://www.youtube-nocookie.com/embed/AqL60Xv_Sbc?rel=0&enablejsapi=1&playsinline=1&origin=https%3A%2F%2Fwww.redjackets.nl"
+  );
+});

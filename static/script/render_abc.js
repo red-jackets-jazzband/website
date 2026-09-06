@@ -4,7 +4,11 @@ import { INSTRUMENTS, offsetForInstrument, changeClefForInstrument } from "./lib
 import { parseChordScheme, simplifyBlues, simplifySong, computeChordOffset } from "./lib/chords.js";
 import { irealProFromAbc } from "./lib/irealpro.js";
 import { convertChordsToRoman } from "./lib/music-theory.js";
-import { youtubeEmbedUrl } from "./lib/youtube.js";
+import { youtubeEmbedUrl, extractYouTubeId } from "./lib/youtube.js";
+import {
+  formatClock, timeToFraction, fractionToTime, normalizeLoop,
+  clampHandleDrag, stepPlaybackRate, loopLeadSeconds, shouldLoopSeek
+} from "./lib/looptube.js";
 import { COMPING_PATTERNS, buildCompingTune } from "./lib/comping.js";
 
 /*
@@ -396,6 +400,41 @@ function add_inspiration_link(url, title) {
 
 var inspirationPanelUrl = null;
 
+// --- LoopTube toolbar (A/B loop + slowdown) -----------------------------
+// The panel drives the YouTube video through the IFrame Player API: the
+// embed URL carries enablejsapi=1, we lazily load the API script on first
+// open, and wrap the iframe in a YT.Player so the toolbar can seek, read
+// the play head and set the playback rate. The A-B loop is a poll: while
+// the video plays, an ~80ms timer seeks back to A just before the head
+// reaches B (see lib/looptube.js for the pure range/rate math).
+var ytApiPromise = null;
+var ytPlayer = null;
+var ytPlayerReady = false;
+var pendingInspirationVideoId = null;
+var loopA = null;
+var loopB = null;
+var loopEnabled = false;
+var loopPollId = null;
+var loopDragging = null; // "a" | "b" | null
+var LOOP_POLL_MS = 80;
+var LOOP_MIN_GAP = 1; // seconds — shortest loop the toggle will accept
+
+function loadYouTubeIframeApi() {
+  if (ytApiPromise) return ytApiPromise;
+  ytApiPromise = new Promise(function(resolve) {
+    if (window.YT && window.YT.Player) { resolve(); return; }
+    var prev = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = function() {
+      if (typeof prev === "function") prev();
+      resolve();
+    };
+    var tag = document.createElement("script");
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(tag);
+  });
+  return ytApiPromise;
+}
+
 /*
    Funcion: toggleInspirationPanel
    Clicking Inspiration for the song already showing in the panel closes
@@ -416,26 +455,276 @@ function openInspirationPanel(url, title) {
   var panel = document.getElementById("inspirationPanel");
   var frame = document.getElementById("inspirationVideoFrame");
   if (!panel || !frame) return;
-  var embedUrl = youtubeEmbedUrl(url, true);
-  if (!embedUrl) return;
+  var videoId = extractYouTubeId(url);
+  if (!videoId) return;
 
   var titleEl = document.getElementById("inspirationPanelTitle");
   if (titleEl) titleEl.textContent = title || "Inspiration";
   var expandLink = document.getElementById("inspirationExpandBtn");
   if (expandLink) expandLink.href = url;
 
-  frame.src = embedUrl;
   inspirationPanelUrl = url;
   panel.hidden = false;
+  stopLoopPoll();
+  resetLoopState();
+
+  if (ytPlayer && ytPlayerReady) {
+    ytPlayer.loadVideoById(videoId);
+    return;
+  }
+  if (ytPlayer) {
+    // player exists but hasn't fired onReady yet — load once it has
+    pendingInspirationVideoId = videoId;
+    return;
+  }
+  // first ever open: bake the id into the iframe src, then attach a player
+  pendingInspirationVideoId = null;
+  frame.src = youtubeEmbedUrl(url, {
+    autoplay: true, jsApi: true, origin: window.location.origin
+  });
+  loadYouTubeIframeApi().then(function() {
+    if (ytPlayer) return;
+    ytPlayer = new window.YT.Player("inspirationVideoFrame", {
+      events: {
+        onReady: function() {
+          ytPlayerReady = true;
+          if (pendingInspirationVideoId) {
+            ytPlayer.loadVideoById(pendingInspirationVideoId);
+            pendingInspirationVideoId = null;
+          }
+          updateSpeedLabel();
+          updateLoopUI();
+        },
+        onStateChange: onInspirationStateChange,
+        onPlaybackRateChange: updateSpeedLabel
+      }
+    });
+  });
 }
 
 function closeInspirationPanel() {
   var panel = document.getElementById("inspirationPanel");
-  var frame = document.getElementById("inspirationVideoFrame");
   if (!panel) return;
   panel.hidden = true;
-  if (frame) frame.src = "";
+  stopLoopPoll();
+  if (ytPlayer && ytPlayerReady && ytPlayer.stopVideo) {
+    ytPlayer.stopVideo();
+  } else {
+    var frame = document.getElementById("inspirationVideoFrame");
+    if (frame) frame.src = "";
+  }
+  var bar = document.getElementById("inspirationLoopBar");
+  if (bar) bar.hidden = true;
   inspirationPanelUrl = null;
+}
+
+function onInspirationStateChange(e) {
+  var states = window.YT && window.YT.PlayerState;
+  if (states && e.data === states.PLAYING) {
+    startLoopPoll();
+  } else {
+    stopLoopPoll();
+  }
+  updateLoopUI();
+}
+
+function startLoopPoll() {
+  if (loopPollId !== null) return;
+  loopPollId = window.setInterval(loopTick, LOOP_POLL_MS);
+}
+
+function stopLoopPoll() {
+  if (loopPollId === null) return;
+  window.clearInterval(loopPollId);
+  loopPollId = null;
+}
+
+function loopTick() {
+  if (!ytPlayer || !ytPlayerReady) return;
+  var t = ytPlayer.getCurrentTime();
+  if (loopEnabled && !loopDragging) {
+    var span = normalizeLoop(loopA, loopB, LOOP_MIN_GAP);
+    if (span) {
+      var rate = ytPlayer.getPlaybackRate ? ytPlayer.getPlaybackRate() : 1;
+      if (shouldLoopSeek(t, span.a, span.b, loopLeadSeconds(rate, LOOP_POLL_MS))) {
+        ytPlayer.seekTo(span.a, true);
+        t = span.a;
+      }
+    }
+  }
+  updatePlayhead(t);
+}
+
+function updatePlayhead(t) {
+  var played = document.getElementById("inspirationLoopPlayed");
+  if (!played) return;
+  var dur = (ytPlayer && ytPlayer.getDuration) ? ytPlayer.getDuration() : 0;
+  played.style.width = (timeToFraction(t, dur) * 100) + "%";
+}
+
+function playerDuration() {
+  return (ytPlayer && ytPlayerReady && ytPlayer.getDuration) ? ytPlayer.getDuration() : 0;
+}
+
+function positionLoopHandle(el, value, dur) {
+  if (!el) return;
+  if (value === null || dur <= 0) { el.hidden = true; return; }
+  el.style.left = (timeToFraction(value, dur) * 100) + "%";
+  el.hidden = false;
+}
+
+function updateLoopUI() {
+  var dur = playerDuration();
+  positionLoopHandle(document.getElementById("inspirationLoopHandleA"), loopA, dur);
+  positionLoopHandle(document.getElementById("inspirationLoopHandleB"), loopB, dur);
+
+  var setA = document.getElementById("inspirationSetA");
+  var setB = document.getElementById("inspirationSetB");
+  if (setA) setA.classList.toggle("armed", loopA !== null);
+  if (setB) setB.classList.toggle("armed", loopB !== null);
+
+  var range = document.getElementById("inspirationLoopRange");
+  if (range) {
+    if (loopA !== null && loopB !== null && dur > 0) {
+      var fa = timeToFraction(Math.min(loopA, loopB), dur);
+      var fb = timeToFraction(Math.max(loopA, loopB), dur);
+      range.style.left = (fa * 100) + "%";
+      range.style.width = ((fb - fa) * 100) + "%";
+      range.hidden = false;
+    } else {
+      range.hidden = true;
+    }
+  }
+
+  var readout = document.getElementById("inspirationLoopReadout");
+  if (readout) {
+    if (loopA !== null || loopB !== null) {
+      readout.textContent = (loopA !== null ? formatClock(loopA) : "–") +
+        " – " + (loopB !== null ? formatClock(loopB) : "–");
+      readout.hidden = false;
+    } else {
+      readout.hidden = true;
+    }
+  }
+
+  var canLoop = normalizeLoop(loopA, loopB, LOOP_MIN_GAP) !== null;
+  if (!canLoop && loopEnabled) loopEnabled = false;
+  var toggle = document.getElementById("inspirationLoopToggle");
+  if (toggle) {
+    toggle.disabled = !canLoop;
+    toggle.setAttribute("aria-pressed", loopEnabled ? "true" : "false");
+  }
+}
+
+function updateSpeedLabel() {
+  var label = document.getElementById("inspirationSpeedValue");
+  if (!label) return;
+  var rate = (ytPlayer && ytPlayerReady && ytPlayer.getPlaybackRate)
+    ? ytPlayer.getPlaybackRate() : 1;
+  label.textContent = (Math.round(rate * 100) / 100) + "×";
+}
+
+function resetLoopState() {
+  loopA = null;
+  loopB = null;
+  loopEnabled = false;
+  loopDragging = null;
+  var bar = document.getElementById("inspirationLoopBar");
+  if (bar) bar.hidden = false;
+  if (ytPlayer && ytPlayerReady && ytPlayer.setPlaybackRate) {
+    ytPlayer.setPlaybackRate(1);
+  }
+  var played = document.getElementById("inspirationLoopPlayed");
+  if (played) played.style.width = "0%";
+  updateSpeedLabel();
+  updateLoopUI();
+}
+
+function setLoopMarker(which) {
+  if (!ytPlayer || !ytPlayerReady) return;
+  var t = ytPlayer.getCurrentTime();
+  if (!isFinite(t)) return;
+  if (which === "a") loopA = t; else loopB = t;
+  updateLoopUI();
+}
+
+function toggleLoopEnabled() {
+  var span = normalizeLoop(loopA, loopB, LOOP_MIN_GAP);
+  if (!span) return;
+  loopEnabled = !loopEnabled;
+  updateLoopUI();
+  if (loopEnabled && ytPlayer && ytPlayerReady) {
+    var t = ytPlayer.getCurrentTime();
+    if (t < span.a || t >= span.b) ytPlayer.seekTo(span.a, true);
+  }
+}
+
+function clearLoopMarkers() {
+  loopA = null;
+  loopB = null;
+  loopEnabled = false;
+  updateLoopUI();
+}
+
+function changeInspirationSpeed(direction) {
+  if (!ytPlayer || !ytPlayerReady) return;
+  var rates = ytPlayer.getAvailablePlaybackRates
+    ? ytPlayer.getAvailablePlaybackRates() : null;
+  var current = ytPlayer.getPlaybackRate ? ytPlayer.getPlaybackRate() : 1;
+  ytPlayer.setPlaybackRate(stepPlaybackRate(current, direction, rates));
+  updateSpeedLabel();
+}
+
+function trackFraction(track, e) {
+  var rect = track.getBoundingClientRect();
+  if (rect.width <= 0) return 0;
+  return Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+}
+
+function initInspirationLoopBar() {
+  var wire = function(id, fn) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener("click", fn);
+  };
+  wire("inspirationSetA", function() { setLoopMarker("a"); });
+  wire("inspirationSetB", function() { setLoopMarker("b"); });
+  wire("inspirationLoopToggle", toggleLoopEnabled);
+  wire("inspirationLoopClear", clearLoopMarkers);
+  wire("inspirationSpeedDown", function() { changeInspirationSpeed(-1); });
+  wire("inspirationSpeedUp", function() { changeInspirationSpeed(1); });
+
+  var track = document.getElementById("inspirationLoopTrack");
+  if (!track) return;
+  track.addEventListener("pointerdown", function(e) {
+    var handle = e.target.closest && e.target.closest(".inspiration-loop-handle");
+    if (handle) {
+      loopDragging = (handle.id === "inspirationLoopHandleB") ? "b" : "a";
+      track.setPointerCapture(e.pointerId);
+      return;
+    }
+    if (!ytPlayer || !ytPlayerReady) return;
+    var dur = playerDuration();
+    if (dur > 0) ytPlayer.seekTo(fractionToTime(trackFraction(track, e), dur), true);
+  });
+  track.addEventListener("pointermove", function(e) {
+    if (!loopDragging) return;
+    var dur = playerDuration();
+    if (dur <= 0) return;
+    var frac = trackFraction(track, e);
+    var otherFrac = loopDragging === "a"
+      ? timeToFraction(loopB === null ? dur : loopB, dur)
+      : timeToFraction(loopA === null ? 0 : loopA, dur);
+    var clamped = clampHandleDrag(frac, otherFrac, loopDragging, LOOP_MIN_GAP / dur);
+    var time = fractionToTime(clamped, dur);
+    if (loopDragging === "a") loopA = time; else loopB = time;
+    updateLoopUI();
+  });
+  track.addEventListener("pointerup", function(e) {
+    if (!loopDragging) return;
+    loopDragging = null;
+    if (track.hasPointerCapture(e.pointerId)) track.releasePointerCapture(e.pointerId);
+    updateLoopUI();
+  });
 }
 
 /*
@@ -451,6 +740,8 @@ function initInspirationPanel() {
   var header = document.getElementById("inspirationPanelHeader");
   var closeBtn = document.getElementById("inspirationCloseBtn");
   if (!panel || !header) return;
+
+  initInspirationLoopBar();
 
   if (closeBtn) closeBtn.addEventListener("click", closeInspirationPanel);
 

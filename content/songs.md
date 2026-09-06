@@ -151,4 +151,24 @@ Retrieved from www.redjackets.nl - <span id="instrumentText"></span>
   <div class="inspiration-panel-video">
     <iframe id="inspirationVideoFrame" src="" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen title="Inspiration video" loading="lazy"></iframe>
   </div>
+  <div class="inspiration-loop" id="inspirationLoopBar" hidden>
+    <div class="inspiration-loop-timeline" id="inspirationLoopTrack" title="Click to seek">
+      <div class="inspiration-loop-range" id="inspirationLoopRange" hidden></div>
+      <div class="inspiration-loop-played" id="inspirationLoopPlayed"></div>
+      <button type="button" class="inspiration-loop-handle" id="inspirationLoopHandleA" aria-label="Loop start (A)" hidden></button>
+      <button type="button" class="inspiration-loop-handle" id="inspirationLoopHandleB" aria-label="Loop end (B)" hidden></button>
+    </div>
+    <div class="inspiration-loop-controls">
+      <button type="button" class="inspiration-loop-btn" id="inspirationSetA" title="Set loop start (A) at the current point" aria-label="Set loop start">A</button>
+      <button type="button" class="inspiration-loop-btn" id="inspirationSetB" title="Set loop end (B) at the current point" aria-label="Set loop end">B</button>
+      <button type="button" class="inspiration-loop-btn" id="inspirationLoopToggle" title="Loop between A and B" aria-label="Loop between A and B" aria-pressed="false"><span class="fa-solid fa-repeat" aria-hidden="true"></span></button>
+      <button type="button" class="inspiration-loop-btn" id="inspirationLoopClear" title="Clear A and B" aria-label="Clear loop markers"><span class="fa-solid fa-xmark" aria-hidden="true"></span></button>
+      <span class="inspiration-loop-readout" id="inspirationLoopReadout" hidden></span>
+      <span class="inspiration-loop-speed" id="inspirationLoopSpeed" title="Playback speed">
+        <button type="button" class="inspiration-loop-btn" id="inspirationSpeedDown" aria-label="Slower">&minus;</button>
+        <span class="inspiration-loop-speed-value" id="inspirationSpeedValue">1&times;</span>
+        <button type="button" class="inspiration-loop-btn" id="inspirationSpeedUp" aria-label="Faster">&plus;</button>
+      </span>
+    </div>
+  </div>
 </div>
