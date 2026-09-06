@@ -126,7 +126,7 @@ Retrieved from www.redjackets.nl - <span id="instrumentText"></span>
       <select id="setlistModalSource" class="rj-modal-input" aria-label="Setlist to remix"></select>
     </div>
     <div class="rj-modal-context" id="setlistModalUpload" hidden>
-      <input type="file" id="setlistModalFile" class="rj-modal-file" accept=".txt">
+      <input type="file" id="setlistModalFile" class="rj-modal-file" accept=".txt" aria-label="Setlist .txt file">
     </div>
     <div class="rj-modal-actions">
       <button type="button" id="setlistModalCancel" class="rj-modal-btn">Cancel</button>

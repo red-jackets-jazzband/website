@@ -22,7 +22,7 @@ export function groupSongsByLetter(songs) {
     groups.get(letter).push(song);
   }
   return Array.from(groups.keys())
-    .sort()
+    .sort((a, b) => a.localeCompare(b))
     .map((letter) => ({ letter, items: groups.get(letter) }));
 }
 
