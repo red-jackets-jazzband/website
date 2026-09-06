@@ -1,0 +1,163 @@
+/*
+  Shared test doubles for the browser globals the app leans on: Tonal (note
+  math), ABCJS (engraving + synth) and the YouTube IFrame player. None of the
+  real libraries run under node/jsdom, so tests install these instead.
+*/
+
+// ---------------------------------------------------------------------------
+// Tonal — a small but arithmetically real subset, enough for the chord / scale
+// math in comping.js and music-theory.js without the 200 KB browser bundle.
+// ---------------------------------------------------------------------------
+
+const SHARP_PC = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+const LETTER_CHROMA = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+
+function pcChroma(pc) {
+  const m = String(pc).match(/^([A-G])([#b]*)/);
+  let acc = 0;
+  for (const c of m[2]) acc += c === "#" ? 1 : -1;
+  return (((LETTER_CHROMA[m[1]] + acc) % 12) + 12) % 12;
+}
+
+function pcAdd(pc, semis) {
+  return SHARP_PC[(pcChroma(pc) + ((semis % 12) + 12)) % 12];
+}
+
+function nameToMidi(name) {
+  const m = String(name).match(/^([A-G])([#b]*)(-?\d+)$/);
+  if (!m) return null;
+  return (parseInt(m[3], 10) + 1) * 12 + pcChroma(m[1] + m[2]);
+}
+
+export const tonalStub = {
+  Scale: {
+    get(name) {
+      const m = name.match(/^([A-G][#b]*)\s+(\w+)$/);
+      if (!m) return { notes: [] };
+      const steps = m[2] === "minor" ? [0, 2, 3, 5, 7, 8, 10] : [0, 2, 4, 5, 7, 9, 11];
+      return { notes: steps.map((s) => pcAdd(m[1], s)) };
+    },
+  },
+  Chord: {
+    get(name) {
+      const m = String(name).match(/^([A-G][#b]*)(.*)$/);
+      if (!m) return { notes: [] };
+      const q = m[2];
+      const third = /^(m|min|-|dim|°|o)/.test(q) ? 3 : 4;
+      const fifth = /^(dim|°|o)/.test(q) ? 6 : /^(aug|\+)/.test(q) ? 8 : 7;
+      return { notes: [m[1], pcAdd(m[1], third), pcAdd(m[1], fifth)] };
+    },
+  },
+  Note: { midi: nameToMidi },
+  Interval: {
+    distance: (a, b) => ({ a, b }),
+    semitones: (d) => (((pcChroma(d.b) - pcChroma(d.a)) % 12) + 12) % 12,
+  },
+  AbcNotation: {
+    scientificToAbcNotation(sci) {
+      const m = sci.match(/^([A-G])([#b]*)(-?\d+)$/);
+      const acc = m[2].replace(/#/g, "^").replace(/b/g, "_");
+      const oct = parseInt(m[3], 10);
+      const body = oct >= 5
+        ? m[1].toLowerCase() + "'".repeat(oct - 5)
+        : m[1] + ",".repeat(Math.max(0, 4 - oct));
+      return acc + body;
+    },
+    abcToScientificNotation(abc) {
+      const m = abc.match(/^([_^=]*)([A-Ga-g])([,']*)$/);
+      if (!m) return null;
+      const acc = m[1].replace(/\^/g, "#").replace(/_/g, "b").replace(/=/g, "");
+      let oct = m[2] === m[2].toLowerCase() ? 5 : 4;
+      for (const c of m[3]) oct += c === "'" ? 1 : -1;
+      return m[2].toUpperCase() + acc + oct;
+    },
+  },
+};
+
+// Run `fn` with `globalThis.Tonal` set to the stub, then restore.
+export function withTonal(fn) {
+  const real = globalThis.Tonal;
+  globalThis.Tonal = tonalStub;
+  try {
+    return fn();
+  } finally {
+    if (real === undefined) delete globalThis.Tonal;
+    else globalThis.Tonal = real;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// ABCJS — records the calls the sheet pipeline makes and hands back the
+// minimum shape the orchestration reads.
+// ---------------------------------------------------------------------------
+
+export function createAbcjsStub() {
+  const calls = { renderAbc: [], parseOnly: [] };
+
+  function fakeTune(text) {
+    return {
+      metaText: { title: "Stub Tune", url: undefined },
+      lines: [{ staff: [{ key: { root: "C", acc: "", mode: "" }, voices: [[]] }] }],
+      _source: text,
+    };
+  }
+
+  const stub = {
+    calls,
+    renderAbc(target, abc, params) {
+      calls.renderAbc.push({ target, abc, params });
+      return [fakeTune(abc)];
+    },
+    parseOnly(abc, params) {
+      calls.parseOnly.push({ abc, params });
+      return [fakeTune(abc)];
+    },
+    TimingCallbacks: function TimingCallbacks() {
+      this.noteTimings = [];
+    },
+    synth: {
+      supportsAudio: () => false,
+      SynthController: function SynthController() {
+        this.load = () => {};
+        this.setTune = () => Promise.resolve();
+        this.play = () => {};
+        this.pause = () => {};
+        this.setWarp = () => Promise.resolve();
+      },
+    },
+  };
+  return stub;
+}
+
+export function withAbcjs(stub, fn) {
+  const real = globalThis.ABCJS;
+  globalThis.ABCJS = stub;
+  try {
+    return fn();
+  } finally {
+    if (real === undefined) delete globalThis.ABCJS;
+    else globalThis.ABCJS = real;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// YouTube IFrame player — a controllable fake with the getters/setters the
+// LoopTube toolbar calls.
+// ---------------------------------------------------------------------------
+
+export function fakeYtPlayer({ duration = 200, time = 0, rate = 1 } = {}) {
+  const state = { duration, time, rate, seeks: [], rates: [0.25, 0.5, 1, 1.5, 2] };
+  return {
+    state,
+    getCurrentTime: () => state.time,
+    getDuration: () => state.duration,
+    getPlaybackRate: () => state.rate,
+    getAvailablePlaybackRates: () => state.rates.slice(),
+    setPlaybackRate: (r) => { state.rate = r; },
+    seekTo: (t) => { state.time = t; state.seeks.push(t); },
+    playVideo: () => {},
+    pauseVideo: () => {},
+    stopVideo: () => {},
+    loadVideoById: (id) => { state.loadedId = id; },
+  };
+}
