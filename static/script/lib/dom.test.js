@@ -19,6 +19,9 @@ test("byId / qs / qsa read the document", () => {
     byId("root").innerHTML = "<span class='x'>a</span><span class='x'>b</span>";
     assert.equal(qs(".x").textContent, "a");
     assert.deepEqual(qsa(".x").map((n) => n.textContent), ["a", "b"]);
+    // a null root is tolerated (a missing container)
+    assert.equal(qs(".x", null), null);
+    assert.deepEqual(qsa(".x", null), []);
   });
 });
 
