@@ -21,11 +21,20 @@ const JAZZ_FONTS = [
   return fonts;
 }, {});
 
-function abcParams(visualTranspose, isBooklet) {
+function abcParams(visualTranspose) {
   return {
     visualTranspose,
-    responsive: isBooklet ? undefined : "resize",
-    staffwidth: isBooklet ? 700 : 1000,
+    // The booklet renders the same way as the live sheet: engrave at a wide
+    // 1000 staff, then "resize" scales each line to its container (the
+    // off-screen #setlistPrintBooklet is a fixed 718px, ~the portrait
+    // printable width), shrinking a dense tune vertically too so it lands on
+    // one page instead of spilling onto a second. "resize" also gives every
+    // line an aspect-ratio wrapper box, so its height stays in step with the
+    // scaled svg (a plain fixed-width render bakes a now-too-tall px height
+    // per line). Chordbook still hides .notation with `display: none
+    // !important`, which beats resize's inline styles.
+    responsive: "resize",
+    staffwidth: 1000,
     paddingTop: 0,
     paddingBottom: 0,
     add_classes: true,
@@ -155,7 +164,7 @@ export function createSheet(ctx) {
     const notationEl = byId(notationId);
     notationEl.classList.toggle("comping-active", comping.active);
 
-    const visualObjs = ABCJS.renderAbc(notationId, comping.renderText, abcParams(visual, isBooklet));
+    const visualObjs = ABCJS.renderAbc(notationId, comping.renderText, abcParams(visual));
 
     if (comping.active) applyCompingColors(notationEl, comping.palette);
 
