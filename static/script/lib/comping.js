@@ -158,6 +158,45 @@ export function formatDuration(slots, lnum, lden) {
   return num + "/" + den;
 }
 
+/*
+   Sum the played duration of one melody bar segment, in eighth-note slots,
+   scaled to the tune's unit note length L:lnum/lden. Chords ([CEG]) count
+   once, grace notes / decorations / chord symbols / inline fields are
+   ignored, and broken rhythm (`>` `<`) nets to zero across a bar so it's
+   dropped. Returns 0 when nothing measurable is found.
+
+   Used to give a pickup/anacrusis its true length in the comping voices: a
+   fixed whole-bar rest there pushes the first barline out and the melody and
+   comping staves stop lining up.
+*/
+export function measureBarSlots(segment, lnum, lden) {
+  const unitSlots = (8 * lnum) / lden;
+  const s = String(segment)
+    .replace(/"[^"]*"/g, "")
+    .replace(/![^!]*!/g, "")
+    .replace(/\[[A-Za-z]:[^\]]*\]/g, "")
+    .replace(/\{[^}]*\}/g, "")
+    .replace(/\[[^\]]*\]/g, "Y");
+  const re = /(?:Y|[_^=]*[A-Ga-gxzZ])[,']*(\d+)?(\/+)?(\d*)/g;
+  let total = 0;
+  let matched = false;
+  let m;
+  while ((m = re.exec(s)) !== null) {
+    if (m.index === re.lastIndex) {
+      re.lastIndex++;
+      continue;
+    }
+    matched = true;
+    let mult = m[1] ? parseInt(m[1], 10) : 1;
+    if (m[2]) {
+      const denom = m[3] ? parseInt(m[3], 10) : Math.pow(2, m[2].length);
+      mult /= denom;
+    }
+    total += unitSlots * mult;
+  }
+  return matched ? total : 0;
+}
+
 // Split an ABC bar fragment into note / rest / annotation tokens.
 export function tokenizeBar(str) {
   const tokens = [];
@@ -279,9 +318,12 @@ const BARLINE = /:\|:|:\|\d+|\|\|:?|::|\|:|:\||\[\||\|\]|\|\d+|\[\d+(?:[-,]\d+)*
 
    `leadingRestBars` note segments at the start (pickup / intro bars before
    the first chord) get `restToken` (a plain whole-bar rest) instead of
-   consuming a pattern; so do any bars left once the patterns run out.
+   consuming a pattern; so do any bars left once the patterns run out. When
+   `lnum`/`lden` are given, a leading segment shorter than a full bar (a
+   pickup) instead gets an invisible rest of its own measured length, so the
+   comping voices stay bar-aligned with the melody.
 */
-export function buildVoiceBody(rawBody, barStrings, leadingRestBars, restToken) {
+export function buildVoiceBody(rawBody, barStrings, leadingRestBars, restToken, lnum, lden) {
   restToken = restToken || "x8";
   const body = stripNonMusicLines(rawBody);
   const parts = [];
@@ -316,6 +358,10 @@ export function buildVoiceBody(rawBody, barStrings, leadingRestBars, restToken) 
     let content;
     if (seen < leadingRestBars) {
       content = restToken;
+      if (lnum && lden) {
+        const slots = measureBarSlots(p.s, lnum, lden);
+        if (slots > 0 && slots < 8) content = "x" + formatDuration(slots, lnum, lden);
+      }
     } else if (patternIdx < barStrings.length) {
       content = barStrings[patternIdx++];
     } else {
@@ -554,7 +600,7 @@ export function buildCompingTune(text, chords, song, pattern) {
   // through pickup / intro / tail bars without drawing anything.
   const restToken = "x" + formatDuration(8, lnum, lden);
   const bodies = voices.map((bars) =>
-    buildVoiceBody(split.body, bars, leadingRestBars, restToken).trim()
+    buildVoiceBody(split.body, bars, leadingRestBars, restToken, lnum, lden).trim()
   );
 
   const clefSuffix = bassClef ? " clef=bass middle=D" : "";
