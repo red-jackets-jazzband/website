@@ -885,7 +885,17 @@ video.video {
   body.export-booklet-mode #rjSheet {
     display: none !important;
   }
-  #setlistPrintBooklet {
+  /*
+    The booklet is only ever printed via one of the setlist "Print …"
+    buttons, which set body.export-booklet-mode. Any other print action (the
+    single-song Print icon on #rjSheet) must NOT drag the last-built booklet
+    onto the page, so it is hidden unless that mode is active — the
+    .hideOnScreen { display:block } print rule would otherwise reveal it.
+  */
+  body:not(.export-booklet-mode) #setlistPrintBooklet {
+    display: none !important;
+  }
+  body.export-booklet-mode #setlistPrintBooklet {
     position: static;
     left: auto;
     top: auto;
