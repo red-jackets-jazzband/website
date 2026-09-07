@@ -293,23 +293,34 @@ function compingChordMidis(abc) {
   );
 }
 
-test("buildCompingTune keeps the three colours in a fixed non-crossing order", () => {
-  // G -> D7: the colours must NOT reorder — the stack steps down a fourth
-  // (G B D -> D F# A), it does not invert to F#-A-D.
+test("buildCompingTune draws the first chord in root position", () => {
+  // G first: root position at octave 4, not snapped to some seed's inversion.
+  const tune = ["M:4/4", "L:1/8", "K:C", '"G" G8 | "G" G8 |'].join("\n");
+  const chords = [{ text: ["G"] }, { text: ["G"] }];
+  const out = withTonal(() => buildCompingTune(tune, chords, fakeSong(), "whole_note"));
+  const bars = compingChordMidis(out.abc);
+  assert.deepEqual(bars[0], [67, 71, 74]); // G4 B4 D5
+  assert.deepEqual(out.palette[0], ["R", "3", "5"]);
+});
+
+test("buildCompingTune draws each chord in the inversion closest to the last", () => {
+  // G B D -> D7: F#4 A4 D5 (the root on top) sits right under G4 B4 D5, far
+  // closer than root-position D4 F#4 A4 would.
   const tune = ["M:4/4", "L:1/8", "K:C", '"G" G8 | "D7" G8 |'].join("\n");
   const chords = [{ text: ["G"] }, { text: ["D7"] }];
   const out = withTonal(() => buildCompingTune(tune, chords, fakeSong(), "whole_note"));
   const bars = compingChordMidis(out.abc);
-  assert.deepEqual(bars[0], [67, 71, 74]); // G4 B4 D5, root position
-  assert.deepEqual(bars[1], [62, 66, 69]); // D4 F#4 A4, still root position
+  assert.deepEqual(bars[0], [67, 71, 74]); // G4 B4 D5
+  assert.deepEqual(bars[1], [66, 69, 74]); // F#4 A4 D5 — closest inversion
+  // every slot moves a whole tone or less
   for (let v = 0; v < 3; v++) {
-    assert.equal(bars[0][v] - bars[1][v], 5); // every voice down a perfect fourth
+    assert.ok(Math.abs(bars[1][v] - bars[0][v]) <= 2, `slot ${v}`);
   }
-  // the palette never reorders: every onset is R / 3 / 5 bottom-to-top
-  for (const order of out.palette) assert.deepEqual(order, ["R", "3", "5"]);
+  // the palette reflects the inversion: third / fifth / root bottom-to-top
+  assert.deepEqual(out.palette[1], ["3", "5", "R"]);
 });
 
-test("buildCompingTune voice-leads each colour to the nearest octave without crossing", () => {
+test("buildCompingTune voice-leads a progression with minimal, non-crossing motion", () => {
   const tune = [
     "M:4/4", "L:1/8", "K:C",
     '"C" C8 | "Em" E8 | "Am" A8 | "F" F8 |',
@@ -319,17 +330,16 @@ test("buildCompingTune voice-leads each colour to the nearest octave without cro
   ];
   const out = withTonal(() => buildCompingTune(tune, chords, fakeSong(), "whole_note"));
   const bars = compingChordMidis(out.abc);
-  assert.deepEqual(bars[0], [60, 64, 67]); // C4 E4 G4 seed
+  assert.deepEqual(bars[0], [60, 64, 67]); // C4 E4 G4
   for (const triple of bars) {
     assert.ok(triple[0] < triple[1] && triple[1] < triple[2], `ascending: ${triple}`);
   }
-  // each voice takes the closest octave of its target — never more than a
-  // tritone of motion between adjacent chords
+  // closest-inversion voice-leading keeps every slot within a tone per chord
   for (let b = 1; b < bars.length; b++) {
     for (let v = 0; v < 3; v++) {
       assert.ok(
-        Math.abs(bars[b][v] - bars[b - 1][v]) <= 6,
-        `voice ${v} bar ${b}: ${bars[b - 1][v]} -> ${bars[b][v]}`,
+        Math.abs(bars[b][v] - bars[b - 1][v]) <= 2,
+        `slot ${v} bar ${b}: ${bars[b - 1][v]} -> ${bars[b][v]}`,
       );
     }
   }
