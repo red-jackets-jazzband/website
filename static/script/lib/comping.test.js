@@ -282,6 +282,51 @@ test("buildCompingTune returns null when it cannot apply", () => {
   });
 });
 
+// Pull the comping voice's block chords out as bottom-to-top MIDI triples.
+function compingChordMidis(abc) {
+  const v2 = abc.split("\nV:2\n").pop();
+  const tokens = v2.match(/\[(?:[_^=]*[A-Ga-g][',]*)+\]/g) || [];
+  return tokens.map((tok) =>
+    (tok.slice(1, -1).match(/[_^=]*[A-Ga-g][',]*/g) || []).map((n) =>
+      nameToMidi(TonalStub.AbcNotation.abcToScientificNotation(n)),
+    ),
+  );
+}
+
+test("buildCompingTune voice-leads each colour the shortest way without crossing", () => {
+  // C -> Em -> Am -> F: naive pitch-class nearest + a forced root-position
+  // stack sends the whole voicing leaping up an octave on the Em; real
+  // register voice-leading keeps C4-E4-G4 -> B3-E4-G4.
+  const tune = [
+    "M:4/4",
+    "L:1/8",
+    "K:C",
+    '"C" C8 | "Em" E8 | "Am" A8 | "F" F8 |',
+  ].join("\n");
+  const chords = [
+    { text: ["C"] }, { text: ["Em"] }, { text: ["Am"] }, { text: ["F"] },
+  ];
+  const out = withTonal(() => buildCompingTune(tune, chords, fakeSong(), "whole_note"));
+  const bars = compingChordMidis(out.abc);
+  assert.equal(bars.length, 4);
+  for (const triple of bars) {
+    assert.equal(triple.length, 3);
+    // no crossing: strictly ascending bottom-to-top
+    assert.ok(triple[0] < triple[1] && triple[1] < triple[2], `ascending: ${triple}`);
+  }
+  // every voice moves a whole step or less through this progression
+  for (let b = 1; b < bars.length; b++) {
+    for (let v = 0; v < 3; v++) {
+      assert.ok(
+        Math.abs(bars[b][v] - bars[b - 1][v]) <= 2,
+        `voice ${v} bar ${b}: ${bars[b - 1][v]} -> ${bars[b][v]}`,
+      );
+    }
+  }
+  // first chord is the root-position seed
+  assert.deepEqual(bars[0], [60, 64, 67]);
+});
+
 test("buildCompingTune scales pattern durations to a L:1/4 tune", () => {
   const quarterTune = TUNE.replace("L:1/8", "L:1/4").replace(/C8/g, "C4").replace(/F8/, "F4").replace(/G8/, "G4");
   const out = withTonal(() =>

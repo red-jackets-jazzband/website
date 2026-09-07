@@ -9,10 +9,14 @@ import { computeChordOffset } from "./chords.js";
    the comping as a *second staff* below the untouched melody.
 
    The comping is a single voice of block chords — one stem per hit — with the
-   three chord tones drawn as one chord token "[root third fifth]", always
-   stacked in root position so the printed noteheads read bottom-to-top as
-   root / third / fifth. split.css then colour-keys the noteheads by their
-   abcjs-chord-pos-N class (N counts up from the bottom).
+   three chord tones drawn as one chord token "[low mid high]". The three
+   voices are voice-led from bar to bar: each of the low / mid / high voices
+   moves to the nearest tone of the next chord (in real register, octaves
+   included) and the voices never cross, so a chord can come out in any
+   inversion. split.css then colour-keys the noteheads by their
+   abcjs-chord-pos-N class (N counts up from the bottom); the palette
+   `buildCompingTune` returns says which chord tone (R / 3 / 5) each position
+   ended up being.
 
    `buildCompingTune` is the entry point. Everything here is pure: it needs
    only the parsed chord scheme + key (from the caller's ABCjs parse) and the
@@ -435,44 +439,80 @@ function scaleShift(pc, keyScale, steps) {
 }
 
 /*
-   Build an ABC chord token "[low mid high]" from three voiced chord tones
-   (each { pc, fn }) given bottom-to-top. Each tone is placed at the lowest
-   octave that keeps the stack ascending, starting around middle C — so the
-   printed noteheads read bottom-to-top in the given voice order, whatever
-   inversion the voice-leading picked. ABCjs then tags them
-   .abcjs-chord-pos-1/2/3 (up from the bottom), and render_abc.js colours each
-   by the matching voice's fn (root / third / fifth).
+   Emit an ABC chord token "[low mid high]" from voiced chord tones
+   ({ pc, oct }) already in bottom-to-top order with the concrete octaves the
+   voice-leading chose. Nothing is re-stacked here — the octaves are honoured
+   as given, so the printed noteheads sit exactly where the voice-leading put
+   them (any inversion) and move the shortest way from chord to chord. ABCjs
+   tags the noteheads .abcjs-chord-pos-1/2/3 (up from the bottom) and
+   sheet-decorations.js colours each by the matching voice's fn.
 */
 function stackChord(voices) {
-  const notes = [];
-  let prevMidi = -Infinity;
-  for (let i = 0; i < voices.length; i++) {
-    let oct = 4;
-    let mid = Tonal.Note.midi(voices[i].pc + oct);
-    if (mid == null) mid = 60 + i * 3;
-    if (i > 0) {
-      while (mid <= prevMidi) {
-        oct += 1;
-        const next = Tonal.Note.midi(voices[i].pc + oct);
-        mid = next == null ? mid + 12 : next;
-      }
-    }
-    prevMidi = mid;
-    notes.push(Tonal.AbcNotation.scientificToAbcNotation(voices[i].pc + oct));
-  }
+  const notes = voices.map((v) =>
+    Tonal.AbcNotation.scientificToAbcNotation(v.pc + v.oct),
+  );
   return "[" + notes.join("") + "]";
 }
 
 /*
-   For a voiced triad ([{pc,fn}] bottom-to-top), return [main, down1, up1, up2]
-   as ABC chord tokens: the triad itself plus the whole triad planed
-   one/one/two diatonic scale steps below/above, each re-stacked. Planing keeps
-   the voice order, so the colour order (voices.map(fn)) is the same for all
-   four.
+   Lowest-cost octave for pitch class `pc` measured against a reference MIDI
+   (the same voice's previous note) — i.e. the octave that moves the voice
+   least.
+*/
+function nearestOctave(pc, refMidi) {
+  let bestOct = 4;
+  let bestDist = Infinity;
+  for (let oct = 1; oct <= 7; oct++) {
+    const midi = Tonal.Note.midi(pc + oct);
+    if (midi == null) continue;
+    const dist = Math.abs(midi - refMidi);
+    if (dist < bestDist) {
+      bestDist = dist;
+      bestOct = oct;
+    }
+  }
+  return bestOct;
+}
+
+/*
+   Place pitch classes `pcs` (bottom-to-top voice order) into concrete octaves:
+   each voice takes the octave nearest its reference MIDI `refMidis[i]`, then
+   any voice sitting at or below the one under it is lifted by whole octaves.
+   Result stays strictly ascending, so the voices never cross. Returns
+   [{ pc, oct, midi }] bottom-to-top.
+*/
+function voiceNear(pcs, refMidis) {
+  const placed = pcs.map((pc, i) => {
+    const oct = nearestOctave(pc, refMidis[i]);
+    const midi = Tonal.Note.midi(pc + oct);
+    return { pc, oct, midi: midi == null ? refMidis[i] : midi };
+  });
+  for (let i = 1; i < placed.length; i++) {
+    while (placed[i].midi <= placed[i - 1].midi) {
+      placed[i].oct += 1;
+      placed[i].midi += 12;
+    }
+  }
+  return placed;
+}
+
+/*
+   For a voiced triad ([{pc,fn,oct}] bottom-to-top), return [main, down1, up1,
+   up2] as ABC chord tokens: the triad itself plus the whole triad planed
+   one/one/two diatonic scale steps below/above, each re-voiced to stay near
+   the main triad's register (and non-crossing). Planing keeps the voice
+   order, so the colour order (voices.map(fn)) is the same for all four.
 */
 function chordArgs(voices, keyScale) {
-  const plane = (steps) =>
-    stackChord(voices.map((v) => ({ pc: scaleShift(v.pc, keyScale, steps), fn: v.fn })));
+  const refMidis = voices.map((v) => {
+    const m = Tonal.Note.midi(v.pc + v.oct);
+    return m == null ? 60 : m;
+  });
+  const plane = (steps) => {
+    if (steps === 0) return stackChord(voices);
+    const pcs = voices.map((v) => scaleShift(v.pc, keyScale, steps));
+    return stackChord(voiceNear(pcs, refMidis));
+  };
   return [plane(0), plane(-1), plane(1), plane(2)];
 }
 
@@ -498,43 +538,52 @@ function extractChordNotes(chords) {
   return result;
 }
 
+// The six ways to map a chord's three tones onto the low / mid / high voices.
+const VOICE_PERMS = [
+  [0, 1, 2], [0, 2, 1], [1, 0, 2],
+  [1, 2, 0], [2, 0, 1], [2, 1, 0],
+];
+
 /*
-   Per bar, choose the octave placement of each chord that moves its three
-   voices least from the previous chord (nearest-tone assignment). Returns the
-   same shape as extractChordNotes but with each triad's { pc, fn } objects
-   re-ordered bottom-to-top as the voice-leading placed them, so a chord can
-   come out in any inversion.
+   Per bar, voice-lead each chord from the previous one: try all six ways of
+   assigning the chord's tones to the low / mid / high voices, place each voice
+   at the octave nearest where that voice sat before (real register, so an
+   octave leap counts as an octave), forbid the voices from crossing, and keep
+   the assignment with the least total motion. So each colour — root, third,
+   fifth — travels the shortest distance it can and the three lines never swap
+   order. Returns the same shape as extractChordNotes but with each triad's
+   { pc, fn } re-ordered bottom-to-top and given the octave the voice-leading
+   chose, so a chord can come out in any inversion.
 */
 function voiceLead(bars) {
-  function semis(a, b) {
-    const up = Tonal.Interval.semitones(Tonal.Interval.distance(a, b));
-    const down = Tonal.Interval.semitones(Tonal.Interval.distance(b, a));
-    return Math.min(up, down);
-  }
-  let prev =
-    bars[0] && bars[0][0] ? bars[0][0].map((v) => v.pc) : ["C", "E", "G"];
+  // Seed: the first chord's tones in root position around middle C.
+  let prevMidis = [60, 64, 67];
   const out = [];
   for (const bar of bars) {
     const voicedBar = [];
     for (const curr of bar) {
-      const cost = [];
-      for (let p = 0; p < 3; p++) {
-        for (let n = 0; n < 3; n++) {
-          cost.push({ p, n, d: semis(prev[p], curr[n].pc) });
-        }
+      let best = null;
+      for (const perm of VOICE_PERMS) {
+        const placed = voiceNear(
+          perm.map((ci) => curr[ci].pc),
+          prevMidis,
+        );
+        const cost = placed.reduce(
+          (sum, p, i) => sum + Math.abs(p.midi - prevMidis[i]),
+          0,
+        );
+        if (!best || cost < best.cost) best = { perm, placed, cost };
       }
-      cost.sort((x, y) => x.d - y.d);
-      const usedP = new Set();
-      const usedN = new Set();
-      const pick = [null, null, null];
-      for (const c of cost) {
-        if (usedP.has(c.p) || usedN.has(c.n)) continue;
-        pick[c.p] = curr[c.n];
-        usedP.add(c.p);
-        usedN.add(c.n);
-      }
+      // Nudge back by an octave if the stack has drifted off the staff.
+      const mid = (best.placed[0].midi + best.placed[2].midi) / 2;
+      const shift = mid < 55 ? 12 : mid > 78 ? -12 : 0;
+      const pick = best.perm.map((ci, i) => ({
+        pc: curr[ci].pc,
+        fn: curr[ci].fn,
+        oct: best.placed[i].oct + shift / 12,
+      }));
       voicedBar.push(pick);
-      prev = pick.map((v) => v.pc);
+      prevMidis = best.placed.map((p) => p.midi + shift);
     }
     out.push(voicedBar);
   }
@@ -570,8 +619,9 @@ function countChords(fragment) {
      palette - one entry per chord onset ABCjs will draw in the comping voice,
                in reading order: ["R","3","5"] giving the chord-tone function
                of each notehead bottom-to-top (voice-leading can invert a
-               chord, so this is not always root/third/fifth). render_abc.js
-               zips it against the rendered noteheads and colours each.
+               chord, so this is not always root/third/fifth).
+               sheet-decorations.js zips it against the rendered noteheads and
+               colours each.
 */
 export function buildCompingTune(text, chords, song, pattern) {
   const pat = PATTERNS[pattern];
