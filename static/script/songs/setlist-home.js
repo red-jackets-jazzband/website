@@ -95,10 +95,12 @@ export function createSetlistHome(ctx) {
   function show() {
     ctx.state.setlistsView = "home";
     ctx.state.currentPersonalId = null;
+    ctx.state.currentSetlistId = null;
     ctx.state.currentOpenSongs = null;
     const tools = byId("setlistTools");
     if (tools) tools.hidden = true;
     render();
+    if (ctx.syncHash) ctx.syncHash();
   }
 
   return { render, show };

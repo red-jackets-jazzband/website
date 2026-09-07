@@ -58,6 +58,8 @@ All of `/`, `/agenda/`, `/band/`, `/in-action/` (each with `/nl/…` + `/de/…`
   - **Print chordbook** (`chordbook`) — every song's title + chord grid; the exact same stacked DOM as the songbook, with `.notation` hidden in CSS
   - **Print songbook** (`songbook`) — the old "stack every song's title+chords+staff" booklet; each song is a `.setlist-booklet-song` block
 
+**Deep links** (URL hash, parsed/built in [lib/song-hash.js](static/script/lib/song-hash.js), driven from `app.js` `bootstrap()` / `ctx.syncHash()`): `#s=<song-slug>` opens that lead sheet (Library tab); `#sl=<setlist-id>` opens a setlist — a band one by file basename, or a personal one by its localStorage id — and `#sl=…&s=…` opens that song at its position in the list. The hash is kept in sync as you navigate (a plain reload/URL-copy lands back in the same place; `a`/`b` are normalised away). The Inspiration panel's **copy-link** button (`#inspirationShareBtn` → `ctx.shareUrl`) adds `a=`/`b=` (loop-marker seconds) and `i=1`; opening such a link (`inspiration.applyShareState`, consumed by the next `updateLink`) opens the video with the A–B loop already set.
+
 ### Static assets layout
 - `static/songs/` — ABC notation files (one per song)
 - `static/setlists/` — plain-text setlist files (one per band setlist) + `index_of_setlists.txt` manifest
