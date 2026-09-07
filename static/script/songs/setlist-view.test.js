@@ -61,49 +61,42 @@ test("renderOpen numbers a flat personal setlist 1..n with drag handles + remove
   }
 });
 
-test("Enter in the add-song search adds a lone match and clears the field", () => {
+// Type `query` into the add-song search and press Enter; returns the open
+// setlist's song files afterward plus the (always cleared) field value.
+function enterAddSong(allSongs, query) {
   const { view, ctx, entry, storage, cleanup } = setup({ songs: [{ file: "a.abc" }] });
   try {
-    ctx.state.allSongs = [
-      { file: "basin_street.abc", name: "Basin Street Blues" },
-      { file: "muskrat.abc", name: "Muskrat Ramble" },
-    ];
+    ctx.state.allSongs = allSongs;
     view.renderOpen(entry.name, entry.songs, entry, "");
     const search = document.getElementById("setlistAddSongSearch");
-
-    search.value = "basin";
+    search.value = query;
     search.dispatchEvent(new window.Event("input"));
     search.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
-
-    assert.deepEqual(
-      getPersonalSetlist(storage, entry.id).songs.map((s) => s.file),
-      ["a.abc", "basin_street.abc"],
-    );
-    assert.equal(document.getElementById("setlistAddSongSearch").value, "");
+    return {
+      files: getPersonalSetlist(storage, entry.id).songs.map((s) => s.file),
+      value: document.getElementById("setlistAddSongSearch").value,
+    };
   } finally {
     cleanup();
   }
+}
+
+test("Enter in the add-song search adds a lone match and clears the field", () => {
+  const result = enterAddSong([
+    { file: "basin_street.abc", name: "Basin Street Blues" },
+    { file: "muskrat.abc", name: "Muskrat Ramble" },
+  ], "basin");
+  assert.deepEqual(result.files, ["a.abc", "basin_street.abc"]);
+  assert.equal(result.value, "");
 });
 
 test("Enter with no single match just clears the add-song field", () => {
-  const { view, ctx, entry, storage, cleanup } = setup({ songs: [{ file: "a.abc" }] });
-  try {
-    ctx.state.allSongs = [
-      { file: "basin_street.abc", name: "Basin Street Blues" },
-      { file: "basin_two.abc", name: "Basin Two" },
-    ];
-    view.renderOpen(entry.name, entry.songs, entry, "");
-    const search = document.getElementById("setlistAddSongSearch");
-
-    search.value = "basin";
-    search.dispatchEvent(new window.Event("input"));
-    search.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
-
-    assert.deepEqual(getPersonalSetlist(storage, entry.id).songs.map((s) => s.file), ["a.abc"]);
-    assert.equal(document.getElementById("setlistAddSongSearch").value, "");
-  } finally {
-    cleanup();
-  }
+  const result = enterAddSong([
+    { file: "basin_street.abc", name: "Basin Street Blues" },
+    { file: "basin_two.abc", name: "Basin Two" },
+  ], "basin");
+  assert.deepEqual(result.files, ["a.abc"]);
+  assert.equal(result.value, "");
 });
 
 test("renderOpen restarts numbering per set and shows headings", () => {
