@@ -330,6 +330,24 @@ test("buildCompingTune draws each chord in the inversion closest to the last", (
   }
 });
 
+test("buildCompingTune keeps every comping chord inside an octave", () => {
+  // Bei mir bist du schön's changes wander far around the circle; the stack
+  // must not spread past an octave as it chases them.
+  const names = ["Gm", "Am7b5", "D7", "Gm", "Cm", "Eb7", "D7", "G7", "Cm", "D", "Gm"];
+  const tune = [
+    "M:4/4", "L:1/8", "K:Gm",
+    names.map((n) => `"${n}" G8`).join(" | ") + " |",
+  ].join("\n");
+  const chords = names.map((n) => ({ text: [n] }));
+  const out = withTonal(() => buildCompingTune(tune, chords, fakeSong({ root: "G", acc: "", mode: "m" }), "whole_note"));
+  const bars = compingChordMidis(out.abc);
+  assert.equal(bars.length, names.length);
+  for (const triple of bars) {
+    assert.ok(triple[0] < triple[1] && triple[1] < triple[2], `ascending: ${triple}`);
+    assert.ok(triple[2] - triple[0] <= 12, `span ${triple[2] - triple[0]}: ${triple}`);
+  }
+});
+
 test("buildCompingTune voice-leads a progression with minimal, non-crossing motion", () => {
   const tune = [
     "M:4/4", "L:1/8", "K:C",
