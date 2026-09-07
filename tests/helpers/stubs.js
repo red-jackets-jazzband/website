@@ -121,11 +121,18 @@ export function createAbcjsStub({ audioSupported = false } = {}) {
         // Mirrors ABCjs 6.6.4: play() toggles `isStarted` (resume/pause both
         // go through it), setTune() resets it, pause() leaves it untouched.
         this.isStarted = false;
-        this.load = () => {};
+        this.load = (_target, cursorControl) => { stub.cursorControl = cursorControl; };
         this.setTune = () => { this.isStarted = false; return Promise.resolve(); };
         this.play = () => { this.isStarted = !this.isStarted; return Promise.resolve(); };
         this.pause = () => {};
-        this.setWarp = () => Promise.resolve();
+        // ABCjs's real setWarp() ends with an internal seek that fires one
+        // event callback; mirror that so tests can prove the highlight guard.
+        this.setWarp = () => {
+          if (stub.cursorControl && stub.cursorControl.onEvent) {
+            stub.cursorControl.onEvent({ elements: stub._warpEventElements || [] });
+          }
+          return Promise.resolve();
+        };
       },
     },
   };
