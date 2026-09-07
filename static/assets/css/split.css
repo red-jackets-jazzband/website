@@ -3158,6 +3158,21 @@ body:has(#rjLibrary) .split-bio {
     }
   }
 
+  /* Touch devices (Android tablets/phones) only. Chrome for Android ignores the
+     `size: landscape` orientation and always opens its print sheet portrait, so
+     the tiled chordbook came out portrait unless the user flipped it by hand.
+     `page-orientation` (Chrome 128+) keeps the landscape *layout* — the 2×2
+     tiling above is untouched — but tells the UA to rotate each finished sheet a
+     quarter turn onto the portrait paper Android insists on feeding, which is
+     physically what landscape printing is. Gated on `pointer: coarse` so desktop
+     Chromium, which already prints true landscape paper, never double-rotates.
+     Firefox ignores `page-orientation` and keeps its portrait fallback above. */
+  @media (pointer: coarse) {
+    @page chordbook {
+      page-orientation: rotate-left;
+    }
+  }
+
   .bookContent {
     margin: 2mm 10mm;
     padding: 20px;
