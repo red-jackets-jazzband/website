@@ -293,14 +293,25 @@ function compingChordMidis(abc) {
   );
 }
 
-test("buildCompingTune voice-leads each colour the shortest way without crossing", () => {
-  // C -> Em -> Am -> F: naive pitch-class nearest + a forced root-position
-  // stack sends the whole voicing leaping up an octave on the Em; real
-  // register voice-leading keeps C4-E4-G4 -> B3-E4-G4.
+test("buildCompingTune keeps the three colours in a fixed non-crossing order", () => {
+  // G -> D7: the colours must NOT reorder — the stack steps down a fourth
+  // (G B D -> D F# A), it does not invert to F#-A-D.
+  const tune = ["M:4/4", "L:1/8", "K:C", '"G" G8 | "D7" G8 |'].join("\n");
+  const chords = [{ text: ["G"] }, { text: ["D7"] }];
+  const out = withTonal(() => buildCompingTune(tune, chords, fakeSong(), "whole_note"));
+  const bars = compingChordMidis(out.abc);
+  assert.deepEqual(bars[0], [67, 71, 74]); // G4 B4 D5, root position
+  assert.deepEqual(bars[1], [62, 66, 69]); // D4 F#4 A4, still root position
+  for (let v = 0; v < 3; v++) {
+    assert.equal(bars[0][v] - bars[1][v], 5); // every voice down a perfect fourth
+  }
+  // the palette never reorders: every onset is R / 3 / 5 bottom-to-top
+  for (const order of out.palette) assert.deepEqual(order, ["R", "3", "5"]);
+});
+
+test("buildCompingTune voice-leads each colour to the nearest octave without crossing", () => {
   const tune = [
-    "M:4/4",
-    "L:1/8",
-    "K:C",
+    "M:4/4", "L:1/8", "K:C",
     '"C" C8 | "Em" E8 | "Am" A8 | "F" F8 |',
   ].join("\n");
   const chords = [
@@ -308,23 +319,20 @@ test("buildCompingTune voice-leads each colour the shortest way without crossing
   ];
   const out = withTonal(() => buildCompingTune(tune, chords, fakeSong(), "whole_note"));
   const bars = compingChordMidis(out.abc);
-  assert.equal(bars.length, 4);
+  assert.deepEqual(bars[0], [60, 64, 67]); // C4 E4 G4 seed
   for (const triple of bars) {
-    assert.equal(triple.length, 3);
-    // no crossing: strictly ascending bottom-to-top
     assert.ok(triple[0] < triple[1] && triple[1] < triple[2], `ascending: ${triple}`);
   }
-  // every voice moves a whole step or less through this progression
+  // each voice takes the closest octave of its target — never more than a
+  // tritone of motion between adjacent chords
   for (let b = 1; b < bars.length; b++) {
     for (let v = 0; v < 3; v++) {
       assert.ok(
-        Math.abs(bars[b][v] - bars[b - 1][v]) <= 2,
+        Math.abs(bars[b][v] - bars[b - 1][v]) <= 6,
         `voice ${v} bar ${b}: ${bars[b - 1][v]} -> ${bars[b][v]}`,
       );
     }
   }
-  // first chord is the root-position seed
-  assert.deepEqual(bars[0], [60, 64, 67]);
 });
 
 test("buildCompingTune scales pattern durations to a L:1/4 tune", () => {

@@ -9,14 +9,13 @@ import { computeChordOffset } from "./chords.js";
    the comping as a *second staff* below the untouched melody.
 
    The comping is a single voice of block chords — one stem per hit — with the
-   three chord tones drawn as one chord token "[low mid high]". The three
-   voices are voice-led from bar to bar: each of the low / mid / high voices
-   moves to the nearest tone of the next chord (in real register, octaves
-   included) and the voices never cross, so a chord can come out in any
-   inversion. split.css then colour-keys the noteheads by their
-   abcjs-chord-pos-N class (N counts up from the bottom); the palette
-   `buildCompingTune` returns says which chord tone (R / 3 / 5) each position
-   ended up being.
+   three chord tones drawn as one chord token "[low mid high]", always root /
+   third / fifth bottom-to-top. The three voices are voice-led from bar to bar:
+   each keeps its lane (root voice, third voice, fifth voice — never crossing)
+   and moves to the octave nearest where it sat before, in real register, so a
+   progression steps the whole stack the shortest way rather than leaping.
+   sheet-decorations.js colour-keys the noteheads (and their tie arcs) by the
+   palette `buildCompingTune` returns — one R/3/5 order per chord onset.
 
    `buildCompingTune` is the entry point. Everything here is pure: it needs
    only the parsed chord scheme + key (from the caller's ABCjs parse) and the
@@ -440,11 +439,11 @@ function scaleShift(pc, keyScale, steps) {
 
 /*
    Emit an ABC chord token "[low mid high]" from voiced chord tones
-   ({ pc, oct }) already in bottom-to-top order with the concrete octaves the
+   ({ pc, oct }) in bottom-to-top order with the concrete octaves the
    voice-leading chose. Nothing is re-stacked here — the octaves are honoured
    as given, so the printed noteheads sit exactly where the voice-leading put
-   them (any inversion) and move the shortest way from chord to chord. ABCjs
-   tags the noteheads .abcjs-chord-pos-1/2/3 (up from the bottom) and
+   them and each moves the shortest way from chord to chord. ABCjs tags the
+   noteheads .abcjs-chord-pos-1/2/3 (up from the bottom) and
    sheet-decorations.js colours each by the matching voice's fn.
 */
 function stackChord(voices) {
@@ -538,52 +537,46 @@ function extractChordNotes(chords) {
   return result;
 }
 
-// The six ways to map a chord's three tones onto the low / mid / high voices.
-const VOICE_PERMS = [
-  [0, 1, 2], [0, 2, 1], [1, 0, 2],
-  [1, 2, 0], [2, 0, 1], [2, 1, 0],
-];
+// First chord: root position with the root at octave 4 (root / third / fifth
+// bottom-to-top, roughly mid-staff), the register everything else leads off.
+function seedRefs(curr) {
+  const m = Tonal.Note.midi(curr[0].pc + "4");
+  const base = m == null ? 60 : m;
+  return [base, base + 4, base + 7];
+}
 
 /*
-   Per bar, voice-lead each chord from the previous one: try all six ways of
-   assigning the chord's tones to the low / mid / high voices, place each voice
-   at the octave nearest where that voice sat before (real register, so an
-   octave leap counts as an octave), forbid the voices from crossing, and keep
-   the assignment with the least total motion. So each colour — root, third,
-   fifth — travels the shortest distance it can and the three lines never swap
-   order. Returns the same shape as extractChordNotes but with each triad's
-   { pc, fn } re-ordered bottom-to-top and given the octave the voice-leading
-   chose, so a chord can come out in any inversion.
+   Per bar, voice-lead each chord from the previous one. The three coloured
+   voices keep a fixed bottom-to-top order — root, third, fifth — and never
+   swap: each just moves to the octave nearest where that voice sat in the
+   previous chord (real register, so an octave leap counts as an octave). If
+   the nearest-octave picks would cross, `voiceNear` lifts a voice by whole
+   octaves to keep the stack ascending. So every colour stays in its lane and
+   travels the shortest distance it can (chords come out in root position;
+   G B D -> D F# A steps the whole stack down a fourth, it doesn't invert).
+   Returns the same shape as extractChordNotes with each { pc, fn } given the
+   octave the voice-leading chose.
 */
 function voiceLead(bars) {
-  // Seed: the first chord's tones in root position around middle C.
-  let prevMidis = [60, 64, 67];
+  let prevMidis = null;
   const out = [];
   for (const bar of bars) {
     const voicedBar = [];
     for (const curr of bar) {
-      let best = null;
-      for (const perm of VOICE_PERMS) {
-        const placed = voiceNear(
-          perm.map((ci) => curr[ci].pc),
-          prevMidis,
-        );
-        const cost = placed.reduce(
-          (sum, p, i) => sum + Math.abs(p.midi - prevMidis[i]),
-          0,
-        );
-        if (!best || cost < best.cost) best = { perm, placed, cost };
-      }
+      const placed = voiceNear(
+        curr.map((v) => v.pc),
+        prevMidis || seedRefs(curr),
+      );
       // Nudge back by an octave if the stack has drifted off the staff.
-      const mid = (best.placed[0].midi + best.placed[2].midi) / 2;
+      const mid = (placed[0].midi + placed[placed.length - 1].midi) / 2;
       const shift = mid < 55 ? 12 : mid > 78 ? -12 : 0;
-      const pick = best.perm.map((ci, i) => ({
-        pc: curr[ci].pc,
-        fn: curr[ci].fn,
-        oct: best.placed[i].oct + shift / 12,
+      const pick = curr.map((v, i) => ({
+        pc: v.pc,
+        fn: v.fn,
+        oct: placed[i].oct + shift / 12,
       }));
       voicedBar.push(pick);
-      prevMidis = best.placed.map((p) => p.midi + shift);
+      prevMidis = placed.map((p) => p.midi + shift);
     }
     out.push(voicedBar);
   }
@@ -617,11 +610,11 @@ function countChords(fragment) {
      abc     - the augmented ABC (melody as V:1, one block-chord comping voice
                as V:2)
      palette - one entry per chord onset ABCjs will draw in the comping voice,
-               in reading order: ["R","3","5"] giving the chord-tone function
-               of each notehead bottom-to-top (voice-leading can invert a
-               chord, so this is not always root/third/fifth).
-               sheet-decorations.js zips it against the rendered noteheads and
-               colours each.
+               in reading order: the chord-tone function of each notehead
+               bottom-to-top. The voices keep a fixed order so this is always
+               ["R","3","5"] today, but it's kept per-onset (rather than assumed)
+               so sheet-decorations.js stays correct if that ever changes — it
+               zips the list against the rendered noteheads and tie arcs.
 */
 export function buildCompingTune(text, chords, song, pattern) {
   const pat = PATTERNS[pattern];
