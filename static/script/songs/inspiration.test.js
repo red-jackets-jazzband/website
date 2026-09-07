@@ -145,6 +145,72 @@ test("dragging the left edge resizes the panel and persists the new width", () =
   });
 });
 
+test("a shared A/B link opens the video with the loop already set", async () => {
+  const page = mountPage();
+  const { window } = page;
+  try {
+    let fireReady = null;
+    const seeks = [];
+    window.YT = {
+      Player: function FakePlayer(_el, opts) {
+        fireReady = opts.events.onReady;
+        this.loadVideoById = () => {};
+        this.stopVideo = () => {};
+        this.getCurrentTime = () => 0;
+        this.getDuration = () => 200;
+        this.getPlaybackRate = () => 1;
+        this.getAvailablePlaybackRates = () => [0.5, 1, 2];
+        this.setPlaybackRate = () => {};
+        this.seekTo = (t) => seeks.push(t);
+      },
+      PlayerState: { PLAYING: 1 },
+    };
+    const insp = createInspiration();
+    insp.init();
+    insp.applyShareState({ a: 12, b: 30 });
+    insp.updateLink("https://youtu.be/abcdefghijk", "X");
+
+    assert.equal(document.getElementById("inspirationPanel").hidden, false);
+    assert.equal(
+      document.getElementById("inspirationLoopToggle").getAttribute("aria-pressed"), "true",
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    fireReady();
+
+    assert.deepEqual(seeks, [12]);
+    assert.equal(document.getElementById("inspirationLoopHandleA").style.left, "6%");
+    assert.equal(document.getElementById("inspirationLoopHandleB").style.left, "15%");
+  } finally {
+    delete window.YT;
+    page.cleanup();
+  }
+});
+
+test("the share button copies the link ctx.shareUrl builds from the markers", () => {
+  inDom(({ window }) => {
+    const copied = [];
+    Object.defineProperty(window.navigator, "clipboard", {
+      value: { writeText: (t) => { copied.push(t); return Promise.resolve(); } },
+      configurable: true,
+    });
+    const seen = [];
+    const ctx = {
+      shareUrl: (markers) => {
+        seen.push(markers);
+        return "https://red-jackets.example/songs/#s=basin_street&i=1";
+      },
+    };
+    const insp = createInspiration(ctx);
+    insp.init();
+
+    document.getElementById("inspirationShareBtn").dispatchEvent(new window.Event("click"));
+
+    assert.deepEqual(seen, [{ a: null, b: null }]);
+    assert.deepEqual(copied, ["https://red-jackets.example/songs/#s=basin_street&i=1"]);
+  });
+});
+
 test("edge resize floors the panel at MIN_PANEL_WIDTH", () => {
   inDom(({ window }) => {
     window.localStorage.clear();

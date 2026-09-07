@@ -26,7 +26,7 @@ const MIN_PANEL_WIDTH = 240;
   and a playback-rate stepper. Driven through the YouTube IFrame Player API;
   the pure range/rate/clock maths is in lib/looptube.js.
 */
-export function createInspiration() {
+export function createInspiration(ctx) {
   let panelUrl = null;
   let apiPromise = null;
   let player = null;
@@ -38,6 +38,11 @@ export function createInspiration() {
   let loopPollId = null;
   let loopDragging = null; // "a" | "b" | null
   let panelWidth = PANEL_WIDTHS[0];
+  // A shared link's `a`/`b` markers, parked until the next tune with a
+  // reference calls updateLink() so we know which video to open.
+  let pendingShare = null;
+  // Where to resume once the player is ready (a shared loop starts at A).
+  let shareResumeAt = null;
 
   // ---- YouTube IFrame API --------------------------------------------
 
@@ -70,6 +75,10 @@ export function createInspiration() {
             player.loadVideoById(pendingVideoId);
             pendingVideoId = null;
           }
+          if (shareResumeAt !== null) {
+            player.seekTo(shareResumeAt, true);
+            shareResumeAt = null;
+          }
           updateSpeedLabel();
           updateLoopUI();
         },
@@ -91,6 +100,7 @@ export function createInspiration() {
     let btn = byId("inspirationLink");
     if (url === undefined) {
       if (btn) btn.remove();
+      pendingShare = null;
       return;
     }
     if (!btn) {
@@ -105,6 +115,64 @@ export function createInspiration() {
     }
     btn.dataset.url = url;
     btn.dataset.title = title || "";
+
+    if (pendingShare) {
+      const share = pendingShare;
+      pendingShare = null;
+      openPanel(url, title);
+      applySharedLoop(share.a, share.b);
+    }
+  }
+
+  // Arm a shared link's A/B markers: the next tune that reports a reference
+  // opens its video with this loop already set. Called from app.js on a deep
+  // link like `/songs/#s=<slug>&a=12&b=30`.
+  function applyShareState({ a = null, b = null } = {}) {
+    pendingShare = { a, b };
+  }
+
+  // Drop the shared A/B onto a freshly opened panel (openPanel has just run its
+  // resetLoopState, so this is the authoritative write) and, when it's a real
+  // range, arm the loop and cue playback to A.
+  function applySharedLoop(a, b) {
+    loopA = a;
+    loopB = b;
+    const span = normalizeLoop(a, b, LOOP_MIN_GAP);
+    loopEnabled = Boolean(span);
+    if (span) {
+      if (player && playerReady) player.seekTo(span.a, true);
+      else shareResumeAt = span.a;
+    }
+    updateLoopUI();
+  }
+
+  // Copy a link to the current song + loop to the clipboard. app.js owns the
+  // URL shape (it knows the song / open setlist); we just supply the markers.
+  function copyShareLink() {
+    const btn = byId("inspirationShareBtn");
+    const url = ctx && ctx.shareUrl ? ctx.shareUrl({ a: loopA, b: loopB }) : "";
+    if (!url) return;
+    const flash = () => flashShareBtn(btn);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(flash, flash);
+    } else {
+      flash();
+    }
+  }
+
+  function flashShareBtn(btn) {
+    if (!btn) return;
+    const icon = btn.querySelector("span");
+    if (!icon || btn.dataset.flashing) return;
+    const original = icon.className;
+    btn.dataset.flashing = "1";
+    icon.className = "fa-solid fa-check";
+    btn.classList.add("copied");
+    setTimeout(() => {
+      icon.className = original;
+      btn.classList.remove("copied");
+      delete btn.dataset.flashing;
+    }, 1400);
   }
 
   // ---- open / close -------------------------------------------------
@@ -500,6 +568,7 @@ export function createInspiration() {
     if (!panel || !header) return;
     initLoopBar();
     on("inspirationCloseBtn", "click", closePanel);
+    on("inspirationShareBtn", "click", copyShareLink);
     on("inspirationSizeBtn", "click", () => cyclePanelSize(panel));
     setPanelWidth(panel, readStoredWidth(), false);
     initDrag(panel, header);
@@ -507,5 +576,5 @@ export function createInspiration() {
     if (resizeHandle) initResize(panel, resizeHandle);
   }
 
-  return { updateLink, init };
+  return { updateLink, applyShareState, init };
 }
