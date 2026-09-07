@@ -96,6 +96,9 @@ export function createSetlistHome(ctx) {
     ctx.state.setlistsView = "home";
     ctx.state.currentPersonalId = null;
     ctx.state.currentSetlistId = null;
+    // The open-setlist position pointer is meaningless once no setlist is open;
+    // the song itself may still be on the sheet, so currentSongFile stays.
+    ctx.state.currentSetlistSongIndex = null;
     ctx.state.currentOpenSongs = null;
     const tools = byId("setlistTools");
     if (tools) tools.hidden = true;

@@ -68,10 +68,21 @@ export function createSetlistView(ctx) {
 
   // ---- opening -----------------------------------------------------
 
+  // Opening a *different* setlist drops the pointer to whatever song was last
+  // on the sheet — otherwise a stale currentSongFile / currentSetlistSongIndex
+  // gets serialised into the hash and can spuriously highlight a row in the
+  // new list. A caller that means to open a specific song sets them again
+  // right after (via its afterRender hook).
+  function clearOpenSongPointer() {
+    ctx.state.currentSongFile = null;
+    ctx.state.currentSetlistSongIndex = null;
+  }
+
   function openBand(file, fallbackName, afterRender) {
     ctx.setlistData.loadBand(file, (setlist) => {
       ctx.state.currentPersonalId = null;
       ctx.state.currentSetlistId = String(file).replace(/\.txt$/, "");
+      clearOpenSongPointer();
       renderOpen(setlist.name || fallbackName, setlist.songs, null, setlist.desc);
       if (afterRender) afterRender();
     }, (status) => {
@@ -84,6 +95,7 @@ export function createSetlistView(ctx) {
     if (!entry) return;
     ctx.state.currentPersonalId = id;
     ctx.state.currentSetlistId = id;
+    clearOpenSongPointer();
     const open = () => {
       renderOpen(entry.name, entry.songs, entry, entry.desc);
       if (afterRender) afterRender();
