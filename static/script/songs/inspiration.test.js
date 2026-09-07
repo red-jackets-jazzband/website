@@ -150,10 +150,12 @@ test("a shared A/B link opens the video with the loop already set", async () => 
   const { window } = page;
   try {
     let fireReady = null;
+    let fireState = null;
     const seeks = [];
     window.YT = {
       Player: function FakePlayer(_el, opts) {
         fireReady = opts.events.onReady;
+        fireState = opts.events.onStateChange;
         this.loadVideoById = () => {};
         this.stopVideo = () => {};
         this.getCurrentTime = () => 0;
@@ -177,6 +179,10 @@ test("a shared A/B link opens the video with the loop already set", async () => 
 
     await new Promise((resolve) => setTimeout(resolve, 0));
     fireReady();
+    // The shared start point (loop A) lands only once the video is playing,
+    // not on onReady — a replacement video wouldn't have re-fired onReady.
+    assert.deepEqual(seeks, []);
+    fireState({ data: 1 });
 
     assert.deepEqual(seeks, [12]);
     assert.equal(document.getElementById("inspirationLoopHandleA").style.left, "6%");
@@ -209,6 +215,31 @@ test("the share button copies the link ctx.shareUrl builds from the markers", ()
     assert.deepEqual(seen, [{ a: null, b: null }]);
     assert.deepEqual(copied, ["https://red-jackets.example/songs/#s=basin_street&i=1"]);
   });
+});
+
+test("a rejected clipboard write falls back to a prompt and shows no success tick", async () => {
+  const page = mountPage();
+  const { window } = page;
+  try {
+    Object.defineProperty(window.navigator, "clipboard", {
+      value: { writeText: () => Promise.reject(new Error("denied")) },
+      configurable: true,
+    });
+    let prompted = null;
+    window.prompt = (_label, value) => { prompted = value; return value; };
+    const insp = createInspiration({ shareUrl: () => "https://x/songs/#s=y&i=1" });
+    insp.init();
+
+    window.document.getElementById("inspirationShareBtn").dispatchEvent(new window.Event("click"));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    assert.equal(prompted, "https://x/songs/#s=y&i=1");
+    assert.equal(
+      window.document.getElementById("inspirationShareBtn").classList.contains("copied"), false,
+    );
+  } finally {
+    page.cleanup();
+  }
 });
 
 test("edge resize floors the panel at MIN_PANEL_WIDTH", () => {

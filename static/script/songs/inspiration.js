@@ -75,10 +75,6 @@ export function createInspiration(ctx) {
             player.loadVideoById(pendingVideoId);
             pendingVideoId = null;
           }
-          if (shareResumeAt !== null) {
-            player.seekTo(shareResumeAt, true);
-            shareResumeAt = null;
-          }
           updateSpeedLabel();
           updateLoopUI();
         },
@@ -133,30 +129,57 @@ export function createInspiration(ctx) {
 
   // Drop the shared A/B onto a freshly opened panel (openPanel has just run its
   // resetLoopState, so this is the authoritative write) and, when it's a real
-  // range, arm the loop and cue playback to A.
+  // range, arm the loop and cue playback to A once the video is actually
+  // playing (onPlayerStateChange consumes shareResumeAt).
   function applySharedLoop(a, b) {
     loopA = a;
     loopB = b;
     const span = normalizeLoop(a, b, LOOP_MIN_GAP);
     loopEnabled = Boolean(span);
-    if (span) {
-      if (player && playerReady) player.seekTo(span.a, true);
-      else shareResumeAt = span.a;
-    }
+    shareResumeAt = span ? span.a : (Number.isFinite(a) ? a : null);
     updateLoopUI();
   }
 
   // Copy a link to the current song + loop to the clipboard. app.js owns the
   // URL shape (it knows the song / open setlist); we just supply the markers.
+  // The success tick only shows on a confirmed copy — a rejection or a missing
+  // Clipboard API falls back to execCommand, then to a prompt the user can
+  // copy out of by hand.
   function copyShareLink() {
     const btn = byId("inspirationShareBtn");
     const url = ctx && ctx.shareUrl ? ctx.shareUrl({ a: loopA, b: loopB }) : "";
     if (!url) return;
-    const flash = () => flashShareBtn(btn);
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(url).then(flash, flash);
+      navigator.clipboard.writeText(url).then(
+        () => flashShareBtn(btn),
+        () => fallbackCopy(url, btn),
+      );
     } else {
-      flash();
+      fallbackCopy(url, btn);
+    }
+  }
+
+  function fallbackCopy(url, btn) {
+    if (execCopy(url)) flashShareBtn(btn);
+    else window.prompt("Copy this link:", url);
+  }
+
+  // Old-style copy via a throwaway textarea + execCommand, for browsers that
+  // deny or lack the async Clipboard API. Returns whether it took.
+  function execCopy(url) {
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = url;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand("copy");
+      ta.remove();
+      return ok;
+    } catch (_e) {
+      return false;
     }
   }
 
@@ -222,8 +245,10 @@ export function createInspiration(ctx) {
     panel.hidden = true;
     stopLoopPoll();
     // Drop any id that was queued for a not-yet-ready player, so a late
-    // onReady doesn't start a video into the now-hidden panel.
+    // onReady doesn't start a video into the now-hidden panel; likewise a
+    // shared start point that never got to play.
     pendingVideoId = null;
+    shareResumeAt = null;
     if (player && playerReady && player.stopVideo) {
       player.stopVideo();
     } else {
@@ -237,8 +262,19 @@ export function createInspiration(ctx) {
 
   function onPlayerStateChange(e) {
     const states = window.YT && window.YT.PlayerState;
-    if (states && e.data === states.PLAYING) startLoopPoll();
-    else stopLoopPoll();
+    if (states && e.data === states.PLAYING) {
+      // A shared link's start point (loop A) is applied here, not on onReady:
+      // by the time the *right* video is actually playing a seek lands where
+      // we mean it, whereas onReady fires once and openPanel may since have
+      // swapped in a replacement video.
+      if (shareResumeAt !== null && player && player.seekTo) {
+        player.seekTo(shareResumeAt, true);
+        shareResumeAt = null;
+      }
+      startLoopPoll();
+    } else {
+      stopLoopPoll();
+    }
     updateLoopUI();
   }
 
@@ -354,6 +390,7 @@ export function createInspiration(ctx) {
     loopB = null;
     loopEnabled = false;
     loopDragging = null;
+    shareResumeAt = null;
     const bar = byId("inspirationLoopBar");
     if (bar) bar.hidden = false;
     if (player && playerReady && player.setPlaybackRate) player.setPlaybackRate(1);
