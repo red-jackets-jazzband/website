@@ -598,13 +598,15 @@ function voiceNear(pcs, refMidis) {
 function closeStack(pcs, bottomOct) {
   const out = [];
   for (let i = 0; i < pcs.length; i++) {
-    let oct = i === 0 ? bottomOct : out[i - 1].oct - 1;
+    const prev = out[i - 1];
+    let oct = i === 0 ? bottomOct : prev.oct - 1;
     let midi = Tonal.Note.midi(pcs[i] + oct);
-    while (i > 0 && (midi == null || midi <= out[i - 1].midi)) {
+    // Lift by whole octaves until this note clears the one below it. Bounded by
+    // a fixed span so an unparseable pitch class can't spin forever.
+    for (let lift = 0; lift < 12 && i > 0 && midi != null && midi <= prev.midi; lift++) {
       oct += 1;
       midi = Tonal.Note.midi(pcs[i] + oct);
     }
-    const prev = out[i - 1];
     out.push({ pc: pcs[i], oct, midi: midi == null ? (prev ? prev.midi + 4 : 60) : midi });
   }
   return out;
