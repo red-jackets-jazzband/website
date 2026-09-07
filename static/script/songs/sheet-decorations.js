@@ -56,7 +56,7 @@ function onsetKey(cls) {
 // The y of a tie/slur path's first point ("M x y C …") — bigger y sits lower.
 function tieAnchorY(el) {
   const m = /^M\s*[-\d.]+\s+([-\d.]+)/.exec(el.getAttribute("d") || "");
-  return m ? parseFloat(m[1]) : null;
+  return m ? Number.parseFloat(m[1]) : null;
 }
 
 /*

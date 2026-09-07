@@ -281,26 +281,27 @@ export function rebeamBar(str, lnum, lden) {
 export function respellBar(fragment, keySig) {
   const barAcc = new Map();
   const norm = (a) => (a === "" ? "nat" : a);
-  return String(fragment).replace(
-    /\[(?:[_^=]*[A-Ga-g][,']*)+\]/g,
-    (chord) => {
-      const notes = chord.slice(1, -1).match(/[_^=]*[A-Ga-g][,']*/g) || [];
-      const rebuilt = notes.map((note) => {
-        const m = note.match(/^([_^=]*)([A-Ga-g])([,']*)$/);
-        const letterOct = m[2] + m[3];
-        const letter = m[2].toUpperCase();
-        // Tonal never writes `=`; a bare note means natural.
-        const want = m[1].replace(/=/g, "");
-        const current = barAcc.has(letterOct)
-          ? barAcc.get(letterOct)
-          : keySig[letter] || "";
-        if (norm(want) === norm(current)) return letterOct;
-        barAcc.set(letterOct, want);
-        return (want || "=") + letterOct;
-      });
-      return "[" + rebuilt.join("") + "]";
-    },
-  );
+  return String(fragment).replaceAll(/\[[_^=A-Ga-g,']+\]/g, (chord) => {
+    const rebuilt = [];
+    for (const [, acc, letterRaw, oct] of chord
+      .slice(1, -1)
+      .matchAll(/([_^=]{0,2})([A-Ga-g])([,']{0,4})/g)) {
+      const letterOct = letterRaw + oct;
+      const letter = letterRaw.toUpperCase();
+      // Tonal never writes `=`; a bare note means natural.
+      const want = acc.replaceAll("=", "");
+      const current = barAcc.has(letterOct)
+        ? barAcc.get(letterOct)
+        : keySig[letter] || "";
+      if (norm(want) === norm(current)) {
+        rebuilt.push(letterOct);
+        continue;
+      }
+      barAcc.set(letterOct, want);
+      rebuilt.push((want || "=") + letterOct);
+    }
+    return "[" + rebuilt.join("") + "]";
+  });
 }
 
 // Spread `total` eighth slots across `parts` notes as evenly as possible.
@@ -427,10 +428,7 @@ export function buildVoiceBody(rawBody, barStrings, leadingRestBars, restToken, 
     };
     let content;
     let contentIsRest = false;
-    if (seen < leadingRestBars) {
-      content = measuredRest(p.s);
-      contentIsRest = true;
-    } else if (patternIdx < barStrings.length) {
+    if (seen >= leadingRestBars && patternIdx < barStrings.length) {
       content = barStrings[patternIdx++];
     } else {
       content = measuredRest(p.s);
@@ -493,8 +491,8 @@ function keyScaleNotes(key) {
 function keySignature(keyScale) {
   const sig = {};
   for (const pc of keyScale) {
-    const m = String(pc).match(/^([A-G])([#b]*)$/);
-    if (m) sig[m[1]] = m[2].replace(/#/g, "^").replace(/b/g, "_");
+    const m = /^([A-G])([#b]*)$/.exec(String(pc));
+    if (m) sig[m[1]] = m[2].replaceAll("#", "^").replaceAll("b", "_");
   }
   return sig;
 }
@@ -603,11 +601,15 @@ function closeStack(pcs, bottomOct) {
     let midi = Tonal.Note.midi(pcs[i] + oct);
     // Lift by whole octaves until this note clears the one below it. Bounded by
     // a fixed span so an unparseable pitch class can't spin forever.
-    for (let lift = 0; lift < 12 && i > 0 && midi != null && midi <= prev.midi; lift++) {
-      oct += 1;
-      midi = Tonal.Note.midi(pcs[i] + oct);
+    if (prev) {
+      for (let lift = 0; lift < 12 && midi != null && midi <= prev.midi; lift++) {
+        oct += 1;
+        midi = Tonal.Note.midi(pcs[i] + oct);
+      }
     }
-    out.push({ pc: pcs[i], oct, midi: midi == null ? (prev ? prev.midi + 4 : 60) : midi });
+    let resolvedMidi = midi;
+    if (resolvedMidi == null) resolvedMidi = prev ? prev.midi + 4 : 60;
+    out.push({ pc: pcs[i], oct, midi: resolvedMidi });
   }
   return out;
 }
@@ -738,11 +740,14 @@ function voiceLead(bars) {
       if (!homeRefs) homeRefs = seedRefs(curr);
       const pcKey = curr.map((t) => t.pc).join(",");
       const chordChanged = prevPcKey !== null && pcKey !== prevPcKey;
-      const refs = !prevMidis
-        ? seedRefs(curr)
-        : chordChanged
-          ? prevMidis.map((r, i) => r + REGISTER_HOMING * (homeRefs[i] - r))
-          : prevMidis;
+      let refs;
+      if (!prevMidis) {
+        refs = seedRefs(curr);
+      } else if (chordChanged) {
+        refs = prevMidis.map((r, i) => r + REGISTER_HOMING * (homeRefs[i] - r));
+      } else {
+        refs = prevMidis;
+      }
       let best = null;
       for (const perm of VOICE_PERMS) {
         const pcs = perm.map((ci) => curr[ci].pc);
@@ -761,8 +766,11 @@ function voiceLead(bars) {
       }
       // Nudge back by an octave if the stack has drifted off the staff.
       const lo = best.placed[0].midi;
-      const hi = best.placed[best.placed.length - 1].midi;
-      const shift = (lo + hi) / 2 < 55 ? 12 : (lo + hi) / 2 > 78 ? -12 : 0;
+      const hi = best.placed.at(-1).midi;
+      const staffCenter = (lo + hi) / 2;
+      let shift = 0;
+      if (staffCenter < 55) shift = 12;
+      else if (staffCenter > 78) shift = -12;
       const pick = best.perm.map((ci, i) => ({
         pc: curr[ci].pc,
         fn: VOICE_KEYS[i],
