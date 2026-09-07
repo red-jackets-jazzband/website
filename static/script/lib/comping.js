@@ -500,6 +500,27 @@ function voiceNear(pcs, refMidis) {
 }
 
 /*
+   Stack `pcs` (already in the intended bottom-to-top order) as a *close*
+   voicing: bottom note at `bottomOct`, every higher note dropped to its lowest
+   octave still above the note below it. The whole chord then fits inside about
+   an octave, whatever inversion `pcs` represents. Returns [{ pc, oct, midi }].
+*/
+function closeStack(pcs, bottomOct) {
+  const out = [];
+  for (let i = 0; i < pcs.length; i++) {
+    let oct = i === 0 ? bottomOct : out[i - 1].oct - 1;
+    let midi = Tonal.Note.midi(pcs[i] + oct);
+    while (i > 0 && (midi == null || midi <= out[i - 1].midi)) {
+      oct += 1;
+      midi = Tonal.Note.midi(pcs[i] + oct);
+    }
+    const prev = out[i - 1];
+    out.push({ pc: pcs[i], oct, midi: midi == null ? (prev ? prev.midi + 4 : 60) : midi });
+  }
+  return out;
+}
+
+/*
    For a voiced triad ([{pc,fn,oct}] bottom-to-top), return [main, down1, up1,
    up2] as ABC chord tokens: the triad itself plus the whole triad planed
    one/one/two diatonic scale steps below/above, each re-voiced to stay near
@@ -563,14 +584,14 @@ function seedRefs(curr) {
 
 /*
    Per bar, voice-lead each chord from the previous one. For the incoming chord
-   we try all six ways of stacking its three tones (root position + both
-   inversions), place each tone at the octave nearest the previous voicing's
-   note in that slot, and keep the stack whose shape is closest to the previous
-   one — least total bottom/middle/top movement. So a chord is drawn in
-   whichever inversion sits closest under the previous one, and because the
-   metric is slot-by-slot the lines don't cross (a choice where the top drops
-   while the middle climbs always costs more than the sensible one). The first
-   chord has nothing before it, so it leads off from its own root position.
+   we try all six ways of ordering its three tones (root position + both
+   inversions) x a few bottom octaves, build each as a *close* stack (all three
+   notes within about an octave, `closeStack`), and keep the one whose shape is
+   closest to the previous voicing — least total bottom/middle/top movement. So
+   a chord is drawn in whichever tight inversion sits closest under the previous
+   one, and because the metric is slot-by-slot the lines don't cross (a choice
+   where the top drops while the middle climbs always costs more than the
+   sensible one). The first chord leads off from its own root position.
 
    The three voices never cross, so voice = slot: the bottom line is always the
    black voice, the middle gold, the top red (`VOICE_KEYS` by slot index) —
@@ -589,12 +610,16 @@ function voiceLead(bars) {
       const refs = prevMidis || seedRefs(curr);
       let best = null;
       for (const perm of VOICE_PERMS) {
-        const placed = voiceNear(perm.map((ci) => curr[ci].pc), refs);
-        const cost = placed.reduce(
-          (sum, p, i) => sum + Math.abs(p.midi - refs[i]),
-          0,
-        );
-        if (!best || cost < best.cost) best = { perm, placed, cost };
+        const pcs = perm.map((ci) => curr[ci].pc);
+        const baseOct = nearestOctave(pcs[0], refs[0]);
+        for (const d of [-1, 0, 1]) {
+          const placed = closeStack(pcs, baseOct + d);
+          const cost = placed.reduce(
+            (sum, p, i) => sum + Math.abs(p.midi - refs[i]),
+            0,
+          );
+          if (!best || cost < best.cost) best = { perm, placed, cost };
+        }
       }
       // Nudge back by an octave if the stack has drifted off the staff.
       const lo = best.placed[0].midi;
