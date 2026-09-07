@@ -55,7 +55,7 @@ jobs:
     - build
     if: github.ref == 'refs/heads/master'
     permissions:
-      id-token: write
+      contents: write
     steps:
       - name: Download the website
         uses: actions/download-artifact@v8.0.1
@@ -63,9 +63,9 @@ jobs:
           name: website
           path: public/
       - name: Publish
-        uses: tsunematsu21/actions-publish-gh-pages@v1.0.2
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          dir: public
-          repo: red-jackets-jazzband/red-jackets-jazzband.github.io
-          branch: master
-          token: ${{ secrets.GH_RJ_DEPLOY }}
+          personal_token: ${{ secrets.GH_RJ_DEPLOY }}
+          external_repository: red-jackets-jazzband/red-jackets-jazzband.github.io
+          publish_branch: master
+          publish_dir: ./public
