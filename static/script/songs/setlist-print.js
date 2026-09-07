@@ -231,8 +231,15 @@ export function createSetlistPrint(ctx) {
     appendStageList(container, songs);
 
     // A rebuild (e.g. instrument change) with a print still queued: keep
-    // counting against the fresh read total.
-    if (onBookletReady) setPrintProgress(waitingMode);
+    // counting against the fresh read total, or release the print now if the
+    // rebuilt booklet has nothing to load.
+    if (onBookletReady && pendingReads === 0) {
+      const ready = onBookletReady;
+      onBookletReady = null;
+      ready();
+    } else if (onBookletReady) {
+      setPrintProgress(waitingMode);
+    }
   }
 
   function print(mode) {
