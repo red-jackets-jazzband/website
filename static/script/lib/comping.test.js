@@ -303,21 +303,31 @@ test("buildCompingTune draws the first chord in root position", () => {
   assert.deepEqual(out.palette[0], ["R", "3", "5"]);
 });
 
+test("buildCompingTune walks each colour to the nearest tone of the next chord", () => {
+  // G(black) B(gold) D(red) -> C7: black holds G (common tone), gold steps
+  // B->C, red steps D->E. Colour tracks the line, not the chord tone.
+  const tune = ["M:4/4", "L:1/8", "K:C", '"G" G8 | "C7" G8 |'].join("\n");
+  const chords = [{ text: ["G"] }, { text: ["C7"] }];
+  const out = withTonal(() => buildCompingTune(tune, chords, fakeSong(), "whole_note"));
+  const bars = compingChordMidis(out.abc);
+  assert.deepEqual(bars[0], [67, 71, 74]); // G4 B4 D5
+  assert.deepEqual(bars[1], [67, 72, 76]); // G4 C5 E5 — black held, gold/red +1 step
+  // the colours never reorder: bottom is always black, middle gold, top red
+  for (const order of out.palette) assert.deepEqual(order, ["R", "3", "5"]);
+});
+
 test("buildCompingTune draws each chord in the inversion closest to the last", () => {
-  // G B D -> D7: F#4 A4 D5 (the root on top) sits right under G4 B4 D5, far
-  // closer than root-position D4 F#4 A4 would.
+  // G B D -> D7: F#4 A4 D5 sits right under G4 B4 D5 (each line moves <= a
+  // tone), far closer than root-position D4 F#4 A4 would.
   const tune = ["M:4/4", "L:1/8", "K:C", '"G" G8 | "D7" G8 |'].join("\n");
   const chords = [{ text: ["G"] }, { text: ["D7"] }];
   const out = withTonal(() => buildCompingTune(tune, chords, fakeSong(), "whole_note"));
   const bars = compingChordMidis(out.abc);
   assert.deepEqual(bars[0], [67, 71, 74]); // G4 B4 D5
   assert.deepEqual(bars[1], [66, 69, 74]); // F#4 A4 D5 — closest inversion
-  // every slot moves a whole tone or less
   for (let v = 0; v < 3; v++) {
     assert.ok(Math.abs(bars[1][v] - bars[0][v]) <= 2, `slot ${v}`);
   }
-  // the palette reflects the inversion: third / fifth / root bottom-to-top
-  assert.deepEqual(out.palette[1], ["3", "5", "R"]);
 });
 
 test("buildCompingTune voice-leads a progression with minimal, non-crossing motion", () => {
