@@ -547,6 +547,28 @@ export function createSetlistView(ctx) {
     });
   }
 
+  // Enter mirrors the library search: open (here: add) the lone match, then
+  // clear the field. Always clears, match or not.
+  function submitAddSong(inputEl) {
+    const query = addSongQuery;
+    const matches = query
+      ? filterSongsByQuery(ctx.state.allSongs, query).slice(0, 8)
+      : [];
+    const added = matches.length === 1 && Boolean(ctx.state.currentPersonalId);
+    if (added) {
+      addSongToPersonalSetlist(ctx.storage(), ctx.state.currentPersonalId, {
+        file: matches[0].file, key: "",
+      });
+    }
+    addSongQuery = "";
+    inputEl.value = "";
+    renderAddSongResults("");
+    if (added) {
+      focusAddSongAfterRender = true;
+      refreshOpenPersonal();
+    }
+  }
+
   function buildAddSongRow() {
     const search = el("input", {
       type: "search",
@@ -560,6 +582,13 @@ export function createSetlistView(ctx) {
             () => renderAddSongResults(addSongQuery), showAddSongError,
           );
         },
+        keydown: (e) => {
+          if (e.key !== "Enter") return;
+          e.preventDefault();
+          ctx.setlistData.ensureSongsLoaded(
+            () => submitAddSong(e.target), () => submitAddSong(e.target),
+          );
+        },
       },
     });
 
@@ -568,6 +597,9 @@ export function createSetlistView(ctx) {
       html: '<span class="fa-solid fa-magnifying-glass" aria-hidden="true"></span>',
     });
     inputWrap.append(search);
+    inputWrap.append(el("kbd", {
+      class: "rj-search-hint", text: "/", attrs: { "aria-hidden": "true" },
+    }));
 
     const results = el("div", {
       id: "setlistAddSongResults",

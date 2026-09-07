@@ -61,6 +61,51 @@ test("renderOpen numbers a flat personal setlist 1..n with drag handles + remove
   }
 });
 
+test("Enter in the add-song search adds a lone match and clears the field", () => {
+  const { view, ctx, entry, storage, cleanup } = setup({ songs: [{ file: "a.abc" }] });
+  try {
+    ctx.state.allSongs = [
+      { file: "basin_street.abc", name: "Basin Street Blues" },
+      { file: "muskrat.abc", name: "Muskrat Ramble" },
+    ];
+    view.renderOpen(entry.name, entry.songs, entry, "");
+    const search = document.getElementById("setlistAddSongSearch");
+
+    search.value = "basin";
+    search.dispatchEvent(new window.Event("input"));
+    search.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+
+    assert.deepEqual(
+      getPersonalSetlist(storage, entry.id).songs.map((s) => s.file),
+      ["a.abc", "basin_street.abc"],
+    );
+    assert.equal(document.getElementById("setlistAddSongSearch").value, "");
+  } finally {
+    cleanup();
+  }
+});
+
+test("Enter with no single match just clears the add-song field", () => {
+  const { view, ctx, entry, storage, cleanup } = setup({ songs: [{ file: "a.abc" }] });
+  try {
+    ctx.state.allSongs = [
+      { file: "basin_street.abc", name: "Basin Street Blues" },
+      { file: "basin_two.abc", name: "Basin Two" },
+    ];
+    view.renderOpen(entry.name, entry.songs, entry, "");
+    const search = document.getElementById("setlistAddSongSearch");
+
+    search.value = "basin";
+    search.dispatchEvent(new window.Event("input"));
+    search.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+
+    assert.deepEqual(getPersonalSetlist(storage, entry.id).songs.map((s) => s.file), ["a.abc"]);
+    assert.equal(document.getElementById("setlistAddSongSearch").value, "");
+  } finally {
+    cleanup();
+  }
+});
+
 test("renderOpen restarts numbering per set and shows headings", () => {
   const { view, entry, cleanup } = setup({
     songs: [{ file: "a.abc" }, { file: "b.abc" }, { divider: "Encore" }, { file: "c.abc" }],
