@@ -2603,6 +2603,23 @@ body:has(#rjLibrary) .split-bio {
   overrides would lose to the base rule instead of the intended cascade.
 */
 @media (max-width: 1024px) {
+  /*
+    The songs page stacks at 1024px, but the theme's generic `.split-content`
+    only stops being a ~100vh internal scroll container at 800px. Between those
+    widths (portrait tablets) `.split-content` keeps `overflow: auto` while
+    `align-items: center` vertically centres the stacked layout — so once the
+    song list outgrows the viewport its overflow is split evenly above and
+    below the centre line and the top half (roughly A–H) can't be scrolled
+    back to. Mirror the 800px relaxation here, scoped to the songs page, so
+    the window scrolls instead. (The `.split-content-vertically-center` child
+    is already handled just below.)
+  */
+  body:has(#rjLibrary) .fs-split .split-content {
+    display: block;
+    min-height: 0;
+    height: auto;
+    overflow: visible;
+  }
   body:has(#rjLibrary) .fs-split .split-content-vertically-center {
     height: auto;
   }
