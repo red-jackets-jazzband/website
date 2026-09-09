@@ -2956,12 +2956,53 @@ body:has(#rjLibrary) .split-bio {
     instrument caption takes its own first line since it's the widest,
     least-interactive item.
   */
+  /*
+    Each wrapped line was left-packed by default: content-sized items
+    (steppers, the transport cluster, Inspiration, the icon actions) just
+    piled up at the start of their own line with whatever was left over
+    sitting empty after them, so consecutive lines landed at visibly
+    different widths and felt randomly sized next to each other.
+    justify-content stretches that leftover gap between a line's own items
+    instead, so every line reaches both edges the same way the full-width
+    instrument dropdown above them already does. Key/Tempo also grow to
+    fill their line completely — without that, space-between would shove
+    the pair apart to opposite edges instead of keeping them adjacent; the
+    transport cluster, Inspiration and the icon actions stay their natural
+    compact size and let space-between do the positioning. A `flex-basis: 0`
+    item's hypothetical size is 0 for the *wrapping* decision itself, and
+    .sheet-stepper's own `overflow: hidden` (for its rounded corners)
+    disables the usual content-based automatic minimum size that would
+    otherwise stop it shrinking — without an explicit min-width, that combo
+    lets the wrapping algorithm cram a stepper onto an already-full line
+    and then squash it down past its own value/+ button, clipped. The
+    min-width below is the stepper's natural content width (two 26px
+    buttons + the value field), so growth still fills the line but
+    shrinkage stops before anything gets clipped.
+  */
   #sheetmenu {
     flex-wrap: wrap;
     row-gap: 8px;
+    justify-content: space-between;
   }
   .sheet-status {
     flex-basis: 100%;
+  }
+  #keyStepper,
+  #tempoStepper {
+    flex: 1 1 0;
+    min-width: 120px;
+  }
+  /*
+    #keyStepper/#tempoStepper growing widens the pill, but their three
+    children (−, value, +) are all flex:none — left them as-is, the two
+    buttons and the value would all hug the left edge under the default
+    justify-content:flex-start, dumping the new width as dead space after
+    the + button instead of around the value like on desktop. Grow the
+    value instead so the buttons stay pinned to the pill's own edges and
+    the number stays centered in the (now flexible) space between them.
+  */
+  .sheet-stepper-value {
+    flex: 1;
   }
 
   /*
