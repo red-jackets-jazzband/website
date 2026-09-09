@@ -18,6 +18,10 @@ export const PREF_KEYS = {
   mixerBassMuted: "rj.mixerBassMuted",
   mixerChordsMuted: "rj.mixerChordsMuted",
   mixerCompingMuted: "rj.mixerCompingMuted",
+  mixerMelodyProgram: "rj.mixerMelodyProgram",
+  mixerBassProgram: "rj.mixerBassProgram",
+  mixerChordsProgram: "rj.mixerChordsProgram",
+  mixerCompingProgram: "rj.mixerCompingProgram",
 };
 
 // The raw Storage object, or null when it can't be reached. Callers that hand

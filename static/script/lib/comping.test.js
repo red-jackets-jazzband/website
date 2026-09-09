@@ -251,8 +251,8 @@ test("buildCompingTune's output accepts lib/audio-mix.js's injectMixerAudio", ()
   const stamped = injectMixerAudio(out.abc, {
     compingActive: true, hasChords: true, melodyPercent: 80, compingPercent: 40, bassPercent: 0, chordsPercent: 0,
   });
-  assert.match(stamped, /\nV:1\n%%MIDI vol 102\n/); // round(80/100*127)
-  assert.match(stamped, /\nV:2\n%%MIDI vol 51\n/); // round(40/100*127)
+  assert.match(stamped, /\nV:1\n%%MIDI program \d+\n%%MIDI vol 102\n/); // round(80/100*127)
+  assert.match(stamped, /\nV:2\n%%MIDI program \d+\n%%MIDI vol 51\n/); // round(40/100*127)
   // the voice declaration line is still there exactly once, untouched
   assert.equal((stamped.match(/V:2 name="R\\n3\\n5"/g) || []).length, 1);
 });

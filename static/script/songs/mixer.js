@@ -1,5 +1,6 @@
-import { byId, on } from "../lib/dom.js";
+import { byId, el, on } from "../lib/dom.js";
 import { readPref, writePref, PREF_KEYS } from "../lib/preferences.js";
+import { GM_VOICES } from "../lib/gm-voices.js";
 
 // Full re-engrave (the only way to change what plays — see sheet.js /
 // lib/audio-mix.js) is too heavy to run on every "input" tick of a dragged
@@ -37,6 +38,7 @@ function elementIds(channel) {
     readout: `mixer${c}Readout`,
     muteBtn: `mixer${c}MuteBtn`,
     strip: `mixerStrip${c}`,
+    voiceSelect: `mixer${c}VoiceSelect`,
   };
 }
 
@@ -46,16 +48,38 @@ function volumeKey(channel) {
 function mutedKey(channel) {
   return PREF_KEYS[`mixer${cap(channel)}Muted`];
 }
+function programKey(channel) {
+  return PREF_KEYS[`mixer${cap(channel)}Program`];
+}
+
+// One <option> per GM_VOICES entry, grouped into <optgroup>s in the order
+// each group first appears, plus a leading "Default" option (empty value)
+// for "don't override — use this channel's own built-in program", same
+// convention as the Instrument / Comping dropdowns in selects.js.
+function buildVoiceOptions(select) {
+  select.append(el("option", { value: "", text: "DEFAULT" }));
+  const groups = new Map();
+  for (const voice of GM_VOICES) {
+    if (!groups.has(voice.group)) {
+      const optgroup = el("optgroup", { label: voice.group.toUpperCase() });
+      groups.set(voice.group, optgroup);
+      select.append(optgroup);
+    }
+    groups.get(voice.group).append(el("option", { value: String(voice.value), text: voice.label.toUpperCase() }));
+  }
+}
 
 /*
   The sheet toolbar's Mixer button (#mixerBtn) and its popover/bottom-sheet
   panel (#mixerPanel): four channels — Melody, Bass, Chords (the latter two
   ABCjs's own auto-accompaniment, generated from the tune's chord symbols)
   and Comping (this site's notated root/3rd/5th voice, as one bus) — each a
-  0-100 volume fader plus an independent mute. Values are sticky across songs
-  (persisted like the instrument / comping choices, see lib/preferences.js),
-  read by sheet.js at render time (lib/audio-mix.js's injectMixerAudio) —
-  this module only owns the panel's DOM and ctx.state.mixer. Mute isn't a
+  0-100 volume fader, a mute button and a Voice picker (a GM instrument
+  select — see lib/gm-voices.js — defaulting to "Default", i.e. that
+  channel's own built-in program). Values are sticky across songs (persisted
+  like the instrument / comping choices, see lib/preferences.js), read by
+  sheet.js at render time (lib/audio-mix.js's injectMixerAudio) — this
+  module only owns the panel's DOM and ctx.state.mixer. Mute isn't a
   separate concept here: a muted channel's fader value is just read as 0 (see
   sheet.js's effectiveMixerPercent), so every channel is one number.
 */
@@ -68,6 +92,8 @@ export function createMixer(ctx) {
     CHANNELS.forEach((channel) => {
       writePref(volumeKey(channel), String(m[`${channel}Volume`]));
       writePref(mutedKey(channel), m[`${channel}Muted`] ? "1" : "0");
+      const program = m[`${channel}Program`];
+      writePref(programKey(channel), program === null ? "" : String(program));
     });
   }
 
@@ -150,6 +176,17 @@ export function createMixer(ctx) {
       updateStripVisual(channel);
       applyNow();
     });
+
+    const select = byId(ids.voiceSelect);
+    if (select) {
+      buildVoiceOptions(select);
+      const program = ctx.state.mixer[`${channel}Program`];
+      select.value = program === null ? "" : String(program);
+      select.addEventListener("change", () => {
+        ctx.state.mixer[`${channel}Program`] = select.value === "" ? null : Number(select.value);
+        applyNow();
+      });
+    }
   }
 
   // A fixed-position popover anchored under the button on desktop; the same
@@ -215,6 +252,8 @@ export function loadMixerState() {
     state[`${channel}Volume`] = storedVolume === null ? 100 : clampPercent(storedVolume);
     const storedMuted = readPref(mutedKey(channel));
     state[`${channel}Muted`] = storedMuted === null ? DEFAULT_MUTED[channel] : storedMuted === "1";
+    const storedProgram = readPref(programKey(channel));
+    state[`${channel}Program`] = storedProgram === null || storedProgram === "" ? null : Number(storedProgram);
   });
   return state;
 }
