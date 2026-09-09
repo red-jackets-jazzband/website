@@ -60,7 +60,7 @@ export function chordToRomanNumeral(chordStr, keyRoot, keyMode) {
   const accidental = entry[1];
 
   const isMinorChord = /^(m|min|-)(?!aj)/i.test(suffix);
-  const isHalfDim = /^(Ø|ø|m7[b♭]5)/i.test(suffix);
+  const isHalfDim = /^(Ø|m7[b♭]5)/i.test(suffix);
   const isDim = /^(°|dim)/i.test(suffix);
   const isAug = /^(\+|aug)/i.test(suffix);
   const isMaj7 = /maj7|Δ/.test(suffix);
@@ -115,7 +115,7 @@ export function convertChordsToRoman(chords, song) {
     const romanText = measure.text.map((chordStr) => {
       return chordToRomanNumeral(chordStr, keyRoot, keyMode);
     });
-    return Object.assign({}, measure, { text: romanText });
+    return { ...measure, text: romanText };
   });
 }
 

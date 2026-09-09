@@ -46,7 +46,7 @@ export const tonalStub = {
       while (s[i] === "#" || s[i] === "b") i += 1;
       const root = s.slice(0, i);
       const q = s.slice(i);
-      const third = /^(m|min|-|dim|°|o)/.test(q) ? 3 : 4;
+      const third = /^(m|-|dim|°|o)/.test(q) ? 3 : 4;
       let fifth = 7;
       if (/^(dim|°|o)/.test(q)) fifth = 6;
       else if (/^(aug|\+)/.test(q)) fifth = 8;

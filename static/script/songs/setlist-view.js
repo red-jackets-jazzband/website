@@ -431,7 +431,8 @@ export function createSetlistView(ctx) {
     ctx.setSheetBackLabel("Setlist");
     if (ctx.syncHash) ctx.syncHash();
     highlightCurrent();
-    const seq = (songLoadSeq += 1);
+    songLoadSeq += 1;
+    const seq = songLoadSeq;
     ctx.readFile(`/songs/${song.file}`, (text) => {
       // A slower earlier request must not overwrite the sheet the user has
       // since moved on to.

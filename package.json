@@ -4,21 +4,26 @@
   "type": "module",
   "description": "Dev tooling (lint + unit tests) for the Red Jackets Jazzband Hugo site's vanilla JS. Not part of the Hugo build or the GitHub Pages deploy.",
   "scripts": {
-    "lint": "npm run lint:js && npm run lint:css && npm run lint:dup",
+    "lint": "npm run lint:js && npm run lint:css && npm run lint:dup && npm run lint:types",
     "lint:js": "eslint --max-warnings 0 static/script tests eslint.config.js",
     "lint:css": "stylelint \"static/assets/css/**/*.css\"",
     "lint:dup": "jscpd --config jscpd.config.json",
+    "lint:types": "tsc -p tsconfig.lib.json",
+    "audit": "npm audit --audit-level=high",
     "test": "node --test \"static/script/lib/*.test.js\" \"static/script/songs/*.test.js\" \"tests/**/*.test.js\""
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@stylistic/eslint-plugin": "^5.10.0",
+    "@types/node": "^26.5.0",
     "eslint": "^10.10.0",
+    "eslint-plugin-regexp": "^3.3.0",
     "eslint-plugin-sonarjs": "^4.2.0",
     "globals": "^17.12.0",
     "jscpd": "^5.2.0",
     "jsdom": "^30.0.1",
     "stylelint": "^17.15.0",
-    "stylelint-config-recommended": "^18.0.0"
+    "stylelint-config-recommended": "^18.0.0",
+    "typescript": "5.9.3"
   }
 }

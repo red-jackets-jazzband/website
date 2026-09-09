@@ -28,6 +28,7 @@ jobs:
       - run: npm ci --ignore-scripts
       - run: npm run lint
       - run: npm test
+      - run: npm run audit
 
   build:
     runs-on: ubuntu-latest

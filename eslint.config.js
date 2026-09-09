@@ -1,6 +1,7 @@
 import js from "@eslint/js";
 import stylistic from "@stylistic/eslint-plugin";
 import sonarjs from "eslint-plugin-sonarjs";
+import regexpPlugin from "eslint-plugin-regexp";
 import globals from "globals";
 
 // Strict, project-wide config for the site's authored JavaScript: the pure
@@ -24,6 +25,54 @@ const STRICT_RULES = {
   complexity: ["warn", 14],
   "max-depth": ["warn", 4],
   "max-params": ["warn", 5],
+
+  // Correctness / "this probably isn't what you meant" rules, layered on
+  // top of eslint:recommended + sonarjs. Every one of these is currently
+  // clean across the codebase — they're here to keep it that way, not
+  // because they found something. See CLAUDE.md for what each catches.
+  "no-constant-binary-expression": "error",
+  "array-callback-return": "error",
+  "no-promise-executor-return": "error",
+  "no-unreachable-loop": "error",
+  "no-self-compare": "error",
+  "no-template-curly-in-string": "error",
+  "no-unmodified-loop-condition": "error",
+  "default-case-last": "error",
+  "no-useless-concat": "error",
+  "no-useless-return": "error",
+  "no-unneeded-ternary": "error",
+  "no-lonely-if": "error",
+  "no-implicit-coercion": "error",
+  "no-multi-assign": "error",
+  "no-return-assign": "error",
+  "guard-for-in": "error",
+  "no-shadow-restricted-names": "error",
+  "symbol-description": "error",
+  "logical-assignment-operators": "error",
+  "no-useless-computed-key": "error",
+  "no-useless-rename": "error",
+  "prefer-object-spread": "error",
+  "prefer-numeric-literals": "error",
+  "prefer-exponentiation-operator": "error",
+  "prefer-regex-literals": "error",
+  radix: "error",
+  "require-atomic-updates": "error",
+  "no-throw-literal": "error",
+  "prefer-promise-reject-errors": "error",
+  "no-array-constructor": "error",
+  "no-new-wrappers": "error",
+
+  // Security-relevant footguns (arbitrary code execution / injection via
+  // string-eval'd code, prototype tampering) — not covered by sonarjs's
+  // recommended set, but exactly the class of thing a Sonar security-hotspot
+  // rule would flag.
+  "no-eval": "error",
+  "no-new-func": "error",
+  "no-script-url": "error",
+  "no-extend-native": "error",
+  "no-proto": "error",
+  "no-iterator": "error",
+  "no-caller": "error",
 };
 
 const STYLISTIC_RULES = {
@@ -60,7 +109,11 @@ export default [
         YT: "readonly",
       },
     },
-    plugins: { "@stylistic": stylistic, sonarjs: sonarjs.configs.recommended.plugins.sonarjs },
+    plugins: {
+      "@stylistic": stylistic,
+      sonarjs: sonarjs.configs.recommended.plugins.sonarjs,
+      regexp: regexpPlugin,
+    },
     rules: {
       ...sonarjs.configs.recommended.rules,
       ...STRICT_RULES,
@@ -69,6 +122,14 @@ export default [
       "sonarjs/no-unused-vars": "off",
       "sonarjs/cognitive-complexity": ["warn", 15],
       "sonarjs/no-duplicate-string": ["warn", { threshold: 5 }],
+      // Two rules cherry-picked from eslint-plugin-regexp's much larger
+      // "recommended" set: both catch a regex that's internally
+      // self-contradictory (a dead alternative, a capturing group whose
+      // pattern promises more than its neighbours let it keep) rather than
+      // opining on capturing-vs-non-capturing groups or char-class-vs-`i`-flag
+      // style, which the rest of that set is mostly about.
+      "regexp/no-dupe-disjunctions": "error",
+      "regexp/no-misleading-capturing-group": "error",
     },
   },
   {
