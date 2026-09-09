@@ -177,12 +177,25 @@ export function createMixer(ctx) {
   // A gated channel (Bass/Chords need chords at all; Comping needs its
   // pattern on) only means anything once the current tune actually qualifies
   // — dim it and swap in an explainer otherwise, rather than a fader that
-  // silently does nothing.
+  // silently does nothing. `is-inactive`'s CSS (pointer-events: none) only
+  // stops mouse interaction; a keyboard or assistive-technology user could
+  // still Tab to and operate a dimmed control, so the actual `disabled`
+  // property is toggled here too, in step with the class. Melody/Comping's
+  // fader is `disabled` unconditionally already (VOLUME_LOCKED) — leave that
+  // alone rather than re-enabling it the moment Comping's gate opens.
   function updateGate(channel) {
     const gateKey = GATE_STATE_KEY[channel];
     if (!gateKey) return;
-    const strip = byId(elementIds(channel).strip);
-    if (strip) strip.classList.toggle("is-inactive", !ctx.state[gateKey]);
+    const inactive = !ctx.state[gateKey];
+    const ids = elementIds(channel);
+    const strip = byId(ids.strip);
+    if (strip) strip.classList.toggle("is-inactive", inactive);
+    const range = byId(ids.range);
+    if (range && !VOLUME_LOCKED.has(channel)) range.disabled = inactive;
+    const muteBtn = byId(ids.muteBtn);
+    if (muteBtn) muteBtn.disabled = inactive;
+    const select = byId(ids.voiceSelect);
+    if (select) select.disabled = inactive;
   }
 
   function refresh() {
