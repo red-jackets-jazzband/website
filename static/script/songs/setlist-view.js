@@ -369,8 +369,12 @@ export function createSetlistView(ctx) {
     const rows = draggableRows();
     const pos = rows.indexOf(row);
     removeSongFromPersonalSetlist(ctx.storage(), personalId, Number(row.dataset.setlistIndex));
-    if (pos !== -1 && rows.length > 1) {
-      focusHandleAfterRender = Math.min(pos, rows.length - 2);
+    if (pos !== -1) {
+      if (rows.length > 1) {
+        focusHandleAfterRender = Math.min(pos, rows.length - 2);
+      } else {
+        focusAddSongAfterRender = true;
+      }
     }
     refreshOpenPersonal();
   }
