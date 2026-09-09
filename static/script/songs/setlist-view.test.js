@@ -306,6 +306,60 @@ test("keyboard nudge on a drag handle persists the new order", () => {
   }
 });
 
+test("the remove button drops the song from the personal setlist", () => {
+  const { view, entry, storage, cleanup } = setup({
+    songs: [{ file: "a.abc" }, { file: "b.abc" }, { file: "c.abc" }],
+  });
+  try {
+    view.renderOpen(entry.name, entry.songs, entry, "");
+    document.querySelectorAll(".setlist-song-remove")[1]
+      .dispatchEvent(new window.Event("click"));
+    assert.deepEqual(
+      getPersonalSetlist(storage, entry.id).songs.map((s) => s.file),
+      ["a.abc", "c.abc"],
+    );
+  } finally {
+    cleanup();
+  }
+});
+
+test("Delete on a focused drag handle removes that row", () => {
+  const { view, entry, storage, cleanup } = setup({
+    songs: [{ file: "a.abc" }, { file: "b.abc" }, { file: "c.abc" }],
+  });
+  try {
+    view.renderOpen(entry.name, entry.songs, entry, "");
+    document.querySelectorAll(".setlist-song-row .setlist-drag-handle")[0]
+      .dispatchEvent(new window.KeyboardEvent("keydown", { key: "Delete", bubbles: true }));
+    assert.deepEqual(
+      getPersonalSetlist(storage, entry.id).songs.map((s) => s.file),
+      ["b.abc", "c.abc"],
+    );
+  } finally {
+    cleanup();
+  }
+});
+
+test("remove reads the row's live position so it survives a reorder", () => {
+  const { view, entry, storage, cleanup } = setup({
+    songs: [{ file: "a.abc" }, { file: "b.abc" }, { file: "c.abc" }],
+  });
+  try {
+    view.renderOpen(entry.name, entry.songs, entry, "");
+    // Nudge the first song down, then remove what is now the first row (b.abc).
+    document.querySelector(".setlist-song-row .setlist-drag-handle")
+      .dispatchEvent(new window.KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }));
+    document.querySelector(".setlist-song-remove")
+      .dispatchEvent(new window.Event("click"));
+    assert.deepEqual(
+      getPersonalSetlist(storage, entry.id).songs.map((s) => s.file),
+      ["a.abc", "c.abc"],
+    );
+  } finally {
+    cleanup();
+  }
+});
+
 test("clicking a song title opens it in the sheet with the resolved transpose", () => {
   const { view, entry, ctx, rendered, cleanup } = setup({ songs: [{ file: "a.abc", key: "" }] });
   try {

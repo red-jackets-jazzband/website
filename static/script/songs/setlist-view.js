@@ -121,7 +121,7 @@ export function createSetlistView(ctx) {
 
   // ---- row controls (personal) ----------------------------------
 
-  function appendRowControls(row, index, personalEntry) {
+  function appendRowControls(row, personalEntry) {
     const handle = el("button", {
       type: "button",
       class: "setlist-drag-handle",
@@ -131,6 +131,11 @@ export function createSetlistView(ctx) {
       on: {
         pointerdown: (e) => beginRowDrag(e, handle, row, personalEntry.id),
         keydown: (e) => {
+          if (e.key === "Delete" || e.key === "Backspace") {
+            e.preventDefault();
+            removeRow(row, personalEntry.id);
+            return;
+          }
           let step = 0;
           if (e.key === "ArrowUp") step = -1;
           else if (e.key === "ArrowDown") step = 1;
@@ -149,10 +154,7 @@ export function createSetlistView(ctx) {
       title: "Remove",
       attrs: { "aria-label": "Remove" },
       on: {
-        click: () => {
-          removeSongFromPersonalSetlist(ctx.storage(), personalEntry.id, index);
-          refreshOpenPersonal();
-        },
+        click: () => removeRow(row, personalEntry.id),
       },
     }));
   }
@@ -180,7 +182,7 @@ export function createSetlistView(ctx) {
         },
       },
     }));
-    appendRowControls(row, index, personalEntry);
+    appendRowControls(row, personalEntry);
     return row;
   }
 
@@ -221,7 +223,7 @@ export function createSetlistView(ctx) {
 
     if (personalEntry) {
       row.append(semitoneField(song, index, personalEntry));
-      appendRowControls(row, index, personalEntry);
+      appendRowControls(row, personalEntry);
     } else {
       const badge = formatSetlistKeyLabel(song.key);
       if (badge) row.append(el("span", { class: "setlist-song-key-badge", text: badge }));
@@ -357,6 +359,19 @@ export function createSetlistView(ctx) {
 
   function persistOrder(personalId, orderIndices) {
     setPersonalSetlistOrder(ctx.storage(), personalId, orderIndices);
+    refreshOpenPersonal();
+  }
+
+  // Drop a song / divider row from the open personal setlist, reading its
+  // live position out of the DOM so it stays correct after a drag. Keyboard
+  // focus lands on the handle that slides into the freed slot (or the last).
+  function removeRow(row, personalId) {
+    const rows = draggableRows();
+    const pos = rows.indexOf(row);
+    removeSongFromPersonalSetlist(ctx.storage(), personalId, Number(row.dataset.setlistIndex));
+    if (pos !== -1 && rows.length > 1) {
+      focusHandleAfterRender = Math.min(pos, rows.length - 2);
+    }
     refreshOpenPersonal();
   }
 
