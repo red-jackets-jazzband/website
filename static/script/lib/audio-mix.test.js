@@ -18,10 +18,32 @@ test("percentToMidiVolume follows a cubic taper: finer resolution low, full rang
   assert.equal(percentToMidiVolume(undefined), 0);
 });
 
-const TUNE = ["X:1", "T:Test", "M:4/4", "L:1/8", "K:C", '"C" C8 |'].join("\n");
+const NO_COMPING_TUNE = ["X:1", "T:Test", "M:4/4", "L:1/8", "K:C", '"C" C8 |'].join("\n");
+
+test("injectMixerAudio (no comping, no chords) stamps only the melody's %%MIDI program", () => {
+  const out = injectMixerAudio(NO_COMPING_TUNE, { compingActive: false, hasChords: false, bassPercent: 0, chordsPercent: 0 });
+  const lines = out.split("\n");
+  assert.equal(lines[lines.indexOf("K:C") - 1], `%%MIDI program ${DEFAULT_PROGRAM.melody}`);
+  assert.doesNotMatch(out, /%%MIDI (gchord|bassprog|chordprog|bassvol|chordvol|vol)\b/);
+  assert.ok(out.includes('"C" C8 |'));
+});
+
+test("injectMixerAudio uses a custom melody program when given one", () => {
+  const out = injectMixerAudio(NO_COMPING_TUNE, {
+    compingActive: false, hasChords: false, melodyProgram: 71, bassPercent: 0, chordsPercent: 0,
+  });
+  assert.match(out, /%%MIDI program 71\nK:C/);
+});
+
+test("injectMixerAudio is a no-op when there's no K: line", () => {
+  const abc = "X:1\nT:Test\n";
+  assert.equal(injectMixerAudio(abc, { compingActive: false, hasChords: false, bassPercent: 0, chordsPercent: 0 }), abc);
+});
 
 test("injectMixerAudio stamps Bass/Chords accompaniment directives (default programs) when the tune has chords", () => {
-  const out = injectMixerAudio(TUNE, { hasChords: true, bassPercent: 70, chordsPercent: 20 });
+  const out = injectMixerAudio(NO_COMPING_TUNE, {
+    compingActive: false, hasChords: true, bassPercent: 70, chordsPercent: 20,
+  });
   const before = out.slice(0, out.indexOf("K:C"));
   assert.match(before, /%%MIDI gchord bzczbzcz/);
   assert.match(before, new RegExp(`%%MIDI bassprog ${DEFAULT_PROGRAM.bass}`));
@@ -31,21 +53,47 @@ test("injectMixerAudio stamps Bass/Chords accompaniment directives (default prog
 });
 
 test("injectMixerAudio uses custom Bass/Chords programs when given one", () => {
-  const out = injectMixerAudio(TUNE, {
-    hasChords: true, bassPercent: 0, bassProgram: 33, chordsPercent: 0, chordsProgram: 0,
+  const out = injectMixerAudio(NO_COMPING_TUNE, {
+    compingActive: false, hasChords: true, bassPercent: 0, bassProgram: 33, chordsPercent: 0, chordsProgram: 0,
   });
   assert.match(out, /%%MIDI bassprog 33/);
   assert.match(out, /%%MIDI chordprog 0/);
 });
 
 test("injectMixerAudio omits accompaniment directives entirely when the tune has no chords", () => {
-  const out = injectMixerAudio(TUNE, { hasChords: false, bassPercent: 70, chordsPercent: 20 });
-  assert.equal(out, TUNE);
+  const out = injectMixerAudio(NO_COMPING_TUNE, {
+    compingActive: false, hasChords: false, bassPercent: 70, chordsPercent: 20,
+  });
+  assert.doesNotMatch(out, /%%MIDI (gchord|bassprog|chordprog|bassvol|chordvol)/);
 });
 
-test("injectMixerAudio is a no-op when there's no K: line", () => {
-  const abc = "X:1\nT:Test\n";
-  assert.equal(injectMixerAudio(abc, { hasChords: true, bassPercent: 50, chordsPercent: 50 }), abc);
+test("injectMixerAudio (comping) stamps melody/comping program after their own body markers", () => {
+  const abc = [
+    "X:1", "T:Test", "L:1/8", "%%staves [1 2]", "V:1", 'V:2 name="R\\n3\\n5"', "K:C",
+    "V:1", '"C" C8 |', "V:2", "[CEG]8 |",
+  ].join("\n");
+  const out = injectMixerAudio(abc, {
+    compingActive: true, hasChords: true, melodyProgram: 56, compingProgram: 0, bassPercent: 0, chordsPercent: 0,
+  });
+
+  // The header's own "V:1\nV:2 name=..." declaration line is untouched —
+  // only the accompaniment block (hasChords: true) landed before K:, and the
+  // body markers further down each got their own line spliced after them.
+  assert.match(out, /%%staves \[1 2\]\nV:1\nV:2 name="R\\n3\\n5"\n%%MIDI gchord/);
+  assert.match(out, /%%MIDI chordvol 0\nK:C/);
+  assert.match(out, /\nV:1\n%%MIDI program 56\n"C" C8 \|/);
+  assert.match(out, /\nV:2\n%%MIDI program 0\n\[CEG\]8 \|/);
+});
+
+test("injectMixerAudio (comping) defaults melody/comping program when none given", () => {
+  const abc = [
+    "X:1", "T:Test", "L:1/8", "%%staves [1 2]", "V:1", 'V:2 name="R\\n3\\n5"', "K:C",
+    "V:1", '"C" C8 |', "V:2", "[CEG]8 |",
+  ].join("\n");
+  const out = injectMixerAudio(abc, { compingActive: true, hasChords: false, bassPercent: 0, chordsPercent: 0 });
+  assert.match(out, new RegExp(`\\nV:1\\n%%MIDI program ${DEFAULT_PROGRAM.melody}\\n`));
+  assert.match(out, new RegExp(`\\nV:2\\n%%MIDI program ${DEFAULT_PROGRAM.comping}\\n`));
+  assert.doesNotMatch(out, /%%MIDI (gchord|bassprog|chordprog|bassvol|chordvol)/);
 });
 
 test("computeVoicesOff without comping: only melody can be muted, as a full mute", () => {

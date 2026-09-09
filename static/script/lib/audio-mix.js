@@ -1,38 +1,40 @@
 // Pure helpers for the sheet's Mixer panel (songs/mixer.js).
 //
-// Only Bass and Chords — ABCjs's own auto-generated accompaniment (abc2midi's
-// classic gchord engine) — get real continuous volume + voice control here,
-// via injectMixerAudio stamping %%MIDI gchord/bassprog/chordprog/bassvol/
-// chordvol into the ABC text before ABCjs parses it (there's no live gain
-// node in ABCjs's synth, so a *change* has to be baked into the text). Those
-// four directives are confirmed working end to end: they're read by the live
-// SynthController itself, not just ABCjs's separate "export as .mid file"
-// path.
-//
-// Melody and Comping (regular ABC voices, not gchord-generated) do NOT get
-// the same treatment, even though it looks symmetrical on paper: a generic
-// %%MIDI vol / %%MIDI program on an ordinary voice was tried first and
-// empirically does nothing audible — it appears to only feed that separate
-// export path, never the live web-audio buffer SynthController actually
-// plays. So Melody/Comping only get real MUTE, through computeVoicesOff
-// below (SynthController's own `voicesOff` option — its source checks it
-// directly against each voice's track index, unambiguous, no text-directive
-// guessing involved). Their volume faders and Voice pickers are disabled in
-// the UI (songs/mixer.js / content/songs.md) rather than pretending to work.
-// Fixing that for real means either finding a genuine per-voice live-gain
-// hook this file doesn't know about yet, or priming a separate
-// SynthController per channel through its own Web Audio GainNode and mixing
-// them by hand — a real audio-engine change that needs a real browser to
-// verify, not more guessing from source.
+// ABCjs's live web-audio synth doesn't honor every %%MIDI directive its own
+// text parser accepts equally — confirmed empirically in a real browser, not
+// just from source-reading, so treat this split as fact, not a guess:
+//   - Bass/Chords (ABCjs's own auto-generated accompaniment, abc2midi's
+//     classic gchord engine) get real MUTE + VOLUME + VOICE, via
+//     %%MIDI gchord/bassprog/chordprog/bassvol/chordvol stamped into the ABC
+//     text before ABCjs parses it (there's no live gain node in ABCjs's
+//     synth, so a *change* has to be baked into the text).
+//   - Melody/Comping (regular ABC voices, not gchord-generated) get real
+//     MUTE (through computeVoicesOff — SynthController's own `voicesOff`
+//     option, unrelated to any text directive) and real VOICE (a per-voice
+//     %%MIDI program line, same text-injection idea as Bass/Chords' program
+//     lines) — but NOT working VOLUME: a generic %%MIDI vol on an ordinary
+//     voice was tried first, exactly mirroring the proven bassvol/chordvol
+//     approach, and does nothing audible — it appears to only feed ABCjs's
+//     separate "export as .mid file" path, never the live SynthController
+//     buffer. Their volume fader is `disabled` in the UI (songs/mixer.js /
+//     content/songs.md) rather than pretending to work. Fixing that for real
+//     means either finding a genuine per-voice live-gain hook this file
+//     doesn't know about yet, or priming a separate SynthController per
+//     channel through its own Web Audio GainNode and mixing them by hand —
+//     a real audio-engine change that needs a real browser to verify.
 
 // The MIDI channel-volume range abc2midi's `bassvol`/`chordvol` directives
 // accept.
 export const MIDI_VOLUME_MAX = 127;
 
-// Bass/Chords' GM program (see lib/gm-voices.js) when their Voice picker is
-// left on "Default" — a reasonable jazz-combo guess, not yet checked by ear
-// in a real browser.
-export const DEFAULT_PROGRAM = { bass: 32, chords: 26 };
+// Each channel's GM program (see lib/gm-voices.js) when its Voice picker is
+// left on "Default" — Trumpet for Melody/Comping (today's one hardcoded
+// program before the Mixer existed, kept as-is so an untouched picker
+// changes nothing audible), Acoustic Bass / Jazz Guitar for Bass/Chords (a
+// reasonable jazz-combo guess, not yet checked by ear in a real browser).
+export const DEFAULT_PROGRAM = {
+  melody: 56, bass: 32, chords: 26, comping: 56,
+};
 
 // ABCjs's own "jazz" example pattern (https://examples.abcjs.net/accompaniment).
 const GCHORD_PATTERN = "bzczbzcz";
@@ -66,6 +68,10 @@ function insertLinesBeforeKeyLine(text, lines) {
   return split.join("\n");
 }
 
+function spliceAfter(text, index, insertion) {
+  return text.slice(0, index) + insertion + text.slice(index);
+}
+
 // The Bass/Chords header block: only worth emitting when the tune actually
 // carries chord symbols for ABCjs's gchord engine to read (a tune with none
 // would just render an inert directive).
@@ -82,20 +88,49 @@ function accompanimentLines(hasChords, {
   ];
 }
 
-// Stamp Bass/Chords' MIDI accompaniment directives into the ABC text about
-// to be handed to ABCJS.renderAbc, so whatever gets rendered is exactly what
-// plays — there's no separate "audio-only" reparse, which would desync the
-// playback cursor from the visible notation (ABCjs ties cursor highlighting
-// to the actual rendered visualObj, not a freshly parsed twin of it).
+/*
+  Stamp Bass/Chords' full accompaniment directives, and Melody/Comping's
+  Voice (program only — see the file doc comment for why not volume), into
+  the ABC text about to be handed to ABCJS.renderAbc, so whatever gets
+  rendered is exactly what plays — there's no separate "audio-only" reparse,
+  which would desync the playback cursor from the visible notation (ABCjs
+  ties cursor highlighting to the actual rendered visualObj, not a freshly
+  parsed twin of it).
+
+  Melody/Comping are per-voice: without comping there's a single implicit
+  voice, so one %%MIDI program line in the header sets it. With comping on,
+  buildCompingTune's own contract (see its doc comment in lib/comping.js)
+  fixes the body's shape as "...\nV:1\n<melody>\nV:2\n<comping>\n" — melody
+  voice 1, comping voice 2 — so each gets its own line right after its body
+  marker. lastIndexOf targets that body marker rather than the *voice
+  declaration* line the same header carries a little earlier
+  (%%staves [1 2]\nV:1\nV:2 name="R\n3\n5"...), which repeats the same bare
+  "V:1" text once before the bodies start.
+*/
 export function injectMixerAudio(abcText, {
-  hasChords, bassPercent, bassProgram = DEFAULT_PROGRAM.bass,
+  compingActive, hasChords,
+  melodyProgram = DEFAULT_PROGRAM.melody,
+  compingProgram = DEFAULT_PROGRAM.comping,
+  bassPercent, bassProgram = DEFAULT_PROGRAM.bass,
   chordsPercent, chordsProgram = DEFAULT_PROGRAM.chords,
 }) {
-  return insertLinesBeforeKeyLine(
+  const withAccompaniment = insertLinesBeforeKeyLine(
     abcText, accompanimentLines(hasChords, {
       bassPercent, chordsPercent, bassProgram, chordsProgram,
     }),
   );
+
+  if (!compingActive) {
+    return insertLinesBeforeKeyLine(withAccompaniment, [`%%MIDI program ${melodyProgram}`]);
+  }
+
+  const v1 = withAccompaniment.lastIndexOf("\nV:1\n");
+  const v2 = withAccompaniment.lastIndexOf("\nV:2\n");
+  if (v1 === -1 || v2 === -1) return withAccompaniment;
+
+  // Insert at the later marker first so the earlier one's index stays valid.
+  const withComping = spliceAfter(withAccompaniment, v2 + "\nV:2\n".length, `%%MIDI program ${compingProgram}\n`);
+  return spliceAfter(withComping, v1 + "\nV:1\n".length, `%%MIDI program ${melodyProgram}\n`);
 }
 
 /*

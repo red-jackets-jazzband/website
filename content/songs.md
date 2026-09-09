@@ -105,7 +105,7 @@ aliases: ["/setlists/", "/songbook/"]
       </div>
       <span class="mixer-readout" id="mixerMelodyReadout">—</span>
       <button type="button" id="mixerMelodyMuteBtn" class="mixer-mute-btn" aria-pressed="false" title="Mute melody" aria-label="Mute melody"><span class="fa-solid fa-volume-high" aria-hidden="true"></span></button>
-      <select id="mixerMelodyVoiceSelect" class="mixer-voice-select" aria-label="Melody voice" disabled title="Voice picker isn't available for this channel yet"></select>
+      <select id="mixerMelodyVoiceSelect" class="mixer-voice-select" aria-label="Melody voice"></select>
     </div>
     <div class="mixer-strip" id="mixerStripBass">
       <span class="mixer-swatch mixer-swatch--bass" aria-hidden="true"></span>
@@ -140,7 +140,7 @@ aliases: ["/setlists/", "/songbook/"]
       </div>
       <span class="mixer-readout" id="mixerCompingReadout">—</span>
       <button type="button" id="mixerCompingMuteBtn" class="mixer-mute-btn" aria-pressed="false" title="Mute comping" aria-label="Mute comping"><span class="fa-solid fa-volume-high" aria-hidden="true"></span></button>
-      <select id="mixerCompingVoiceSelect" class="mixer-voice-select" aria-label="Comping voice" disabled title="Voice picker isn't available for this channel yet"></select>
+      <select id="mixerCompingVoiceSelect" class="mixer-voice-select" aria-label="Comping voice"></select>
       <p class="mixer-strip-note">This tune has no comping turned on — there's no comping voice to mix yet.</p>
     </div>
   </div>
