@@ -136,7 +136,11 @@ export function createInspiration(ctx) {
     loopB = b;
     const span = normalizeLoop(a, b, LOOP_MIN_GAP);
     loopEnabled = Boolean(span);
-    shareResumeAt = span ? span.a : (Number.isFinite(a) ? a : null);
+    if (span) {
+      shareResumeAt = span.a;
+    } else {
+      shareResumeAt = Number.isFinite(a) ? a : null;
+    }
     updateLoopUI();
   }
 
@@ -164,21 +168,25 @@ export function createInspiration(ctx) {
     else window.prompt("Copy this link:", url);
   }
 
+  function runExecCopy(url) {
+    const ta = document.createElement("textarea");
+    ta.value = url;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand("copy");
+    ta.remove();
+    return ok;
+  }
+
   // Old-style copy via a throwaway textarea + execCommand, for browsers that
   // deny or lack the async Clipboard API. Returns whether it took.
   function execCopy(url) {
     try {
-      const ta = document.createElement("textarea");
-      ta.value = url;
-      ta.setAttribute("readonly", "");
-      ta.style.position = "fixed";
-      ta.style.opacity = "0";
-      document.body.appendChild(ta);
-      ta.select();
-      const ok = document.execCommand("copy");
-      ta.remove();
-      return ok;
-    } catch (_e) {
+      return runExecCopy(url);
+    } catch {
       return false;
     }
   }
@@ -469,9 +477,13 @@ export function createInspiration(ctx) {
       const dur = playerDuration();
       if (dur <= 0) return;
       const frac = trackFraction(track, e);
-      const otherFrac = loopDragging === "a"
-        ? timeToFraction(loopB === null ? dur : loopB, dur)
-        : timeToFraction(loopA === null ? 0 : loopA, dur);
+      let otherTime;
+      if (loopDragging === "a") {
+        otherTime = loopB === null ? dur : loopB;
+      } else {
+        otherTime = loopA === null ? 0 : loopA;
+      }
+      const otherFrac = timeToFraction(otherTime, dur);
       const clamped = clampHandleDrag(frac, otherFrac, loopDragging, LOOP_MIN_GAP / dur);
       const time = fractionToTime(clamped, dur);
       if (loopDragging === "a") loopA = time;

@@ -130,7 +130,9 @@ export function createSetlistView(ctx) {
       on: {
         pointerdown: (e) => beginRowDrag(e, handle, row, personalEntry.id),
         keydown: (e) => {
-          const step = e.key === "ArrowUp" ? -1 : e.key === "ArrowDown" ? 1 : 0;
+          let step = 0;
+          if (e.key === "ArrowUp") step = -1;
+          else if (e.key === "ArrowDown") step = 1;
           if (!step) return;
           e.preventDefault();
           nudgeRow(row, personalEntry.id, step);

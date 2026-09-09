@@ -40,12 +40,17 @@ export const tonalStub = {
   },
   Chord: {
     get(name) {
-      const m = String(name).match(/^([A-G][#b]*)(.*)$/);
-      if (!m) return { notes: [] };
-      const q = m[2];
+      const s = String(name);
+      if (!/^[A-G]/.test(s)) return { notes: [] };
+      let i = 1;
+      while (s[i] === "#" || s[i] === "b") i += 1;
+      const root = s.slice(0, i);
+      const q = s.slice(i);
       const third = /^(m|min|-|dim|°|o)/.test(q) ? 3 : 4;
-      const fifth = /^(dim|°|o)/.test(q) ? 6 : /^(aug|\+)/.test(q) ? 8 : 7;
-      return { notes: [m[1], pcAdd(m[1], third), pcAdd(m[1], fifth)] };
+      let fifth = 7;
+      if (/^(dim|°|o)/.test(q)) fifth = 6;
+      else if (/^(aug|\+)/.test(q)) fifth = 8;
+      return { notes: [root, pcAdd(root, third), pcAdd(root, fifth)] };
     },
   },
   Note: { midi: nameToMidi },
