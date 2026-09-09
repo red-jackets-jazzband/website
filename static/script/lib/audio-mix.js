@@ -126,7 +126,13 @@ export function injectMixerAudio(abcText, {
 
   const v1 = withAccompaniment.lastIndexOf("\nV:1\n");
   const v2 = withAccompaniment.lastIndexOf("\nV:2\n");
-  if (v1 === -1 || v2 === -1) return withAccompaniment;
+  if (v1 === -1 || v2 === -1) {
+    // buildCompingTune's contract guarantees both markers, so this shouldn't
+    // be reachable in practice — but if it ever is, still apply the melody's
+    // Voice choice rather than silently dropping it (matches the !compingActive
+    // path above); there's just no comping body marker left to stamp too.
+    return insertLinesBeforeKeyLine(withAccompaniment, [`%%MIDI program ${melodyProgram}`]);
+  }
 
   // Insert at the later marker first so the earlier one's index stays valid.
   const withComping = spliceAfter(withAccompaniment, v2 + "\nV:2\n".length, `%%MIDI program ${compingProgram}\n`);

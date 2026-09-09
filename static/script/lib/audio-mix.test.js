@@ -96,6 +96,18 @@ test("injectMixerAudio (comping) defaults melody/comping program when none given
   assert.doesNotMatch(out, /%%MIDI (gchord|bassprog|chordprog|bassvol|chordvol)/);
 });
 
+test("injectMixerAudio (comping) still stamps the melody's program when a body marker is missing", () => {
+  // buildCompingTune always emits both V:1/V:2 body markers, so this path
+  // shouldn't come up in practice — but if compingActive is somehow true
+  // without one, the melody's Voice choice should still apply rather than
+  // silently doing nothing (same as the !compingActive path).
+  const abc = ["X:1", "T:Test", "L:1/8", "K:C", '"C" C8 |'].join("\n");
+  const out = injectMixerAudio(abc, {
+    compingActive: true, hasChords: false, melodyProgram: 71, bassPercent: 0, chordsPercent: 0,
+  });
+  assert.match(out, /%%MIDI program 71\nK:C/);
+});
+
 test("computeVoicesOff without comping: only melody can be muted, as a full mute", () => {
   assert.equal(computeVoicesOff({ compingActive: false, melodyMuted: false, compingMuted: false }).voicesOff, undefined);
   assert.equal(computeVoicesOff({ compingActive: false, melodyMuted: true, compingMuted: false }).voicesOff, true);
