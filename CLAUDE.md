@@ -111,6 +111,6 @@ All of `/`, `/agenda/`, `/band/`, `/in-action/` (each with `/nl/…` + `/de/…`
 
 ### CI/CD
 GitHub Actions ([.github/workflows/publish.yaml](.github/workflows/publish.yaml)) runs on every push and every pull request, in three gated jobs (a `concurrency` group cancels superseded runs on branches/PRs but never a `master` run mid-deploy):
-1. `lint-and-test` — `npm ci` (with `setup-node` npm cache), `npm run lint`, `npm test`
+1. `lint-and-test` — `npm ci` (with `setup-node` npm cache), `npm run lint`, `npm test`, `npm run audit`
 2. `build` (needs `lint-and-test`) — builds with Hugo via `lowply/build-hugo@v0.161.1`, runs linkchecker on the output, uploads `public/` as an artifact
 3. `publish` (needs `build`) — whole job gated `if: github.ref == 'refs/heads/master'`: downloads that artifact and publishes it to `red-jackets-jazzband/red-jackets-jazzband.github.io` using secret `GH_RJ_DEPLOY`
