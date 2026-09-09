@@ -498,10 +498,16 @@ function splitHeaderBody(text) {
 // followed by an `F:` YouTube link (shake_that_thing, shame_shame_shame)
 // leaves that URL sitting in the body, and its letters parse as a phantom
 // leading bar that shoves the whole comping voice down a system.
+//
+// `L:` matters the same way: splitHeaderBody splits on the *last* K: line, so a
+// tune that orders its header `K:` before `L:` (all_of_me, isle_of_capri, jada)
+// drops the `L:` field into the body. It carries no note letters on its own, but
+// joined to the pickup segment below it (`L:1/4\nC/F/A/`) its newline reads as a
+// mid-measure line break and wraps the comping's first bar onto the next system.
 function stripNonMusicLines(body) {
   return body
     .split("\n")
-    .filter((line) => !/^\s*(w:|W:|s:|P:|N:|O:|F:|I:|r:|%)/.test(line))
+    .filter((line) => !/^\s*(w:|W:|s:|P:|N:|O:|F:|I:|L:|M:|Q:|r:|%)/.test(line))
     .join("\n");
 }
 
