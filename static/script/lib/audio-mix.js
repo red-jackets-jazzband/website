@@ -137,16 +137,21 @@ export function injectMixerAudio(abcText, {
   Which ABCjs voice indices to exclude from the audio buffer entirely, or
   `true` to render silence outright when there's only one voice to mute.
   Melody is always voice 0; comping (when active) is voice 1 (see
-  lib/comping.js's buildCompingTune doc comment). Returns undefined when
-  nothing should be muted, so callers can leave `voicesOff` off the synth
-  params object entirely rather than pass an empty array.
+  lib/comping.js's buildCompingTune doc comment). The `voicesOff` field is
+  undefined when nothing should be muted, so callers can leave `voicesOff`
+  off the synth params object entirely rather than pass an empty array.
+
+  Always wrapped in a `{ voicesOff }` object (rather than returning the bare
+  true/array/undefined value directly) so the function itself has one
+  consistent return type — `voicesOff`'s value still varies, but that's a
+  field on a plain object, not the function's own return type.
 */
 export function computeVoicesOff({ compingActive, melodyMuted, compingMuted }) {
   if (!compingActive) {
-    return melodyMuted ? true : undefined;
+    return { voicesOff: melodyMuted ? true : undefined };
   }
   const off = [];
   if (melodyMuted) off.push(0);
   if (compingMuted) off.push(1);
-  return off.length ? off : undefined;
+  return { voicesOff: off.length ? off : undefined };
 }

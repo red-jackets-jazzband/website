@@ -97,15 +97,15 @@ test("injectMixerAudio (comping) defaults melody/comping program when none given
 });
 
 test("computeVoicesOff without comping: only melody can be muted, as a full mute", () => {
-  assert.equal(computeVoicesOff({ compingActive: false, melodyMuted: false, compingMuted: false }), undefined);
-  assert.equal(computeVoicesOff({ compingActive: false, melodyMuted: true, compingMuted: false }), true);
+  assert.equal(computeVoicesOff({ compingActive: false, melodyMuted: false, compingMuted: false }).voicesOff, undefined);
+  assert.equal(computeVoicesOff({ compingActive: false, melodyMuted: true, compingMuted: false }).voicesOff, true);
   // compingMuted is meaningless without a comping voice at all
-  assert.equal(computeVoicesOff({ compingActive: false, melodyMuted: false, compingMuted: true }), undefined);
+  assert.equal(computeVoicesOff({ compingActive: false, melodyMuted: false, compingMuted: true }).voicesOff, undefined);
 });
 
 test("computeVoicesOff with comping: melody and comping mute independently", () => {
-  assert.equal(computeVoicesOff({ compingActive: true, melodyMuted: false, compingMuted: false }), undefined);
-  assert.deepEqual(computeVoicesOff({ compingActive: true, melodyMuted: true, compingMuted: false }), [0]);
-  assert.deepEqual(computeVoicesOff({ compingActive: true, melodyMuted: false, compingMuted: true }), [1]);
-  assert.deepEqual(computeVoicesOff({ compingActive: true, melodyMuted: true, compingMuted: true }), [0, 1]);
+  assert.equal(computeVoicesOff({ compingActive: true, melodyMuted: false, compingMuted: false }).voicesOff, undefined);
+  assert.deepEqual(computeVoicesOff({ compingActive: true, melodyMuted: true, compingMuted: false }).voicesOff, [0]);
+  assert.deepEqual(computeVoicesOff({ compingActive: true, melodyMuted: false, compingMuted: true }).voicesOff, [1]);
+  assert.deepEqual(computeVoicesOff({ compingActive: true, melodyMuted: true, compingMuted: true }).voicesOff, [0, 1]);
 });
