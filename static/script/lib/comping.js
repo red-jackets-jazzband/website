@@ -257,12 +257,12 @@ function scanNoteLetter(str, i, letters) {
 function scanDurationMultiplier(str, i) {
   const numEnd = scanRun(str, i, isDigit);
   const numerator = str.slice(i, numEnd);
-  const mult = numerator ? parseInt(numerator, 10) : 1;
+  const mult = numerator ? Number.parseInt(numerator, 10) : 1;
   if (str[numEnd] !== "/") return { end: numEnd, mult };
   const slashEnd = scanRun(str, numEnd, isSlash);
   const denomEnd = scanRun(str, slashEnd, isDigit);
   const denominator = str.slice(slashEnd, denomEnd);
-  const denom = denominator ? parseInt(denominator, 10) : 2 ** (slashEnd - numEnd);
+  const denom = denominator ? Number.parseInt(denominator, 10) : 2 ** (slashEnd - numEnd);
   return { end: denomEnd, mult: mult / denom };
 }
 
@@ -326,7 +326,7 @@ function pushNoteToken(tokens, t) {
   const tie = t.slice(-1) === "-";
   const body = tie ? t.slice(0, -1) : t;
   const digits = trailingDigits(body);
-  const dur = digits ? parseInt(digits, 10) : 1;
+  const dur = digits ? Number.parseInt(digits, 10) : 1;
   const pitch = digits ? body.slice(0, -digits.length) : body;
   const head = pitch[0] === "[" ? "[" : pitch.replace(/^[_^=]+/, "")[0];
   tokens.push({ pitch, dur, tie, rest: head === "z" || head === "x" });
@@ -467,7 +467,7 @@ function readMeter(text) {
 
 function readUnit(text) {
   const m = text.match(/^L:\s*(\d+)\s*\/\s*(\d+)/m);
-  if (m) return [parseInt(m[1], 10), parseInt(m[2], 10)];
+  if (m) return [Number.parseInt(m[1], 10), Number.parseInt(m[2], 10)];
   return [1, 8];
 }
 

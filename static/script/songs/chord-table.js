@@ -65,8 +65,8 @@ export function fitChordTable(container) {
   // element skews the width read otherwise (a re-fit after a rotation).
   grid.style.zoom = "";
   grid.style.width = "";
-  // Reading offsetWidth (not "using" it) is what forces the reflow.
-  grid.offsetWidth;
+  // Reading (not using) offsetWidth is what forces the reflow.
+  const _forceReflow = grid.offsetWidth;
 
   const available = container.clientWidth;
   if (!available) return;
