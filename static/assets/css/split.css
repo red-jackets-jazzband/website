@@ -942,12 +942,11 @@ video.video {
   border-color: var(--rj-gold);
   color: #ece6e6;
 }
-/* Melody/Comping: only Mute is a real audio control right now (see
-   lib/audio-mix.js's doc comment for why) — their fader and Voice picker
-   are permanently dimmed (and `disabled` in the markup) rather than left
-   interactive with no audible effect. */
-.mixer-strip--volume-locked .mixer-fader-track,
-.mixer-strip--volume-locked .mixer-voice-select {
+/* Melody/Comping: Mute and Voice are real; volume isn't (see
+   lib/audio-mix.js's doc comment for why) — their fader is permanently
+   dimmed (and `disabled` in the markup) rather than left interactive with
+   no audible effect. */
+.mixer-strip--volume-locked .mixer-fader-track {
   opacity: .4;
 }
 .mixer-strip-note {

@@ -15,11 +15,11 @@ const REPOSITION_MARGIN = 8;
 const CHANNELS = ["melody", "bass", "chords", "comping"];
 const DEFAULT_MUTED = { melody: false, bass: true, chords: true, comping: false };
 
-// Only Bass/Chords have a real, working volume fader + Voice picker right
-// now — see lib/audio-mix.js's doc comment for why Melody/Comping don't.
-// Their range/select are `disabled` in the markup (content/songs.md); this
-// set just controls what the readout says while that holds, so it doesn't
-// show a percentage for a slider that can't move.
+// Melody/Comping don't have a real, working volume fader — see
+// lib/audio-mix.js's doc comment for why (their Voice picker and Mute are
+// both real). Their range is `disabled` in the markup (content/songs.md);
+// this set just controls what the readout says while that holds, so it
+// doesn't show a percentage for a slider that can't move.
 const VOLUME_LOCKED = new Set(["melody", "comping"]);
 
 // A channel with no gate (melody) is always mixable; bass/chords need the
@@ -86,16 +86,16 @@ function buildVoiceOptions(select) {
   channel's own built-in program). Values are sticky across songs (persisted
   like the instrument / comping choices, see lib/preferences.js).
 
-  Only Bass/Chords' fader + Voice picker are real right now — read by
-  sheet.js at render time (lib/audio-mix.js's injectMixerAudio), where a
-  muted channel is just its fader value read as 0 (see sheet.js's
-  effectiveMixerPercent). Melody/Comping's fader + Voice picker are
-  `disabled` in the markup instead of pretending to work (see
-  lib/audio-mix.js's doc comment for why); this module only owns the panel's
-  DOM and ctx.state.mixer, so it's still tracking their values (sticky,
-  ready for whenever that's fixed for real) even while their controls are
-  locked. Every channel's Mute, including Melody/Comping's, is real — see
-  audio-player.js's computeVoicesOff for how those two actually reach audio.
+  Every channel's Mute and Voice are real, read by sheet.js at render time
+  (lib/audio-mix.js's injectMixerAudio; Melody/Comping's Mute instead goes
+  through audio-player.js's computeVoicesOff — see lib/audio-mix.js's doc
+  comment for why the two channel groups use different mechanisms). Only
+  Bass/Chords' *volume* fader is real, where a muted channel is just its
+  fader value read as 0 (see sheet.js's effectiveMixerPercent); Melody/
+  Comping's fader is `disabled` in the markup instead of pretending to work.
+  This module only owns the panel's DOM and ctx.state.mixer, so it's still
+  tracking Melody/Comping's fader value (sticky, ready for whenever that's
+  fixed for real) even while that one control is locked.
 */
 function readoutText(channel, percent, muted) {
   if (muted) return "Muted";

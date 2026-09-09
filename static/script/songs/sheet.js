@@ -158,13 +158,16 @@ export function createSheet(ctx) {
     return value === null ? undefined : value;
   }
 
-  // Live sheet only: stamp the mixer's Bass/Chords levels + voices into the
-  // ABC text before it's parsed, so the one visualObj that gets rendered is
-  // exactly what plays — see lib/audio-mix.js.
+  // Live sheet only: stamp the mixer's Bass/Chords levels + all four
+  // channels' voices into the ABC text before it's parsed, so the one
+  // visualObj that gets rendered is exactly what plays — see lib/audio-mix.js.
   function resolveRenderText(comping, hasChords, isBooklet) {
     if (isBooklet) return comping.renderText;
     return injectMixerAudio(comping.renderText, {
+      compingActive: comping.active,
       hasChords,
+      melodyProgram: mixerProgram("melody"),
+      compingProgram: mixerProgram("comping"),
       bassPercent: effectiveMixerPercent("bass"),
       bassProgram: mixerProgram("bass"),
       chordsPercent: effectiveMixerPercent("chords"),

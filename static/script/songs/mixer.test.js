@@ -138,12 +138,12 @@ test("the mute buttons flip state, update the button and re-render at once", () 
   }
 });
 
-test("Melody/Comping's fader and Voice picker are disabled; their readout reads — until muted", () => {
+test("Melody/Comping's fader is disabled (Voice picker isn't); their readout reads — until muted", () => {
   const { cleanup } = setup();
   try {
     for (const cap of ["Melody", "Comping"]) {
       assert.equal(document.getElementById(`mixer${cap}Range`).disabled, true);
-      assert.equal(document.getElementById(`mixer${cap}VoiceSelect`).disabled, true);
+      assert.equal(document.getElementById(`mixer${cap}VoiceSelect`).disabled, false);
       assert.equal(document.getElementById(`mixer${cap}Readout`).textContent, "—");
     }
     // Bass/Chords stay fully interactive.
