@@ -265,6 +265,13 @@ export function createMixer(ctx) {
     window.addEventListener("resize", () => {
       if (open) positionPanel();
     });
+    // The sheet's own content column scrolls internally (.split-content's
+    // overflow: auto), not the window — its scroll event doesn't bubble, so
+    // this has to listen in the capture phase to still catch it and keep the
+    // fixed-position panel glued under the button as it moves.
+    window.addEventListener("scroll", () => {
+      if (open) positionPanel();
+    }, true);
 
     refresh();
   }
