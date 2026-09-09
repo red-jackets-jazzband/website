@@ -105,7 +105,7 @@ aliases: ["/setlists/", "/songbook/"]
       </div>
       <span class="mixer-readout" id="mixerMelodyReadout">100%</span>
       <button type="button" id="mixerMelodyMuteBtn" class="mixer-mute-btn" aria-pressed="false" title="Mute melody" aria-label="Mute melody"><span class="fa-solid fa-volume-high" aria-hidden="true"></span></button>
-      <span class="mixer-voice-slot" title="Instrument picker — coming soon">Voice: default</span>
+      <select id="mixerMelodyVoiceSelect" class="mixer-voice-select" aria-label="Melody voice"></select>
     </div>
     <div class="mixer-strip" id="mixerStripBass">
       <span class="mixer-swatch mixer-swatch--bass" aria-hidden="true"></span>
@@ -116,7 +116,7 @@ aliases: ["/setlists/", "/songbook/"]
       </div>
       <span class="mixer-readout" id="mixerBassReadout">100%</span>
       <button type="button" id="mixerBassMuteBtn" class="mixer-mute-btn" aria-pressed="false" title="Mute bass" aria-label="Mute bass"><span class="fa-solid fa-volume-high" aria-hidden="true"></span></button>
-      <span class="mixer-voice-slot" title="Instrument picker — coming soon">Voice: default</span>
+      <select id="mixerBassVoiceSelect" class="mixer-voice-select" aria-label="Bass voice"></select>
       <p class="mixer-strip-note">This tune has no chord symbols to build an accompaniment from.</p>
     </div>
     <div class="mixer-strip" id="mixerStripChords">
@@ -128,7 +128,7 @@ aliases: ["/setlists/", "/songbook/"]
       </div>
       <span class="mixer-readout" id="mixerChordsReadout">100%</span>
       <button type="button" id="mixerChordsMuteBtn" class="mixer-mute-btn" aria-pressed="false" title="Mute chords" aria-label="Mute chords"><span class="fa-solid fa-volume-high" aria-hidden="true"></span></button>
-      <span class="mixer-voice-slot" title="Instrument picker — coming soon">Voice: default</span>
+      <select id="mixerChordsVoiceSelect" class="mixer-voice-select" aria-label="Chords voice"></select>
       <p class="mixer-strip-note">This tune has no chord symbols to build an accompaniment from.</p>
     </div>
     <div class="mixer-strip" id="mixerStripComping">
@@ -140,7 +140,7 @@ aliases: ["/setlists/", "/songbook/"]
       </div>
       <span class="mixer-readout" id="mixerCompingReadout">100%</span>
       <button type="button" id="mixerCompingMuteBtn" class="mixer-mute-btn" aria-pressed="false" title="Mute comping" aria-label="Mute comping"><span class="fa-solid fa-volume-high" aria-hidden="true"></span></button>
-      <span class="mixer-voice-slot" title="Instrument picker — coming soon">Voice: default</span>
+      <select id="mixerCompingVoiceSelect" class="mixer-voice-select" aria-label="Comping voice"></select>
       <p class="mixer-strip-note">This tune has no comping turned on — there's no comping voice to mix yet.</p>
     </div>
   </div>

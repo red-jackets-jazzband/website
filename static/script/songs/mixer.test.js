@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { mountPage } from "../../../tests/helpers/dom.js";
 import { makeCtx } from "../../../tests/helpers/ctx.js";
 import { createMixer, loadMixerState } from "./mixer.js";
+import { GM_VOICES } from "../lib/gm-voices.js";
 
 function setup(mixerState = {}) {
   const page = mountPage();
@@ -14,6 +15,7 @@ function setup(mixerState = {}) {
       mixer: {
         melodyVolume: 100, bassVolume: 100, chordsVolume: 100, compingVolume: 100,
         melodyMuted: false, bassMuted: false, chordsMuted: false, compingMuted: false,
+        melodyProgram: null, bassProgram: null, chordsProgram: null, compingProgram: null,
         ...mixerState,
       },
     },
@@ -160,30 +162,66 @@ test("refresh() gates Bass/Chords on hasChords and Comping on compingActive, ind
   }
 });
 
-test("loadMixerState defaults to full volume, Bass/Chords muted, Melody/Comping unmuted", () => {
+test("loadMixerState defaults to full volume, Bass/Chords muted, every Voice on Default", () => {
   const page = mountPage();
   try {
     assert.deepEqual(loadMixerState(), {
       melodyVolume: 100, bassVolume: 100, chordsVolume: 100, compingVolume: 100,
       melodyMuted: false, bassMuted: true, chordsMuted: true, compingMuted: false,
+      melodyProgram: null, bassProgram: null, chordsProgram: null, compingProgram: null,
     });
   } finally {
     page.cleanup();
   }
 });
 
-test("loadMixerState reads back persisted, clamped values", () => {
+test("loadMixerState reads back persisted, clamped values and a chosen program", () => {
   const page = mountPage();
   try {
     window.localStorage.setItem("rj.mixerBassVolume", "150"); // clamped
     window.localStorage.setItem("rj.mixerChordsVolume", "20");
     window.localStorage.setItem("rj.mixerBassMuted", "0"); // explicit opt-in override
+    window.localStorage.setItem("rj.mixerChordsProgram", "0"); // GM 0 is falsy — must not read back as null
     assert.deepEqual(loadMixerState(), {
       melodyVolume: 100, bassVolume: 100, chordsVolume: 20, compingVolume: 100,
       melodyMuted: false, bassMuted: false, chordsMuted: true, compingMuted: false,
+      melodyProgram: null, bassProgram: null, chordsProgram: 0, compingProgram: null,
     });
   } finally {
     window.localStorage.clear();
     page.cleanup();
+  }
+});
+
+test("init populates every Voice select from GM_VOICES, grouped, with a leading Default option", () => {
+  const { cleanup } = setup();
+  try {
+    const select = document.getElementById("mixerMelodyVoiceSelect");
+    assert.equal(select.options[0].value, "");
+    assert.equal(select.options[0].text, "DEFAULT");
+    assert.equal(select.options.length, GM_VOICES.length + 1); // Default + every curated GM voice
+    assert.ok(select.querySelectorAll("optgroup").length > 1);
+  } finally {
+    cleanup();
+  }
+});
+
+test("choosing a Voice persists the GM program and re-renders immediately", () => {
+  const { ctx, rerenders, cleanup } = setup();
+  try {
+    const select = document.getElementById("mixerBassVoiceSelect");
+    select.value = "33";
+    select.dispatchEvent(new window.Event("change"));
+    assert.equal(ctx.state.mixer.bassProgram, 33);
+    assert.equal(rerenders.length, 1);
+    assert.equal(window.localStorage.getItem("rj.mixerBassProgram"), "33");
+
+    select.value = "";
+    select.dispatchEvent(new window.Event("change"));
+    assert.equal(ctx.state.mixer.bassProgram, null);
+    assert.equal(window.localStorage.getItem("rj.mixerBassProgram"), "");
+  } finally {
+    window.localStorage.clear();
+    cleanup();
   }
 });

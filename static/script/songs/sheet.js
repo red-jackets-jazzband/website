@@ -146,18 +146,31 @@ export function createSheet(ctx) {
     return m[`${channel}Muted`] ? 0 : m[`${channel}Volume`];
   }
 
-  // Live sheet only: stamp the mixer's four channel levels into the ABC text
-  // before it's parsed, so the one visualObj that gets rendered is exactly
-  // what plays — see lib/audio-mix.js.
+  // null (the Voice picker left on "Default") has to become undefined, not
+  // pass through as null — injectMixerAudio's own default parameters only
+  // kick in for undefined, so a stored null would otherwise reach ABCjs as
+  // a literal "%%MIDI program null".
+  function mixerProgram(channel) {
+    const value = ctx.state.mixer[`${channel}Program`];
+    return value === null ? undefined : value;
+  }
+
+  // Live sheet only: stamp the mixer's four channels' levels + voices into
+  // the ABC text before it's parsed, so the one visualObj that gets
+  // rendered is exactly what plays — see lib/audio-mix.js.
   function resolveRenderText(comping, hasChords, isBooklet) {
     if (isBooklet) return comping.renderText;
     return injectMixerAudio(comping.renderText, {
       compingActive: comping.active,
       hasChords,
       melodyPercent: effectiveMixerPercent("melody"),
+      melodyProgram: mixerProgram("melody"),
       compingPercent: effectiveMixerPercent("comping"),
+      compingProgram: mixerProgram("comping"),
       bassPercent: effectiveMixerPercent("bass"),
+      bassProgram: mixerProgram("bass"),
       chordsPercent: effectiveMixerPercent("chords"),
+      chordsProgram: mixerProgram("chords"),
     });
   }
 

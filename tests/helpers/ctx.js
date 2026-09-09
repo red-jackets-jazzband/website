@@ -23,6 +23,7 @@ export function makeCtx(overrides = {}) {
       mixer: {
         melodyVolume: 100, bassVolume: 100, chordsVolume: 100, compingVolume: 100,
         melodyMuted: false, bassMuted: true, chordsMuted: true, compingMuted: false,
+        melodyProgram: null, bassProgram: null, chordsProgram: null, compingProgram: null,
       },
       ...overrides.state,
     },

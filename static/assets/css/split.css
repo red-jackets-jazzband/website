@@ -920,18 +920,27 @@ video.video {
   border-color: var(--rj-hover);
   color: #fff;
 }
-.mixer-voice-slot {
+/* The per-channel GM-instrument picker (populated from lib/gm-voices.js by
+   songs/mixer.js's buildVoiceOptions) — its own row under the fader, indented
+   to align with the label above it. */
+.mixer-voice-select {
   flex: 0 0 100%;
   margin-left: 54px;
-  width: fit-content;
-  font: 600 8px/1 "Montserrat", sans-serif;
-  letter-spacing: .03em;
+  max-width: calc(100% - 54px);
+  font: 600 9px/1.6 "Montserrat", sans-serif;
+  letter-spacing: .02em;
   text-transform: uppercase;
-  color: rgba(236,234,230,.35);
-  border: 1px dashed rgba(255,255,255,.18);
+  color: rgba(236,234,230,.7);
+  background: #2f2f2f;
+  border: 1px solid rgba(255,255,255,.18);
   border-radius: 5px;
   padding: 2px 6px;
-  cursor: not-allowed;
+  cursor: pointer;
+}
+.mixer-voice-select:hover,
+.mixer-voice-select:focus {
+  border-color: var(--rj-gold);
+  color: #ece6e6;
 }
 .mixer-strip-note {
   display: none;
@@ -947,7 +956,7 @@ video.video {
    clickable with no audible effect (see songs/mixer.js's updateGate). */
 .mixer-strip.is-inactive .mixer-fader-track,
 .mixer-strip.is-inactive .mixer-mute-btn,
-.mixer-strip.is-inactive .mixer-voice-slot {
+.mixer-strip.is-inactive .mixer-voice-select {
   opacity: .4;
   pointer-events: none;
 }

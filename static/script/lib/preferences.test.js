@@ -36,6 +36,10 @@ test("PREF_KEYS pins the persisted key names", () => {
     mixerBassMuted: "rj.mixerBassMuted",
     mixerChordsMuted: "rj.mixerChordsMuted",
     mixerCompingMuted: "rj.mixerCompingMuted",
+    mixerMelodyProgram: "rj.mixerMelodyProgram",
+    mixerBassProgram: "rj.mixerBassProgram",
+    mixerChordsProgram: "rj.mixerChordsProgram",
+    mixerCompingProgram: "rj.mixerCompingProgram",
   });
 });
 
