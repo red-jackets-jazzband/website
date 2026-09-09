@@ -92,7 +92,6 @@ aliases: ["/setlists/", "/songbook/"]
   <div id="compingSlot" class="sheet-comping sheet-adv-item"></div>
   <div id="mixerPanel" class="mixer-panel" role="dialog" aria-label="Mixer" hidden>
     <div class="mixer-head">
-      <span class="fa-solid fa-sliders mixer-head-icon" aria-hidden="true"></span>
       <h3 class="mixer-head-title">Mixer</h3>
       <button type="button" id="mixerCloseBtn" class="mixer-close" aria-label="Close mixer"><span class="fa-solid fa-xmark" aria-hidden="true"></span></button>
     </div>

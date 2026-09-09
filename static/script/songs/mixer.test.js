@@ -80,6 +80,25 @@ test("Escape closes an open panel; the backdrop and close button do too", () => 
   }
 });
 
+test("a click outside the panel closes it; clicking inside it or its own button doesn't", () => {
+  const { mixer, cleanup } = setup();
+  try {
+    mixer.toggle();
+    assert.equal(document.getElementById("mixerPanel").hidden, false);
+
+    document.getElementById("mixerBassRange").dispatchEvent(new window.Event("click", { bubbles: true }));
+    assert.equal(document.getElementById("mixerPanel").hidden, false);
+
+    document.getElementById("mixerBtn").dispatchEvent(new window.Event("click", { bubbles: true }));
+    assert.equal(document.getElementById("mixerPanel").hidden, false);
+
+    document.body.dispatchEvent(new window.Event("click", { bubbles: true }));
+    assert.equal(document.getElementById("mixerPanel").hidden, true);
+  } finally {
+    cleanup();
+  }
+});
+
 test("dragging a fader updates its readout live, and re-renders only once settled", (t) => {
   t.mock.timers.enable({ apis: ["setTimeout"] });
   const { ctx, rerenders, cleanup } = setup();

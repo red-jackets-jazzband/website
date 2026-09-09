@@ -784,10 +784,6 @@ video.video {
   gap: 8px;
   margin-bottom: 14px;
 }
-.mixer-head-icon {
-  color: var(--rj-gold);
-  font-size: 12px;
-}
 .mixer-head-title {
   flex: 1;
   font: 700 13px/1 "Montserrat", sans-serif;

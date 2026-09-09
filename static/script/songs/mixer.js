@@ -209,7 +209,9 @@ export function createMixer(ctx) {
     }
   }
 
-  // A fixed-position popover anchored under the button on desktop; the same
+  // A fixed-position popover attached flush under the button on desktop —
+  // same idea as the Instrument <select>'s native dropdown sitting right
+  // against the field it belongs to, not floating apart from it. The same
   // element becomes a bottom sheet under the 1024px breakpoint (CSS
   // !important overrides these inline coordinates there) — see split.css.
   function positionPanel() {
@@ -217,7 +219,7 @@ export function createMixer(ctx) {
     const panel = byId("mixerPanel");
     if (!btn || !panel) return;
     const rect = btn.getBoundingClientRect();
-    panel.style.top = `${rect.bottom + 10}px`;
+    panel.style.top = `${rect.bottom}px`;
     panel.style.right = `${Math.max(REPOSITION_MARGIN, window.innerWidth - rect.right)}px`;
   }
 
@@ -238,6 +240,19 @@ export function createMixer(ctx) {
     }
   }
 
+  // The mobile bottom-sheet has a dimming #mixerBackdrop to tap; the desktop
+  // popover doesn't (split.css hides it above 1024px), so a plain click
+  // anywhere outside the panel and its own toggle button closes it there —
+  // same expectation as a native <select> dropdown or any other popover.
+  function closeOnOutsideClick(e) {
+    if (!open) return;
+    const panel = byId("mixerPanel");
+    const btn = byId("mixerBtn");
+    if (panel && panel.contains(e.target)) return;
+    if (btn && btn.contains(e.target)) return;
+    setOpen(false);
+  }
+
   function init() {
     CHANNELS.forEach(wireStrip);
 
@@ -246,6 +261,7 @@ export function createMixer(ctx) {
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape" && open) setOpen(false);
     });
+    document.addEventListener("click", closeOnOutsideClick);
     window.addEventListener("resize", () => {
       if (open) positionPanel();
     });
