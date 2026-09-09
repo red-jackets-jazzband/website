@@ -97,7 +97,7 @@ export function withTonal(fn) {
 // ---------------------------------------------------------------------------
 
 export function createAbcjsStub({ audioSupported = false } = {}) {
-  const calls = { renderAbc: [], parseOnly: [] };
+  const calls = { renderAbc: [], parseOnly: [], setTune: [] };
 
   function fakeTune(text) {
     return {
@@ -127,7 +127,11 @@ export function createAbcjsStub({ audioSupported = false } = {}) {
         // go through it), setTune() resets it, pause() leaves it untouched.
         this.isStarted = false;
         this.load = (_target, cursorControl) => { stub.cursorControl = cursorControl; };
-        this.setTune = () => { this.isStarted = false; return Promise.resolve(); };
+        this.setTune = (tune, opts, params) => {
+          calls.setTune.push({ tune, opts, params });
+          this.isStarted = false;
+          return Promise.resolve();
+        };
         this.play = () => { this.isStarted = !this.isStarted; return Promise.resolve(); };
         this.pause = () => {};
         // ABCjs's real setWarp() ends with an internal seek that fires one
