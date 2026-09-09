@@ -605,9 +605,9 @@ export function createSetlistView(ctx) {
   // field. Always clears, match or not.
   function submitAddSong(inputEl) {
     const matches = addSongMatches(addSongQuery);
-    const chosen = addSongActiveIndex >= 0
-      ? matches[addSongActiveIndex]
-      : (matches.length === 1 ? matches[0] : null);
+    let chosen = null;
+    if (addSongActiveIndex >= 0) chosen = matches[addSongActiveIndex];
+    else if (matches.length === 1) chosen = matches[0];
     addSongQuery = "";
     inputEl.value = "";
     renderAddSongResults("");
@@ -615,6 +615,31 @@ export function createSetlistView(ctx) {
   }
 
   function buildAddSongRow() {
+    // With the field empty there are no results to walk, so the arrows leave
+    // the tray: Up jumps back into the setlist (its last row), Down drops
+    // onto the "Add a set break" button.
+    function focusAdjacentOnEmptyArrow(key) {
+      if (key === "ArrowDown") {
+        breakBtn.focus();
+        return;
+      }
+      const handles = byId("songList")
+        ? byId("songList").querySelectorAll(".setlist-drag-handle")
+        : [];
+      const last = handles[handles.length - 1];
+      if (last) last.focus();
+    }
+
+    function handleAddSongArrowKey(e) {
+      e.preventDefault();
+      if (!e.target.value.trim()) {
+        focusAdjacentOnEmptyArrow(e.key);
+        return;
+      }
+      const move = () => moveAddSongActive(e.key === "ArrowDown" ? 1 : -1);
+      ctx.setlistData.ensureSongsLoaded(move, move);
+    }
+
     const search = el("input", {
       type: "search",
       id: "setlistAddSongSearch",
@@ -629,24 +654,7 @@ export function createSetlistView(ctx) {
         },
         keydown: (e) => {
           if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-            e.preventDefault();
-            // With the field empty there are no results to walk, so the arrows
-            // leave the tray: Up jumps back into the setlist (its last row),
-            // Down drops onto the "Add a set break" button.
-            if (!e.target.value.trim()) {
-              if (e.key === "ArrowDown") {
-                breakBtn.focus();
-              } else {
-                const handles = byId("songList")
-                  ? byId("songList").querySelectorAll(".setlist-drag-handle")
-                  : [];
-                const last = handles[handles.length - 1];
-                if (last) last.focus();
-              }
-              return;
-            }
-            const move = () => moveAddSongActive(e.key === "ArrowDown" ? 1 : -1);
-            ctx.setlistData.ensureSongsLoaded(move, move);
+            handleAddSongArrowKey(e);
             return;
           }
           if (e.key !== "Enter") return;
