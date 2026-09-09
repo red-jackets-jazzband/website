@@ -3,7 +3,7 @@ import { offsetForInstrument, changeClefForInstrument } from "../lib/instruments
 import { parseChordScheme, computeChordOffset } from "../lib/chords.js";
 import { convertChordsToRoman } from "../lib/music-theory.js";
 import { buildCompingTune } from "../lib/comping.js";
-import { injectVoiceVolumes } from "../lib/audio-mix.js";
+import { injectMixerAudio } from "../lib/audio-mix.js";
 import { renderChordTable, scanRepeatBoundaries, fitChordTable } from "./chord-table.js";
 import { stylePartMarkers, applyCompingColors } from "./sheet-decorations.js";
 import { updateIrealProLink } from "./irealpro-link.js";
@@ -140,15 +140,24 @@ export function createSheet(ctx) {
     return { renderText: abcText, palette: null, active: false };
   }
 
-  // Live sheet only: stamp the mixer's melody / backing-track levels into the
-  // ABC text before it's parsed, so the one visualObj that gets rendered is
-  // exactly what plays — see lib/audio-mix.js.
-  function resolveRenderText(comping, isBooklet) {
+  // A muted channel is just its fader forced to 0 — see lib/audio-mix.js.
+  function effectiveMixerPercent(channel) {
+    const m = ctx.state.mixer;
+    return m[`${channel}Muted`] ? 0 : m[`${channel}Volume`];
+  }
+
+  // Live sheet only: stamp the mixer's four channel levels into the ABC text
+  // before it's parsed, so the one visualObj that gets rendered is exactly
+  // what plays — see lib/audio-mix.js.
+  function resolveRenderText(comping, hasChords, isBooklet) {
     if (isBooklet) return comping.renderText;
-    return injectVoiceVolumes(comping.renderText, {
+    return injectMixerAudio(comping.renderText, {
       compingActive: comping.active,
-      melodyPercent: ctx.state.mixer.melodyVolume,
-      backingPercent: ctx.state.mixer.backingVolume,
+      hasChords,
+      melodyPercent: effectiveMixerPercent("melody"),
+      compingPercent: effectiveMixerPercent("comping"),
+      bassPercent: effectiveMixerPercent("bass"),
+      chordsPercent: effectiveMixerPercent("chords"),
     });
   }
 
@@ -177,7 +186,7 @@ export function createSheet(ctx) {
     const comping = applyComping(abcText, chords, isBooklet);
     ctx.state.compingActive = comping.active;
 
-    const renderText = resolveRenderText(comping, isBooklet);
+    const renderText = resolveRenderText(comping, chords.length > 0, isBooklet);
 
     if (addLink) {
       ctx.inspiration.updateLink(song.metaText.url, song.metaText.title);
@@ -206,6 +215,7 @@ export function createSheet(ctx) {
     if (!isBooklet) {
       fitLiveChordGrid(chordId);
       ctx.audio.setRepeatBoundaries(scanRepeatBoundaries(chordEl));
+      ctx.state.hasChords = chords.length > 0;
       ctx.mixer.refresh();
     }
 

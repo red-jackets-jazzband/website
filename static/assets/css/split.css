@@ -753,7 +753,7 @@ video.video {
 }
 
 /*
-  Mixer panel (#mixerPanel): the Melody + Backing-track (comping bus) channel
+  Mixer panel (#mixerPanel): the Melody / Bass / Chords / Comping channel
   strips that pop up from the transport cluster's Mixer button. `position:
   fixed`, not absolute — #rj-sheet clips overflow (its rounded-card corners),
   so an absolutely-positioned popover nested in #sheetmenu would be cut off
@@ -830,8 +830,14 @@ video.video {
 .mixer-swatch--melody {
   background: #f0eee9;
 }
-.mixer-swatch--backing {
+.mixer-swatch--bass {
+  background: #8a6244;
+}
+.mixer-swatch--chords {
   background: var(--rj-body);
+}
+.mixer-swatch--comping {
+  background: var(--rj-hover);
 }
 .mixer-strip-label {
   flex: 0 0 46px;
@@ -927,35 +933,25 @@ video.video {
   padding: 2px 6px;
   cursor: not-allowed;
 }
-.mixer-bus {
-  margin-top: 12px;
-  border: 1px solid rgba(255,255,255,.11);
-  border-radius: 8px;
-  padding: 10px 10px 8px;
-  background: rgba(255,255,255,.02);
-}
-.mixer-bus-title {
-  font: 700 9px/1 "Montserrat", sans-serif;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  color: rgba(236,234,230,.4);
-  margin: 0 0 10px;
-}
-.mixer-no-comping-note {
+.mixer-strip-note {
   display: none;
-  margin: 8px 0 0;
-  font: 400 12px/1.5 "Lora", serif;
+  flex: 0 0 100%;
+  margin: 4px 0 0;
+  font: 400 11.5px/1.5 "Lora", serif;
   font-style: italic;
   color: rgba(236,234,230,.45);
 }
-/* Comping is off for the open tune: the backing-track fader controls
-   nothing, so it's dimmed out of interaction and replaced by an explainer
-   rather than left clickable with no audible effect. */
-.mixer-bus.is-inactive .mixer-strip {
+/* Bass/Chords need chord symbols to build an accompaniment from; Comping
+   needs its pattern turned on — a gated channel with nothing to mix is
+   dimmed out of interaction and swaps in an explainer, rather than left
+   clickable with no audible effect (see songs/mixer.js's updateGate). */
+.mixer-strip.is-inactive .mixer-fader-track,
+.mixer-strip.is-inactive .mixer-mute-btn,
+.mixer-strip.is-inactive .mixer-voice-slot {
   opacity: .4;
   pointer-events: none;
 }
-.mixer-bus.is-inactive .mixer-no-comping-note {
+.mixer-strip.is-inactive .mixer-strip-note {
   display: block;
 }
 .mixer-backdrop {

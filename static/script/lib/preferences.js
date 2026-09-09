@@ -11,9 +11,13 @@ export const PREF_KEYS = {
   sheetAdvanced: "rj.sheetAdvanced",
   inspirationWidth: "rj.inspirationWidth",
   mixerMelodyVolume: "rj.mixerMelodyVolume",
-  mixerBackingVolume: "rj.mixerBackingVolume",
+  mixerBassVolume: "rj.mixerBassVolume",
+  mixerChordsVolume: "rj.mixerChordsVolume",
+  mixerCompingVolume: "rj.mixerCompingVolume",
   mixerMelodyMuted: "rj.mixerMelodyMuted",
-  mixerBackingMuted: "rj.mixerBackingMuted",
+  mixerBassMuted: "rj.mixerBassMuted",
+  mixerChordsMuted: "rj.mixerChordsMuted",
+  mixerCompingMuted: "rj.mixerCompingMuted",
 };
 
 // The raw Storage object, or null when it can't be reached. Callers that hand

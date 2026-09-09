@@ -11,7 +11,7 @@ import {
   measureBarSlots,
 } from "./comping.js";
 import { tonalStub as TonalStub, withTonal, nameToMidi } from "../../../tests/helpers/stubs.js";
-import { injectVoiceVolumes } from "./audio-mix.js";
+import { injectMixerAudio } from "./audio-mix.js";
 
 // ---------------------------------------------------------------------------
 // Pure helpers
@@ -241,15 +241,15 @@ test("buildCompingTune adds a bracketed one-voice block-chord comping staff", ()
   assert.match(v2, /\[[A-Ga-g][A-Ga-g][A-Ga-g]\]/);
 });
 
-// Mixer integration check: lib/audio-mix.js's injectVoiceVolumes depends on
+// Mixer integration check: lib/audio-mix.js's injectMixerAudio depends on
 // this function's exact "...\nV:1\n<melody>\nV:2\n<comping>\n" body shape (see
 // its own doc comment above) to stamp each voice's MIDI volume after its own
 // marker — this exercises that dependency against the real output rather
 // than a hand-typed guess at the shape.
-test("buildCompingTune's output accepts lib/audio-mix.js's injectVoiceVolumes", () => {
+test("buildCompingTune's output accepts lib/audio-mix.js's injectMixerAudio", () => {
   const out = withTonal(() => buildCompingTune(TUNE, CHORDS, fakeSong(), "whole_note"));
-  const stamped = injectVoiceVolumes(out.abc, {
-    compingActive: true, melodyPercent: 80, backingPercent: 40,
+  const stamped = injectMixerAudio(out.abc, {
+    compingActive: true, hasChords: true, melodyPercent: 80, compingPercent: 40, bassPercent: 0, chordsPercent: 0,
   });
   assert.match(stamped, /\nV:1\n%%MIDI vol 102\n/); // round(80/100*127)
   assert.match(stamped, /\nV:2\n%%MIDI vol 51\n/); // round(40/100*127)
