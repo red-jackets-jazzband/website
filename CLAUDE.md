@@ -12,6 +12,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 The site itself has no build step beyond Hugo — it's a pure static site, and `package.json`/`node_modules` exist purely as **dev tooling** (lint + unit tests + a jsdom harness for the vanilla JS), never as part of the Hugo build or the GitHub Pages deploy.
 
+### Keeping SonarCloud clean
+
+The project is scanned on SonarCloud (https://sonarcloud.io/dashboard?id=red-jackets-jazzband_website). `eslint.config.js` wires in `eslint-plugin-sonarjs`'s `recommended` rule set alongside the hand-picked `STRICT_RULES` — this is SonarSource's own JS/TS analyzer packaged for ESLint, not a lookalike, so `npm run lint` catches the same class of findings SonarCloud would flag on a PR *before* it's pushed. Outbound network access to sonarcloud.io is blocked from this sandbox, so `npm run lint` — not a live dashboard check — is the authoritative local signal; treat any `sonarjs/*` finding it reports as a real SonarCloud issue in waiting.
+
+A few patterns come up repeatedly and are worth avoiding by habit rather than fixing after the fact:
+
+- **Regexes that scan for a closing delimiter** (`"[^"]*"`, `\{[^}]*\}`, `\s*literal`, `(\d+)$`, …) trip `sonarjs/super-linear-regex`: an unanchored quantifier that fails to match still costs work at *every* start position, which is quadratic on adversarial input. Prefer a plain scan — `str.indexOf(close, i)`, a manual char-class walk (see `stripDelimited`/`scanRun`/`scanNoteLetter` etc. in `static/script/lib/comping.js`), or `String#trimEnd()` — over a `delimiter...*...delimiter` regex, especially in `lib/` parsers that run over arbitrary ABC/setlist text.
+- **Two optional quantifiers either side of an optional separator** (`(\d+)?(\/+)?(\d*)`) are ambiguous — when the separator is absent, both groups can claim the same run of characters, which is exactly what makes backtracking explode. Nest the second group inside the separator's: `(\d+)?(?:(\/+)(\d*))?`.
+- **A `try` whose catch ignores the exception** (`catch (_e) { /* comment */ }`) only passes `sonarjs/no-ignored-exceptions` when the `try` block is a single simple statement — a comment doesn't satisfy it. If the try body is a multi-step operation, pull it into its own function so `try { return doTheThing(); } catch { return fallback; }` is the whole block.
+- **Nested ternaries** (`a ? x : b ? y : z`, or a ternary nested in another's branch) trip `sonarjs/no-nested-conditional` — use `if`/`else if`/`else` assigning to a `let`, or extract the inner ternary to its own statement.
+- **A string literal repeated 3+ times** in one file trips `sonarjs/no-duplicate-string` (threshold 5 here) — hoist it to a `const`.
+- **`void expr`** trips `sonarjs/void-use`; for the "read a property to force a reflow" idiom, a bare `expr;` statement (with a comment explaining why) does the same job without the operator.
+
+`static/script/lib/chords.js`, `comping.js` and `music-theory.js` carry a scoped override in `eslint.config.js` turning off `sonarjs/cognitive-complexity` and (for `comping.js`'s one literal-alternation barline tokenizer) `sonarjs/regex-complexity` — these are dense, heavily unit-tested pure parsers where splitting a single-pass loop mid-stream hurts readability more than the branch-count metric helps; don't reach for that override elsewhere without the same justification (tests as the guard rail, no simpler equivalent structure).
+
 ## Architecture
 
 **Red Jackets Jazzband** website: a Hugo static site with multi-language support (English, Dutch, German) and interactive music features powered by vanilla JavaScript.

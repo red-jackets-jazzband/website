@@ -1,3 +1,13 @@
+// Tolerates Tonal.Note.get throwing on unparseable input by reporting no
+// chroma — the caller falls back to the manual table below either way.
+function tonalChroma(normalized) {
+  try {
+    return Tonal.Note.get(normalized).chroma;
+  } catch {
+    return undefined;
+  }
+}
+
 // Pitch class (0-11) of a note name. Prefers Tonal.js (loaded as a global
 // classic script alongside this module in the browser) for full enharmonic
 // handling, falling back to a small manual table so this still works in
@@ -5,17 +15,13 @@
 export function noteChroma(noteName) {
   const normalized = noteName.replace(/♭/g, "b").replace(/♯/g, "#");
   if (typeof Tonal !== "undefined" && Tonal.Note) {
-    try {
-      const n = Tonal.Note.get(normalized);
-      // Tonal represents an unparseable note (e.g. "Am" — a chord, not a
-      // plain note name — passed in when a setlist key override carries a
-      // mode suffix) as chroma: NaN, not undefined. typeof NaN is still
-      // "number", so this must be excluded explicitly or it gets returned
-      // as-is instead of falling through to the manual table below.
-      if (typeof n.chroma === "number" && !Number.isNaN(n.chroma)) return n.chroma;
-    } catch (_e) {
-      // fall through to the manual table below
-    }
+    const chroma = tonalChroma(normalized);
+    // Tonal represents an unparseable note (e.g. "Am" — a chord, not a
+    // plain note name — passed in when a setlist key override carries a
+    // mode suffix) as chroma: NaN, not undefined. typeof NaN is still
+    // "number", so this must be excluded explicitly or it gets returned
+    // as-is instead of falling through to the manual table below.
+    if (typeof chroma === "number" && !Number.isNaN(chroma)) return chroma;
   }
   const CHROMAS = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
   const letter = normalized[0].toUpperCase();
@@ -129,7 +135,12 @@ export function extractKeyFromAbc(text) {
    Returns null when there's no Q: field or no number to read.
 */
 export function tempoBpmFromAbc(text) {
-  const line = String(text || "").match(/^Q:\s*(.+?)\s*$/m);
+  // The surrounding whitespace this used to trim off within the regex
+  // itself (`\s*(.+?)\s*$`) is trimmed below instead — that pattern let the
+  // lazy `.+?` and the trailing `\s*` disagree over which of them owned a
+  // run of whitespace, which is exactly the ambiguity that makes a regex
+  // engine backtrack superlinearly.
+  const line = String(text || "").match(/^Q:(.*)$/m);
   if (!line) return null;
   const body = line[1].replace(/"[^"]*"/g, " ").trim();
   const afterEquals = body.match(/=\s*(\d+(?:\.\d+)?)/);

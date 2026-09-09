@@ -44,12 +44,17 @@ const TonalStub = {
   },
   Chord: {
     get(name) {
-      const m = String(name).match(/^([A-G][#b]*)(.*)$/);
-      if (!m) return { notes: [] };
-      const q = m[2];
+      const s = String(name);
+      if (!/^[A-G]/.test(s)) return { notes: [] };
+      let i = 1;
+      while (s[i] === "#" || s[i] === "b") i += 1;
+      const root = s.slice(0, i);
+      const q = s.slice(i);
       const third = /^(m|min|-|dim|°|o)/.test(q) ? 3 : 4;
-      const fifth = /^(dim|°|o)/.test(q) ? 6 : /^(aug|\+)/.test(q) ? 8 : 7;
-      return { notes: [m[1], pcAdd(m[1], third), pcAdd(m[1], fifth)] };
+      let fifth = 7;
+      if (/^(dim|°|o)/.test(q)) fifth = 6;
+      else if (/^(aug|\+)/.test(q)) fifth = 8;
+      return { notes: [root, pcAdd(root, third), pcAdd(root, fifth)] };
     },
   },
   Note: { midi: nameToMidi },
@@ -348,6 +353,28 @@ function keySigOf(abc) {
 // reading each notehead at its true sounding pitch: bare noteheads follow the
 // K: signature and accidentals propagate per letter+octave within a bar, the
 // same way ABCjs resolves them.
+// Splits a "[CEG]" chord's insides into its individual accidentals+letter+
+// octave-marks notes ("C", "^E,", ...) — a manual scan, not a
+// `[_^=]*[A-Ga-g][,']*` regex, since a star quantifier ahead of a single
+// required letter is exactly the shape sonarjs's regex-DoS check flags.
+function splitChordNotes(str) {
+  const notes = [];
+  let i = 0;
+  while (i < str.length) {
+    let j = i;
+    while (str[j] === "_" || str[j] === "^" || str[j] === "=") j += 1;
+    if (!/[A-Ga-g]/.test(str[j] || "")) {
+      i += 1;
+      continue;
+    }
+    j += 1;
+    while (str[j] === "," || str[j] === "'") j += 1;
+    notes.push(str.slice(i, j));
+    i = j;
+  }
+  return notes;
+}
+
 function compingChordMidis(abc) {
   const v2 = abc.split("\nV:2\n").pop();
   const sig = keySigOf(abc);
@@ -355,7 +382,7 @@ function compingChordMidis(abc) {
   for (const bar of v2.split(/\|+/)) {
     const barAcc = new Map();
     for (const tok of bar.match(/\[(?:[_^=]*[A-Ga-g][,']*)+\]/g) || []) {
-      const notes = tok.slice(1, -1).match(/[_^=]*[A-Ga-g][,']*/g) || [];
+      const notes = splitChordNotes(tok.slice(1, -1));
       out.push(
         notes.map((n) => {
           const nm = n.match(/^([_^=]*)([A-Ga-g])([,']*)$/);

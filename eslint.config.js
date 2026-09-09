@@ -1,5 +1,6 @@
 import js from "@eslint/js";
 import stylistic from "@stylistic/eslint-plugin";
+import sonarjs from "eslint-plugin-sonarjs";
 import globals from "globals";
 
 // Strict, project-wide config for the site's authored JavaScript: the pure
@@ -59,14 +60,25 @@ export default [
         YT: "readonly",
       },
     },
-    plugins: { "@stylistic": stylistic },
-    rules: { ...STRICT_RULES, ...STYLISTIC_RULES },
+    plugins: { "@stylistic": stylistic, sonarjs: sonarjs.configs.recommended.plugins.sonarjs },
+    rules: {
+      ...sonarjs.configs.recommended.rules,
+      ...STRICT_RULES,
+      ...STYLISTIC_RULES,
+      // Superseded by (or in conflict with) rules already enforced above.
+      "sonarjs/no-unused-vars": "off",
+      "sonarjs/cognitive-complexity": ["warn", 15],
+      "sonarjs/no-duplicate-string": ["warn", { threshold: 5 }],
+    },
   },
   {
     // Dense but heavily unit-tested pure parsers (ABC chord scheme, comping
     // rhythm generation, chord -> Roman-numeral). The branch-count metrics
     // flag them, but splitting a single-pass parser mid-loop tends to make it
-    // harder to follow, not easier — the tests are the guard rail here.
+    // harder to follow, not easier — the tests are the guard rail here. The
+    // one remaining sonarjs/regex-complexity hit (comping.js's BARLINE
+    // tokenizer) is a flat dictionary of literal alternatives, not a
+    // backtracking risk — no paired super-linear-regex flag on it.
     files: [
       "static/script/lib/chords.js",
       "static/script/lib/comping.js",
@@ -76,6 +88,8 @@ export default [
       complexity: "off",
       "max-depth": "off",
       "max-params": "off",
+      "sonarjs/cognitive-complexity": "off",
+      "sonarjs/regex-complexity": "off",
     },
   },
   {
