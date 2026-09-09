@@ -754,29 +754,38 @@ video.video {
 
 /*
   Mixer panel (#mixerPanel): the Melody / Bass / Chords / Comping channel
-  strips that pop up from the transport cluster's Mixer button. `position:
-  fixed`, not absolute — #rj-sheet clips overflow (its rounded-card corners),
-  so an absolutely-positioned popover nested in #sheetmenu would be cut off
-  wherever it overflowed that card; fixed escapes that entirely, same as
-  #inspirationPanel above. songs/mixer.js sets `top`/`right` from the
-  button's own rect on open; the sub-1024px media query below overrides those
-  inline coordinates (with !important, since inline style otherwise always
-  wins over a stylesheet) to dock it as a bottom sheet instead.
+  strips that pop up from the transport cluster's Mixer button. It's a native
+  <dialog> (for real dialog accessibility semantics) toggled via its own
+  `open` attribute (songs/mixer.js's setOpen), never shown modally (no
+  showModal()/::backdrop — this is a plain popover, not a modal), so `inset:
+  auto` and `margin: 0` below undo the two UA defaults
+  (`dialog { inset: 0; margin: auto; }`) that would otherwise fight the
+  `position: fixed` + top/right placement this file and songs/mixer.js
+  together compute; `border`/`padding`/`background` are already overridden by
+  this rule's own higher-specificity class selector, so those UA defaults
+  need no explicit reset. `position: fixed`, not absolute — #rj-sheet clips
+  overflow (its rounded-card corners), so an absolutely-positioned popover
+  nested in #sheetmenu would be cut off wherever it overflowed that card;
+  fixed escapes that entirely, same as #inspirationPanel above. songs/mixer.js
+  sets `top`/`right` from the button's own rect on open; the sub-1024px media
+  query below overrides those inline coordinates (with !important, since
+  inline style otherwise always wins over a stylesheet) to dock it as a
+  bottom sheet instead.
 */
 .mixer-panel {
   position: fixed;
+  inset: auto;
+  margin: 0;
   z-index: 20;
   width: 300px;
   max-width: calc(100vw - 24px);
   background: #222222;
+  color: #ece6e6;
   border: 1px solid rgba(255,255,255,.14);
   border-radius: 12px;
   box-shadow: 0 18px 44px rgba(0,0,0,.6);
   padding: 14px 16px 16px;
   font-family: "Montserrat", sans-serif;
-}
-.mixer-panel[hidden] {
-  display: none;
 }
 .mixer-head {
   display: flex;

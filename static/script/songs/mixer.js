@@ -103,6 +103,20 @@ function readoutText(channel, percent, muted) {
   return `${percent}%`;
 }
 
+// A fixed-position popover attached flush under the button on desktop —
+// same idea as the Instrument <select>'s native dropdown sitting right
+// against the field it belongs to, not floating apart from it. The same
+// element becomes a bottom sheet under the 1024px breakpoint (CSS
+// !important overrides these inline coordinates there) — see split.css.
+function positionPanel() {
+  const btn = byId("mixerBtn");
+  const panel = byId("mixerPanel");
+  if (!btn || !panel) return;
+  const rect = btn.getBoundingClientRect();
+  panel.style.top = `${rect.bottom}px`;
+  panel.style.right = `${Math.max(REPOSITION_MARGIN, window.innerWidth - rect.right)}px`;
+}
+
 export function createMixer(ctx) {
   let open = false;
   let applyTimer = null;
@@ -209,26 +223,15 @@ export function createMixer(ctx) {
     }
   }
 
-  // A fixed-position popover attached flush under the button on desktop —
-  // same idea as the Instrument <select>'s native dropdown sitting right
-  // against the field it belongs to, not floating apart from it. The same
-  // element becomes a bottom sheet under the 1024px breakpoint (CSS
-  // !important overrides these inline coordinates there) — see split.css.
-  function positionPanel() {
-    const btn = byId("mixerBtn");
-    const panel = byId("mixerPanel");
-    if (!btn || !panel) return;
-    const rect = btn.getBoundingClientRect();
-    panel.style.top = `${rect.bottom}px`;
-    panel.style.right = `${Math.max(REPOSITION_MARGIN, window.innerWidth - rect.right)}px`;
-  }
-
   function setOpen(next) {
     open = next;
     const panel = byId("mixerPanel");
     const backdrop = byId("mixerBackdrop");
     const btn = byId("mixerBtn");
-    if (panel) panel.hidden = !open;
+    // #mixerPanel is a native <dialog>: its `open` attribute is what the
+    // browser's own dialog:not([open]) { display: none } rule keys off, so
+    // this toggles that directly rather than the generic `hidden` attribute.
+    if (panel) panel.open = open;
     if (backdrop) backdrop.hidden = !open;
     if (btn) {
       btn.classList.toggle("active", open);
@@ -248,8 +251,8 @@ export function createMixer(ctx) {
     if (!open) return;
     const panel = byId("mixerPanel");
     const btn = byId("mixerBtn");
-    if (panel && panel.contains(e.target)) return;
-    if (btn && btn.contains(e.target)) return;
+    if (panel?.contains(e.target)) return;
+    if (btn?.contains(e.target)) return;
     setOpen(false);
   }
 

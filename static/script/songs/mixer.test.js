@@ -44,16 +44,16 @@ test("mixer.toggle() opens and closes the panel, updating the button and aria st
     const btn = document.getElementById("mixerBtn");
     const panel = document.getElementById("mixerPanel");
     const backdrop = document.getElementById("mixerBackdrop");
-    assert.equal(panel.hidden, true);
+    assert.equal(panel.open, false);
 
     mixer.toggle();
-    assert.equal(panel.hidden, false);
+    assert.equal(panel.open, true);
     assert.equal(backdrop.hidden, false);
     assert.equal(btn.classList.contains("active"), true);
     assert.equal(btn.getAttribute("aria-expanded"), "true");
 
     mixer.toggle();
-    assert.equal(panel.hidden, true);
+    assert.equal(panel.open, false);
     assert.equal(btn.classList.contains("active"), false);
     assert.equal(btn.getAttribute("aria-expanded"), "false");
   } finally {
@@ -66,15 +66,15 @@ test("Escape closes an open panel; the backdrop and close button do too", () => 
   try {
     mixer.toggle();
     document.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
-    assert.equal(document.getElementById("mixerPanel").hidden, true);
+    assert.equal(document.getElementById("mixerPanel").open, false);
 
     mixer.toggle();
     document.getElementById("mixerBackdrop").dispatchEvent(new window.Event("click"));
-    assert.equal(document.getElementById("mixerPanel").hidden, true);
+    assert.equal(document.getElementById("mixerPanel").open, false);
 
     mixer.toggle();
     document.getElementById("mixerCloseBtn").dispatchEvent(new window.Event("click"));
-    assert.equal(document.getElementById("mixerPanel").hidden, true);
+    assert.equal(document.getElementById("mixerPanel").open, false);
   } finally {
     cleanup();
   }
@@ -84,16 +84,16 @@ test("a click outside the panel closes it; clicking inside it or its own button 
   const { mixer, cleanup } = setup();
   try {
     mixer.toggle();
-    assert.equal(document.getElementById("mixerPanel").hidden, false);
+    assert.equal(document.getElementById("mixerPanel").open, true);
 
     document.getElementById("mixerBassRange").dispatchEvent(new window.Event("click", { bubbles: true }));
-    assert.equal(document.getElementById("mixerPanel").hidden, false);
+    assert.equal(document.getElementById("mixerPanel").open, true);
 
     document.getElementById("mixerBtn").dispatchEvent(new window.Event("click", { bubbles: true }));
-    assert.equal(document.getElementById("mixerPanel").hidden, false);
+    assert.equal(document.getElementById("mixerPanel").open, true);
 
     document.body.dispatchEvent(new window.Event("click", { bubbles: true }));
-    assert.equal(document.getElementById("mixerPanel").hidden, true);
+    assert.equal(document.getElementById("mixerPanel").open, false);
   } finally {
     cleanup();
   }

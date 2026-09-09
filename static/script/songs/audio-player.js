@@ -45,7 +45,7 @@ export function createAudioPlayer(ctx) {
 
   function synthParams() {
     const params = { ...SYNTH_PARAMS };
-    const voicesOff = computeVoicesOff({
+    const { voicesOff } = computeVoicesOff({
       compingActive: ctx.state.compingActive,
       melodyMuted: ctx.state.mixer.melodyMuted,
       compingMuted: ctx.state.mixer.compingMuted,

@@ -90,7 +90,7 @@ aliases: ["/setlists/", "/songbook/"]
        alignment (same gotcha as #inspirationSlot). -->
   <button id="advancedToggleBtn" class="sheet-icon-btn sheet-advanced-toggle" type="button" title="More controls" aria-label="Show more controls" aria-expanded="false"><span class="fa-solid fa-angles-right" aria-hidden="true"></span></button>
   <div id="compingSlot" class="sheet-comping sheet-adv-item"></div>
-  <div id="mixerPanel" class="mixer-panel" role="dialog" aria-label="Mixer" hidden>
+  <dialog id="mixerPanel" class="mixer-panel" aria-label="Mixer">
     <div class="mixer-head">
       <h3 class="mixer-head-title">Mixer</h3>
       <button type="button" id="mixerCloseBtn" class="mixer-close" aria-label="Close mixer"><span class="fa-solid fa-xmark" aria-hidden="true"></span></button>
@@ -141,7 +141,7 @@ aliases: ["/setlists/", "/songbook/"]
       <button type="button" id="mixerCompingMuteBtn" class="mixer-mute-btn" aria-pressed="false" title="Mute comping" aria-label="Mute comping"><span class="fa-solid fa-volume-high" aria-hidden="true"></span></button>
       <select id="mixerCompingVoiceSelect" class="mixer-voice-select" aria-label="Comping voice"></select>
     </div>
-  </div>
+  </dialog>
   <div id="mixerBackdrop" class="mixer-backdrop" hidden></div>
 </div>
 <div id="abc-player-container" style="display:none;"></div>
