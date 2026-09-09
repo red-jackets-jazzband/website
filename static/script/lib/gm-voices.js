@@ -20,9 +20,9 @@ export const GM_VOICES = [
   { value: 57, label: "Trombone", group: "Brass" },
   { value: 58, label: "Tuba", group: "Brass" },
   { value: 60, label: "French Horn", group: "Brass" },
-  { value: 64, label: "Alto Sax", group: "Reeds" },
-  { value: 65, label: "Tenor Sax", group: "Reeds" },
-  { value: 66, label: "Baritone Sax", group: "Reeds" },
+  { value: 65, label: "Alto Sax", group: "Reeds" },
+  { value: 66, label: "Tenor Sax", group: "Reeds" },
+  { value: 67, label: "Baritone Sax", group: "Reeds" },
   { value: 71, label: "Clarinet", group: "Reeds" },
   { value: 73, label: "Flute", group: "Reeds" },
 ];

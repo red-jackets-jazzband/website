@@ -111,11 +111,15 @@ test("scrolling recomputes the panel's position so it stays glued under the butt
     assert.equal(panel.style.top, "60px");
 
     // .split-content scrolls internally, not the window — its scroll event
-    // doesn't bubble, so the listener has to be capture-phase to still see it.
+    // doesn't bubble, so the listener has to be capture-phase to still see
+    // it. Dispatching straight on window would pass even for a bubble-phase
+    // listener (window is the target either way), so dispatch a
+    // non-bubbling scroll from a descendant instead — only a capture-phase
+    // listener on window can observe that.
     btn.getBoundingClientRect = () => ({
       top: -20, bottom: 0, left: 10, right: 110, width: 100, height: 20,
     });
-    window.dispatchEvent(new window.Event("scroll"));
+    panel.dispatchEvent(new window.Event("scroll", { bubbles: false }));
     assert.equal(panel.style.top, "0px");
   } finally {
     cleanup();
@@ -221,6 +225,39 @@ test("refresh() gates Bass/Chords on hasChords and Comping on compingActive, ind
     ctx.state.compingActive = false;
     mixer.refresh();
     assert.deepEqual(inactiveFlags(), [false, false, true, false]);
+  } finally {
+    cleanup();
+  }
+});
+
+test("a gated channel's controls get the disabled property too, not just dimmed CSS — a keyboard/AT user can't reach them either", () => {
+  const { ctx, mixer, cleanup } = setup();
+  try {
+    ctx.state.hasChords = false;
+    mixer.refresh();
+    assert.equal(document.getElementById("mixerBassRange").disabled, true);
+    assert.equal(document.getElementById("mixerBassMuteBtn").disabled, true);
+    assert.equal(document.getElementById("mixerBassVoiceSelect").disabled, true);
+
+    ctx.state.hasChords = true;
+    mixer.refresh();
+    assert.equal(document.getElementById("mixerBassRange").disabled, false);
+    assert.equal(document.getElementById("mixerBassMuteBtn").disabled, false);
+    assert.equal(document.getElementById("mixerBassVoiceSelect").disabled, false);
+  } finally {
+    cleanup();
+  }
+});
+
+test("Comping's gate never re-enables its permanently-locked fader", () => {
+  const { ctx, mixer, cleanup } = setup();
+  try {
+    ctx.state.compingActive = true;
+    mixer.refresh();
+    // Voice/Mute follow the gate; the fader stays disabled regardless (VOLUME_LOCKED).
+    assert.equal(document.getElementById("mixerCompingRange").disabled, true);
+    assert.equal(document.getElementById("mixerCompingMuteBtn").disabled, false);
+    assert.equal(document.getElementById("mixerCompingVoiceSelect").disabled, false);
   } finally {
     cleanup();
   }
