@@ -967,6 +967,11 @@ function countChords(fragment) {
      song   - the ABCjs parseOnly tune (concert pitch).
      pattern- a COMPING_PATTERNS value.
 
+   lib/audio-mix.js's injectVoiceVolumes (the sheet's Mixer panel) depends on
+   the body's exact "...\nV:1\n<melody>\nV:2\n<comping>\n" shape below to
+   stamp each voice's MIDI volume right after its own marker — keep that
+   literal shape if this function's assembly ever changes.
+
    Returns { abc, palette }, or null when comping can't apply (no chords, an
    unsupported meter, an already multi-voiced tune, no K: line):
      abc     - the augmented ABC (melody as V:1, one block-chord comping voice

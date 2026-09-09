@@ -10,6 +10,10 @@ export const PREF_KEYS = {
   comping: "rj.comping",
   sheetAdvanced: "rj.sheetAdvanced",
   inspirationWidth: "rj.inspirationWidth",
+  mixerMelodyVolume: "rj.mixerMelodyVolume",
+  mixerBackingVolume: "rj.mixerBackingVolume",
+  mixerMelodyMuted: "rj.mixerMelodyMuted",
+  mixerBackingMuted: "rj.mixerBackingMuted",
 };
 
 // The raw Storage object, or null when it can't be reached. Callers that hand

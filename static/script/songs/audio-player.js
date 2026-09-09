@@ -2,6 +2,7 @@ import { byId } from "../lib/dom.js";
 import {
   DEFAULT_BPM, TEMPO_MIN_BPM, TEMPO_MAX_BPM, clampBpm, resolveBpm, bpmToWarpPercent,
 } from "../lib/tempo.js";
+import { computeVoicesOff } from "../lib/audio-mix.js";
 
 const SYNTH_PARAMS = {
   soundFontUrl: "https://gleitz.github.io/midi-js-soundfonts/FatBoy/",
@@ -10,15 +11,17 @@ const SYNTH_PARAMS = {
 
 const PLAY_ICON = '<span class="fa-solid fa-play" aria-hidden="true"></span>';
 const PAUSE_ICON = '<span class="fa-solid fa-pause" aria-hidden="true"></span>';
-const MELODY_ON_ICON = '<span class="fa-solid fa-microphone-lines" aria-hidden="true"></span>';
-const MELODY_OFF_ICON = '<span class="fa-solid fa-microphone-lines-slash" aria-hidden="true"></span>';
 
 /*
   Owns the sheet's audio: the ABCjs SynthController lifecycle, the transport
   buttons' visual state, note/chord-cell highlighting during playback, the
   click-to-seek timing map, and the Tempo stepper's effect (SynthController
   warp). sheet.js calls initForTune() after each live render; sheet-controls.js
-  wires the buttons to playPause / stop / toggleMelody / stepTempo.
+  wires the buttons to playPause / stop / stepTempo. Mute (melody / backing
+  track) is decided by songs/mixer.js via ctx.state.mixer and applied here
+  through computeVoicesOff; continuous volume is baked into the ABC text
+  before it's parsed (see sheet.js + lib/audio-mix.js's injectVoiceVolumes),
+  not a setTune-time param, so it isn't read in this file at all.
 */
 export function createAudioPlayer(ctx) {
   const state = {
@@ -27,7 +30,6 @@ export function createAudioPlayer(ctx) {
     totalMs: 0,
     currentVisualObj: null,
     nativeQpm: null,
-    melodOff: false,
     transposeSemitones: 0,
     chordOffset: 0,
     repeatStart: undefined,
@@ -39,7 +41,12 @@ export function createAudioPlayer(ctx) {
 
   function synthParams() {
     const params = { ...SYNTH_PARAMS };
-    if (state.melodOff) params.voicesOff = ctx.state.compingActive ? [0] : true;
+    const voicesOff = computeVoicesOff({
+      compingActive: ctx.state.compingActive,
+      melodyMuted: ctx.state.mixer.melodyMuted,
+      backingMuted: ctx.state.mixer.backingMuted,
+    });
+    if (voicesOff !== undefined) params.voicesOff = voicesOff;
     if (state.transposeSemitones) params.midiTranspose = state.transposeSemitones;
     return params;
   }
@@ -54,18 +61,8 @@ export function createAudioPlayer(ctx) {
     btn.classList.toggle("playing", state.isPlaying);
   }
 
-  function updateMelodyButton() {
-    const btn = byId("melodyOffBtn");
-    if (!btn) return;
-    btn.classList.toggle("active", state.melodOff);
-    btn.innerHTML = state.melodOff ? MELODY_OFF_ICON : MELODY_ON_ICON;
-    const label = state.melodOff ? "Unmute melody" : "Mute melody";
-    btn.title = label;
-    btn.setAttribute("aria-label", label);
-  }
-
   function setButtonsDisabled(disabled) {
-    ["playPauseBtn", "stopBtn", "melodyOffBtn"].forEach((id) => {
+    ["playPauseBtn", "stopBtn", "mixerBtn"].forEach((id) => {
       const btn = byId(id);
       if (btn) btn.disabled = disabled;
     });
@@ -300,12 +297,6 @@ export function createAudioPlayer(ctx) {
       });
   }
 
-  function toggleMelody() {
-    state.melodOff = !state.melodOff;
-    updateMelodyButton();
-    ctx.sheet.rerender();
-  }
-
   function initForTune(visualObj) {
     if (!ABCJS.synth || typeof ABCJS.synth.supportsAudio !== "function"
       || !ABCJS.synth.supportsAudio()) {
@@ -325,7 +316,6 @@ export function createAudioPlayer(ctx) {
     state.currentVisualObj = visualObj;
     state.nativeQpm = (visualObj.metaText && visualObj.metaText.tempo && visualObj.metaText.tempo.bpm) || null;
     updatePlayButton();
-    updateMelodyButton();
     setButtonsDisabled(true);
     setLoadingVisible(true);
 
@@ -366,12 +356,6 @@ export function createAudioPlayer(ctx) {
   }
 
   return {
-    get melodOff() {
-      return state.melodOff;
-    },
-    set melodOff(value) {
-      state.melodOff = value;
-    },
     set transposeSemitones(value) {
       state.transposeSemitones = value;
     },
@@ -392,7 +376,6 @@ export function createAudioPlayer(ctx) {
     stepTempo,
     playPause,
     stop,
-    toggleMelody,
     TEMPO_BOUNDS: { min: TEMPO_MIN_BPM, max: TEMPO_MAX_BPM },
   };
 }

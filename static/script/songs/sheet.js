@@ -3,6 +3,7 @@ import { offsetForInstrument, changeClefForInstrument } from "../lib/instruments
 import { parseChordScheme, computeChordOffset } from "../lib/chords.js";
 import { convertChordsToRoman } from "../lib/music-theory.js";
 import { buildCompingTune } from "../lib/comping.js";
+import { injectVoiceVolumes } from "../lib/audio-mix.js";
 import { renderChordTable, scanRepeatBoundaries, fitChordTable } from "./chord-table.js";
 import { stylePartMarkers, applyCompingColors } from "./sheet-decorations.js";
 import { updateIrealProLink } from "./irealpro-link.js";
@@ -62,9 +63,9 @@ function fitLiveChordGrid(chordId) {
   The sheet: the on-screen lead-sheet reader, and the same engraving pipeline
   reused to fill each song block of a print booklet.
 
-  render(text, { transposeSemitones })   open a song fresh (resets tempo + the
-                                         mute-melody toggle, seeds the Key
-                                         stepper)
+  render(text, { transposeSemitones })   open a song fresh (resets tempo,
+                                         seeds the Key stepper — the mixer's
+                                         levels are sticky across songs)
   rerender()                             re-engrave the current song in place
                                          (instrument / key / tempo / comping
                                          change) — reads the Key stepper live
@@ -139,6 +140,18 @@ export function createSheet(ctx) {
     return { renderText: abcText, palette: null, active: false };
   }
 
+  // Live sheet only: stamp the mixer's melody / backing-track levels into the
+  // ABC text before it's parsed, so the one visualObj that gets rendered is
+  // exactly what plays — see lib/audio-mix.js.
+  function resolveRenderText(comping, isBooklet) {
+    if (isBooklet) return comping.renderText;
+    return injectVoiceVolumes(comping.renderText, {
+      compingActive: comping.active,
+      melodyPercent: ctx.state.mixer.melodyVolume,
+      backingPercent: ctx.state.mixer.backingVolume,
+    });
+  }
+
   function engrave(text, opts) {
     const {
       notationId, chordId, titleId,
@@ -164,6 +177,8 @@ export function createSheet(ctx) {
     const comping = applyComping(abcText, chords, isBooklet);
     ctx.state.compingActive = comping.active;
 
+    const renderText = resolveRenderText(comping, isBooklet);
+
     if (addLink) {
       ctx.inspiration.updateLink(song.metaText.url, song.metaText.title);
       updateIrealProLink(song, chords);
@@ -177,7 +192,7 @@ export function createSheet(ctx) {
     const notationEl = byId(notationId);
     notationEl.classList.toggle("comping-active", comping.active);
 
-    const visualObjs = ABCJS.renderAbc(notationId, comping.renderText, abcParams(visual));
+    const visualObjs = ABCJS.renderAbc(notationId, renderText, abcParams(visual));
 
     if (comping.active) applyCompingColors(notationEl, comping.palette);
 
@@ -191,6 +206,7 @@ export function createSheet(ctx) {
     if (!isBooklet) {
       fitLiveChordGrid(chordId);
       ctx.audio.setRepeatBoundaries(scanRepeatBoundaries(chordEl));
+      ctx.mixer.refresh();
     }
 
     byId(titleId).innerHTML = titlePrefix + song.metaText.title;
@@ -224,7 +240,6 @@ export function createSheet(ctx) {
     const stepper = byId("transpose");
     if (stepper) stepper.value = transposeSemitones || 0;
     ctx.state.tempoOverrideBpm = null;
-    ctx.audio.melodOff = false;
     engrave(text, { ...LIVE_TARGETS, addLink: true });
   }
 

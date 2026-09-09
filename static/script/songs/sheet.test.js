@@ -20,7 +20,6 @@ function setup() {
       stepTempo: () => {},
       playPause: () => {},
       stop: () => {},
-      toggleMelody: () => {},
     },
   });
   // #instrument is built at runtime by selects.js — add the option the tests need.
@@ -82,6 +81,35 @@ test("the instrument offset shifts the notation but not the audio transpose", ()
     assert.equal(audioCalls.transpose.at(-1), 1);
     // notation gets stepper + instrument offset
     assert.equal(abcjs.calls.renderAbc.at(-1).params.visualTranspose, 3);
+  } finally {
+    cleanup();
+  }
+});
+
+test("render stamps the mixer's melody volume into the ABC text before it's parsed", () => {
+  const { ctx, abcjs, sheet, cleanup } = setup();
+  try {
+    ctx.state.mixer.melodyVolume = 50;
+    withAbcjs(abcjs, () => sheet.render(TUNE));
+    const abc = abcjs.calls.renderAbc.at(-1).abc;
+    assert.match(abc, /%%MIDI vol 64\nK:C/); // round(50/100*127)
+  } finally {
+    cleanup();
+  }
+});
+
+test("a booklet render never stamps a mixer volume into the ABC text", () => {
+  const { ctx, abcjs, sheet, cleanup } = setup();
+  try {
+    ctx.state.mixer.melodyVolume = 50;
+    document.getElementById("notation").insertAdjacentHTML(
+      "afterend",
+      "<div id='bk-n2'></div><div id='bk-c2'></div><div id='bk-t2'></div>",
+    );
+    withAbcjs(abcjs, () => sheet.renderIntoBooklet(TUNE, {
+      notationId: "bk-n2", chordId: "bk-c2", titleId: "bk-t2",
+    }));
+    assert.doesNotMatch(abcjs.calls.renderAbc.at(-1).abc, /%%MIDI vol/);
   } finally {
     cleanup();
   }

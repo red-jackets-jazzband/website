@@ -28,6 +28,10 @@ test("PREF_KEYS pins the persisted key names", () => {
     comping: "rj.comping",
     sheetAdvanced: "rj.sheetAdvanced",
     inspirationWidth: "rj.inspirationWidth",
+    mixerMelodyVolume: "rj.mixerMelodyVolume",
+    mixerBackingVolume: "rj.mixerBackingVolume",
+    mixerMelodyMuted: "rj.mixerMelodyMuted",
+    mixerBackingMuted: "rj.mixerBackingMuted",
   });
 });
 
