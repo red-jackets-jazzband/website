@@ -2965,6 +2965,20 @@ body:has(#rjLibrary) .split-bio {
   }
 
   /*
+    .songtitle's xx-large/20px padding is sized for the desktop sheet, where
+    the staff renders close to its natural width and the chordtable is at
+    (or near) its natural 4/8-column size. On the mobile stacked sheet the
+    staff scales down through ABCjs's own responsive resize and
+    fitChordTable (chord-table.js) zooms the chord grid to fit — but the
+    title has no matching scale-down, so next to the now-shrunk staff and
+    chordtable it reads oversized. Shrink it here to match.
+  */
+  .songtitle {
+    font-size: x-large;
+    padding: 12px 16px;
+  }
+
+  /*
     Narrow layout: the song list grows to its full height and the page (not
     the list) scrolls. The A-Z rail is a flex sibling of that list, so left
     alone it stretches to the same full height and its letters spread over
