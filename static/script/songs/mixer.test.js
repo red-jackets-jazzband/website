@@ -84,18 +84,18 @@ test("dragging a fader updates its readout live, and re-renders only once settle
   t.mock.timers.enable({ apis: ["setTimeout"] });
   const { ctx, rerenders, cleanup } = setup();
   try {
-    const range = document.getElementById("mixerMelodyRange");
+    const range = document.getElementById("mixerBassRange");
     range.value = "42";
     range.dispatchEvent(new window.Event("input"));
 
-    assert.equal(ctx.state.mixer.melodyVolume, 42);
-    assert.equal(document.getElementById("mixerMelodyReadout").textContent, "42%");
-    assert.equal(document.getElementById("mixerMelodyFill").style.width, "42%");
+    assert.equal(ctx.state.mixer.bassVolume, 42);
+    assert.equal(document.getElementById("mixerBassReadout").textContent, "42%");
+    assert.equal(document.getElementById("mixerBassFill").style.width, "42%");
     assert.equal(rerenders.length, 0); // debounced, not yet applied
 
     t.mock.timers.tick(300);
     assert.equal(rerenders.length, 1);
-    assert.equal(window.localStorage.getItem("rj.mixerMelodyVolume"), "42");
+    assert.equal(window.localStorage.getItem("rj.mixerBassVolume"), "42");
   } finally {
     window.localStorage.clear();
     cleanup();
@@ -132,6 +132,28 @@ test("the mute buttons flip state, update the button and re-render at once", () 
     btn.dispatchEvent(new window.Event("click"));
     assert.equal(ctx.state.mixer.melodyMuted, false);
     assert.equal(rerenders.length, 2);
+  } finally {
+    window.localStorage.clear();
+    cleanup();
+  }
+});
+
+test("Melody/Comping's fader and Voice picker are disabled; their readout reads — until muted", () => {
+  const { cleanup } = setup();
+  try {
+    for (const cap of ["Melody", "Comping"]) {
+      assert.equal(document.getElementById(`mixer${cap}Range`).disabled, true);
+      assert.equal(document.getElementById(`mixer${cap}VoiceSelect`).disabled, true);
+      assert.equal(document.getElementById(`mixer${cap}Readout`).textContent, "—");
+    }
+    // Bass/Chords stay fully interactive.
+    for (const cap of ["Bass", "Chords"]) {
+      assert.equal(document.getElementById(`mixer${cap}Range`).disabled, false);
+      assert.equal(document.getElementById(`mixer${cap}VoiceSelect`).disabled, false);
+    }
+
+    document.getElementById("mixerMelodyMuteBtn").dispatchEvent(new window.Event("click"));
+    assert.equal(document.getElementById("mixerMelodyReadout").textContent, "Muted");
   } finally {
     window.localStorage.clear();
     cleanup();

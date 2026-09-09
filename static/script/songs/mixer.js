@@ -15,6 +15,13 @@ const REPOSITION_MARGIN = 8;
 const CHANNELS = ["melody", "bass", "chords", "comping"];
 const DEFAULT_MUTED = { melody: false, bass: true, chords: true, comping: false };
 
+// Only Bass/Chords have a real, working volume fader + Voice picker right
+// now — see lib/audio-mix.js's doc comment for why Melody/Comping don't.
+// Their range/select are `disabled` in the markup (content/songs.md); this
+// set just controls what the readout says while that holds, so it doesn't
+// show a percentage for a slider that can't move.
+const VOLUME_LOCKED = new Set(["melody", "comping"]);
+
 // A channel with no gate (melody) is always mixable; bass/chords need the
 // tune to have chord symbols at all, comping needs its pattern turned on —
 // both read from ctx.state, kept in sync by sheet.js on every render.
@@ -74,15 +81,28 @@ function buildVoiceOptions(select) {
   panel (#mixerPanel): four channels — Melody, Bass, Chords (the latter two
   ABCjs's own auto-accompaniment, generated from the tune's chord symbols)
   and Comping (this site's notated root/3rd/5th voice, as one bus) — each a
-  0-100 volume fader, a mute button and a Voice picker (a GM instrument
+  mute button, a 0-100 volume fader and a Voice picker (a GM instrument
   select — see lib/gm-voices.js — defaulting to "Default", i.e. that
   channel's own built-in program). Values are sticky across songs (persisted
-  like the instrument / comping choices, see lib/preferences.js), read by
-  sheet.js at render time (lib/audio-mix.js's injectMixerAudio) — this
-  module only owns the panel's DOM and ctx.state.mixer. Mute isn't a
-  separate concept here: a muted channel's fader value is just read as 0 (see
-  sheet.js's effectiveMixerPercent), so every channel is one number.
+  like the instrument / comping choices, see lib/preferences.js).
+
+  Only Bass/Chords' fader + Voice picker are real right now — read by
+  sheet.js at render time (lib/audio-mix.js's injectMixerAudio), where a
+  muted channel is just its fader value read as 0 (see sheet.js's
+  effectiveMixerPercent). Melody/Comping's fader + Voice picker are
+  `disabled` in the markup instead of pretending to work (see
+  lib/audio-mix.js's doc comment for why); this module only owns the panel's
+  DOM and ctx.state.mixer, so it's still tracking their values (sticky,
+  ready for whenever that's fixed for real) even while their controls are
+  locked. Every channel's Mute, including Melody/Comping's, is real — see
+  audio-player.js's computeVoicesOff for how those two actually reach audio.
 */
+function readoutText(channel, percent, muted) {
+  if (muted) return "Muted";
+  if (VOLUME_LOCKED.has(channel)) return "—";
+  return `${percent}%`;
+}
+
 export function createMixer(ctx) {
   let open = false;
   let applyTimer = null;
@@ -125,7 +145,7 @@ export function createMixer(ctx) {
     if (fill) fill.style.width = `${percent}%`;
 
     const readout = byId(ids.readout);
-    if (readout) readout.textContent = muted ? "Muted" : `${percent}%`;
+    if (readout) readout.textContent = readoutText(channel, percent, muted);
 
     const muteBtn = byId(ids.muteBtn);
     if (muteBtn) {
