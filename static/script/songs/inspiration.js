@@ -175,10 +175,14 @@ export function createInspiration(ctx) {
     ta.style.position = "fixed";
     ta.style.opacity = "0";
     document.body.appendChild(ta);
-    ta.select();
-    const ok = document.execCommand("copy");
-    ta.remove();
-    return ok;
+    // finally, not a trailing statement: a throwing select()/execCommand
+    // must not leave ta stuck in the document.
+    try {
+      ta.select();
+      return document.execCommand("copy");
+    } finally {
+      ta.remove();
+    }
   }
 
   // Old-style copy via a throwaway textarea + execCommand, for browsers that
