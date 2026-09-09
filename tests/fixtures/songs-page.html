@@ -86,16 +86,16 @@
           <h3 class="mixer-head-title">Mixer</h3>
           <button type="button" id="mixerCloseBtn" class="mixer-close" aria-label="Close mixer"><span class="fa-solid fa-xmark" aria-hidden="true"></span></button>
         </div>
-        <div class="mixer-strip" id="mixerStripMelody">
+        <div class="mixer-strip mixer-strip--volume-locked" id="mixerStripMelody">
           <span class="mixer-swatch mixer-swatch--melody" aria-hidden="true"></span>
           <span class="mixer-strip-label">Melody</span>
           <div class="mixer-fader-track">
             <div class="mixer-fader-fill" id="mixerMelodyFill"></div>
-            <input type="range" id="mixerMelodyRange" min="0" max="100" value="100" aria-label="Melody volume">
+            <input type="range" id="mixerMelodyRange" min="0" max="100" value="100" aria-label="Melody volume" disabled title="Volume control isn't available for this channel yet — use Mute">
           </div>
-          <span class="mixer-readout" id="mixerMelodyReadout">100%</span>
+          <span class="mixer-readout" id="mixerMelodyReadout">—</span>
           <button type="button" id="mixerMelodyMuteBtn" class="mixer-mute-btn" aria-pressed="false" title="Mute melody" aria-label="Mute melody"><span class="fa-solid fa-volume-high" aria-hidden="true"></span></button>
-          <select id="mixerMelodyVoiceSelect" class="mixer-voice-select" aria-label="Melody voice"></select>
+          <select id="mixerMelodyVoiceSelect" class="mixer-voice-select" aria-label="Melody voice" disabled title="Voice picker isn't available for this channel yet"></select>
         </div>
         <div class="mixer-strip" id="mixerStripBass">
           <span class="mixer-swatch mixer-swatch--bass" aria-hidden="true"></span>
@@ -121,16 +121,16 @@
           <select id="mixerChordsVoiceSelect" class="mixer-voice-select" aria-label="Chords voice"></select>
           <p class="mixer-strip-note">This tune has no chord symbols to build an accompaniment from.</p>
         </div>
-        <div class="mixer-strip" id="mixerStripComping">
+        <div class="mixer-strip mixer-strip--volume-locked" id="mixerStripComping">
           <span class="mixer-swatch mixer-swatch--comping" aria-hidden="true"></span>
           <span class="mixer-strip-label">Comping</span>
           <div class="mixer-fader-track">
             <div class="mixer-fader-fill" id="mixerCompingFill"></div>
-            <input type="range" id="mixerCompingRange" min="0" max="100" value="100" aria-label="Comping volume">
+            <input type="range" id="mixerCompingRange" min="0" max="100" value="100" aria-label="Comping volume" disabled title="Volume control isn't available for this channel yet — use Mute">
           </div>
-          <span class="mixer-readout" id="mixerCompingReadout">100%</span>
+          <span class="mixer-readout" id="mixerCompingReadout">—</span>
           <button type="button" id="mixerCompingMuteBtn" class="mixer-mute-btn" aria-pressed="false" title="Mute comping" aria-label="Mute comping"><span class="fa-solid fa-volume-high" aria-hidden="true"></span></button>
-          <select id="mixerCompingVoiceSelect" class="mixer-voice-select" aria-label="Comping voice"></select>
+          <select id="mixerCompingVoiceSelect" class="mixer-voice-select" aria-label="Comping voice" disabled title="Voice picker isn't available for this channel yet"></select>
           <p class="mixer-strip-note">This tune has no comping turned on — there's no comping voice to mix yet.</p>
         </div>
       </div>

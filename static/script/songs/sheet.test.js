@@ -86,22 +86,15 @@ test("the instrument offset shifts the notation but not the audio transpose", ()
   }
 });
 
-test("render stamps the mixer's melody volume into the ABC text before it's parsed", () => {
+// resolveRenderText's injectMixerAudio call is unit-tested directly and
+// thoroughly in lib/audio-mix.test.js; here the ABCjs stub always parses to
+// an empty-voices tune, so chords.length is always 0 and Bass/Chords
+// injection is a no-op regardless of what's asserted through this harness.
+// What *is* worth checking here is the booklet early-return guard itself.
+test("a booklet render's ABC text is untouched by the mixer (isBooklet skips injection)", () => {
   const { ctx, abcjs, sheet, cleanup } = setup();
   try {
-    ctx.state.mixer.melodyVolume = 50;
-    withAbcjs(abcjs, () => sheet.render(TUNE));
-    const abc = abcjs.calls.renderAbc.at(-1).abc;
-    assert.match(abc, /%%MIDI vol 64\nK:C/); // round(50/100*127)
-  } finally {
-    cleanup();
-  }
-});
-
-test("a booklet render never stamps a mixer volume into the ABC text", () => {
-  const { ctx, abcjs, sheet, cleanup } = setup();
-  try {
-    ctx.state.mixer.melodyVolume = 50;
+    ctx.state.mixer.bassVolume = 50;
     document.getElementById("notation").insertAdjacentHTML(
       "afterend",
       "<div id='bk-n2'></div><div id='bk-c2'></div><div id='bk-t2'></div>",
@@ -109,7 +102,7 @@ test("a booklet render never stamps a mixer volume into the ABC text", () => {
     withAbcjs(abcjs, () => sheet.renderIntoBooklet(TUNE, {
       notationId: "bk-n2", chordId: "bk-c2", titleId: "bk-t2",
     }));
-    assert.doesNotMatch(abcjs.calls.renderAbc.at(-1).abc, /%%MIDI vol/);
+    assert.equal(abcjs.calls.renderAbc.at(-1).abc, TUNE);
   } finally {
     cleanup();
   }

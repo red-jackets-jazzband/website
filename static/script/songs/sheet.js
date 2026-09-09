@@ -140,7 +140,10 @@ export function createSheet(ctx) {
     return { renderText: abcText, palette: null, active: false };
   }
 
-  // A muted channel is just its fader forced to 0 — see lib/audio-mix.js.
+  // A muted Bass/Chords channel is just its fader forced to 0 — see
+  // lib/audio-mix.js. (Melody/Comping mute goes through computeVoicesOff in
+  // audio-player.js instead — see lib/audio-mix.js's own doc comment for why
+  // the two channel groups aren't handled the same way.)
   function effectiveMixerPercent(channel) {
     const m = ctx.state.mixer;
     return m[`${channel}Muted`] ? 0 : m[`${channel}Volume`];
@@ -155,18 +158,13 @@ export function createSheet(ctx) {
     return value === null ? undefined : value;
   }
 
-  // Live sheet only: stamp the mixer's four channels' levels + voices into
-  // the ABC text before it's parsed, so the one visualObj that gets
-  // rendered is exactly what plays — see lib/audio-mix.js.
+  // Live sheet only: stamp the mixer's Bass/Chords levels + voices into the
+  // ABC text before it's parsed, so the one visualObj that gets rendered is
+  // exactly what plays — see lib/audio-mix.js.
   function resolveRenderText(comping, hasChords, isBooklet) {
     if (isBooklet) return comping.renderText;
     return injectMixerAudio(comping.renderText, {
-      compingActive: comping.active,
       hasChords,
-      melodyPercent: effectiveMixerPercent("melody"),
-      melodyProgram: mixerProgram("melody"),
-      compingPercent: effectiveMixerPercent("comping"),
-      compingProgram: mixerProgram("comping"),
       bassPercent: effectiveMixerPercent("bass"),
       bassProgram: mixerProgram("bass"),
       chordsPercent: effectiveMixerPercent("chords"),

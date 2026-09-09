@@ -2,6 +2,7 @@ import { byId } from "../lib/dom.js";
 import {
   DEFAULT_BPM, TEMPO_MIN_BPM, TEMPO_MAX_BPM, clampBpm, resolveBpm, bpmToWarpPercent,
 } from "../lib/tempo.js";
+import { computeVoicesOff } from "../lib/audio-mix.js";
 
 const SYNTH_PARAMS = {
   soundFontUrl: "https://gleitz.github.io/midi-js-soundfonts/FatBoy/",
@@ -17,10 +18,14 @@ const PAUSE_ICON = '<span class="fa-solid fa-pause" aria-hidden="true"></span>';
   click-to-seek timing map, and the Tempo stepper's effect (SynthController
   warp). sheet.js calls initForTune() after each live render; sheet-controls.js
   wires the buttons to playPause / stop / stepTempo. The Mixer panel
-  (songs/mixer.js) doesn't touch this file at all — every channel's volume
-  (mute included: a muted channel is just its fader forced to 0) is baked
-  into the ABC text before it's parsed, see sheet.js + lib/audio-mix.js's
-  injectMixerAudio.
+  (songs/mixer.js) reaches this file only for Melody/Comping *mute*, through
+  computeVoicesOff below — SynthController's own voicesOff option, the one
+  mechanism proven to actually reach the live synth for a regular voice (a
+  generic %%MIDI vol/program directive doesn't, unlike ABCjs's own gchord/bass
+  accompaniment directives — see lib/audio-mix.js's doc comment). Bass/Chords'
+  volume and voice, and Melody/Comping's voice, are baked into the ABC text
+  instead (sheet.js + lib/audio-mix.js's injectMixerAudio) — this file never
+  reads ctx.state.mixer for those.
 */
 export function createAudioPlayer(ctx) {
   const state = {
@@ -40,6 +45,12 @@ export function createAudioPlayer(ctx) {
 
   function synthParams() {
     const params = { ...SYNTH_PARAMS };
+    const voicesOff = computeVoicesOff({
+      compingActive: ctx.state.compingActive,
+      melodyMuted: ctx.state.mixer.melodyMuted,
+      compingMuted: ctx.state.mixer.compingMuted,
+    });
+    if (voicesOff !== undefined) params.voicesOff = voicesOff;
     if (state.transposeSemitones) params.midiTranspose = state.transposeSemitones;
     return params;
   }
