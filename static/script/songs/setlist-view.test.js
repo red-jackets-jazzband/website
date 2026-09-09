@@ -181,6 +181,25 @@ test("ArrowUp from no selection highlights the last add-song result and wraps", 
   }
 });
 
+test("with the add-song field empty, ArrowUp jumps to the setlist and ArrowDown to the break button", () => {
+  const { view, ctx, entry, cleanup } = setup({ songs: [{ file: "a.abc" }, { file: "b.abc" }] });
+  try {
+    ctx.state.allSongs = [{ file: "a.abc", name: "A" }, { file: "b.abc", name: "B" }];
+    view.renderOpen(entry.name, entry.songs, entry, "");
+    const search = document.getElementById("setlistAddSongSearch");
+
+    search.dispatchEvent(new window.KeyboardEvent("keydown", { key: "ArrowUp", bubbles: true }));
+    const handles = document.querySelectorAll(".setlist-song-row .setlist-drag-handle");
+    assert.equal(document.activeElement, handles[handles.length - 1]);
+
+    search.focus();
+    search.dispatchEvent(new window.KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }));
+    assert.equal(document.activeElement, document.querySelector(".rj-library-add-break"));
+  } finally {
+    cleanup();
+  }
+});
+
 test("typing again resets the add-song highlight", () => {
   const { view, ctx, entry, cleanup } = setup({ songs: [{ file: "a.abc" }] });
   try {

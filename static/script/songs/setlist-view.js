@@ -630,6 +630,21 @@ export function createSetlistView(ctx) {
         keydown: (e) => {
           if (e.key === "ArrowDown" || e.key === "ArrowUp") {
             e.preventDefault();
+            // With the field empty there are no results to walk, so the arrows
+            // leave the tray: Up jumps back into the setlist (its last row),
+            // Down drops onto the "Add a set break" button.
+            if (!e.target.value.trim()) {
+              if (e.key === "ArrowDown") {
+                breakBtn.focus();
+              } else {
+                const handles = byId("songList")
+                  ? byId("songList").querySelectorAll(".setlist-drag-handle")
+                  : [];
+                const last = handles[handles.length - 1];
+                if (last) last.focus();
+              }
+              return;
+            }
             const move = () => moveAddSongActive(e.key === "ArrowDown" ? 1 : -1);
             ctx.setlistData.ensureSongsLoaded(move, move);
             return;
