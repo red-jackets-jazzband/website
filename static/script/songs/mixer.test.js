@@ -99,6 +99,29 @@ test("a click outside the panel closes it; clicking inside it or its own button 
   }
 });
 
+test("scrolling recomputes the panel's position so it stays glued under the button", () => {
+  const { mixer, cleanup } = setup();
+  try {
+    const btn = document.getElementById("mixerBtn");
+    const panel = document.getElementById("mixerPanel");
+    btn.getBoundingClientRect = () => ({
+      top: 40, bottom: 60, left: 10, right: 110, width: 100, height: 20,
+    });
+    mixer.toggle();
+    assert.equal(panel.style.top, "60px");
+
+    // .split-content scrolls internally, not the window — its scroll event
+    // doesn't bubble, so the listener has to be capture-phase to still see it.
+    btn.getBoundingClientRect = () => ({
+      top: -20, bottom: 0, left: 10, right: 110, width: 100, height: 20,
+    });
+    window.dispatchEvent(new window.Event("scroll"));
+    assert.equal(panel.style.top, "0px");
+  } finally {
+    cleanup();
+  }
+});
+
 test("dragging a fader updates its readout live, and re-renders only once settled", (t) => {
   t.mock.timers.enable({ apis: ["setTimeout"] });
   const { ctx, rerenders, cleanup } = setup();

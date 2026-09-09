@@ -953,12 +953,10 @@ video.video {
   font-style: italic;
   color: rgba(236,234,230,.45);
 }
-/* Bass/Chords need chord symbols to build an accompaniment from; Comping
-   needs its pattern turned on — a gated channel with nothing to mix is
-   dimmed out of interaction, rather than left clickable with no audible
-   effect (see songs/mixer.js's updateGate). Bass/Chords also swap in an
-   explainer; Comping has no fader/Voice worth explaining when there's no
-   comping voice at all, so those are hidden outright instead (below). */
+/* Bass/Chords need chord symbols to build an accompaniment from — a gated
+   channel with nothing to mix is dimmed out of interaction and swaps in an
+   explainer, rather than left clickable with no audible effect (see
+   songs/mixer.js's updateGate). */
 .mixer-strip.is-inactive .mixer-fader-track,
 .mixer-strip.is-inactive .mixer-mute-btn,
 .mixer-strip.is-inactive .mixer-voice-select {
@@ -968,8 +966,10 @@ video.video {
 .mixer-strip.is-inactive .mixer-strip-note {
   display: block;
 }
-.mixer-strip--comping.is-inactive .mixer-fader-track,
-.mixer-strip--comping.is-inactive .mixer-voice-select {
+/* Comping needs its own pattern turned on; with no comping voice at all
+   there's nothing in its row worth even dimming — hide the whole strip
+   (swatch, label, fader, mute, Voice, readout), not just its controls. */
+.mixer-strip--comping.is-inactive {
   display: none;
 }
 .mixer-backdrop {
