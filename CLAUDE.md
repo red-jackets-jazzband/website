@@ -7,14 +7,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Local dev server**: `hugo serve` (serves at http://localhost:1313)
 - **Build**: `hugo` (outputs to `public/`)
 - **Link checking**: `pip install linkchecker && linkchecker public/index.html` (run after `hugo`)
-- **Lint the JS**: `npm run lint` (ESLint 10 flat config, strict, `--max-warnings 0`, covers all of `static/script/**` + `tests/**`; vendored `abcjs*` / `tonal*` bundles are ignored)
+- **Lint everything**: `npm run lint` — runs the three checks below in sequence; `--max-warnings 0` on the JS step means a `complexity`/`sonarjs/cognitive-complexity` *warning* fails the build exactly like an error would, so cyclomatic/cognitive complexity is already a hard gate, not just advisory.
+  - `npm run lint:js` — ESLint 10 flat config, strict, covers all of `static/script/**` + `tests/**`; vendored `abcjs*` / `tonal*` bundles are ignored.
+  - `npm run lint:css` — Stylelint over `static/assets/css/**/*.css` (see below).
+  - `npm run lint:dup` — jscpd copy-paste/duplication detection over `static/script`, `static/assets/css` and `tests` (see below).
 - **Unit tests**: `npm test` (Node's built-in test runner: `static/script/**/*.test.js` colocated with the code + `tests/**/*.test.js`; DOM-touching modules run under jsdom)
 
 The site itself has no build step beyond Hugo — it's a pure static site, and `package.json`/`node_modules` exist purely as **dev tooling** (lint + unit tests + a jsdom harness for the vanilla JS), never as part of the Hugo build or the GitHub Pages deploy.
 
 ### Keeping SonarCloud clean
 
-The project is scanned on SonarCloud (https://sonarcloud.io/dashboard?id=red-jackets-jazzband_website). `eslint.config.js` wires in `eslint-plugin-sonarjs`'s `recommended` rule set alongside the hand-picked `STRICT_RULES` — this is SonarSource's own JS/TS analyzer packaged for ESLint, not a lookalike, so `npm run lint` catches the same class of findings SonarCloud would flag on a PR *before* it's pushed. Outbound network access to sonarcloud.io is blocked from this sandbox, so `npm run lint` — not a live dashboard check — is the authoritative local signal; treat any `sonarjs/*` finding it reports as a real SonarCloud issue in waiting.
+The project is scanned on SonarCloud (https://sonarcloud.io/dashboard?id=red-jackets-jazzband_website). Outbound network access to sonarcloud.io is blocked from this sandbox, so there's no way to pull live findings from here — `npm run lint` is the authoritative local signal instead, built from tools that check for the same classes of problem SonarCloud's own analyzers do:
+
+- **JS correctness/security-hotspot findings**: `eslint.config.js` wires in `eslint-plugin-sonarjs`'s `recommended` rule set alongside the hand-picked `STRICT_RULES` — this is SonarSource's own JS/TS analyzer packaged for ESLint, not a lookalike. Treat any `sonarjs/*` finding as a real SonarCloud issue in waiting.
+- **JS complexity**: ESLint's own `complexity` (cyclomatic) and sonarjs's `cognitive-complexity`, both gated by `--max-warnings 0`.
+- **CSS correctness**: `stylelint.config.mjs`, extending `stylelint-config-recommended` — possible-error rules only (duplicate selectors/properties, empty rules, unknown/deprecated properties and values, invalid at-rules...), the same category SonarCloud's CSS analyzer covers. It deliberately does *not* extend a stylistic/naming config (`stylelint-config-standard` and its kebab-case selector rules): `static/assets/css/split.css`'s existing camelCase ids/classes are load-bearing (the JS references them by exact name), and blanket-reformatting a 3000+ line hand-authored stylesheet for style alone isn't a correctness win. `no-descending-specificity`, `selector-max-compound-selectors` and `selector-max-id` are deliberately left off too: retrofitting cascade order or selector shape on this file means visually re-testing a live production stylesheet this sandbox can't render — a cost with no correctness payoff, and not something SonarCloud's own CSS analyzer checks for either.
+- **Duplication**: `jscpd.config.json` runs jscpd (`min-lines: 10`, `min-tokens: 50`) over `static/script`, `static/assets/css` and `tests`, gated at `threshold: 3` (percent duplicated lines) — SonarCloud's own default "Duplicated Lines (%)" quality-gate threshold, so a passing local run means a passing Sonar duplication check too. The project currently sits at ~0.3%. A few small, acknowledged clones survive under that gate on purpose (test-fixture setup that's clearer written out than abstracted, e.g. `chords.test.js`'s two `parseChordScheme` fixtures) — don't chase those down reflexively; do dedupe anything that pushes the total meaningfully.
 
 A few patterns come up repeatedly and are worth avoiding by habit rather than fixing after the fact:
 
