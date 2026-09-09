@@ -7,7 +7,7 @@
   ],
   "minLines": 10,
   "minTokens": 50,
-  "threshold": 3,
+  "threshold": 1,
   "reporters": ["console"],
   "gitignore": true,
   "absolute": true

@@ -256,6 +256,7 @@ test("buildCompingTune returns null when it cannot apply", () => {
 
 // The comping's K: line as an ABC key signature { letter: "^"|"_"|"" }.
 function keySigOf(abc) {
+  // eslint-disable-next-line regexp/no-misleading-capturing-group -- verified: [#b]? is greedy and always claims a real accidental first (K:Bb -> "Bb", never "B" + "b" spilling into the \w+ group)
   const m = abc.match(/^K:\s*([A-G][#b]?)\s*(\w+)?/m);
   const tonic = m ? m[1] : "C";
   const mode = m && /^m(in)?$/i.test(m[2] || "") ? "minor" : "major";

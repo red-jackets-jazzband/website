@@ -18,6 +18,7 @@ const EXPOSED = [
   globals the modules under test expect. Returns { window, document, cleanup };
   always call cleanup() in a test's finally / afterEach so suites stay isolated.
 */
+/** @param {{ html?: string, url?: string }} [options] */
 export function mountPage({ html, url = "https://example.test/songs/" } = {}) {
   const body = html ?? readFileSync(FIXTURE, "utf8");
   const dom = new JSDOM(`<!doctype html><html><body>${body}</body></html>`, {
