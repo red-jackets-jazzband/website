@@ -19,10 +19,7 @@ const STRICT_RULES = {
   "consistent-return": "error",
   eqeqeq: ["error", "always", { null: "ignore" }],
   "no-implicit-globals": "error",
-  "no-unused-vars": [
-    "error",
-    { argsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_", varsIgnorePattern: "^_" },
-  ],
+  "no-unused-vars": ["error", { argsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" }],
   "no-console": ["error", { allow: ["warn", "error"] }],
   curly: ["error", "multi-line", "consistent"],
   complexity: ["warn", 14],
