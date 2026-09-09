@@ -2,7 +2,6 @@ import { byId } from "../lib/dom.js";
 import {
   DEFAULT_BPM, TEMPO_MIN_BPM, TEMPO_MAX_BPM, clampBpm, resolveBpm, bpmToWarpPercent,
 } from "../lib/tempo.js";
-import { computeVoicesOff } from "../lib/audio-mix.js";
 
 const SYNTH_PARAMS = {
   soundFontUrl: "https://gleitz.github.io/midi-js-soundfonts/FatBoy/",
@@ -17,11 +16,11 @@ const PAUSE_ICON = '<span class="fa-solid fa-pause" aria-hidden="true"></span>';
   buttons' visual state, note/chord-cell highlighting during playback, the
   click-to-seek timing map, and the Tempo stepper's effect (SynthController
   warp). sheet.js calls initForTune() after each live render; sheet-controls.js
-  wires the buttons to playPause / stop / stepTempo. Mute (melody / backing
-  track) is decided by songs/mixer.js via ctx.state.mixer and applied here
-  through computeVoicesOff; continuous volume is baked into the ABC text
-  before it's parsed (see sheet.js + lib/audio-mix.js's injectVoiceVolumes),
-  not a setTune-time param, so it isn't read in this file at all.
+  wires the buttons to playPause / stop / stepTempo. The Mixer panel
+  (songs/mixer.js) doesn't touch this file at all — every channel's volume
+  (mute included: a muted channel is just its fader forced to 0) is baked
+  into the ABC text before it's parsed, see sheet.js + lib/audio-mix.js's
+  injectMixerAudio.
 */
 export function createAudioPlayer(ctx) {
   const state = {
@@ -41,12 +40,6 @@ export function createAudioPlayer(ctx) {
 
   function synthParams() {
     const params = { ...SYNTH_PARAMS };
-    const voicesOff = computeVoicesOff({
-      compingActive: ctx.state.compingActive,
-      melodyMuted: ctx.state.mixer.melodyMuted,
-      backingMuted: ctx.state.mixer.backingMuted,
-    });
-    if (voicesOff !== undefined) params.voicesOff = voicesOff;
     if (state.transposeSemitones) params.midiTranspose = state.transposeSemitones;
     return params;
   }

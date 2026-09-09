@@ -18,9 +18,11 @@ export function makeCtx(overrides = {}) {
       currentSetlistSongIndex: null,
       currentSongText: undefined,
       compingActive: false,
+      hasChords: false,
       tempoOverrideBpm: null,
       mixer: {
-        melodyVolume: 100, backingVolume: 100, melodyMuted: false, backingMuted: false,
+        melodyVolume: 100, bassVolume: 100, chordsVolume: 100, compingVolume: 100,
+        melodyMuted: false, bassMuted: true, chordsMuted: true, compingMuted: false,
       },
       ...overrides.state,
     },

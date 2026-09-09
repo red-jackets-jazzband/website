@@ -107,20 +107,41 @@ aliases: ["/setlists/", "/songbook/"]
       <button type="button" id="mixerMelodyMuteBtn" class="mixer-mute-btn" aria-pressed="false" title="Mute melody" aria-label="Mute melody"><span class="fa-solid fa-volume-high" aria-hidden="true"></span></button>
       <span class="mixer-voice-slot" title="Instrument picker — coming soon">Voice: default</span>
     </div>
-    <div class="mixer-bus" id="mixerBus">
-      <p class="mixer-bus-title">Backing track</p>
-      <div class="mixer-strip" id="mixerStripBacking">
-        <span class="mixer-swatch mixer-swatch--backing" aria-hidden="true"></span>
-        <span class="mixer-strip-label">Group</span>
-        <div class="mixer-fader-track">
-          <div class="mixer-fader-fill" id="mixerBackingFill"></div>
-          <input type="range" id="mixerBackingRange" min="0" max="100" value="100" aria-label="Backing track volume">
-        </div>
-        <span class="mixer-readout" id="mixerBackingReadout">100%</span>
-        <button type="button" id="mixerBackingMuteBtn" class="mixer-mute-btn" aria-pressed="false" title="Mute backing track" aria-label="Mute backing track"><span class="fa-solid fa-volume-high" aria-hidden="true"></span></button>
-        <span class="mixer-voice-slot" title="Instrument picker — coming soon">Voice: default</span>
+    <div class="mixer-strip" id="mixerStripBass">
+      <span class="mixer-swatch mixer-swatch--bass" aria-hidden="true"></span>
+      <span class="mixer-strip-label">Bass</span>
+      <div class="mixer-fader-track">
+        <div class="mixer-fader-fill" id="mixerBassFill"></div>
+        <input type="range" id="mixerBassRange" min="0" max="100" value="100" aria-label="Bass volume">
       </div>
-      <p class="mixer-no-comping-note">This tune has no comping turned on — there's no backing track to mix yet.</p>
+      <span class="mixer-readout" id="mixerBassReadout">100%</span>
+      <button type="button" id="mixerBassMuteBtn" class="mixer-mute-btn" aria-pressed="false" title="Mute bass" aria-label="Mute bass"><span class="fa-solid fa-volume-high" aria-hidden="true"></span></button>
+      <span class="mixer-voice-slot" title="Instrument picker — coming soon">Voice: default</span>
+      <p class="mixer-strip-note">This tune has no chord symbols to build an accompaniment from.</p>
+    </div>
+    <div class="mixer-strip" id="mixerStripChords">
+      <span class="mixer-swatch mixer-swatch--chords" aria-hidden="true"></span>
+      <span class="mixer-strip-label">Chords</span>
+      <div class="mixer-fader-track">
+        <div class="mixer-fader-fill" id="mixerChordsFill"></div>
+        <input type="range" id="mixerChordsRange" min="0" max="100" value="100" aria-label="Chords volume">
+      </div>
+      <span class="mixer-readout" id="mixerChordsReadout">100%</span>
+      <button type="button" id="mixerChordsMuteBtn" class="mixer-mute-btn" aria-pressed="false" title="Mute chords" aria-label="Mute chords"><span class="fa-solid fa-volume-high" aria-hidden="true"></span></button>
+      <span class="mixer-voice-slot" title="Instrument picker — coming soon">Voice: default</span>
+      <p class="mixer-strip-note">This tune has no chord symbols to build an accompaniment from.</p>
+    </div>
+    <div class="mixer-strip" id="mixerStripComping">
+      <span class="mixer-swatch mixer-swatch--comping" aria-hidden="true"></span>
+      <span class="mixer-strip-label">Comping</span>
+      <div class="mixer-fader-track">
+        <div class="mixer-fader-fill" id="mixerCompingFill"></div>
+        <input type="range" id="mixerCompingRange" min="0" max="100" value="100" aria-label="Comping volume">
+      </div>
+      <span class="mixer-readout" id="mixerCompingReadout">100%</span>
+      <button type="button" id="mixerCompingMuteBtn" class="mixer-mute-btn" aria-pressed="false" title="Mute comping" aria-label="Mute comping"><span class="fa-solid fa-volume-high" aria-hidden="true"></span></button>
+      <span class="mixer-voice-slot" title="Instrument picker — coming soon">Voice: default</span>
+      <p class="mixer-strip-note">This tune has no comping turned on — there's no comping voice to mix yet.</p>
     </div>
   </div>
   <div id="mixerBackdrop" class="mixer-backdrop" hidden></div>

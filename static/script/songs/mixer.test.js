@@ -10,8 +10,11 @@ function setup(mixerState = {}) {
   const ctx = makeCtx({
     state: {
       compingActive: true,
+      hasChords: true,
       mixer: {
-        melodyVolume: 100, backingVolume: 100, melodyMuted: false, backingMuted: false, ...mixerState,
+        melodyVolume: 100, bassVolume: 100, chordsVolume: 100, compingVolume: 100,
+        melodyMuted: false, bassMuted: false, chordsMuted: false, compingMuted: false,
+        ...mixerState,
       },
     },
     sheet: { rerender: () => rerenders.push(1) },
@@ -21,11 +24,13 @@ function setup(mixerState = {}) {
   return { page, ctx, mixer, rerenders, cleanup: page.cleanup };
 }
 
-test("init seeds both range inputs from ctx.state.mixer", () => {
-  const { cleanup } = setup({ melodyVolume: 30, backingVolume: 70 });
+test("init seeds all four range inputs from ctx.state.mixer", () => {
+  const { cleanup } = setup({ melodyVolume: 30, bassVolume: 40, chordsVolume: 50, compingVolume: 60 });
   try {
     assert.equal(document.getElementById("mixerMelodyRange").value, "30");
-    assert.equal(document.getElementById("mixerBackingRange").value, "70");
+    assert.equal(document.getElementById("mixerBassRange").value, "40");
+    assert.equal(document.getElementById("mixerChordsRange").value, "50");
+    assert.equal(document.getElementById("mixerCompingRange").value, "60");
   } finally {
     cleanup();
   }
@@ -98,12 +103,12 @@ test("dragging a fader updates its readout live, and re-renders only once settle
 test("releasing a fader (change) applies immediately without waiting for the debounce", () => {
   const { rerenders, cleanup } = setup();
   try {
-    const range = document.getElementById("mixerBackingRange");
+    const range = document.getElementById("mixerBassRange");
     range.value = "10";
     range.dispatchEvent(new window.Event("input"));
     range.dispatchEvent(new window.Event("change"));
     assert.equal(rerenders.length, 1);
-    assert.equal(window.localStorage.getItem("rj.mixerBackingVolume"), "10");
+    assert.equal(window.localStorage.getItem("rj.mixerBassVolume"), "10");
   } finally {
     window.localStorage.clear();
     cleanup();
@@ -131,26 +136,36 @@ test("the mute buttons flip state, update the button and re-render at once", () 
   }
 });
 
-test("refresh() dims the backing-track strip when the tune has no comping", () => {
+function inactiveFlags() {
+  return ["Bass", "Chords", "Comping", "Melody"].map(
+    (cap) => document.getElementById(`mixerStrip${cap}`).classList.contains("is-inactive"),
+  );
+}
+
+test("refresh() gates Bass/Chords on hasChords and Comping on compingActive, independently", () => {
   const { ctx, mixer, cleanup } = setup();
   try {
-    ctx.state.compingActive = false;
-    mixer.refresh();
-    assert.equal(document.getElementById("mixerBus").classList.contains("is-inactive"), true);
-
+    ctx.state.hasChords = false;
     ctx.state.compingActive = true;
     mixer.refresh();
-    assert.equal(document.getElementById("mixerBus").classList.contains("is-inactive"), false);
+    // Melody has no gate — never dimmed.
+    assert.deepEqual(inactiveFlags(), [true, true, false, false]);
+
+    ctx.state.hasChords = true;
+    ctx.state.compingActive = false;
+    mixer.refresh();
+    assert.deepEqual(inactiveFlags(), [false, false, true, false]);
   } finally {
     cleanup();
   }
 });
 
-test("loadMixerState defaults to full, unmuted volume with nothing persisted", () => {
+test("loadMixerState defaults to full volume, Bass/Chords muted, Melody/Comping unmuted", () => {
   const page = mountPage();
   try {
     assert.deepEqual(loadMixerState(), {
-      melodyVolume: 100, backingVolume: 100, melodyMuted: false, backingMuted: false,
+      melodyVolume: 100, bassVolume: 100, chordsVolume: 100, compingVolume: 100,
+      melodyMuted: false, bassMuted: true, chordsMuted: true, compingMuted: false,
     });
   } finally {
     page.cleanup();
@@ -160,11 +175,12 @@ test("loadMixerState defaults to full, unmuted volume with nothing persisted", (
 test("loadMixerState reads back persisted, clamped values", () => {
   const page = mountPage();
   try {
-    window.localStorage.setItem("rj.mixerMelodyVolume", "150"); // clamped
-    window.localStorage.setItem("rj.mixerBackingVolume", "20");
-    window.localStorage.setItem("rj.mixerMelodyMuted", "1");
+    window.localStorage.setItem("rj.mixerBassVolume", "150"); // clamped
+    window.localStorage.setItem("rj.mixerChordsVolume", "20");
+    window.localStorage.setItem("rj.mixerBassMuted", "0"); // explicit opt-in override
     assert.deepEqual(loadMixerState(), {
-      melodyVolume: 100, backingVolume: 20, melodyMuted: true, backingMuted: false,
+      melodyVolume: 100, bassVolume: 100, chordsVolume: 20, compingVolume: 100,
+      melodyMuted: false, bassMuted: false, chordsMuted: true, compingMuted: false,
     });
   } finally {
     window.localStorage.clear();

@@ -58,35 +58,13 @@ test("stepTempo with no native tempo steps from the default bpm", () => {
   }
 });
 
-test("initForTune's setTune passes voicesOff computed from the mixer's mute state", async () => {
-  const { ctx, audio, cleanup } = setup({ compingActive: true, mixer: { melodyMuted: true, backingMuted: false } });
+test("initForTune's setTune never carries a voicesOff param (mute is a fader at 0, not a synth param)", async () => {
+  const { audio, cleanup } = setup();
   const abcjs = createAbcjsStub({ audioSupported: true });
   try {
     withAbcjs(abcjs, () => audio.initForTune({ metaText: {} }));
-    await flush();
-    assert.deepEqual(abcjs.calls.setTune.at(-1).params.voicesOff, [0]);
-
-    ctx.state.mixer = { melodyMuted: false, backingMuted: true };
-    withAbcjs(abcjs, () => audio.stop()); // re-primes via setTune with fresh synthParams
-    await flush();
-    assert.deepEqual(abcjs.calls.setTune.at(-1).params.voicesOff, [1]);
-
-    ctx.state.mixer = { melodyMuted: false, backingMuted: false };
-    withAbcjs(abcjs, () => audio.stop());
     await flush();
     assert.equal("voicesOff" in abcjs.calls.setTune.at(-1).params, false);
-  } finally {
-    cleanup();
-  }
-});
-
-test("initForTune's setTune fully mutes when melody is off and there's no comping voice", async () => {
-  const { audio, cleanup } = setup({ compingActive: false, mixer: { melodyMuted: true, backingMuted: false } });
-  const abcjs = createAbcjsStub({ audioSupported: true });
-  try {
-    withAbcjs(abcjs, () => audio.initForTune({ metaText: {} }));
-    await flush();
-    assert.equal(abcjs.calls.setTune.at(-1).params.voicesOff, true);
   } finally {
     cleanup();
   }

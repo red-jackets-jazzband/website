@@ -7,7 +7,17 @@ import { readPref, writePref, PREF_KEYS } from "../lib/preferences.js";
 const APPLY_DEBOUNCE_MS = 220;
 const REPOSITION_MARGIN = 8;
 
-const CHANNELS = ["melody", "backing"];
+// Bass/Chords are ABCjs's own auto-accompaniment (independent of the site's
+// notated Comping voice) — muted by default so no song suddenly grows a new
+// backing band the first time this ships. Melody/Comping keep the old
+// mute-melody precedent of starting unmuted.
+const CHANNELS = ["melody", "bass", "chords", "comping"];
+const DEFAULT_MUTED = { melody: false, bass: true, chords: true, comping: false };
+
+// A channel with no gate (melody) is always mixable; bass/chords need the
+// tune to have chord symbols at all, comping needs its pattern turned on —
+// both read from ctx.state, kept in sync by sheet.js on every render.
+const GATE_STATE_KEY = { melody: null, bass: "hasChords", chords: "hasChords", comping: "compingActive" };
 
 function clampPercent(value) {
   const n = Number(value);
@@ -15,43 +25,51 @@ function clampPercent(value) {
   return Math.max(0, Math.min(100, Math.round(n)));
 }
 
-function storedPercent(key) {
-  const stored = readPref(key);
-  return stored === null ? 100 : clampPercent(stored);
+function cap(channel) {
+  return channel[0].toUpperCase() + channel.slice(1);
 }
 
 function elementIds(channel) {
-  const cap = channel === "melody" ? "Melody" : "Backing";
+  const c = cap(channel);
   return {
-    range: `mixer${cap}Range`,
-    fill: `mixer${cap}Fill`,
-    readout: `mixer${cap}Readout`,
-    muteBtn: `mixer${cap}MuteBtn`,
+    range: `mixer${c}Range`,
+    fill: `mixer${c}Fill`,
+    readout: `mixer${c}Readout`,
+    muteBtn: `mixer${c}MuteBtn`,
+    strip: `mixerStrip${c}`,
   };
 }
 
-const VOLUME_PREF_KEY = { melody: PREF_KEYS.mixerMelodyVolume, backing: PREF_KEYS.mixerBackingVolume };
-const MUTED_PREF_KEY = { melody: PREF_KEYS.mixerMelodyMuted, backing: PREF_KEYS.mixerBackingMuted };
-const CHANNEL_LABEL = { melody: "melody", backing: "backing track" };
+function volumeKey(channel) {
+  return PREF_KEYS[`mixer${cap(channel)}Volume`];
+}
+function mutedKey(channel) {
+  return PREF_KEYS[`mixer${cap(channel)}Muted`];
+}
 
 /*
   The sheet toolbar's Mixer button (#mixerBtn) and its popover/bottom-sheet
-  panel (#mixerPanel): two channels — Melody and the Backing track (the
-  comping voice, as one bus) — each a 0-100 volume fader plus an independent
-  mute. Values are sticky across songs (persisted like the instrument /
-  comping choices, see lib/preferences.js), read by sheet.js at render time
-  (lib/audio-mix.js's injectVoiceVolumes) and by audio-player.js for mute
-  (computeVoicesOff) — this module only owns the panel's DOM and ctx.state.mixer.
-
-  The three comping sub-voices (root/3rd/5th) from the approved mockup are
-  deliberately not here yet: ABCjs's comping voice is one chorded MIDI track
-  (see lib/comping.js), so there's no hook to mix them independently without
-  first splitting that voice in three for real. See CLAUDE.md's Mixer section
-  for the plan.
+  panel (#mixerPanel): four channels — Melody, Bass, Chords (the latter two
+  ABCjs's own auto-accompaniment, generated from the tune's chord symbols)
+  and Comping (this site's notated root/3rd/5th voice, as one bus) — each a
+  0-100 volume fader plus an independent mute. Values are sticky across songs
+  (persisted like the instrument / comping choices, see lib/preferences.js),
+  read by sheet.js at render time (lib/audio-mix.js's injectMixerAudio) —
+  this module only owns the panel's DOM and ctx.state.mixer. Mute isn't a
+  separate concept here: a muted channel's fader value is just read as 0 (see
+  sheet.js's effectiveMixerPercent), so every channel is one number.
 */
 export function createMixer(ctx) {
   let open = false;
   let applyTimer = null;
+
+  function persist() {
+    const m = ctx.state.mixer;
+    CHANNELS.forEach((channel) => {
+      writePref(volumeKey(channel), String(m[`${channel}Volume`]));
+      writePref(mutedKey(channel), m[`${channel}Muted`] ? "1" : "0");
+    });
+  }
 
   function commit() {
     applyTimer = null;
@@ -71,18 +89,10 @@ export function createMixer(ctx) {
     ctx.sheet.rerender();
   }
 
-  function persist() {
-    const m = ctx.state.mixer;
-    writePref(VOLUME_PREF_KEY.melody, String(m.melodyVolume));
-    writePref(VOLUME_PREF_KEY.backing, String(m.backingVolume));
-    writePref(MUTED_PREF_KEY.melody, m.melodyMuted ? "1" : "0");
-    writePref(MUTED_PREF_KEY.backing, m.backingMuted ? "1" : "0");
-  }
-
   function updateStripVisual(channel) {
     const m = ctx.state.mixer;
-    const percent = channel === "melody" ? m.melodyVolume : m.backingVolume;
-    const muted = channel === "melody" ? m.melodyMuted : m.backingMuted;
+    const percent = m[`${channel}Volume`];
+    const muted = m[`${channel}Muted`];
     const ids = elementIds(channel);
 
     const fill = byId(ids.fill);
@@ -98,23 +108,28 @@ export function createMixer(ctx) {
       const icon = muteBtn.querySelector(".fa-solid");
       if (icon) icon.classList.toggle("fa-volume-xmark", muted);
       if (icon) icon.classList.toggle("fa-volume-high", !muted);
-      const label = `${muted ? "Unmute" : "Mute"} ${CHANNEL_LABEL[channel]}`;
+      const label = `${muted ? "Unmute" : "Mute"} ${channel}`;
       muteBtn.title = label;
       muteBtn.setAttribute("aria-label", label);
     }
   }
 
-  // The backing-track channel only means anything once the current tune
-  // actually has a comping voice playing — dim it and swap in an explainer
-  // otherwise, rather than a fader that silently does nothing.
-  function updateBusGate() {
-    const bus = byId("mixerBus");
-    if (bus) bus.classList.toggle("is-inactive", !ctx.state.compingActive);
+  // A gated channel (Bass/Chords need chords at all; Comping needs its
+  // pattern on) only means anything once the current tune actually qualifies
+  // — dim it and swap in an explainer otherwise, rather than a fader that
+  // silently does nothing.
+  function updateGate(channel) {
+    const gateKey = GATE_STATE_KEY[channel];
+    if (!gateKey) return;
+    const strip = byId(elementIds(channel).strip);
+    if (strip) strip.classList.toggle("is-inactive", !ctx.state[gateKey]);
   }
 
   function refresh() {
-    CHANNELS.forEach(updateStripVisual);
-    updateBusGate();
+    CHANNELS.forEach((channel) => {
+      updateStripVisual(channel);
+      updateGate(channel);
+    });
   }
 
   function wireStrip(channel) {
@@ -191,13 +206,15 @@ export function createMixer(ctx) {
 }
 
 // The mixer's initial ctx.state.mixer slice, seeded from persisted prefs —
-// built here (not inline in app.js) so the storedPercent/clampPercent
-// defaulting logic lives next to the module that owns the rest of this state.
+// built here (not inline in app.js) so the persistence/defaulting logic
+// lives next to the module that owns the rest of this state.
 export function loadMixerState() {
-  return {
-    melodyVolume: storedPercent(VOLUME_PREF_KEY.melody),
-    backingVolume: storedPercent(VOLUME_PREF_KEY.backing),
-    melodyMuted: readPref(MUTED_PREF_KEY.melody) === "1",
-    backingMuted: readPref(MUTED_PREF_KEY.backing) === "1",
-  };
+  const state = {};
+  CHANNELS.forEach((channel) => {
+    const storedVolume = readPref(volumeKey(channel));
+    state[`${channel}Volume`] = storedVolume === null ? 100 : clampPercent(storedVolume);
+    const storedMuted = readPref(mutedKey(channel));
+    state[`${channel}Muted`] = storedMuted === null ? DEFAULT_MUTED[channel] : storedMuted === "1";
+  });
+  return state;
 }
