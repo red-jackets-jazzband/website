@@ -99,6 +99,109 @@ test("Enter with no single match just clears the add-song field", () => {
   assert.equal(result.value, "");
 });
 
+test("clicking an add-song result adds the song and clears the search field", () => {
+  const { view, ctx, entry, storage, cleanup } = setup({ songs: [{ file: "a.abc" }] });
+  try {
+    ctx.state.allSongs = [
+      { file: "basin_street.abc", name: "Basin Street Blues" },
+      { file: "muskrat.abc", name: "Muskrat Ramble" },
+    ];
+    view.renderOpen(entry.name, entry.songs, entry, "");
+    const search = document.getElementById("setlistAddSongSearch");
+    search.value = "basin";
+    search.dispatchEvent(new window.Event("input"));
+    document.querySelector(".rj-library-add-song-result").dispatchEvent(new window.Event("click"));
+
+    assert.deepEqual(
+      getPersonalSetlist(storage, entry.id).songs.map((s) => s.file),
+      ["a.abc", "basin_street.abc"],
+    );
+    assert.equal(document.getElementById("setlistAddSongSearch").value, "");
+    assert.equal(document.querySelectorAll(".rj-library-add-song-result").length, 0);
+  } finally {
+    cleanup();
+  }
+});
+
+test("Arrow keys move the add-song highlight and Enter adds the highlighted result", () => {
+  const { view, ctx, entry, storage, cleanup } = setup({ songs: [{ file: "a.abc" }] });
+  try {
+    ctx.state.allSongs = [
+      { file: "basin_street.abc", name: "Basin Street Blues" },
+      { file: "basin_two.abc", name: "Basin Two" },
+      { file: "basin_three.abc", name: "Basin Three" },
+    ];
+    view.renderOpen(entry.name, entry.songs, entry, "");
+    const search = document.getElementById("setlistAddSongSearch");
+    search.value = "basin";
+    search.dispatchEvent(new window.Event("input"));
+
+    const arrow = (key) => search.dispatchEvent(
+      new window.KeyboardEvent("keydown", { key, bubbles: true }),
+    );
+    arrow("ArrowDown"); // -> first
+    arrow("ArrowDown"); // -> second
+    assert.equal(
+      document.querySelectorAll(".rj-library-add-song-result")[1].classList.contains("is-active"),
+      true,
+    );
+    arrow("ArrowUp"); // -> first
+    search.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+
+    assert.deepEqual(
+      getPersonalSetlist(storage, entry.id).songs.map((s) => s.file),
+      ["a.abc", "basin_street.abc"],
+    );
+    assert.equal(search.value, "");
+  } finally {
+    cleanup();
+  }
+});
+
+test("ArrowUp from no selection highlights the last add-song result and wraps", () => {
+  const { view, ctx, entry, cleanup } = setup({ songs: [{ file: "a.abc" }] });
+  try {
+    ctx.state.allSongs = [
+      { file: "basin_street.abc", name: "Basin Street Blues" },
+      { file: "basin_two.abc", name: "Basin Two" },
+    ];
+    view.renderOpen(entry.name, entry.songs, entry, "");
+    const search = document.getElementById("setlistAddSongSearch");
+    search.value = "basin";
+    search.dispatchEvent(new window.Event("input"));
+    search.dispatchEvent(new window.KeyboardEvent("keydown", { key: "ArrowUp", bubbles: true }));
+
+    const results = document.querySelectorAll(".rj-library-add-song-result");
+    assert.equal(results[results.length - 1].classList.contains("is-active"), true);
+
+    search.dispatchEvent(new window.KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }));
+    assert.equal(results[0].classList.contains("is-active"), true);
+  } finally {
+    cleanup();
+  }
+});
+
+test("typing again resets the add-song highlight", () => {
+  const { view, ctx, entry, cleanup } = setup({ songs: [{ file: "a.abc" }] });
+  try {
+    ctx.state.allSongs = [
+      { file: "basin_street.abc", name: "Basin Street Blues" },
+      { file: "basin_two.abc", name: "Basin Two" },
+    ];
+    view.renderOpen(entry.name, entry.songs, entry, "");
+    const search = document.getElementById("setlistAddSongSearch");
+    search.value = "basin";
+    search.dispatchEvent(new window.Event("input"));
+    search.dispatchEvent(new window.KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }));
+    search.value = "basin ";
+    search.dispatchEvent(new window.Event("input"));
+
+    assert.equal(document.querySelectorAll(".rj-library-add-song-result.is-active").length, 0);
+  } finally {
+    cleanup();
+  }
+});
+
 test("renderOpen restarts numbering per set and shows headings", () => {
   const { view, entry, cleanup } = setup({
     songs: [{ file: "a.abc" }, { file: "b.abc" }, { divider: "Encore" }, { file: "c.abc" }],

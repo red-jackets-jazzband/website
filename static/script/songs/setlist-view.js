@@ -61,6 +61,7 @@ function downloadText(filename, text) {
 */
 export function createSetlistView(ctx) {
   let addSongQuery = "";
+  let addSongActiveIndex = -1; // keyboard-highlighted add-song result, -1 = none
   let focusAddSongAfterRender = false;
   let focusHandleAfterRender = null; // draggable-row index to re-focus after a keyboard nudge
   let rowDrag = null;
@@ -522,18 +523,46 @@ export function createSetlistView(ctx) {
     return query ? filterSongsByQuery(ctx.state.allSongs, query).slice(0, 8) : [];
   }
 
-  // Append one song to the open personal setlist and keep the search focused.
+  // Append one song to the open personal setlist, then clear the search and
+  // keep it focused so the next title can be typed straight away.
   function addSongByFile(file) {
     if (!ctx.state.currentPersonalId) return false;
     addSongToPersonalSetlist(ctx.storage(), ctx.state.currentPersonalId, { file, key: "" });
+    addSongQuery = "";
     focusAddSongAfterRender = true;
     refreshOpenPersonal();
     return true;
   }
 
+  function addSongResultButtons() {
+    const resultsEl = byId("setlistAddSongResults");
+    return resultsEl
+      ? Array.from(resultsEl.querySelectorAll(".rj-library-add-song-result"))
+      : [];
+  }
+
+  // Paint the keyboard highlight on the active result and scroll it into view.
+  function highlightAddSongActive() {
+    const buttons = addSongResultButtons();
+    buttons.forEach((btn, i) => btn.classList.toggle("is-active", i === addSongActiveIndex));
+    const active = buttons[addSongActiveIndex];
+    if (active) active.scrollIntoView({ block: "nearest" });
+  }
+
+  // Step the highlight through the results with the Up/Down arrows, wrapping
+  // at both ends; the first press from "nothing selected" lands on an end.
+  function moveAddSongActive(dir) {
+    const count = addSongResultButtons().length;
+    if (!count) return;
+    if (addSongActiveIndex === -1) addSongActiveIndex = dir > 0 ? 0 : count - 1;
+    else addSongActiveIndex = (addSongActiveIndex + dir + count) % count;
+    highlightAddSongActive();
+  }
+
   function renderAddSongResults(query) {
     const resultsEl = byId("setlistAddSongResults");
     if (!resultsEl) return;
+    addSongActiveIndex = -1;
     clear(resultsEl);
     resultsEl.classList.toggle("is-open", Boolean(query));
     if (!query) return;
@@ -556,14 +585,18 @@ export function createSetlistView(ctx) {
     });
   }
 
-  // Enter mirrors the library search: add the lone match, then clear the
+  // Enter adds the arrow-highlighted result, or — mirroring the library
+  // search — the lone match when nothing is highlighted, then clears the
   // field. Always clears, match or not.
   function submitAddSong(inputEl) {
     const matches = addSongMatches(addSongQuery);
+    const chosen = addSongActiveIndex >= 0
+      ? matches[addSongActiveIndex]
+      : (matches.length === 1 ? matches[0] : null);
     addSongQuery = "";
     inputEl.value = "";
     renderAddSongResults("");
-    if (matches.length === 1) addSongByFile(matches[0].file);
+    if (chosen) addSongByFile(chosen.file);
   }
 
   function buildAddSongRow() {
@@ -580,6 +613,12 @@ export function createSetlistView(ctx) {
           );
         },
         keydown: (e) => {
+          if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+            e.preventDefault();
+            const move = () => moveAddSongActive(e.key === "ArrowDown" ? 1 : -1);
+            ctx.setlistData.ensureSongsLoaded(move, move);
+            return;
+          }
           if (e.key !== "Enter") return;
           e.preventDefault();
           const submit = () => submitAddSong(e.target);
