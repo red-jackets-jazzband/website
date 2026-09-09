@@ -23,7 +23,7 @@ function pcAdd(pc, semis) {
   return SHARP_PC[(pcChroma(pc) + ((semis % 12) + 12)) % 12];
 }
 
-function nameToMidi(name) {
+export function nameToMidi(name) {
   const m = String(name).match(/^([A-G])([#b]*)(-?\d+)$/);
   if (!m) return null;
   return (parseInt(m[3], 10) + 1) * 12 + pcChroma(m[1] + m[2]);
