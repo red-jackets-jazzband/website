@@ -17,6 +17,28 @@ const EDGE_MARGIN = 8; // px — how close to a window edge the panel may be dra
 const PANEL_WIDTHS = [320, 420, 540, 680];
 const MIN_PANEL_WIDTH = 240;
 
+// Doesn't touch the panel/ctx state, so it lives at module scope rather than
+// nested inside createInspiration.
+function runExecCopy(url) {
+  const ta = document.createElement("textarea");
+  ta.value = url;
+  ta.setAttribute("readonly", "");
+  ta.style.position = "fixed";
+  ta.style.opacity = "0";
+  document.body.appendChild(ta);
+  // finally, not a trailing statement: a throwing select()/execCommand must
+  // not leave ta stuck in the document.
+  try {
+    ta.select();
+    // execCommand is deprecated in favour of the async Clipboard API, but
+    // that's exactly why this fallback (for browsers that deny or lack it)
+    // still has to call it. NOSONAR: intentional legacy-fallback use.
+    return document.execCommand("copy"); // NOSONAR
+  } finally {
+    ta.remove();
+  }
+}
+
 /*
   The Inspiration picture-in-picture panel: a docked, draggable YouTube player
   that keeps playing across song navigation (until explicitly closed) instead
@@ -166,23 +188,6 @@ export function createInspiration(ctx) {
   function fallbackCopy(url, btn) {
     if (execCopy(url)) flashShareBtn(btn);
     else window.prompt("Copy this link:", url);
-  }
-
-  function runExecCopy(url) {
-    const ta = document.createElement("textarea");
-    ta.value = url;
-    ta.setAttribute("readonly", "");
-    ta.style.position = "fixed";
-    ta.style.opacity = "0";
-    document.body.appendChild(ta);
-    // finally, not a trailing statement: a throwing select()/execCommand
-    // must not leave ta stuck in the document.
-    try {
-      ta.select();
-      return document.execCommand("copy");
-    } finally {
-      ta.remove();
-    }
   }
 
   // Old-style copy via a throwaway textarea + execCommand, for browsers that
@@ -511,8 +516,8 @@ export function createInspiration(ctx) {
     if (!panel.style.left && !panel.style.top) return;
     const maxLeft = Math.max(EDGE_MARGIN, window.innerWidth - panel.offsetWidth - EDGE_MARGIN);
     const maxTop = Math.max(EDGE_MARGIN, window.innerHeight - panel.offsetHeight - EDGE_MARGIN);
-    panel.style.left = `${Math.min(Math.max(EDGE_MARGIN, parseFloat(panel.style.left) || 0), maxLeft)}px`;
-    panel.style.top = `${Math.min(Math.max(EDGE_MARGIN, parseFloat(panel.style.top) || 0), maxTop)}px`;
+    panel.style.left = `${Math.min(Math.max(EDGE_MARGIN, Number.parseFloat(panel.style.left) || 0), maxLeft)}px`;
+    panel.style.top = `${Math.min(Math.max(EDGE_MARGIN, Number.parseFloat(panel.style.top) || 0), maxTop)}px`;
   }
 
   function maxPanelWidth() {

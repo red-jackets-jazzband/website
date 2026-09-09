@@ -26,8 +26,8 @@ const setHeaderRow = (text) => el("div", { class: "song-list-letter setlist-set-
 // is set).
 function semitoneFieldValue(raw) {
   const trimmed = String(raw == null ? "" : raw).trim();
-  return /^[+-]?\d+$/.test(trimmed) && parseInt(trimmed, 10) !== 0
-    ? String(parseInt(trimmed, 10))
+  return /^[+-]?\d+$/.test(trimmed) && Number.parseInt(trimmed, 10) !== 0
+    ? String(Number.parseInt(trimmed, 10))
     : "";
 }
 
@@ -694,7 +694,7 @@ export function createSetlistView(ctx) {
       if (currentSetlistSongIndex == null || !currentOpenSongs) return;
       const song = currentOpenSongs[currentSetlistSongIndex];
       if (!song || isSetlistDivider(song) || song.file !== ctx.state.currentSongFile) return;
-      const n = parseInt(byId("transpose").value, 10);
+      const n = Number.parseInt(byId("transpose").value, 10);
       const stored = Number.isFinite(n) && n !== 0 ? String(n) : "";
       if (stored === String(song.key == null ? "" : song.key)) return;
       updateSongKeyInPersonalSetlist(ctx.storage(), currentPersonalId, currentSetlistSongIndex, stored);

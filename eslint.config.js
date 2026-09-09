@@ -19,7 +19,10 @@ const STRICT_RULES = {
   "consistent-return": "error",
   eqeqeq: ["error", "always", { null: "ignore" }],
   "no-implicit-globals": "error",
-  "no-unused-vars": ["error", { argsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" }],
+  "no-unused-vars": [
+    "error",
+    { argsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+  ],
   "no-console": ["error", { allow: ["warn", "error"] }],
   curly: ["error", "multi-line", "consistent"],
   complexity: ["warn", 14],
@@ -61,6 +64,12 @@ const STRICT_RULES = {
   "prefer-promise-reject-errors": "error",
   "no-array-constructor": "error",
   "no-new-wrappers": "error",
+  "no-unused-expressions": "error",
+  "no-restricted-globals": [
+    "error",
+    { name: "parseInt", message: "Use Number.parseInt instead." },
+    { name: "parseFloat", message: "Use Number.parseFloat instead." },
+  ],
 
   // Security-relevant footguns (arbitrary code execution / injection via
   // string-eval'd code, prototype tampering) — not covered by sonarjs's

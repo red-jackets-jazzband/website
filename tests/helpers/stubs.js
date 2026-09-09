@@ -26,7 +26,7 @@ function pcAdd(pc, semis) {
 export function nameToMidi(name) {
   const m = String(name).match(/^([A-G])([#b]*)(-?\d+)$/);
   if (!m) return null;
-  return (parseInt(m[3], 10) + 1) * 12 + pcChroma(m[1] + m[2]);
+  return (Number.parseInt(m[3], 10) + 1) * 12 + pcChroma(m[1] + m[2]);
 }
 
 export const tonalStub = {
@@ -62,7 +62,7 @@ export const tonalStub = {
     scientificToAbcNotation(sci) {
       const m = sci.match(/^([A-G])([#b]*)(-?\d+)$/);
       const acc = m[2].replace(/#/g, "^").replace(/b/g, "_");
-      const oct = parseInt(m[3], 10);
+      const oct = Number.parseInt(m[3], 10);
       const body = oct >= 5
         ? m[1].toLowerCase() + "'".repeat(oct - 5)
         : m[1] + ",".repeat(Math.max(0, 4 - oct));

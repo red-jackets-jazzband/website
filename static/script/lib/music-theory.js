@@ -140,15 +140,15 @@ export function tempoBpmFromAbc(text) {
   // lazy `.+?` and the trailing `\s*` disagree over which of them owned a
   // run of whitespace, which is exactly the ambiguity that makes a regex
   // engine backtrack superlinearly.
-  const line = String(text || "").match(/^Q:(.*)$/m);
+  const line = /^Q:(.*)$/m.exec(String(text || ""));
   if (!line) return null;
   const body = line[1].replace(/"[^"]*"/g, " ").trim();
-  const afterEquals = body.match(/=\s*(\d+(?:\.\d+)?)/);
-  if (afterEquals) return Math.round(parseFloat(afterEquals[1]));
+  const afterEquals = /=\s*(\d+(?:\.\d+)?)/.exec(body);
+  if (afterEquals) return Math.round(Number.parseFloat(afterEquals[1]));
   // No "=": a bare "Q:120" or "Q:1/4 120" — take a number that isn't the
   // denominator of a note-length fraction.
-  const bare = body.match(/(?:^|\s)(\d+(?:\.\d+)?)(?!\s*\/)/);
-  return bare ? Math.round(parseFloat(bare[1])) : null;
+  const bare = /(?:^|\s)(\d+(?:\.\d+)?)(?!\s*\/)/.exec(body);
+  return bare ? Math.round(Number.parseFloat(bare[1])) : null;
 }
 
 // Shortest signed semitone distance to transpose `fromKeyStr` to
@@ -179,7 +179,7 @@ export function setlistTransposeSteps(rawOverride, nativeKey) {
   const trimmed = String(rawOverride == null ? "" : rawOverride).trim();
   if (!trimmed) return 0;
   if (isSemitoneOffset(trimmed)) {
-    const n = parseInt(trimmed, 10);
+    const n = Number.parseInt(trimmed, 10);
     return Number.isFinite(n) ? n : 0;
   }
   return semitonesBetweenKeys(nativeKey || "C", trimmed);
@@ -210,7 +210,7 @@ export function formatSetlistKeyLabel(rawOverride) {
   const trimmed = String(rawOverride == null ? "" : rawOverride).trim();
   if (!trimmed) return "";
   if (isSemitoneOffset(trimmed)) {
-    const n = parseInt(trimmed, 10);
+    const n = Number.parseInt(trimmed, 10);
     if (!Number.isFinite(n) || n === 0) return "";
     return (n > 0 ? "+" : "−") + Math.abs(n);
   }
