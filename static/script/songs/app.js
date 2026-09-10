@@ -40,6 +40,7 @@ function createApp() {
       currentOpenSetlistDesc: "",
       currentSongFile: null,
       currentSetlistSongIndex: null,
+      currentLibraryIndex: null,
       currentSongText: undefined, // clef-adjusted ABC currently on the sheet
       compingActive: false,
       tempoOverrideBpm: null,
