@@ -629,11 +629,12 @@ video.video {
 }
 
 /*
-  Purely a grouping node for Key+Tempo so their row can be aligned
-  independently of #sheetmenu's own justify-content (see the mobile
-  override below) — `display: contents` erases it from the box tree here,
-  so on desktop/tablet Key and Tempo remain #sheetmenu's own flex children,
-  unchanged from before this wrapper existed.
+  Purely a grouping node — wraps Key+Tempo, and separately Play+Inspiration,
+  so each pair's row can be aligned independently of #sheetmenu's own
+  justify-content (see the mobile override below). `display: contents`
+  erases it from the box tree here, so on desktop/tablet its children
+  remain #sheetmenu's own flex children, unchanged from before this
+  wrapper existed.
 */
 .sheet-adjust {
   display: contents;
@@ -2968,16 +2969,18 @@ body:has(#rjLibrary) .split-bio {
     least-interactive item.
   */
   /*
-    Each wrapped line was left-packed by default: content-sized items
-    (steppers, the transport cluster, Inspiration, the icon actions) just
+    Each wrapped line was left-packed by default: content-sized items just
     piled up at the start of their own line with whatever was left over
     sitting empty after them, so consecutive lines landed at visibly
     different widths and felt randomly sized next to each other.
     justify-content stretches that leftover gap between a line's own items
     instead, so every line reaches both edges the same way the full-width
-    instrument dropdown above them already does. The transport cluster,
-    Inspiration and the icon actions stay their natural compact size and
-    let space-between do the positioning.
+    instrument dropdown above them already does. Only the icon actions
+    (Print/iRealPro/advanced-toggle) are left to this — Key+Tempo and
+    Play+Inspiration are each pulled out of #sheetmenu's own flex flow into
+    their own centered .sheet-adjust row below, since space-between would
+    otherwise shove each pair to opposite edges instead of keeping them
+    together.
   */
   #sheetmenu {
     flex-wrap: wrap;
@@ -2988,15 +2991,11 @@ body:has(#rjLibrary) .split-bio {
     flex-basis: 100%;
   }
   /*
-    Key/Tempo used to grow to fill their whole line (justified apart by
-    #sheetmenu's own space-between above), which read as two arbitrarily
-    wide bars rather than controls that belong with Play/Stop/Mixer. Pin
-    them instead to .sheet-transport's own rendered width (its three 42px
-    buttons + 2px border, no padding) so all three pills read as one
-    family of same-sized controls, and turn .sheet-adjust into a real flex
-    row (escaping #sheetmenu's space-between, which would otherwise shove
-    just the two of them to opposite edges) so the pair centers as a group
-    on its own line instead of sitting flush left.
+    Turn each .sheet-adjust wrapper into a real flex row of its own —
+    escaping #sheetmenu's space-between above, which would otherwise shove
+    a wrapper's two children to opposite edges — so Key+Tempo, and
+    separately Play+Inspiration, each center as a pair on their own line
+    instead of sitting flush left (or apart).
   */
   .sheet-adjust {
     display: flex;
@@ -3004,6 +3003,15 @@ body:has(#rjLibrary) .split-bio {
     justify-content: center;
     gap: 10px;
   }
+  /*
+    Key/Tempo used to grow to fill their whole line, which read as two
+    arbitrarily wide bars rather than controls that belong with
+    Play/Stop/Mixer. Pin them instead to .sheet-transport's own rendered
+    width (its three 42px buttons + 2px border, no padding) so all three
+    pills read as one family of same-sized controls. Play+Inspiration need
+    no such pinning — they already share .sheet-adjust's centering and are
+    left at their own natural (different) sizes.
+  */
   #keyStepper,
   #tempoStepper {
     flex: none;
