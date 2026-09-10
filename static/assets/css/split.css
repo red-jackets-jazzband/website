@@ -3638,21 +3638,24 @@ body:has(#rjLibrary) .split-bio {
    ignores all of this until the control opts into the customisable form
    element (appearance: base-select), handled in the @supports block. */
 #instrument option,
-#comping option {
+#comping option,
+.mixer-voice-select option {
   background-color: #262626;
   color: var(--rj-gold);
   padding: 9px 14px;
   font: 600 12px "Montserrat", sans-serif;
 }
 #instrument optgroup,
-#comping optgroup {
+#comping optgroup,
+.mixer-voice-select optgroup {
   background-color: #1f1f1f;
   color: rgba(236,234,230,.55);
   font: 700 10px "Montserrat", sans-serif;
   letter-spacing: .08em;
 }
 #instrument option:checked,
-#comping option:checked {
+#comping option:checked,
+.mixer-voice-select option:checked {
   background-color: var(--rj-gold);
   color: #1b1b1b;
 }
@@ -3662,8 +3665,10 @@ body:has(#rjLibrary) .split-bio {
   #sheetStatus #instrument,
   .sheet-comping .dropbtn,
   #compingSlot #comping,
+  .mixer-voice-select,
   #instrument::picker(select),
-  #comping::picker(select) {
+  #comping::picker(select),
+  .mixer-voice-select::picker(select) {
     appearance: base-select;
   }
   /* base-select turns the button into a flex box whose default cross-axis
@@ -3685,7 +3690,8 @@ body:has(#rjLibrary) .split-bio {
     text-overflow: ellipsis;
   }
   #instrument::picker(select),
-  #comping::picker(select) {
+  #comping::picker(select),
+  .mixer-voice-select::picker(select) {
     background: #222222;
     border: 1px solid rgba(255,255,255,.14);
     border-radius: 10px;
@@ -3694,7 +3700,8 @@ body:has(#rjLibrary) .split-bio {
     box-shadow: 0 14px 34px rgba(0,0,0,.5);
   }
   #instrument option,
-  #comping option {
+  #comping option,
+  .mixer-voice-select option {
     border-radius: 6px;
     padding: 8px 12px;
     transition: background-color .12s ease, color .12s ease;
@@ -3702,27 +3709,33 @@ body:has(#rjLibrary) .split-bio {
   #instrument option:hover,
   #comping option:hover,
   #instrument option:focus,
-  #comping option:focus {
+  #comping option:focus,
+  .mixer-voice-select option:hover,
+  .mixer-voice-select option:focus {
     background-color: rgba(226,157,15,.16);
     color: var(--rj-gold);
   }
   #instrument option:checked,
-  #comping option:checked {
+  #comping option:checked,
+  .mixer-voice-select option:checked {
     background-color: var(--rj-gold);
     color: #1b1b1b;
   }
   /* The gold fill is the selection cue; drop the native tick column. */
   #instrument option::checkmark,
-  #comping option::checkmark {
+  #comping option::checkmark,
+  .mixer-voice-select option::checkmark {
     display: none;
   }
   #instrument::picker-icon,
-  #comping::picker-icon {
+  #comping::picker-icon,
+  .mixer-voice-select::picker-icon {
     color: var(--rj-gold);
     transition: transform .15s ease;
   }
   #instrument:open::picker-icon,
-  #comping:open::picker-icon {
+  #comping:open::picker-icon,
+  .mixer-voice-select:open::picker-icon {
     transform: rotate(180deg);
   }
 }
