@@ -54,6 +54,7 @@ aliases: ["/setlists/", "/songbook/"]
 <div id="sheetmenu" class="hideOnprint">
   <div id="sheetStatus" class="sheet-status"></div>
 
+  <div class="sheet-adjust">
   <div class="sheet-stepper" id="keyStepper" title="Key">
     <button type="button" id="keyDownBtn" class="sheet-stepper-btn" aria-label="Lower key">&minus;</button>
     <div class="sheet-stepper-value">
@@ -70,6 +71,7 @@ aliases: ["/setlists/", "/songbook/"]
       <span class="sheet-stepper-label">bpm</span>
     </div>
     <button type="button" id="tempoUpBtn" class="sheet-stepper-btn" aria-label="Faster">&plus;</button>
+  </div>
   </div>
 
   <div class="sheet-transport">

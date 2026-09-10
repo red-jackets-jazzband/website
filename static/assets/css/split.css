@@ -629,6 +629,17 @@ video.video {
 }
 
 /*
+  Purely a grouping node for Key+Tempo so their row can be aligned
+  independently of #sheetmenu's own justify-content (see the mobile
+  override below) — `display: contents` erases it from the box tree here,
+  so on desktop/tablet Key and Tempo remain #sheetmenu's own flex children,
+  unchanged from before this wrapper existed.
+*/
+.sheet-adjust {
+  display: contents;
+}
+
+/*
   Key/Tempo steppers: the two things you touch while the music is on the
   stand, so they stay always-visible next to Play rather than a tap deep
   inside "More". Same visual pattern for both.
@@ -2964,20 +2975,9 @@ body:has(#rjLibrary) .split-bio {
     different widths and felt randomly sized next to each other.
     justify-content stretches that leftover gap between a line's own items
     instead, so every line reaches both edges the same way the full-width
-    instrument dropdown above them already does. Key/Tempo also grow to
-    fill their line completely — without that, space-between would shove
-    the pair apart to opposite edges instead of keeping them adjacent; the
-    transport cluster, Inspiration and the icon actions stay their natural
-    compact size and let space-between do the positioning. A `flex-basis: 0`
-    item's hypothetical size is 0 for the *wrapping* decision itself, and
-    .sheet-stepper's own `overflow: hidden` (for its rounded corners)
-    disables the usual content-based automatic minimum size that would
-    otherwise stop it shrinking — without an explicit min-width, that combo
-    lets the wrapping algorithm cram a stepper onto an already-full line
-    and then squash it down past its own value/+ button, clipped. The
-    min-width below is the stepper's natural content width (two 26px
-    buttons + the value field), so growth still fills the line but
-    shrinkage stops before anything gets clipped.
+    instrument dropdown above them already does. The transport cluster,
+    Inspiration and the icon actions stay their natural compact size and
+    let space-between do the positioning.
   */
   #sheetmenu {
     flex-wrap: wrap;
@@ -2987,19 +2987,37 @@ body:has(#rjLibrary) .split-bio {
   .sheet-status {
     flex-basis: 100%;
   }
+  /*
+    Key/Tempo used to grow to fill their whole line (justified apart by
+    #sheetmenu's own space-between above), which read as two arbitrarily
+    wide bars rather than controls that belong with Play/Stop/Mixer. Pin
+    them instead to .sheet-transport's own rendered width (its three 42px
+    buttons + 2px border, no padding) so all three pills read as one
+    family of same-sized controls, and turn .sheet-adjust into a real flex
+    row (escaping #sheetmenu's space-between, which would otherwise shove
+    just the two of them to opposite edges) so the pair centers as a group
+    on its own line instead of sitting flush left.
+  */
+  .sheet-adjust {
+    display: flex;
+    flex-basis: 100%;
+    justify-content: center;
+    gap: 10px;
+  }
   #keyStepper,
   #tempoStepper {
-    flex: 1 1 0;
-    min-width: 120px;
+    flex: none;
+    box-sizing: border-box;
+    width: 128px;
   }
   /*
-    #keyStepper/#tempoStepper growing widens the pill, but their three
-    children (−, value, +) are all flex:none — left them as-is, the two
-    buttons and the value would all hug the left edge under the default
-    justify-content:flex-start, dumping the new width as dead space after
-    the + button instead of around the value like on desktop. Grow the
-    value instead so the buttons stay pinned to the pill's own edges and
-    the number stays centered in the (now flexible) space between them.
+    #keyStepper/#tempoStepper's three children (−, value, +) are all
+    flex:none — left them as-is, the two buttons and the value would hug
+    the left edge under the default justify-content:flex-start, dumping
+    the fixed width as dead space after the + button instead of around the
+    value like on desktop. Grow the value instead so the buttons stay
+    pinned to the pill's own edges and the number stays centered between
+    them.
   */
   .sheet-stepper-value {
     flex: 1;
