@@ -764,6 +764,10 @@ video.video {
     color: #222222 !important;
   }
 }
+.sheet-inspiration-link.active {
+  background: var(--rj-gold);
+  color: #222222 !important;
+}
 
 /*
   Print / Export / iRealPro: icon-only 44px buttons (same footprint and
