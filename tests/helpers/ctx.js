@@ -26,6 +26,7 @@ export function makeCtx(overrides = {}) {
         melodyMuted: false, bassMuted: true, chordsMuted: true, compingMuted: false,
         melodyProgram: null, bassProgram: null, chordsProgram: null, compingProgram: null,
       },
+      gchordPattern: "jazz",
       metronomeEnabled: false,
       ...overrides.state,
     },
