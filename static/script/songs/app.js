@@ -19,6 +19,11 @@ import { createSetlistPrint } from "./setlist-print.js";
 import { createSetlistView } from "./setlist-view.js";
 import { createSwipeNav } from "./swipe-nav.js";
 
+// The `.abc` filename -> its slug (basename), used in the `s=` hash param.
+function songSlug(file) {
+  return file ? String(file).replace(/\.abc$/, "") : null;
+}
+
 /*
   Composition root for the songs page. Builds one shared `ctx` (mutable state +
   cross-module methods), instantiates every module against it, then wires and
@@ -61,9 +66,6 @@ function createApp() {
     const span = byId("sheetBackLabel");
     if (span) span.textContent = label;
   };
-
-  // The `.abc` filename -> its slug (basename), used in the `s=` hash param.
-  const songSlug = (file) => (file ? String(file).replace(/\.abc$/, "") : null);
 
   // Rewrite the location hash to mirror the current song / open setlist, so a
   // plain reload or a copied URL lands back in the same place. Loop markers
