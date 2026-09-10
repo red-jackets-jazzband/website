@@ -130,18 +130,54 @@ test("onPlaybackChange starts the click when enabled and stops it when playback 
   }
 });
 
-test("accents land on beats 2 & 4 for a 4/4 tune, read live off ctx.audio", (t) => {
+test("stopping cuts off a click already scheduled inside the lookahead window, not just future ticks", (t) => {
   t.mock.timers.enable({ apis: ["setInterval"] });
-  // 240 bpm -> 0.25s/beat, so four beats comfortably fit within a couple of
-  // 25ms lookahead ticks without needing to hand-advance the fake clock.
-  const { cleanup } = setup({ isPlaying: true, nativeQpm: 240, beatsPerMeasure: 4 });
+  const { ctx, metronome, cleanup } = setup({ isPlaying: true });
   const { Ctor, instance } = createAudioContextStub();
   try {
     withAudioContext(Ctor, () => {
       document.getElementById("mixerMetronomeToggleBtn").click();
       t.mock.timers.tick(25);
-      instance.currentTime = 0.75; // advance the audio clock so later beats fall due
-      t.mock.timers.tick(25);
+      assert.ok(instance.oscillators.length >= 1);
+      const [firstClick] = instance.oscillators;
+      const scheduledStop = firstClick.stoppedAt;
+      assert.notEqual(scheduledStop, undefined); // playClick already gave it a natural stop time
+
+      ctx.audio.isPlaying = false;
+      metronome.onPlaybackChange(false);
+
+      // stop() re-calls .stop() with no argument — the fake records that as
+      // stoppedAt becoming undefined, proving it was cut off immediately
+      // rather than left to finish on its own original schedule.
+      assert.equal(firstClick.stoppedAt, undefined);
+    });
+  } finally {
+    window.localStorage.clear();
+    cleanup();
+  }
+});
+
+// Advances the fake audio clock one beat at a time (in step with a tick),
+// rather than one big jump — a jump far enough behind nextNoteTime would
+// trip scheduleClicks's own catch-up path (see lib/metronome.test.js),
+// which is exactly what's already covered there; this only wants to prove
+// songs/metronome.js wires ctx.audio's live bpm/beatsPerMeasure through to
+// real scheduled clicks under ordinary, non-degenerate pacing.
+function tickThroughBeats(t, instance, secondsPerBeat, count) {
+  for (let i = 0; i < count; i += 1) {
+    instance.currentTime = i * secondsPerBeat;
+    t.mock.timers.tick(25);
+  }
+}
+
+test("accents land on beats 2 & 4 for a 4/4 tune, read live off ctx.audio", (t) => {
+  t.mock.timers.enable({ apis: ["setInterval"] });
+  const { cleanup } = setup({ isPlaying: true, nativeQpm: 240, beatsPerMeasure: 4 });
+  const { Ctor, instance } = createAudioContextStub();
+  try {
+    withAudioContext(Ctor, () => {
+      document.getElementById("mixerMetronomeToggleBtn").click();
+      tickThroughBeats(t, instance, 0.25, 4); // 240 bpm -> 0.25s/beat
       const frequencies = instance.oscillators.map((o) => o.frequency.value);
       assert.ok(frequencies.length >= 4, `expected at least 4 clicks, got ${frequencies.length}`);
       assert.deepEqual(frequencies.slice(0, 4), [1000, 1500, 1000, 1500]);
@@ -159,9 +195,7 @@ test("a 3/4 tune never accents (no beat 4 to lean on)", (t) => {
   try {
     withAudioContext(Ctor, () => {
       document.getElementById("mixerMetronomeToggleBtn").click();
-      t.mock.timers.tick(25);
-      instance.currentTime = 0.6;
-      t.mock.timers.tick(25);
+      tickThroughBeats(t, instance, 0.25, 4);
       assert.ok(instance.oscillators.length >= 3);
       assert.ok(instance.oscillators.every((o) => o.frequency.value === 1000));
     });

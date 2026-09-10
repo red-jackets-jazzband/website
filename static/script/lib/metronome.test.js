@@ -124,3 +124,47 @@ test("scheduleClicks carries the backbeat pattern correctly across a measure bou
   ]);
   assert.equal(result.beatIndex, 2);
 });
+
+test("scheduleClicks catches up a clock left far behind currentTime (e.g. a throttled backgrounded tab) instead of flooding every missed beat", () => {
+  const result = scheduleClicks({
+    currentTime: 10,
+    nextNoteTime: 0, // 10 seconds / 20 beats behind
+    beatIndex: 0,
+    beatsInMeasure: 4,
+    secondsPerBeat: 0.5,
+    scheduleAheadSeconds: 0.1,
+  });
+  // Exactly one click at the first beat on/after currentTime, not 20.
+  assert.deepEqual(result.clicks, [{ time: 10, accent: false }]);
+  assert.equal(result.nextNoteTime, 10.5);
+  assert.equal(result.beatIndex, 1);
+});
+
+test("scheduleClicks's catch-up preserves the beat-index/accent phase, not just the clock", () => {
+  const result = scheduleClicks({
+    currentTime: 10,
+    nextNoteTime: 0.1, // 9.9s behind == 19.8 beats, rounds up to 20
+    beatIndex: 1, // already on the backbeat
+    beatsInMeasure: 4,
+    secondsPerBeat: 0.5,
+    scheduleAheadSeconds: 1,
+  });
+  // beatIndex 1 + 20 missed beats wraps back to 1 (same phase) at t=10.1
+  assert.deepEqual(result.clicks, [
+    { time: 10.1, accent: true },
+    { time: 10.6, accent: false },
+  ]);
+  assert.equal(result.beatIndex, 3);
+});
+
+test("scheduleClicks's catch-up falls back to a single-beat measure for a degenerate beatsInMeasure", () => {
+  const result = scheduleClicks({
+    currentTime: 10,
+    nextNoteTime: 0,
+    beatIndex: 0,
+    beatsInMeasure: Number.NaN,
+    secondsPerBeat: 0.5,
+    scheduleAheadSeconds: 0.1,
+  });
+  assert.deepEqual(result.clicks, [{ time: 10, accent: false }]);
+});

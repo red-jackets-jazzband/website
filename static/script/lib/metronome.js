@@ -62,14 +62,31 @@ export function scheduleClicks({
   currentTime, nextNoteTime, beatIndex, beatsInMeasure, secondsPerBeat, scheduleAheadSeconds,
 }) {
   if (secondsPerBeat <= 0) return { clicks: [], nextNoteTime, beatIndex };
+  const beats = Number.isFinite(beatsInMeasure) && beatsInMeasure > 0 ? beatsInMeasure : 1;
   const horizon = currentTime + scheduleAheadSeconds;
-  const clicks = [];
   let time = nextNoteTime;
   let beat = beatIndex;
+
+  /*
+    A throttled timer — a backgrounded tab is the common case — can leave
+    nextNoteTime long behind currentTime by the time this next runs. Jump
+    straight to the first beat at/after currentTime instead of letting the
+    loop below push one click per beat that's already gone by: every one of
+    those would start "now" (a past `time` just means "as soon as possible"
+    to Web Audio's own scheduling), so an unbridged gap would otherwise
+    flood the page with a burst of near-simultaneous clicks.
+  */
+  if (time < currentTime) {
+    const missedBeats = Math.ceil((currentTime - time) / secondsPerBeat);
+    time += missedBeats * secondsPerBeat;
+    beat = (beat + missedBeats) % beats;
+  }
+
+  const clicks = [];
   while (time < horizon) {
-    clicks.push({ time, accent: isBackbeat(beat, beatsInMeasure) });
+    clicks.push({ time, accent: isBackbeat(beat, beats) });
     time += secondsPerBeat;
-    beat = nextBeatIndex(beat, beatsInMeasure);
+    beat = nextBeatIndex(beat, beats);
   }
   return { clicks, nextNoteTime: time, beatIndex: beat };
 }

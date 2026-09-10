@@ -23,6 +23,9 @@ const CLICK_GAIN = 0.22;
 const ACCENT_GAIN = 0.5;
 const CLICK_DECAY_SECONDS = 0.05;
 
+// Returns the oscillator node so the caller can track it and cut it off
+// early (stop() below) — its own scheduled .stop() call only silences it at
+// the click's natural end, which isn't good enough for stop() to rely on.
 function playClick(audioCtx, time, accent) {
   const osc = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
@@ -38,6 +41,7 @@ function playClick(audioCtx, time, accent) {
   gain.connect(audioCtx.destination);
   osc.start(time);
   osc.stop(time + CLICK_DECAY_SECONDS + 0.02);
+  return osc;
 }
 
 /*
@@ -69,6 +73,13 @@ export function createMetronome(ctx) {
   let running = false;
   let nextNoteTime = 0;
   let beatIndex = 0;
+  // Clicks tick()'s already scheduled up to SCHEDULE_AHEAD_SECONDS into the
+  // future — stop()'s clearInterval only stops *future* scheduling ticks,
+  // it does nothing about a click that's already been handed to the
+  // AudioContext with its own start()/stop() times. Tracked here so stop()
+  // can cut those off too; each one prunes itself once it finishes on its
+  // own, so this only ever holds the still-pending handful.
+  let scheduledOscillators = [];
 
   function ensureAudioContext() {
     if (audioCtx) return audioCtx;
@@ -89,7 +100,14 @@ export function createMetronome(ctx) {
       secondsPerBeat: 60 / bpm,
       scheduleAheadSeconds: SCHEDULE_AHEAD_SECONDS,
     });
-    result.clicks.forEach(({ time, accent }) => playClick(audioCtx, time, accent));
+    result.clicks.forEach(({ time, accent }) => {
+      const osc = playClick(audioCtx, time, accent);
+      scheduledOscillators.push(osc);
+      osc.onended = () => {
+        const idx = scheduledOscillators.indexOf(osc);
+        if (idx !== -1) scheduledOscillators.splice(idx, 1);
+      };
+    });
     nextNoteTime = result.nextNoteTime;
     beatIndex = result.beatIndex;
   }
@@ -108,6 +126,18 @@ export function createMetronome(ctx) {
     if (timerId !== null) clearInterval(timerId);
     timerId = null;
     running = false;
+    // Cut off any click already scheduled inside the lookahead window —
+    // otherwise pausing (or toggling off) mid-window still lets it sound.
+    // .stop() on a node whose own scheduled stop already elapsed throws;
+    // that's just it finishing on its own, nothing to do about it.
+    scheduledOscillators.forEach((osc) => {
+      try {
+        osc.stop();
+      } catch {
+        // already stopped/ended — nothing to do.
+      }
+    });
+    scheduledOscillators = [];
   }
 
   // The one place that decides whether the click should be running right
