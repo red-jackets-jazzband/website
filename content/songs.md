@@ -74,6 +74,7 @@ aliases: ["/setlists/", "/songbook/"]
   </div>
   </div>
 
+  <div class="sheet-adjust">
   <div class="sheet-transport">
     <button id="playPauseBtn" class="sheet-play-btn" disabled title="Play" aria-label="Play"><span class="fa-solid fa-play" aria-hidden="true"></span></button>
     <button id="stopBtn" class="sheet-icon-btn" type="button" disabled title="Stop and reset to the start" aria-label="Stop and reset to the start"><span class="fa-solid fa-stop" aria-hidden="true"></span></button>
@@ -81,6 +82,7 @@ aliases: ["/setlists/", "/songbook/"]
   </div>
 
   <div id="inspirationSlot"></div>
+  </div>
 
   <div class="sheet-actions" id="sheetActions">
     <a id="printLink" class="sheet-icon-btn" href="#" title="Print this page" aria-label="Print this page"><span class="fa-solid fa-print" aria-hidden="true"></span></a>
