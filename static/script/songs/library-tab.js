@@ -20,6 +20,10 @@ export function createLibraryTab(ctx) {
       on: {
         click(e) {
           e.preventDefault();
+          // The exact row, not the song file, is the source of truth: a song
+          // can appear more than once in the index, so matching by file would
+          // always resolve to its first occurrence.
+          ctx.state.currentLibraryIndex = libraryRows().indexOf(e.currentTarget);
           ctx.openLibrarySong(song);
         },
       },
@@ -109,14 +113,26 @@ export function createLibraryTab(ctx) {
   // Open the song before / after the current one in the rendered list — the
   // touch swipe's counterpart to roving with the arrow keys. Clamps at both
   // ends; a no-op when no library song is open or the list has moved on.
+  //
+  // Steps from the remembered row index, not a lookup by file name: the same
+  // song can appear more than once in the index (an alternate title, say), so
+  // matching by file would always land back on its first occurrence and never
+  // advance past it. The stored index is only trusted while it still points
+  // at a row for the current song — a stale index (the list was re-filtered
+  // since) falls back to the first matching row, same as before.
   function stepLibrarySong(dir) {
     if (!ctx.state.currentSongFile) return;
     const rows = libraryRows();
     if (!rows.length) return;
-    const current = rows.findIndex((r) => r.dataset.songFile === ctx.state.currentSongFile);
+    const stored = ctx.state.currentLibraryIndex;
+    const current = (stored !== null && rows[stored]
+      && rows[stored].dataset.songFile === ctx.state.currentSongFile)
+      ? stored
+      : rows.findIndex((r) => r.dataset.songFile === ctx.state.currentSongFile);
     if (current < 0) return;
     const next = current + dir;
     if (next < 0 || next >= rows.length) return;
+    ctx.state.currentLibraryIndex = next;
     rows[next].click();
     rows[next].scrollIntoView({ block: "nearest" });
   }
