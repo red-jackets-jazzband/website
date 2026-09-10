@@ -160,6 +160,72 @@ export function withAbcjs(stub, fn) {
 }
 
 // ---------------------------------------------------------------------------
+// AudioContext — songs/metronome.js's Web Audio scheduling target. jsdom
+// implements no Web Audio API at all, so this is a from-scratch fake: a
+// single shared `instance` the test can read/advance directly (`currentTime`,
+// `oscillators`), plus a constructor function that always returns that same
+// instance — `new AudioCtor()` behaves like the real `new AudioContext()`
+// (a constructor returning an object short-circuits `new`'s own instance).
+// ---------------------------------------------------------------------------
+
+export function createAudioContextStub({ currentTime = 0 } = {}) {
+  const instance = {
+    state: "running",
+    currentTime,
+    destination: {},
+    resumeCalls: 0,
+    oscillators: [],
+    createOscillator() {
+      const osc = {
+        type: null,
+        frequency: { value: 0 },
+        startedAt: null,
+        stoppedAt: null,
+        connect: () => osc,
+        start(t) { osc.startedAt = t; },
+        stop(t) { osc.stoppedAt = t; },
+      };
+      instance.oscillators.push(osc);
+      return osc;
+    },
+    createGain() {
+      const events = [];
+      const node = {
+        gain: {
+          setValueAtTime: (v, t) => events.push(["set", v, t]),
+          linearRampToValueAtTime: (v, t) => events.push(["linear", v, t]),
+          exponentialRampToValueAtTime: (v, t) => events.push(["exp", v, t]),
+        },
+        events,
+        connect: () => node,
+      };
+      return node;
+    },
+    resume() {
+      instance.resumeCalls += 1;
+      instance.state = "running";
+      return Promise.resolve();
+    },
+  };
+  function FakeAudioContext() {
+    return instance;
+  }
+  return { Ctor: FakeAudioContext, instance };
+}
+
+// Run `fn` with `window.AudioContext` set to the given constructor, then restore.
+export function withAudioContext(Ctor, fn) {
+  const real = window.AudioContext;
+  window.AudioContext = Ctor;
+  try {
+    return fn();
+  } finally {
+    if (real === undefined) delete window.AudioContext;
+    else window.AudioContext = real;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // YouTube IFrame player — a controllable fake with the getters/setters the
 // LoopTube toolbar calls.
 // ---------------------------------------------------------------------------
