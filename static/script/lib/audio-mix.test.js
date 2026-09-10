@@ -56,6 +56,7 @@ test("injectMixerAudio stamps Bass/Chords accompaniment directives (default prog
 test("resolveGchordPattern maps a Pattern-picker value to its gchord string, defaulting on the unrecognised", () => {
   assert.equal(resolveGchordPattern("jazz"), "bzczbzcz");
   assert.equal(resolveGchordPattern("two-beat"), "fzczfzcz");
+  assert.equal(resolveGchordPattern("latin"), "fczczczc");
   assert.equal(resolveGchordPattern("default"), null);
   const defaultEntry = GCHORD_PATTERNS.find((p) => p.value === DEFAULT_GCHORD_PATTERN_VALUE);
   assert.equal(resolveGchordPattern("not-a-real-pattern"), defaultEntry.pattern);

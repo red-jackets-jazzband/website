@@ -61,6 +61,7 @@ export const GCHORD_PATTERNS = [
   { value: "two-beat", label: "Two-beat (root, chord)", pattern: "fzczfzcz" },
   { value: "four-beat", label: "Four-beat (root+chord each beat)", pattern: "bzbzbzbz" },
   { value: "waltz", label: "Waltz (root, chord, chord)", pattern: "fzczcz" },
+  { value: "latin", label: "Latin/Calypso (root, off-beat chords)", pattern: "fczczczc" },
 ];
 
 export const DEFAULT_GCHORD_PATTERN_VALUE = "jazz";
