@@ -3,6 +3,50 @@ import {
   groupSongsByLetter, filterSongsByQuery, songTitleSlug,
 } from "../lib/song-index.js";
 
+function renderRail(railEl, groups) {
+  clear(railEl);
+  groups.forEach((group) => {
+    railEl.append(el("button", {
+      type: "button",
+      text: group.letter,
+      title: `Jump to ${group.letter}`,
+      on: {
+        click() {
+          const target = byId(`letter-${group.letter}`);
+          if (!target) return;
+          const list = byId("songList");
+          // On narrow layouts the list isn't the scroll container (the page
+          // is), so scrolling its scrollTop does nothing — scroll the target
+          // into view instead.
+          const listScrolls = list && list.scrollHeight > list.clientHeight + 1;
+          if (!listScrolls) {
+            target.scrollIntoView({ block: "start" });
+            return;
+          }
+          // The letter headings are position: sticky, so a rect / offsetTop
+          // read reports a heading's *stuck* position. Resetting scrollTop to
+          // 0 first unsticks every heading, making the offsetTop read honest.
+          list.scrollTop = 0;
+          list.scrollTop = target.offsetTop;
+        },
+      },
+    }));
+  });
+}
+
+function moveHighlight(rows, delta, fromEnd) {
+  const current = rows.findIndex((r) => r.classList.contains("kbd-active"));
+  let next;
+  if (current < 0) next = fromEnd ? rows.length - 1 : 0;
+  else next = Math.min(Math.max(current + delta, 0), rows.length - 1);
+  rows.forEach((r) => r.classList.remove("kbd-active"));
+  const row = rows[next];
+  if (row) {
+    row.classList.add("kbd-active");
+    row.scrollIntoView({ block: "nearest" });
+  }
+}
+
 /*
   The Library tab: a search-first list of every lead sheet with an A–Z scroll
   rail. Picking a song renders it into the shared sheet. Up/Down arrow keys
@@ -27,37 +71,6 @@ export function createLibraryTab(ctx) {
           ctx.openLibrarySong(song);
         },
       },
-    });
-  }
-
-  function renderRail(railEl, groups) {
-    clear(railEl);
-    groups.forEach((group) => {
-      railEl.append(el("button", {
-        type: "button",
-        text: group.letter,
-        title: `Jump to ${group.letter}`,
-        on: {
-          click() {
-            const target = byId(`letter-${group.letter}`);
-            if (!target) return;
-            const list = byId("songList");
-            // On narrow layouts the list isn't the scroll container (the page
-            // is), so scrolling its scrollTop does nothing — scroll the target
-            // into view instead.
-            const listScrolls = list && list.scrollHeight > list.clientHeight + 1;
-            if (!listScrolls) {
-              target.scrollIntoView({ block: "start" });
-              return;
-            }
-            // The letter headings are position: sticky, so a rect / offsetTop
-            // read reports a heading's *stuck* position. Resetting scrollTop to
-            // 0 first unsticks every heading, making the offsetTop read honest.
-            list.scrollTop = 0;
-            list.scrollTop = target.offsetTop;
-          },
-        },
-      }));
     });
   }
 
@@ -95,19 +108,6 @@ export function createLibraryTab(ctx) {
     if (ctx.state.activeTab !== "library") return [];
     const list = byId("songList");
     return list ? Array.from(list.querySelectorAll("a.song-list-item")) : [];
-  }
-
-  function moveHighlight(rows, delta, fromEnd) {
-    const current = rows.findIndex((r) => r.classList.contains("kbd-active"));
-    let next;
-    if (current < 0) next = fromEnd ? rows.length - 1 : 0;
-    else next = Math.min(Math.max(current + delta, 0), rows.length - 1);
-    rows.forEach((r) => r.classList.remove("kbd-active"));
-    const row = rows[next];
-    if (row) {
-      row.classList.add("kbd-active");
-      row.scrollIntoView({ block: "nearest" });
-    }
   }
 
   // Open the song before / after the current one in the rendered list — the

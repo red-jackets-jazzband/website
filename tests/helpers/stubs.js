@@ -96,16 +96,16 @@ export function withTonal(fn) {
 // minimum shape the orchestration reads.
 // ---------------------------------------------------------------------------
 
+function fakeTune(text) {
+  return {
+    metaText: { title: "Stub Tune", url: undefined },
+    lines: [{ staff: [{ key: { root: "C", acc: "", mode: "" }, voices: [[]] }] }],
+    _source: text,
+  };
+}
+
 export function createAbcjsStub({ audioSupported = false } = {}) {
   const calls = { renderAbc: [], parseOnly: [], setTune: [] };
-
-  function fakeTune(text) {
-    return {
-      metaText: { title: "Stub Tune", url: undefined },
-      lines: [{ staff: [{ key: { root: "C", acc: "", mode: "" }, voices: [[]] }] }],
-      _source: text,
-    };
-  }
 
   const stub = {
     calls,

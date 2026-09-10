@@ -2,6 +2,7 @@ import js from "@eslint/js";
 import stylistic from "@stylistic/eslint-plugin";
 import sonarjs from "eslint-plugin-sonarjs";
 import regexpPlugin from "eslint-plugin-regexp";
+import unicornPlugin from "eslint-plugin-unicorn";
 import globals from "globals";
 
 // Strict, project-wide config for the site's authored JavaScript: the pure
@@ -119,6 +120,7 @@ export default [
       "@stylistic": stylistic,
       sonarjs: sonarjs.configs.recommended.plugins.sonarjs,
       regexp: regexpPlugin,
+      unicorn: unicornPlugin,
     },
     rules: {
       ...sonarjs.configs.recommended.rules,
@@ -136,6 +138,14 @@ export default [
       // style, which the rest of that set is mostly about.
       "regexp/no-dupe-disjunctions": "error",
       "regexp/no-misleading-capturing-group": "error",
+      // Cherry-picked from eslint-plugin-unicorn's much larger rule set (not
+      // its "recommended" config, which is mostly style opinions this project
+      // doesn't share): this is the one rule that reproduces a real
+      // SonarCloud finding (S3800-family "Move function 'x' to the outer
+      // scope") we'd otherwise only see after a PR is scanned — a nested
+      // function that never touches its enclosing function's own
+      // parameters/closure variables belongs at module scope instead.
+      "unicorn/consistent-function-scoping": "error",
     },
   },
   {
