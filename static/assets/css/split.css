@@ -1028,17 +1028,10 @@ video.video {
   Metronome: not a channel like the four above it — no volume fader, no
   Voice picker, nothing to gate on the current tune (see songs/mixer.js's
   CHANNELS / GATE_STATE_KEY, neither of which lists it) — just a toggle
-  button (real on/off, wired by songs/metronome.js) and a caption
-  explaining the backbeat accent. That caption reuses .mixer-strip-note's
-  font/colour but must actually show up here (that class defaults to
-  `display: none`, only shown via .is-inactive elsewhere) — a metronome
-  strip is never gated inactive, so it's unconditional here instead.
+  button, real on/off, wired by songs/metronome.js.
 */
 .mixer-swatch--metronome {
   background: rgba(236,234,230,.5);
-}
-.mixer-strip--metronome .mixer-strip-note {
-  display: block;
 }
 .mixer-metronome-toggle.is-active {
   background: var(--rj-gold);

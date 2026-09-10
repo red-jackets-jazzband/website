@@ -149,7 +149,6 @@ aliases: ["/setlists/", "/songbook/"]
       <span class="mixer-swatch mixer-swatch--metronome" aria-hidden="true"></span>
       <span class="mixer-strip-label">Metronome</span>
       <button type="button" id="mixerMetronomeToggleBtn" class="mixer-mute-btn mixer-metronome-toggle" aria-pressed="false" title="Enable metronome" aria-label="Enable metronome"><span class="fa-solid fa-toggle-off" aria-hidden="true"></span></button>
-      <p class="mixer-strip-note">Click track, off by default — heavier on beats 2 &amp; 4 to sit with the feel.</p>
     </div>
   </dialog>
   <div id="mixerBackdrop" class="mixer-backdrop" hidden></div>
