@@ -2996,11 +2996,13 @@ body:has(#rjLibrary) .split-bio {
     cursor: pointer;
     transition: color 0.15s;
   }
-  #sheetBackBtn.rj-sheet-back:hover {
-    color: var(--rj-hover);
-  }
   #sheetBackBtn.rj-sheet-back .fa-chevron-left {
     font-size: 10px;
+  }
+  @media (hover: hover) {
+    #sheetBackBtn.rj-sheet-back:hover {
+      color: var(--rj-hover);
+    }
   }
 
   /*
