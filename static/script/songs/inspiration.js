@@ -130,6 +130,12 @@ export function createInspiration(ctx) {
       btn.addEventListener("click", () => togglePanel(btn.dataset.url, btn.dataset.title));
       const slot = byId("inspirationSlot");
       if (slot) slot.appendChild(btn);
+      // The panel can already be open (playing along across a song change
+      // per the doc comment above) by the time this song's own button gets
+      // (re)created — reflect that straight away instead of waiting for the
+      // next open/close.
+      const panel = byId("inspirationPanel");
+      setLinkActive(Boolean(panel && !panel.hidden));
     }
     btn.dataset.url = url;
     btn.dataset.title = title || "";
@@ -224,6 +230,15 @@ export function createInspiration(ctx) {
     else openPanel(url, title);
   }
 
+  // Mirrors the Mixer button's own .active toggle: the Inspiration button
+  // stays gold for as long as its panel is open, not just while hovered.
+  function setLinkActive(active) {
+    const btn = byId("inspirationLink");
+    if (!btn) return;
+    btn.classList.toggle("active", active);
+    btn.setAttribute("aria-expanded", active ? "true" : "false");
+  }
+
   function openPanel(url, title) {
     const panel = byId("inspirationPanel");
     const frame = byId("inspirationVideoFrame");
@@ -238,6 +253,7 @@ export function createInspiration(ctx) {
 
     panelUrl = url;
     panel.hidden = false;
+    setLinkActive(true);
     stopLoopPoll();
     resetLoopState();
 
@@ -260,6 +276,7 @@ export function createInspiration(ctx) {
     const panel = byId("inspirationPanel");
     if (!panel) return;
     panel.hidden = true;
+    setLinkActive(false);
     stopLoopPoll();
     // Drop any id that was queued for a not-yet-ready player, so a late
     // onReady doesn't start a video into the now-hidden panel; likewise a
