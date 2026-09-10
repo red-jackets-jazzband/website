@@ -507,7 +507,12 @@ export function createSetlistView(ctx) {
     openSetlistSong(songs[next], next);
     const row = byId("songList")
       && byId("songList").querySelector(`.setlist-song-row[data-setlist-index="${next}"]`);
-    if (row) row.scrollIntoView({ block: "nearest" });
+    // On the narrow layout the sidebar (and this row with it) is display:none
+    // once a sheet is open — scrollIntoView on an element with no box makes
+    // some browsers fall back to scrolling the document itself to (0,0),
+    // i.e. the whole page jumps to the top. offsetParent is null exactly
+    // when the row has no layout box, so skip the scroll in that case.
+    if (row && row.offsetParent) row.scrollIntoView({ block: "nearest" });
   }
 
   function highlightCurrent() {

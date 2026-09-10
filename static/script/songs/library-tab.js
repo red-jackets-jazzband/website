@@ -134,7 +134,12 @@ export function createLibraryTab(ctx) {
     if (next < 0 || next >= rows.length) return;
     ctx.state.currentLibraryIndex = next;
     rows[next].click();
-    rows[next].scrollIntoView({ block: "nearest" });
+    // On the narrow layout the sidebar (and this row with it) is display:none
+    // once a sheet is open — scrollIntoView on an element with no box makes
+    // some browsers fall back to scrolling the document itself to (0,0),
+    // i.e. the whole page jumps to the top. offsetParent is null exactly
+    // when the row has no layout box, so skip the scroll in that case.
+    if (rows[next].offsetParent) rows[next].scrollIntoView({ block: "nearest" });
   }
 
   // Returns true when it opened a row (so the caller suppresses the default).
