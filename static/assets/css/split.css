@@ -541,12 +541,12 @@ video.video {
 */
 @media (hover: hover) {
   .sheet-play-btn:hover:not(:disabled) {
-    background: #3a3a3a;
-    color: #f0eee9;
+    background: var(--rj-gold);
+    color: #222222;
   }
 }
 .sheet-play-btn.playing {
-  background: #f0eee9;
+  background: var(--rj-gold);
 }
 .sheet-play-btn:disabled {
   opacity: .35;
@@ -559,9 +559,9 @@ video.video {
   splitting up when #sheetmenu runs out of width in the split-view sheet.
   Styled as one bordered field (same shell as the Key/Tempo steppers) with
   the three buttons as flush subfields divided by hairlines; overflow:hidden
-  clips the corners. Play sits flat like its siblings (just a dim glyph) and
-  only fills (off-white, not gold — gold here is reserved for editable
-  fields) while it's actually playing.
+  clips the corners. Play sits flat like its siblings (just a dim glyph —
+  gold is reserved for editable fields at rest) and only fills gold while
+  it's actually playing.
 */
 /* Shares its shell (height, border, radius) with .sheet-stepper below. */
 .sheet-transport {
@@ -591,13 +591,13 @@ video.video {
   color: rgba(236,234,230,.72);
 }
 .sheet-transport .sheet-play-btn.playing {
-  background: #f0eee9;
+  background: var(--rj-gold);
   color: #222222;
 }
 @media (hover: hover) {
   .sheet-transport .sheet-play-btn:hover:not(:disabled) {
-    background: #3a3a3a;
-    color: #f0eee9;
+    background: var(--rj-gold);
+    color: #222222;
   }
 }
 .sheet-transport .sheet-play-btn:disabled {
@@ -607,10 +607,10 @@ video.video {
 /*
   Stop / Mixer / Print / iRealPro / advanced-toggle: icon-only 44px
   controls (same footprint as Play, secondary styling like the steppers).
-  Gold is reserved for editable fields (Key/Tempo steppers, the Instrument/
-  Comping dropdowns) elsewhere in this menu, so these non-editing controls
-  get a neutral off-white hover/active fill instead — a toggled-on control
-  (e.g. the Mixer button while its panel is open) flips to .active.
+  At rest they're a dim glyph, same as Play — gold is reserved for
+  editable fields (Key/Tempo steppers, the Instrument/Comping dropdowns)
+  at rest — but hover and a toggled-on state (e.g. the Mixer button while
+  its panel is open) still fill gold, same as everywhere else in this menu.
 */
 .sheet-icon-btn {
   flex: none;
@@ -629,8 +629,8 @@ video.video {
 }
 @media (hover: hover) {
   .sheet-icon-btn:hover:not(:disabled) {
-    background: #3a3a3a;
-    color: #f0eee9;
+    background: var(--rj-gold);
+    color: #222222;
     /*
       Print / iRealPro are <a>s, and the theme's `a:hover { border: none }`
       (specificity 0,1,1) otherwise beats `.sheet-icon-btn`'s 1px border on
@@ -641,7 +641,7 @@ video.video {
   }
 }
 .sheet-icon-btn.active {
-  background: #f0eee9;
+  background: var(--rj-gold);
   color: #222222;
 }
 .sheet-icon-btn:disabled {
@@ -764,12 +764,12 @@ video.video {
 }
 @media (hover: hover) {
   .sheet-inspiration-link:hover {
-    background: #3a3a3a;
-    color: #f0eee9 !important;
+    background: var(--rj-gold);
+    color: #222222 !important;
   }
 }
 .sheet-inspiration-link.active {
-  background: #f0eee9;
+  background: var(--rj-gold);
   color: #222222 !important;
 }
 
@@ -791,7 +791,7 @@ video.video {
 }
 @media (hover: hover) {
   .sheet-actions .sheet-icon-btn:hover {
-    color: #f0eee9;
+    color: #222222;
   }
 }
 
