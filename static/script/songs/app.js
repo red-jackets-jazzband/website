@@ -57,8 +57,8 @@ function createApp() {
   // The mobile "back" button leaves the sheet for whichever sidebar list you
   // came from — the Library song list, or an open setlist's song list.
   ctx.setSheetBackLabel = (label) => {
-    const btn = byId("sheetBackBtn");
-    if (btn) btn.textContent = `← ${label}`;
+    const span = byId("sheetBackLabel");
+    if (span) span.textContent = label;
   };
 
   // The `.abc` filename -> its slug (basename), used in the `s=` hash param.
