@@ -531,8 +531,18 @@ video.video {
   cursor: pointer;
   transition: background 0.15s, opacity 0.15s;
 }
-.sheet-play-btn:hover:not(:disabled) {
-  background: #f0b030;
+/*
+  Gold hover fills below are gated on `(hover: hover)` so tapping on a
+  touchscreen doesn't leave the button stuck gold — touch UAs apply :hover
+  on tap and only clear it on the next tap elsewhere, with no real "pointer
+  left the button" event to end it. Genuine held state (.active, .playing,
+  .copied, [aria-pressed], .armed) isn't hover-driven and stays outside
+  this guard.
+*/
+@media (hover: hover) {
+  .sheet-play-btn:hover:not(:disabled) {
+    background: #f0b030;
+  }
 }
 .sheet-play-btn.playing {
   background: #f0eee9;
@@ -578,10 +588,15 @@ video.video {
   background: #2f2f2f;
   color: var(--rj-gold);
 }
-.sheet-transport .sheet-play-btn:hover:not(:disabled),
 .sheet-transport .sheet-play-btn.playing {
   background: var(--rj-gold);
   color: #222222;
+}
+@media (hover: hover) {
+  .sheet-transport .sheet-play-btn:hover:not(:disabled) {
+    background: var(--rj-gold);
+    color: #222222;
+  }
 }
 .sheet-transport .sheet-play-btn:disabled {
   opacity: .35;
@@ -608,16 +623,18 @@ video.video {
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
 }
-.sheet-icon-btn:hover:not(:disabled) {
-  background: var(--rj-gold);
-  color: #222222;
-  /*
-    Print / iRealPro are <a>s, and the theme's `a:hover { border: none }`
-    (specificity 0,1,1) otherwise beats `.sheet-icon-btn`'s 1px border on
-    hover only — the button loses its border and, being content-box, shrinks
-    2px, nudging the glyph. Re-declare the border here so geometry holds.
-  */
-  border: 1px solid rgba(255,255,255,.11);
+@media (hover: hover) {
+  .sheet-icon-btn:hover:not(:disabled) {
+    background: var(--rj-gold);
+    color: #222222;
+    /*
+      Print / iRealPro are <a>s, and the theme's `a:hover { border: none }`
+      (specificity 0,1,1) otherwise beats `.sheet-icon-btn`'s 1px border on
+      hover only — the button loses its border and, being content-box, shrinks
+      2px, nudging the glyph. Re-declare the border here so geometry holds.
+    */
+    border: 1px solid rgba(255,255,255,.11);
+  }
 }
 .sheet-icon-btn.active {
   background: var(--rj-gold);
@@ -667,9 +684,11 @@ video.video {
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
 }
-.sheet-stepper-btn:hover {
-  background: var(--rj-gold);
-  color: #222222;
+@media (hover: hover) {
+  .sheet-stepper-btn:hover {
+    background: var(--rj-gold);
+    color: #222222;
+  }
 }
 .sheet-stepper-value {
   flex: none;
@@ -739,9 +758,11 @@ video.video {
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
 }
-.sheet-inspiration-link:hover {
-  background: var(--rj-gold);
-  color: #222222 !important;
+@media (hover: hover) {
+  .sheet-inspiration-link:hover {
+    background: var(--rj-gold);
+    color: #222222 !important;
+  }
 }
 
 /*
@@ -760,8 +781,10 @@ video.video {
   color: rgba(236,234,230,.72);
   text-decoration: none;
 }
-.sheet-actions .sheet-icon-btn:hover {
-  color: #222222;
+@media (hover: hover) {
+  .sheet-actions .sheet-icon-btn:hover {
+    color: #222222;
+  }
 }
 
 /*
@@ -1037,8 +1060,10 @@ video.video {
 #sheetmenu .sheet-actions .sheet-icon-btn {
   color: rgba(236,234,230,.72);
 }
-#sheetmenu .sheet-actions .sheet-icon-btn:hover:not(:disabled) {
-  color: #222222;
+@media (hover: hover) {
+  #sheetmenu .sheet-actions .sheet-icon-btn:hover:not(:disabled) {
+    color: #222222;
+  }
 }
 #sheetmenu .sheet-inspiration-link {
   color: var(--rj-gold);
@@ -1055,9 +1080,11 @@ video.video {
   height: 20px;
   opacity: .72;
 }
-#iRealPro:hover:not(:disabled) .irealpro-logo {
-  opacity: 1;
-  filter: brightness(0);
+@media (hover: hover) {
+  #iRealPro:hover:not(:disabled) .irealpro-logo {
+    opacity: 1;
+    filter: brightness(0);
+  }
 }
 
 /* ============================================================
@@ -1168,9 +1195,11 @@ video.video {
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
 }
-.inspiration-panel-icon-btn:hover {
-  background: var(--rj-gold);
-  color: #222222 !important;
+@media (hover: hover) {
+  .inspiration-panel-icon-btn:hover {
+    background: var(--rj-gold);
+    color: #222222 !important;
+  }
 }
 .inspiration-panel-icon-btn.copied {
   background: var(--rj-gold);
@@ -1266,9 +1295,11 @@ video.video {
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
 }
-.inspiration-loop-btn:hover {
-  background: var(--rj-gold);
-  color: #222222 !important;
+@media (hover: hover) {
+  .inspiration-loop-btn:hover {
+    background: var(--rj-gold);
+    color: #222222 !important;
+  }
 }
 .inspiration-loop-btn:disabled {
   opacity: .38;
