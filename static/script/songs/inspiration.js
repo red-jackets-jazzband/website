@@ -231,7 +231,8 @@ export function createInspiration(ctx) {
   }
 
   // Mirrors the Mixer button's own .active toggle: the Inspiration button
-  // stays gold for as long as its panel is open, not just while hovered.
+  // stays in its active (filled) state for as long as its panel is open,
+  // not just while hovered.
   function setLinkActive(active) {
     const btn = byId("inspirationLink");
     if (!btn) return;

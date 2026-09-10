@@ -523,25 +523,26 @@ video.video {
   height: 44px;
   display: grid;
   place-items: center;
-  background: var(--rj-gold);
+  background: #2f2f2f;
   border: none;
   border-radius: 8px;
-  color: var(--rj-ground);
+  color: rgba(236,234,230,.72);
   font-size: 15px;
   cursor: pointer;
   transition: background 0.15s, opacity 0.15s;
 }
 /*
-  Gold hover fills below are gated on `(hover: hover)` so tapping on a
-  touchscreen doesn't leave the button stuck gold — touch UAs apply :hover
-  on tap and only clear it on the next tap elsewhere, with no real "pointer
-  left the button" event to end it. Genuine held state (.active, .playing,
-  .copied, [aria-pressed], .armed) isn't hover-driven and stays outside
-  this guard.
+  Hover fills below are gated on `(hover: hover)` so tapping on a
+  touchscreen doesn't leave the button stuck in its hover state — touch UAs
+  apply :hover on tap and only clear it on the next tap elsewhere, with no
+  real "pointer left the button" event to end it. Genuine held state
+  (.active, .playing, .copied, [aria-pressed], .armed) isn't hover-driven
+  and stays outside this guard.
 */
 @media (hover: hover) {
   .sheet-play-btn:hover:not(:disabled) {
-    background: #f0b030;
+    background: #3a3a3a;
+    color: #f0eee9;
   }
 }
 .sheet-play-btn.playing {
@@ -558,8 +559,9 @@ video.video {
   splitting up when #sheetmenu runs out of width in the split-view sheet.
   Styled as one bordered field (same shell as the Key/Tempo steppers) with
   the three buttons as flush subfields divided by hairlines; overflow:hidden
-  clips the corners. Play sits flat like its siblings (just a gold glyph) and
-  only fills gold while it's actually playing.
+  clips the corners. Play sits flat like its siblings (just a dim glyph) and
+  only fills (off-white, not gold — gold here is reserved for editable
+  fields) while it's actually playing.
 */
 /* Shares its shell (height, border, radius) with .sheet-stepper below. */
 .sheet-transport {
@@ -586,16 +588,16 @@ video.video {
 }
 .sheet-transport .sheet-play-btn {
   background: #2f2f2f;
-  color: var(--rj-gold);
+  color: rgba(236,234,230,.72);
 }
 .sheet-transport .sheet-play-btn.playing {
-  background: var(--rj-gold);
+  background: #f0eee9;
   color: #222222;
 }
 @media (hover: hover) {
   .sheet-transport .sheet-play-btn:hover:not(:disabled) {
-    background: var(--rj-gold);
-    color: #222222;
+    background: #3a3a3a;
+    color: #f0eee9;
   }
 }
 .sheet-transport .sheet-play-btn:disabled {
@@ -603,10 +605,12 @@ video.video {
 }
 
 /*
-  Stop / Mute-melody: the two remaining playback controls, promoted out of
-  "More" to sit right next to Play as icon-only 44px buttons (same footprint
-  as Play, secondary styling like the steppers). Mute-melody flips to .active
-  — gold fill — while the melody voice is silenced.
+  Stop / Mixer / Print / iRealPro / advanced-toggle: icon-only 44px
+  controls (same footprint as Play, secondary styling like the steppers).
+  Gold is reserved for editable fields (Key/Tempo steppers, the Instrument/
+  Comping dropdowns) elsewhere in this menu, so these non-editing controls
+  get a neutral off-white hover/active fill instead — a toggled-on control
+  (e.g. the Mixer button while its panel is open) flips to .active.
 */
 .sheet-icon-btn {
   flex: none;
@@ -625,8 +629,8 @@ video.video {
 }
 @media (hover: hover) {
   .sheet-icon-btn:hover:not(:disabled) {
-    background: var(--rj-gold);
-    color: #222222;
+    background: #3a3a3a;
+    color: #f0eee9;
     /*
       Print / iRealPro are <a>s, and the theme's `a:hover { border: none }`
       (specificity 0,1,1) otherwise beats `.sheet-icon-btn`'s 1px border on
@@ -637,7 +641,7 @@ video.video {
   }
 }
 .sheet-icon-btn.active {
-  background: var(--rj-gold);
+  background: #f0eee9;
   color: #222222;
 }
 .sheet-icon-btn:disabled {
@@ -751,7 +755,7 @@ video.video {
   background: #2f2f2f;
   border: 1px solid rgba(255,255,255,.11);
   border-radius: 8px;
-  color: var(--rj-gold) !important;
+  color: rgba(236,234,230,.72) !important;
   font: 600 12px/1 "Montserrat", sans-serif;
   text-decoration: none !important;
   white-space: nowrap;
@@ -760,12 +764,12 @@ video.video {
 }
 @media (hover: hover) {
   .sheet-inspiration-link:hover {
-    background: var(--rj-gold);
-    color: #222222 !important;
+    background: #3a3a3a;
+    color: #f0eee9 !important;
   }
 }
 .sheet-inspiration-link.active {
-  background: var(--rj-gold);
+  background: #f0eee9;
   color: #222222 !important;
 }
 
@@ -787,7 +791,7 @@ video.video {
 }
 @media (hover: hover) {
   .sheet-actions .sheet-icon-btn:hover {
-    color: #222222;
+    color: #f0eee9;
   }
 }
 
