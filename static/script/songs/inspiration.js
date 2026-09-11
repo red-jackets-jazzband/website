@@ -160,11 +160,14 @@ function setLinkActive(active) {
 /*
   The Inspiration picture-in-picture panel: a docked, draggable YouTube player
   that keeps playing across song navigation (until explicitly closed) instead
-  of leaving the page, plus a LoopTube toolbar under the video — A/B loop
-  markers on a slim timeline, an endless A–B loop toggle (an ~80 ms poll that
-  seekTo's back to A just before B, since YouTube has no native sub-range loop)
-  and a playback-rate stepper. Driven through the YouTube IFrame Player API;
-  the pure range/rate/clock maths is in lib/looptube.js.
+  of leaving the page, plus a LoopTube toolbar under the video — a play/pause
+  toggle, A/B loop markers on a slim timeline, an endless A–B loop toggle (an
+  ~80 ms poll that seekTo's back to A just before B, since YouTube has no
+  native sub-range loop) and a playback-rate stepper. The toolbar reimplements
+  everything the native YouTube control bar offers (play/pause, seek, speed),
+  so the embed is loaded with controls=0 (see youtubeEmbedUrl) rather than
+  showing a redundant native bar under it. Driven through the YouTube IFrame
+  Player API; the pure range/rate/clock maths is in lib/looptube.js.
 */
 export function createInspiration(ctx) {
   let panelUrl = null;
@@ -174,6 +177,7 @@ export function createInspiration(ctx) {
   let pendingVideoId = null;
   let loopA = null;
   let loopB = null;
+  let isPlaying = false;
   let loopEnabled = false;
   let loopPollId = null;
   let loopDragging = null; // "a" | "b" | null
@@ -342,6 +346,8 @@ export function createInspiration(ctx) {
     panel.hidden = false;
     setLinkActive(true);
     stopLoopPoll();
+    isPlaying = false;
+    updatePlayToggleUI();
     resetLoopState();
 
     if (player && playerReady) {
@@ -376,6 +382,8 @@ export function createInspiration(ctx) {
       const frame = byId("inspirationVideoFrame");
       if (frame) frame.src = "";
     }
+    isPlaying = false;
+    updatePlayToggleUI();
     const bar = byId("inspirationLoopBar");
     if (bar) bar.hidden = true;
     panelUrl = null;
@@ -383,7 +391,8 @@ export function createInspiration(ctx) {
 
   function onPlayerStateChange(e) {
     const states = window.YT && window.YT.PlayerState;
-    if (states && e.data === states.PLAYING) {
+    isPlaying = Boolean(states) && e.data === states.PLAYING;
+    if (isPlaying) {
       // A shared link's start point (loop A) is applied here, not on onReady:
       // by the time the *right* video is actually playing a seek lands where
       // we mean it, whereas onReady fires once and openPanel may since have
@@ -396,6 +405,7 @@ export function createInspiration(ctx) {
     } else {
       stopLoopPoll();
     }
+    updatePlayToggleUI();
     updateLoopUI();
   }
 
@@ -545,6 +555,22 @@ export function createInspiration(ctx) {
     }
   }
 
+  function updatePlayToggleUI() {
+    const btn = byId("inspirationPlayToggle");
+    if (!btn) return;
+    const icon = btn.querySelector("span");
+    if (icon) icon.className = isPlaying ? "fa-solid fa-pause" : "fa-solid fa-play";
+    const label = isPlaying ? "Pause" : "Play";
+    btn.title = label;
+    btn.setAttribute("aria-label", label);
+  }
+
+  function togglePlayPause() {
+    if (!player || !playerReady) return;
+    if (isPlaying) player.pauseVideo();
+    else player.playVideo();
+  }
+
   function updateSpeedLabel() {
     const label = byId("inspirationSpeedValue");
     if (!label) return;
@@ -615,6 +641,7 @@ export function createInspiration(ctx) {
   // ---- wiring ----------------------------------------------------
 
   function initLoopBar() {
+    on("inspirationPlayToggle", "click", togglePlayPause);
     on("inspirationSetA", "click", () => setLoopMarker("a"));
     on("inspirationSetB", "click", () => setLoopMarker("b"));
     on("inspirationLoopToggle", "click", toggleLoopEnabled);

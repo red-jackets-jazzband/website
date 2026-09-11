@@ -241,6 +241,7 @@ Retrieved from www.redjackets.nl - <span id="instrumentText"></span>
       <button type="button" class="inspiration-loop-handle" id="inspirationLoopHandleB" aria-label="Loop end (B)" hidden></button>
     </div>
     <div class="inspiration-loop-controls">
+      <button type="button" class="inspiration-loop-btn" id="inspirationPlayToggle" title="Play/pause" aria-label="Play"><span class="fa-solid fa-play" aria-hidden="true"></span></button>
       <button type="button" class="inspiration-loop-btn" id="inspirationSetA" title="Set loop start (A) at the current point" aria-label="Set loop start">A</button>
       <button type="button" class="inspiration-loop-btn" id="inspirationSetB" title="Set loop end (B) at the current point" aria-label="Set loop end">B</button>
       <button type="button" class="inspiration-loop-btn" id="inspirationLoopToggle" title="Loop between A and B" aria-label="Loop between A and B" aria-pressed="false"><span class="fa-solid fa-repeat" aria-hidden="true"></span></button>

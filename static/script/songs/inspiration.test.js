@@ -269,6 +269,65 @@ test("a shared A/B link opens the video with the loop already set", async () => 
   }
 });
 
+test("the play/pause button drives the player and its icon follows player state", async () => {
+  const page = mountPage();
+  const { window } = page;
+  try {
+    let fireReady = null;
+    let fireState = null;
+    const calls = [];
+    window.YT = {
+      Player: function FakePlayer(_el, opts) {
+        fireReady = opts.events.onReady;
+        fireState = opts.events.onStateChange;
+        this.loadVideoById = () => {};
+        this.stopVideo = () => {};
+        this.getCurrentTime = () => 0;
+        this.getDuration = () => 200;
+        this.getPlaybackRate = () => 1;
+        this.getAvailablePlaybackRates = () => [0.5, 1, 2];
+        this.setPlaybackRate = () => {};
+        this.seekTo = () => {};
+        this.playVideo = () => calls.push("play");
+        this.pauseVideo = () => calls.push("pause");
+      },
+      PlayerState: { PLAYING: 1 },
+    };
+    const insp = createInspiration();
+    insp.init();
+    insp.updateLink(SAMPLE_URL, "X");
+    document.getElementById("inspirationLink").dispatchEvent(new window.Event("click"));
+    await new Promise((resolve) => { setTimeout(resolve, 0); });
+    fireReady();
+
+    const toggle = document.getElementById("inspirationPlayToggle");
+    const icon = toggle.querySelector("span");
+    assert.equal(icon.className, "fa-solid fa-play");
+    assert.equal(toggle.getAttribute("aria-label"), "Play");
+
+    // Not playing yet -> the click should ask the player to start.
+    toggle.dispatchEvent(new window.Event("click"));
+    assert.deepEqual(calls, ["play"]);
+
+    // The player reports it's now playing -> the button flips to pause.
+    fireState({ data: 1 });
+    assert.equal(icon.className, "fa-solid fa-pause");
+    assert.equal(toggle.getAttribute("aria-label"), "Pause");
+
+    // Playing -> the next click should ask the player to pause.
+    toggle.dispatchEvent(new window.Event("click"));
+    assert.deepEqual(calls, ["play", "pause"]);
+
+    // Any non-playing state (e.g. paused) flips the icon back.
+    fireState({ data: 2 });
+    assert.equal(icon.className, "fa-solid fa-play");
+    assert.equal(toggle.getAttribute("aria-label"), "Play");
+  } finally {
+    delete window.YT;
+    page.cleanup();
+  }
+});
+
 test("zoom in narrows the timeline window around the current playhead", async () => {
   const page = mountPage();
   const { window } = page;
