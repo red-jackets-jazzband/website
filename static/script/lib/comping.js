@@ -534,7 +534,13 @@ function stripNonMusicLines(body) {
 }
 
 // Barline tokens, longest match first so "|1", ":|2", "[|:", "[2" stay intact.
-const BARLINE = /:\|:|:\|\d+|\|\|:?|::|\|:|:\||\[\|:|\[\||\|\]|\|\d+|\[\d+(?:[-,]\d+)*|\|/g;
+// Grouped by leading character (colon / bar / bracket) rather than left flat
+// — same 12 forms, same priority within each group, but well under
+// SonarCloud's regex-complexity threshold this way. Within the bar group,
+// `\|\d+` must come before the optional-colon form: an unqualified `:?`
+// would otherwise "succeed" on zero characters and misparse ":|2" as ":|"
+// followed by a bare "2".
+const BARLINE = /:(?:\|\d+|\|:?|:)|\|(?:\|:?|:|\]|\d+)?|\[(?:\|:?|\d+(?:[-,]\d+)*)/g;
 
 /*
    Walk a melody body's barlines and, for every segment that carries notes,
