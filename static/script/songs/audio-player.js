@@ -5,8 +5,18 @@ import {
 import { computeVoicesOff } from "../lib/audio-mix.js";
 import { beatsPerMeasure } from "../lib/metronome.js";
 
+// Two of the three classic MIDI.js soundfont sets (see lib/gm-voices.js's
+// doc comment for the third, MusyngKite's own sibling FluidR3_GM, not
+// offered here): FatBoy is the long-standing default — a reasonable
+// middle-ground size. MusyngKite's samples are markedly richer/more
+// realistic (particularly for acoustic instruments like Bass/Chords' new
+// Banjo voice) but roughly 5x bigger per instrument fetched, which matters
+// more on mobile at a rehearsal than on a desktop — hence a toggle rather
+// than just switching the default outright.
+const STANDARD_SOUNDFONT_URL = "https://gleitz.github.io/midi-js-soundfonts/FatBoy/";
+const HIGH_QUALITY_SOUNDFONT_URL = "https://gleitz.github.io/midi-js-soundfonts/MusyngKite/";
+
 const SYNTH_PARAMS = {
-  soundFontUrl: "https://gleitz.github.io/midi-js-soundfonts/FatBoy/",
   program: 56, // Trumpet (GM)
 };
 
@@ -72,7 +82,10 @@ export function createAudioPlayer(ctx) {
   let highlightedChordCell = null;
 
   function synthParams() {
-    const params = { ...SYNTH_PARAMS };
+    const params = {
+      ...SYNTH_PARAMS,
+      soundFontUrl: ctx.state.highQualityAudio ? HIGH_QUALITY_SOUNDFONT_URL : STANDARD_SOUNDFONT_URL,
+    };
     const { voicesOff } = computeVoicesOff({
       compingActive: ctx.state.compingActive,
       melodyMuted: ctx.state.mixer.melodyMuted,

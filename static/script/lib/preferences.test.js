@@ -42,6 +42,7 @@ test("PREF_KEYS pins the persisted key names", () => {
     mixerCompingProgram: "rj.mixerCompingProgram",
     mixerGchordPattern: "rj.mixerGchordPattern",
     metronomeEnabled: "rj.metronomeEnabled",
+    highQualityAudio: "rj.highQualityAudio",
   });
 });
 

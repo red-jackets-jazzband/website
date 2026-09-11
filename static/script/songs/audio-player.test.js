@@ -92,6 +92,29 @@ test("initForTune's setTune fully mutes when melody is off and there's no compin
   }
 });
 
+test("initForTune's setTune picks the soundfont from ctx.state.highQualityAudio", async () => {
+  const { ctx, audio, cleanup } = setup({ highQualityAudio: false });
+  const abcjs = createAbcjsStub({ audioSupported: true });
+  try {
+    withAbcjs(abcjs, () => audio.initForTune({ metaText: {} }));
+    await flush();
+    assert.equal(
+      abcjs.calls.setTune.at(-1).params.soundFontUrl,
+      "https://gleitz.github.io/midi-js-soundfonts/FatBoy/",
+    );
+
+    ctx.state.highQualityAudio = true;
+    withAbcjs(abcjs, () => audio.stop()); // re-primes via setTune with fresh synthParams
+    await flush();
+    assert.equal(
+      abcjs.calls.setTune.at(-1).params.soundFontUrl,
+      "https://gleitz.github.io/midi-js-soundfonts/MusyngKite/",
+    );
+  } finally {
+    cleanup();
+  }
+});
+
 test("playPause resumes on the first press after pausing (ABCjs play() is a toggle)", async () => {
   const { audio, cleanup } = setup();
   const abcjs = createAbcjsStub({ audioSupported: true });

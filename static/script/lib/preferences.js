@@ -24,6 +24,7 @@ export const PREF_KEYS = {
   mixerCompingProgram: "rj.mixerCompingProgram",
   mixerGchordPattern: "rj.mixerGchordPattern",
   metronomeEnabled: "rj.metronomeEnabled",
+  highQualityAudio: "rj.highQualityAudio",
 };
 
 // The raw Storage object, or null when it can't be reached. Callers that hand
