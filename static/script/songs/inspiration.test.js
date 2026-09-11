@@ -715,6 +715,32 @@ test("the loop poll's repeat-seek forces a resume so the loop survives more than
   }
 });
 
+test("clicking the timeline to seek while paused moves the played bar immediately, not just on the next loop-poll tick", async () => {
+  const page = mountPage();
+  const { window } = page;
+  try {
+    const seeks = [];
+    await openLoopPanel(window, {
+      getCurrentTime: () => 0,
+      getDuration: () => 200,
+      seekTo: (t) => seeks.push(t),
+    });
+    // No fireState(PLAYING) here — the player stays paused, so the loop poll
+    // (the only other thing that normally drives these bars) never starts.
+
+    const track = document.getElementById("inspirationLoopTrack");
+    track.getBoundingClientRect = () => ({ left: 0, width: 200 });
+    track.dispatchEvent(new window.PointerEvent("pointerdown", { pointerId: 1, clientX: 100 })); // 50% of 200s
+
+    assert.deepEqual(seeks, [100]);
+    assert.equal(document.getElementById("inspirationLoopPlayed").style.width, "50%");
+    assert.equal(document.getElementById("inspirationOverviewPlayed").style.width, "50%");
+  } finally {
+    delete window.YT;
+    page.cleanup();
+  }
+});
+
 test("the share button copies the link ctx.shareUrl builds from the markers", () => {
   inDom(({ window }) => {
     const copied = [];

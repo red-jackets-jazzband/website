@@ -763,7 +763,10 @@ export function createInspiration(ctx) {
       // played at all — the markers can be dragged into a region the
       // player hasn't buffered yet — so this seek must be allowed to
       // request a new stream rather than silently no-op.
-      if (t < span.a || t >= span.b) player.seekTo(span.a, true);
+      if (t < span.a || t >= span.b) {
+        player.seekTo(span.a, true);
+        updatePlayhead(span.a);
+      }
     }
   }
 
@@ -805,7 +808,13 @@ export function createInspiration(ctx) {
         return;
       }
       if (!player || !playerReady || viewEnd <= viewStart) return;
-      player.seekTo(viewFractionToTime(trackFraction(track, e), viewStart, viewEnd), true);
+      const t = viewFractionToTime(trackFraction(track, e), viewStart, viewEnd);
+      player.seekTo(t, true);
+      // The loop poll (which normally drives the played-bar position) only
+      // runs while playing, so a seek made while paused would otherwise
+      // leave the bar showing the old position until playback resumes —
+      // reflect the new position immediately instead of waiting for that.
+      updatePlayhead(t);
     });
     track.addEventListener("pointermove", (e) => {
       if (!loopDragging) return;
