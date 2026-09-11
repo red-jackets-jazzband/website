@@ -99,6 +99,16 @@ test("buildVoiceBody rests through pickup/intro bars then consumes patterns", ()
   assert.equal(out.trim(), "x8 | P1 | P2 |");
 });
 
+test("buildVoiceBody keeps the repeat colon on a thick-thin repeat-start barline", () => {
+  // "I've got a woman": the tune opens straight into a repeated section, so
+  // the very first barline is "[|:" (thick-thin bar + repeat start) rather
+  // than a plain "|:". Losing the colon here silently drops the repeat from
+  // the comping voice, desyncing it from the melody on the second pass.
+  const melody = '"C" c4 c4 [|: "F" e8 :| "C" c8 |]';
+  const out = buildVoiceBody(melody, ["A1", "A2", "A3"], 0);
+  assert.equal(out.trim(), "A1 [|: A2 :| A3 |]");
+});
+
 test("buildVoiceBody fills a whole rest when patterns run out", () => {
   const melody = "c4 c4 | d4 d4 |1 e8 :|2 f8 |]";
   const out = buildVoiceBody(melody, ["X1", "X2"], 0, "x8");

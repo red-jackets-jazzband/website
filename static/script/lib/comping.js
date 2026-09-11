@@ -529,8 +529,8 @@ function stripNonMusicLines(body) {
     .join("\n");
 }
 
-// Barline tokens, longest match first so "|1", ":|2", "[2" stay intact.
-const BARLINE = /:\|:|:\|\d+|\|\|:?|::|\|:|:\||\[\||\|\]|\|\d+|\[\d+(?:[-,]\d+)*|\|/g;
+// Barline tokens, longest match first so "|1", ":|2", "[|:", "[2" stay intact.
+const BARLINE = /:\|:|:\|\d+|\|\|:?|::|\|:|:\||\[\|:|\[\||\|\]|\|\d+|\[\d+(?:[-,]\d+)*|\|/g;
 
 /*
    Walk a melody body's barlines and, for every segment that carries notes,
