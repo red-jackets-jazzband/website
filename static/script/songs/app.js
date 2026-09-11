@@ -50,6 +50,7 @@ function createApp() {
       currentSongFile: null,
       currentSetlistSongIndex: null,
       currentLibraryIndex: null,
+      currentLibrarySongName: undefined, // name of the row currentLibraryIndex was set from, to tell apart duplicate aliases sharing a file
       currentSongText: undefined, // clef-adjusted ABC currently on the sheet
       compingActive: false,
       tempoOverrideBpm: null,

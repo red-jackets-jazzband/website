@@ -205,6 +205,49 @@ test("stepLibrarySong advances past a song file that appears twice in the index"
   }
 });
 
+test("ArrowDown after picking a search result then clearing search roves from that occurrence", () => {
+  // Regression test: clicking a search result clears the search, which
+  // re-renders the full grouped list at completely different row positions.
+  // The remembered index from the filtered list is stale there, and a
+  // file-only fallback isn't enough to recover it when — as here — two
+  // aliases share the same file: it must resolve to the occurrence actually
+  // picked ("It ain't my fault"), not the file's first occurrence
+  // ("Ain't my fault").
+  const FAULT_FILE = "aint_my_fault.abc";
+  const DUPES = [
+    { name: "Ain't my fault", file: FAULT_FILE },
+    { name: "All of Me", file: "all_of_me.abc" },
+    { name: "Basin Street Blues", file: "basin_street.abc" },
+    { name: "It ain't my fault", file: FAULT_FILE },
+    { name: "Java Jive", file: "java_jive.abc" },
+  ];
+  const { tab, ctx, opened, cleanup } = setup({ state: { allSongs: DUPES, activeTab: "library" } });
+  try {
+    tab.init();
+    const search = document.getElementById("songSearch");
+    search.value = "fault";
+    search.dispatchEvent(new window.Event("input"));
+    const results = [...document.querySelectorAll(SONG_ROW_SELECTOR)];
+    assert.deepEqual(results.map((r) => r.textContent), ["Ain't my fault", "It ain't my fault"]);
+
+    results[1].dispatchEvent(new window.Event("click", { cancelable: true, bubbles: true }));
+    assert.equal(opened.at(-1).name, "It ain't my fault");
+    ctx.state.currentSongFile = FAULT_FILE;
+    // The full grouped list is back, in a different order than the search
+    // results: Ain't my fault, All of Me, Basin Street Blues, It ain't my
+    // fault, Java Jive.
+    assert.equal(search.value, "");
+
+    search.dispatchEvent(new window.KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }));
+    assert.equal(
+      document.querySelector("a.song-list-item.kbd-active").textContent,
+      "Java Jive",
+    );
+  } finally {
+    cleanup();
+  }
+});
+
 test("'/' focuses the search box unless already typing", () => {
   const { tab, cleanup } = setup();
   try {

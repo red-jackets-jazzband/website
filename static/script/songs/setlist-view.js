@@ -492,7 +492,7 @@ export function createSetlistView(ctx) {
   // (initArrowNav) can tell a clamped edge apart from a real step.
   function stepSong(dir) {
     const songs = ctx.state.currentOpenSongs;
-    if (ctx.state.setlistsView !== "open" || !songs || !songs.length) return false;
+    if (ctx.state.setlistsView !== "open" || !songs?.length) return false;
     const songIndexes = [];
     songs.forEach((item, i) => {
       if (!isSetlistDivider(item)) songIndexes.push(i);

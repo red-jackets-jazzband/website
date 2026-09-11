@@ -49,15 +49,29 @@ function handleEnter(searchInput, rows) {
 
 // The row for the currently-open song, preferring the remembered index (a
 // song can appear more than once in the index, so matching by file alone
-// would always land on its first occurrence) but falling back to a file
-// lookup when the list has moved on since (e.g. a re-filter).
+// would always land on its first occurrence) but falling back to a file+name
+// lookup when the list has moved on since (e.g. clearing a search re-renders
+// the filtered list into the full grouped one, at completely different
+// positions — the stored index from before then points at an unrelated row),
+// and finally to a plain file lookup when the remembered name doesn't match
+// anything either — currentSongFile can change through paths that don't
+// update currentLibrarySongName (a deep link, a setlist song, swipe-nav), so
+// a stale name must never make this resolve to nothing.
 function currentSongRowIndex(rows, ctx) {
   if (!ctx.state.currentSongFile) return -1;
   const stored = ctx.state.currentLibraryIndex;
-  if (stored !== null && rows[stored] && rows[stored].dataset.songFile === ctx.state.currentSongFile) {
+  const storedName = ctx.state.currentLibrarySongName;
+  const matchesFile = (row) => row.dataset.songFile === ctx.state.currentSongFile;
+  const matchesIdentity = (row) => matchesFile(row) && row.dataset.songName === storedName;
+  if (stored !== null && rows[stored] && matchesFile(rows[stored])
+    && (storedName === undefined || rows[stored].dataset.songName === storedName)) {
     return stored;
   }
-  return rows.findIndex((r) => r.dataset.songFile === ctx.state.currentSongFile);
+  if (storedName !== undefined) {
+    const byIdentity = rows.findIndex(matchesIdentity);
+    if (byIdentity >= 0) return byIdentity;
+  }
+  return rows.findIndex(matchesFile);
 }
 
 function moveHighlight(rows, delta, fromEnd, ctx) {
@@ -96,7 +110,7 @@ export function createLibraryTab(ctx) {
       class: "song-list-item",
       href: `#s=${slug}`,
       text: song.name,
-      dataset: { songFile: song.file },
+      dataset: { songFile: song.file, songName: song.name },
       on: {
         click(e) {
           e.preventDefault();
@@ -104,6 +118,7 @@ export function createLibraryTab(ctx) {
           // can appear more than once in the index, so matching by file would
           // always resolve to its first occurrence.
           ctx.state.currentLibraryIndex = libraryRows().indexOf(e.currentTarget);
+          ctx.state.currentLibrarySongName = song.name;
           ctx.openLibrarySong(song);
           clearSearchIfActive();
         },
@@ -166,6 +181,7 @@ export function createLibraryTab(ctx) {
     const next = current + dir;
     if (next < 0 || next >= rows.length) return;
     ctx.state.currentLibraryIndex = next;
+    ctx.state.currentLibrarySongName = rows[next].dataset.songName;
     rows[next].click();
     // On the narrow layout the sidebar (and this row with it) is display:none
     // once a sheet is open — scrollIntoView on an element with no box makes
