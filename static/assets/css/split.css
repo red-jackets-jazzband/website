@@ -119,8 +119,18 @@ a:hover {
     opacity: 1;
   }
 }
+/*
+  Every page's <body> carries .page-template-page-fullsingle-split (see
+  baseof.html), which paints var(--rj-ground) — but the CSS canvas
+  background comes from <html> whenever it sets its own background-color,
+  not from <body>. On mobile, where the split layout's height is content-
+  driven instead of a fixed 100vh, any page/tab whose content is shorter
+  than the viewport (e.g. the Setlists tab with few setlists) left this
+  #EEEEEE showing below the content as a near-white band. Match it to the
+  dark ground so a short page reads as more dark background, not white.
+*/
 html {
-  background-color: #EEEEEE;
+  background-color: var(--rj-ground);
 }
 
 body.page-template-page-fullsingle-split {
