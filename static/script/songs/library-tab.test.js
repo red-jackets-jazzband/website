@@ -134,6 +134,29 @@ test("ArrowDown roves a highlight through the results; Enter opens it", () => {
   }
 });
 
+test("ArrowDown after clicking a row roves from that row, not from the top", () => {
+  const { tab, ctx, cleanup } = setup();
+  try {
+    tab.init();
+    tab.render("");
+    const rows = [...document.querySelectorAll(SONG_ROW_SELECTOR)];
+    // Click "Bill Bailey" (index 2) directly, as a mouse user would — no
+    // kbd-active highlight gets set by a click.
+    rows[2].dispatchEvent(new window.Event("click", { cancelable: true, bubbles: true }));
+    ctx.state.currentSongFile = "bill_bailey.abc";
+
+    document.getElementById("songSearch").dispatchEvent(
+      new window.KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }),
+    );
+    assert.equal(
+      document.querySelector("a.song-list-item.kbd-active").textContent,
+      "Corrine Corrina",
+    );
+  } finally {
+    cleanup();
+  }
+});
+
 test("Enter opens the sole search result and clears the query", () => {
   const { tab, opened, cleanup } = setup();
   try {
