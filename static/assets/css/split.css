@@ -1324,6 +1324,7 @@ video.video {
   background: #232323;
   cursor: pointer;
   touch-action: none;
+  -webkit-tap-highlight-color: transparent;
 }
 /* Same gold-ring-instead-of-outline treatment as .setlist-drag-handle
    elsewhere in this file — a keyboard-focused control needs a visible ring
@@ -1382,6 +1383,7 @@ video.video {
   border: 1px solid var(--rj-gold);
   border-radius: 2px;
   cursor: grab;
+  -webkit-tap-highlight-color: transparent;
 }
 .inspiration-loop-overview-window:active {
   cursor: grabbing;
@@ -1394,6 +1396,7 @@ video.video {
   bottom: -3px;
   width: 10px;
   cursor: ew-resize;
+  -webkit-tap-highlight-color: transparent;
 }
 .inspiration-loop-overview-handle--start {
   left: -5px;
@@ -1426,6 +1429,12 @@ video.video {
   background: #2b2b2b;
   cursor: pointer;
   touch-action: none;
+  /* Without this, tapping to seek flashes the browser's default blue
+     tap-highlight overlay over the whole bar before it fades — jarring
+     against a gold-accented dark panel that never uses blue anywhere
+     else. The click still gets its own feedback from the played bar and
+     handles moving. */
+  -webkit-tap-highlight-color: transparent;
 }
 .inspiration-loop-range {
   position: absolute;
@@ -1470,6 +1479,7 @@ video.video {
   background: none;
   cursor: ew-resize;
   touch-action: none;
+  -webkit-tap-highlight-color: transparent;
 }
 .inspiration-loop-handle::before {
   content: "";
