@@ -236,7 +236,7 @@ Retrieved from www.redjackets.nl - <span id="instrumentText"></span>
   <div class="inspiration-loop" id="inspirationLoopBar" hidden>
     <div class="inspiration-loop-overview-row">
       <button type="button" class="inspiration-loop-overview-zoom-btn" id="inspirationZoomOut" aria-label="Zoom out" disabled><span class="fa-solid fa-magnifying-glass-minus" aria-hidden="true"></span></button>
-      <div class="inspiration-loop-overview" id="inspirationLoopOverview" title="Drag to pan, or drag an edge to zoom">
+      <div class="inspiration-loop-overview" id="inspirationLoopOverview" title="Drag to pan, or drag an edge to zoom" tabindex="0" role="group" aria-label="Timeline overview: Left and Right arrow keys pan, Up and Down arrow keys zoom, Home and End jump to the start or end">
         <div class="inspiration-loop-overview-tick" id="inspirationOverviewTickA" hidden></div>
         <div class="inspiration-loop-overview-tick" id="inspirationOverviewTickB" hidden></div>
         <div class="inspiration-loop-overview-window" id="inspirationOverviewWindow">
