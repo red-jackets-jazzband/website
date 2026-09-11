@@ -3190,6 +3190,64 @@ body:has(#rjLibrary) .split-bio {
   }
 }
 
+/*
+  Tablet portrait widths (below the 1024px stack breakpoint above) have room
+  for every #sheetmenu control except the instrument dropdown to share a
+  single row — the per-group centered lines the 1024px block above builds
+  (Key+Tempo, then Play+Inspiration, then a third line for
+  Print/iRealPro/advanced-toggle) are phone-width-only. Unwind them back to
+  #sheetmenu's own plain single-row flex flow — the same one desktop uses —
+  so the instrument keeps its own full-width line but everything else packs
+  onto the line below it.
+
+  That single row needs ~750px of #sheetmenu width to actually fit without
+  spilling a control onto a third line, and the theme's own generic
+  split-layout rules (`.fs-split`'s 30%/70% image/content split above 800px,
+  `.split-content-vertically-center`'s 800px max-width at every size) don't
+  hand it that: between 800px and this page's own 1024px stack breakpoint
+  the sidebar image is still eating 30% of the viewport (the theme only
+  stacks it full-width below 800px), and the 800px content cap eats the
+  rest even once stacked. Most current tablets (iPad 810-834px portrait and
+  up) sit in exactly that squeeze. Mirror the theme's own sub-800px stacked
+  treatment up to 1024px here, and drop the prose-column max-width, scoped
+  to the songs page only (`body:has(#rjLibrary)`) — this page is a control
+  panel, not a bio page, so it doesn't need that reading-width cap, and no
+  other split-layout page is affected.
+*/
+@media (min-width: 700px) and (max-width: 1024px) {
+  #sheetmenu {
+    justify-content: flex-start;
+    /* Tightened from the base 10px so the row still fits the narrowest
+       common tablet (iPad Mini, 744px portrait) without spilling a control
+       onto a third line. */
+    gap: 8px;
+  }
+  .sheet-adjust {
+    display: contents;
+  }
+  #keyStepper,
+  #tempoStepper {
+    width: auto;
+  }
+  .sheet-stepper-value {
+    flex: none;
+  }
+  body:has(#rjLibrary) .fs-split {
+    flex-wrap: wrap;
+  }
+  body:has(#rjLibrary) .fs-split .split-image {
+    width: 100%;
+    height: 80vh;
+  }
+  body:has(#rjLibrary) .fs-split .split-content {
+    width: 100%;
+  }
+  body:has(#rjLibrary) .split-content-vertically-center {
+    max-width: none;
+    padding: 40px;
+  }
+}
+
 .chordCell {
   border-width: 1px;
   border-style: solid;
