@@ -6,6 +6,7 @@ import {
   simplifyBlues,
   simplifySong,
   computeChordOffset,
+  BREAK_CHORD,
 } from "./chords.js";
 
 function measure(text) {
@@ -167,6 +168,62 @@ test("parseChordScheme keeps every measure, endings included, with includeAltern
   // second ending — see happy_feet_blues' part C outro.
   const chords = parseChordScheme(voltaSong(), { includeAlternateEndings: true });
   assert.deepEqual(chords.map((m) => m.text), [["C"], ["F"], ["G"], ["C2"]]);
+});
+
+test("parseChordScheme normalizes abcjs's break synonyms to a single N.C. marker", () => {
+  // "N.C." (any of abcjs's own breakSynonyms — break, (break), no chord,
+  // n.c., tacet — case-insensitively) must not be treated as a real chord:
+  // it's not a valid chord name, but it's not silently dropped either, or
+  // the bar would fall back to holding the previous chord over the silence.
+  const song = {
+    lines: [
+      {
+        staff: [
+          {
+            voices: [
+              [
+                { el_type: "note", chord: [{ name: "F7" }] },
+                { el_type: "note" },
+                { el_type: "bar", type: "bar_thin" },
+                { el_type: "note", chord: [{ name: "N.C.", position: "above" }] },
+                { el_type: "note" },
+                { el_type: "bar", type: "bar_thin" },
+                { el_type: "note", chord: [{ name: "Tacet" }] },
+                { el_type: "note" },
+                { el_type: "bar", type: "bar_thin" },
+              ],
+            ],
+          },
+        ],
+      },
+    ],
+  };
+  const chords = parseChordScheme(song);
+  assert.deepEqual(chords.map((m) => m.text), [["F7"], [BREAK_CHORD], [BREAK_CHORD]]);
+});
+
+test("parseChordScheme keeps a break and a real chord as separate entries within one measure", () => {
+  const song = {
+    lines: [
+      {
+        staff: [
+          {
+            voices: [
+              [
+                { el_type: "note", chord: [{ name: "F7" }] },
+                { el_type: "note" },
+                { el_type: "note", chord: [{ name: "N.C.", position: "above" }] },
+                { el_type: "note" },
+                { el_type: "bar", type: "bar_thin" },
+              ],
+            ],
+          },
+        ],
+      },
+    ],
+  };
+  const chords = parseChordScheme(song);
+  assert.deepEqual(chords[0].text, ["F7", BREAK_CHORD]);
 });
 
 test("parseChordScheme returns an empty list when no valid chords were found", () => {

@@ -11,6 +11,7 @@ import {
   buildCompingTune,
   measureBarSlots,
 } from "./comping.js";
+import { BREAK_CHORD } from "./chords.js";
 import { tonalStub as TonalStub, withTonal, nameToMidi } from "../../../tests/helpers/stubs.js";
 import { injectMixerAudio } from "./audio-mix.js";
 
@@ -795,4 +796,48 @@ test("buildCompingTune scales pattern durations to a L:1/4 tune", () => {
   // whole_note bar 1 is "n8-" in eighths -> "n4-" at L:1/4
   const v2 = out.abc.split("\nV:2\n").pop();
   assert.match(v2, /4-/);
+});
+
+// ---------------------------------------------------------------------------
+// Break ("N.C.") chords rest the comping voice instead of holding over
+// ---------------------------------------------------------------------------
+
+test("buildCompingTune rests a whole break bar instead of holding the previous chord", () => {
+  const chords = [{ text: ["C"] }, { text: [BREAK_CHORD] }, { text: ["F"] }];
+  const tune = ["M:4/4", "L:1/8", "K:C", '"C" C8 | z8 | "F" F8 |'].join("\n");
+  const out = withTonal(() => buildCompingTune(tune, chords, fakeSong(), "whole_note"));
+  const v2 = out.abc.split("\nV:2\n").pop();
+  const bars = v2.split("|").map((b) => b.trim()).filter(Boolean);
+  assert.equal(bars.length, 3);
+  // the break bar is a plain rest, no chord bracket drawn
+  assert.equal(bars[1], "z8");
+  assert.doesNotMatch(bars[1], /\[/);
+  // only two chord onsets total: the break contributes none
+  assert.equal(out.palette.length, 2);
+});
+
+test("buildCompingTune rests a half bar when a break shares a measure with a real chord", () => {
+  const chords = [{ text: ["C", BREAK_CHORD] }];
+  const tune = ["M:4/4", "L:1/8", "K:C", '"C" C4 z4 |'].join("\n");
+  const out = withTonal(() => buildCompingTune(tune, chords, fakeSong(), "whole_note"));
+  const v2 = out.abc.split("\nV:2\n").pop().trim();
+  assert.match(v2, /^\[[A-Ga-g][A-Ga-g][A-Ga-g]\]4 z4/);
+  assert.equal(out.palette.length, 1);
+});
+
+test("buildCompingTune voice-leads the chord after a break from the chord before it, unaffected by the gap", () => {
+  const chords = [{ text: ["C"] }, { text: [BREAK_CHORD] }, { text: ["G"] }];
+  const tune = ["M:4/4", "L:1/8", "K:C", '"C" C8 | z8 | "G" G8 |'].join("\n");
+  const withBreak = withTonal(() => buildCompingTune(tune, chords, fakeSong(), "whole_note"));
+
+  const noBreakChords = [{ text: ["C"] }, { text: ["G"] }];
+  const noBreakTune = ["M:4/4", "L:1/8", "K:C", '"C" C8 | "G" G8 |'].join("\n");
+  const noBreak = withTonal(() => buildCompingTune(noBreakTune, noBreakChords, fakeSong(), "whole_note"));
+
+  // The chord after the break voice-leads from the one before it exactly as
+  // it would with no gap between them at all — the break bar doesn't perturb
+  // the running voice-leading reference.
+  const withBreakMidis = compingChordMidis(withBreak.abc);
+  const noBreakMidis = compingChordMidis(noBreak.abc);
+  assert.deepEqual(withBreakMidis[1], noBreakMidis[1]);
 });

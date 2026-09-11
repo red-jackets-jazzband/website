@@ -10,6 +10,21 @@ function isValidChordName(name) {
   return VALID_CHORD_BASE.test(name.slice(0, slash)) && VALID_CHORD_BASS.test(name.slice(slash + 1));
 }
 
+// Synonyms abcjs's own bundled accompaniment engine (breakSynonyms, in the
+// midi player) recognizes as "no chord" — silencing the auto-generated
+// Bass/Chords accompaniment for that bar — when written with a position
+// prefix ("^N.C.") so abcjs doesn't parse it as a literal (and unparseable)
+// chord name. Matched here the same way, case-insensitively, so the chord
+// table and comping generator agree with abcjs on what counts as a break.
+const BREAK_CHORD_NAMES = new Set(["break", "(break)", "no chord", "n.c.", "tacet"]);
+
+// The single display form every break synonym above normalizes to.
+export const BREAK_CHORD = "N.C.";
+
+function isBreakChordName(name) {
+  return BREAK_CHORD_NAMES.has(name.toLowerCase());
+}
+
 // Replaces the sharp and flat signs with the official unicode chars.
 export function replaceAccidentalWithUtf8Char(note) {
   return note.replace("b ", "♭").replace("#", "♯").replace("dim", "Ø");
@@ -87,10 +102,15 @@ export function parseChordScheme(song, { includeAlternateEndings = false } = {})
           }
         }
 
-        if (!(inAlternativeEnding && !includeAlternateEndings)) {
-          if (element.chord !== undefined && isValidChordName(element.chord[0].name)) {
-            const chord = replaceAccidentalWithUtf8Char(element.chord[0].name);
+        if (!(inAlternativeEnding && !includeAlternateEndings) && element.chord !== undefined) {
+          const rawName = element.chord[0].name;
+          if (isValidChordName(rawName)) {
+            const chord = replaceAccidentalWithUtf8Char(rawName);
             currentMeasure.text.push(chord);
+            didNotParseChordInThisMeasure = false;
+            parsedValidChord = true;
+          } else if (isBreakChordName(rawName)) {
+            currentMeasure.text.push(BREAK_CHORD);
             didNotParseChordInThisMeasure = false;
             parsedValidChord = true;
           }
