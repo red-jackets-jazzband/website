@@ -12,6 +12,7 @@ export const GM_VOICES = [
   { value: 24, label: "Acoustic Guitar (nylon)", group: "Guitars" },
   { value: 25, label: "Acoustic Guitar (steel)", group: "Guitars" },
   { value: 26, label: "Jazz Guitar", group: "Guitars" },
+  { value: 105, label: "Banjo", group: "Guitars" },
   { value: 32, label: "Acoustic Bass", group: "Bass" },
   { value: 33, label: "Electric Bass (finger)", group: "Bass" },
   { value: 34, label: "Electric Bass (pick)", group: "Bass" },
