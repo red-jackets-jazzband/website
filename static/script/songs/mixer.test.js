@@ -129,41 +129,60 @@ test("scrolling recomputes the panel's position so it stays glued under the butt
   }
 });
 
-test("dragging a fader updates its readout live, and re-renders only once settled", (t) => {
+function dragFaderDebounces(t, {
+  rangeId, readoutId, fillId, storageKey, value, getValue,
+}) {
   t.mock.timers.enable({ apis: ["setTimeout"] });
   const { ctx, rerenders, cleanup } = setup();
   try {
-    const range = document.getElementById("mixerBassRange");
-    range.value = "42";
+    const range = document.getElementById(rangeId);
+    range.value = String(value);
     range.dispatchEvent(new window.Event("input"));
 
-    assert.equal(ctx.state.mixer.bassVolume, 42);
-    assert.equal(document.getElementById("mixerBassReadout").textContent, "42%");
-    assert.equal(document.getElementById("mixerBassFill").style.width, "42%");
+    assert.equal(getValue(ctx), value);
+    assert.equal(document.getElementById(readoutId).textContent, `${value}%`);
+    assert.equal(document.getElementById(fillId).style.width, `${value}%`);
     assert.equal(rerenders.length, 0); // debounced, not yet applied
 
     t.mock.timers.tick(300);
     assert.equal(rerenders.length, 1);
-    assert.equal(window.localStorage.getItem("rj.mixerBassVolume"), "42");
+    assert.equal(window.localStorage.getItem(storageKey), String(value));
   } finally {
     window.localStorage.clear();
     cleanup();
   }
-});
+}
 
-test("releasing a fader (change) applies immediately without waiting for the debounce", () => {
+function releaseFaderAppliesImmediately({
+  rangeId, storageKey, value,
+}) {
   const { rerenders, cleanup } = setup();
   try {
-    const range = document.getElementById("mixerBassRange");
-    range.value = "10";
+    const range = document.getElementById(rangeId);
+    range.value = String(value);
     range.dispatchEvent(new window.Event("input"));
     range.dispatchEvent(new window.Event("change"));
     assert.equal(rerenders.length, 1);
-    assert.equal(window.localStorage.getItem("rj.mixerBassVolume"), "10");
+    assert.equal(window.localStorage.getItem(storageKey), String(value));
   } finally {
     window.localStorage.clear();
     cleanup();
   }
+}
+
+test("dragging a fader updates its readout live, and re-renders only once settled", (t) => {
+  dragFaderDebounces(t, {
+    rangeId: "mixerBassRange",
+    readoutId: "mixerBassReadout",
+    fillId: "mixerBassFill",
+    storageKey: "rj.mixerBassVolume",
+    value: 42,
+    getValue: (ctx) => ctx.state.mixer.bassVolume,
+  });
+});
+
+test("releasing a fader (change) applies immediately without waiting for the debounce", () => {
+  releaseFaderAppliesImmediately({ rangeId: "mixerBassRange", storageKey: "rj.mixerBassVolume", value: 10 });
 });
 
 test("the mute buttons flip state, update the button and re-render at once", () => {
@@ -385,40 +404,18 @@ test("init seeds the Swing range from ctx.state.swing and shows Off at 0", () =>
 });
 
 test("dragging the Swing fader updates its readout live, and re-renders only once settled", (t) => {
-  t.mock.timers.enable({ apis: ["setTimeout"] });
-  const { ctx, rerenders, cleanup } = setup();
-  try {
-    const range = document.getElementById("mixerSwingRange");
-    range.value = "40";
-    range.dispatchEvent(new window.Event("input"));
-
-    assert.equal(ctx.state.swing, 40);
-    assert.equal(document.getElementById("mixerSwingReadout").textContent, "40%");
-    assert.equal(document.getElementById("mixerSwingFill").style.width, "40%");
-    assert.equal(rerenders.length, 0); // debounced, not yet applied
-
-    t.mock.timers.tick(300);
-    assert.equal(rerenders.length, 1);
-    assert.equal(window.localStorage.getItem("rj.mixerSwing"), "40");
-  } finally {
-    window.localStorage.clear();
-    cleanup();
-  }
+  dragFaderDebounces(t, {
+    rangeId: "mixerSwingRange",
+    readoutId: "mixerSwingReadout",
+    fillId: "mixerSwingFill",
+    storageKey: "rj.mixerSwing",
+    value: 40,
+    getValue: (ctx) => ctx.state.swing,
+  });
 });
 
 test("releasing the Swing fader (change) applies immediately without waiting for the debounce", () => {
-  const { rerenders, cleanup } = setup();
-  try {
-    const range = document.getElementById("mixerSwingRange");
-    range.value = "60";
-    range.dispatchEvent(new window.Event("input"));
-    range.dispatchEvent(new window.Event("change"));
-    assert.equal(rerenders.length, 1);
-    assert.equal(window.localStorage.getItem("rj.mixerSwing"), "60");
-  } finally {
-    window.localStorage.clear();
-    cleanup();
-  }
+  releaseFaderAppliesImmediately({ rangeId: "mixerSwingRange", storageKey: "rj.mixerSwing", value: 60 });
 });
 
 test("loadSwingState defaults to 0 (off), reads back a persisted, clamped value", () => {
