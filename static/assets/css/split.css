@@ -1467,7 +1467,7 @@ video.video {
   padding: 6px 12px 9px;
 }
 /*
-  Play/Repeat, A/B/Clear, and the Speed stepper each get their own bordered
+  Play/Repeat, the Speed stepper, and A/B/Clear each get their own bordered
   shell — same visual language the sheet header uses (.sheet-transport /
   .sheet-stepper in the "Key/Tempo steppers" section above) rather than a
   bespoke look, so the two playback surfaces (the printed sheet's transport,
@@ -1477,7 +1477,7 @@ video.video {
   Scaled down from the sheet's 44px controls to this panel's existing 26px
   scale (it's a floating video overlay as narrow as 240px, not a full-width
   toolbar) rather than copied at 1:1 size. Three separate groups (transport,
-  markers, speed) rather than one long bar of five+ buttons is what lets
+  speed, markers) rather than one long bar of five+ buttons is what lets
   them wrap as independent units and keeps Speed on the same line as the
   rest at the panel's default width — zoom moved to the overview strip
   above (see .inspiration-loop-overview-row) is what freed the room for

@@ -259,12 +259,6 @@ Retrieved from www.redjackets.nl - <span id="instrumentText"></span>
         <button type="button" class="inspiration-loop-btn" id="inspirationPlayToggle" title="Play/pause" aria-label="Play"><span class="fa-solid fa-play" aria-hidden="true"></span></button>
         <button type="button" class="inspiration-loop-btn" id="inspirationLoopToggle" title="Loop between A and B" aria-label="Loop between A and B" aria-pressed="false"><span class="fa-solid fa-repeat" aria-hidden="true"></span></button>
       </div>
-      <div class="inspiration-loop-btn-group">
-        <button type="button" class="inspiration-loop-btn" id="inspirationSetA" title="Set loop start (A) at the current point" aria-label="Set loop start">A</button>
-        <button type="button" class="inspiration-loop-btn" id="inspirationSetB" title="Set loop end (B) at the current point" aria-label="Set loop end">B</button>
-        <button type="button" class="inspiration-loop-btn" id="inspirationLoopClear" title="Clear A and B" aria-label="Clear loop markers"><span class="fa-solid fa-xmark" aria-hidden="true"></span></button>
-      </div>
-      <span class="inspiration-loop-readout" id="inspirationLoopReadout" hidden></span>
       <div class="inspiration-loop-stepper" id="inspirationLoopSpeed" title="Playback speed">
         <button type="button" class="inspiration-loop-stepper-btn" id="inspirationSpeedDown" aria-label="Slower">&minus;</button>
         <div class="inspiration-loop-stepper-value">
@@ -273,6 +267,12 @@ Retrieved from www.redjackets.nl - <span id="instrumentText"></span>
         </div>
         <button type="button" class="inspiration-loop-stepper-btn" id="inspirationSpeedUp" aria-label="Faster">&plus;</button>
       </div>
+      <div class="inspiration-loop-btn-group">
+        <button type="button" class="inspiration-loop-btn" id="inspirationSetA" title="Set loop start (A) at the current point" aria-label="Set loop start">A</button>
+        <button type="button" class="inspiration-loop-btn" id="inspirationSetB" title="Set loop end (B) at the current point" aria-label="Set loop end">B</button>
+        <button type="button" class="inspiration-loop-btn" id="inspirationLoopClear" title="Clear A and B" aria-label="Clear loop markers"><span class="fa-solid fa-xmark" aria-hidden="true"></span></button>
+      </div>
+      <span class="inspiration-loop-readout" id="inspirationLoopReadout" hidden></span>
     </div>
   </div>
 </div>
