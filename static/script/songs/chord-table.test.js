@@ -36,10 +36,10 @@ test("renderChordTable shows a break (\"N.C.\") marker as plain text, alone or a
   });
 });
 
-test("renderChordTable switches to 8 columns past 16 measures when 8 columns leaves the fuller trailing row", () => {
+test("renderChordTable switches to 8 columns past 24 measures", () => {
   inDom((container) => {
-    // 32 bars divides evenly into 8 columns (and into 4), so ties favour 8.
-    renderChordTable(Array.from({ length: 32 }, (_, i) => bar([`C${i}`])), container);
+    // 42 bars, e.g. The Bare Necessities.
+    renderChordTable(Array.from({ length: 42 }, (_, i) => bar([`C${i}`])), container);
     assert.equal(
       container.querySelector(".chordGrid").style.getPropertyValue("--chord-cols"),
       "8",
@@ -47,7 +47,17 @@ test("renderChordTable switches to 8 columns past 16 measures when 8 columns lea
   });
 });
 
-test("renderChordTable keeps 4 columns for an odd length that would leave a near-empty 8-column row (e.g. Sister Kate's 18 bars)", () => {
+test("renderChordTable uses 8 columns at exactly 24 measures", () => {
+  inDom((container) => {
+    renderChordTable(Array.from({ length: 24 }, (_, i) => bar([`C${i}`])), container);
+    assert.equal(
+      container.querySelector(".chordGrid").style.getPropertyValue("--chord-cols"),
+      "8",
+    );
+  });
+});
+
+test("renderChordTable keeps 4 columns below 24 measures (e.g. Sister Kate's 18 bars)", () => {
   inDom((container) => {
     renderChordTable(Array.from({ length: 18 }, (_, i) => bar([`C${i}`])), container);
     assert.equal(
