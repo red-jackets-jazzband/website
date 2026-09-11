@@ -8,7 +8,7 @@ const FIXTURE = fileURLToPath(new URL("../fixtures/songs-page.html", import.meta
 // onto globalThis for the lifetime of a test, then removed by cleanup().
 const EXPOSED = [
   "window", "document", "navigator", "location",
-  "HTMLElement", "SVGElement", "Node", "Event", "CustomEvent",
+  "HTMLElement", "HTMLAnchorElement", "SVGElement", "Node", "Event", "CustomEvent",
   "getComputedStyle", "requestAnimationFrame", "cancelAnimationFrame",
   "Blob", "FileReader", "URL", "localStorage",
 ];

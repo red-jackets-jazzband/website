@@ -86,6 +86,7 @@ aliases: ["/setlists/", "/songbook/"]
 
   <div class="sheet-actions" id="sheetActions">
     <a id="printLink" class="sheet-icon-btn" href="#" title="Print this page" aria-label="Print this page"><span class="fa-solid fa-print" aria-hidden="true"></span></a>
+    <button id="exportWavBtn" class="sheet-icon-btn" type="button" disabled title="Export as WAV" aria-label="Export as WAV"><span class="fa-solid fa-file-audio" aria-hidden="true"></span></button>
   </div>
   <span class="audio-loading" id="audioLoadingLabel">...</span>
   <!-- Keep the next two on the same HTML block (no blank lines): a lone <button>
