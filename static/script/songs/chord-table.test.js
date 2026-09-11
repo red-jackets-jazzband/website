@@ -36,12 +36,23 @@ test("renderChordTable shows a break (\"N.C.\") marker as plain text, alone or a
   });
 });
 
-test("renderChordTable switches to 8 columns past 16 measures", () => {
+test("renderChordTable switches to 8 columns past 16 measures when 8 columns leaves the fuller trailing row", () => {
   inDom((container) => {
-    renderChordTable(Array.from({ length: 17 }, (_, i) => bar([`C${i}`])), container);
+    // 32 bars divides evenly into 8 columns (and into 4), so ties favour 8.
+    renderChordTable(Array.from({ length: 32 }, (_, i) => bar([`C${i}`])), container);
     assert.equal(
       container.querySelector(".chordGrid").style.getPropertyValue("--chord-cols"),
       "8",
+    );
+  });
+});
+
+test("renderChordTable keeps 4 columns for an odd length that would leave a near-empty 8-column row (e.g. Sister Kate's 18 bars)", () => {
+  inDom((container) => {
+    renderChordTable(Array.from({ length: 18 }, (_, i) => bar([`C${i}`])), container);
+    assert.equal(
+      container.querySelector(".chordGrid").style.getPropertyValue("--chord-cols"),
+      "4",
     );
   });
 });
