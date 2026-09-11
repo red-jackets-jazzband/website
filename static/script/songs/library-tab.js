@@ -47,8 +47,24 @@ function handleEnter(searchInput, rows) {
   return true;
 }
 
-function moveHighlight(rows, delta, fromEnd) {
-  const current = rows.findIndex((r) => r.classList.contains("kbd-active"));
+// The row for the currently-open song, preferring the remembered index (a
+// song can appear more than once in the index, so matching by file alone
+// would always land on its first occurrence) but falling back to a file
+// lookup when the list has moved on since (e.g. a re-filter).
+function currentSongRowIndex(rows, ctx) {
+  if (!ctx.state.currentSongFile) return -1;
+  const stored = ctx.state.currentLibraryIndex;
+  if (stored !== null && rows[stored] && rows[stored].dataset.songFile === ctx.state.currentSongFile) {
+    return stored;
+  }
+  return rows.findIndex((r) => r.dataset.songFile === ctx.state.currentSongFile);
+}
+
+function moveHighlight(rows, delta, fromEnd, ctx) {
+  let current = rows.findIndex((r) => r.classList.contains("kbd-active"));
+  // No highlight yet (e.g. the last action was a mouse click, not an arrow
+  // key) — start from the currently-open song instead of snapping to an end.
+  if (current < 0) current = currentSongRowIndex(rows, ctx);
   let next;
   if (current < 0) next = fromEnd ? rows.length - 1 : 0;
   else next = Math.min(Math.max(current + delta, 0), rows.length - 1);
@@ -145,11 +161,7 @@ export function createLibraryTab(ctx) {
     if (!ctx.state.currentSongFile) return;
     const rows = libraryRows();
     if (!rows.length) return;
-    const stored = ctx.state.currentLibraryIndex;
-    const current = (stored !== null && rows[stored]
-      && rows[stored].dataset.songFile === ctx.state.currentSongFile)
-      ? stored
-      : rows.findIndex((r) => r.dataset.songFile === ctx.state.currentSongFile);
+    const current = currentSongRowIndex(rows, ctx);
     if (current < 0) return;
     const next = current + dir;
     if (next < 0 || next >= rows.length) return;
@@ -178,7 +190,7 @@ export function createLibraryTab(ctx) {
         return;
       }
       e.preventDefault();
-      moveHighlight(rows, e.key === "ArrowDown" ? 1 : -1, e.key === "ArrowUp");
+      moveHighlight(rows, e.key === "ArrowDown" ? 1 : -1, e.key === "ArrowUp", ctx);
     });
   }
 
