@@ -513,7 +513,7 @@ export function createInspiration(ctx) {
     const zoomOut = byId("inspirationZoomOut");
     const zoomIn = byId("inspirationZoomIn");
     if (zoomOut) zoomOut.disabled = !hasVideo || zoomLevel === ZOOM_LEVELS[0];
-    if (zoomIn) zoomIn.disabled = !hasVideo || zoomLevel === ZOOM_LEVELS[ZOOM_LEVELS.length - 1];
+    if (zoomIn) zoomIn.disabled = !hasVideo || zoomLevel === ZOOM_LEVELS.at(-1);
   }
 
   /*
@@ -787,7 +787,7 @@ export function createInspiration(ctx) {
     overview.addEventListener("pointerdown", (e) => {
       const dur = playerDuration();
       if (dur <= 0) return;
-      const handle = e.target.closest && e.target.closest(".inspiration-loop-overview-handle");
+      const handle = e.target.closest?.(".inspiration-loop-overview-handle");
       if (handle) {
         overviewDragging = handle.id === "inspirationOverviewHandleEnd" ? "end" : "start";
         overview.setPointerCapture(e.pointerId);

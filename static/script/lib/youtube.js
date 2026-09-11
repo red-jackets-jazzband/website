@@ -50,9 +50,7 @@ export function youtubeEmbedUrl(url, options) {
   const params = ["rel=0"];
   if (opts.autoplay) params.push("autoplay=1");
   if (opts.jsApi) {
-    params.push("enablejsapi=1");
-    params.push("playsinline=1");
-    params.push("controls=0");
+    params.push("enablejsapi=1", "playsinline=1", "controls=0");
     if (opts.origin) params.push("origin=" + encodeURIComponent(opts.origin));
   }
   return "https://www.youtube-nocookie.com/embed/" + id + "?" + params.join("&");
