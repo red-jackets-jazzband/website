@@ -1325,6 +1325,13 @@ video.video {
   cursor: pointer;
   touch-action: none;
 }
+/* Same gold-ring-instead-of-outline treatment as .setlist-drag-handle
+   elsewhere in this file — a keyboard-focused control needs a visible ring
+   of its own, not the browser default against this dark background. */
+.inspiration-loop-overview:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--rj-gold);
+}
 .inspiration-loop-overview-zoom-btn {
   flex: none;
   width: 18px;

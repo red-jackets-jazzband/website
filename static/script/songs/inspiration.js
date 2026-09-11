@@ -18,6 +18,11 @@ const EDGE_MARGIN = 8; // px — how close to a window edge the panel may be dra
 const EDGE_PAN_THRESHOLD = 0.04;
 const EDGE_PAN_STEP = 0.2;
 
+// How far an ArrowLeft/ArrowRight keypress pans the overview strip's window,
+// as a fraction of its own current width — same shape as EDGE_PAN_STEP, just
+// keyboard- rather than drag-triggered (see initOverview's keydown handler).
+const OVERVIEW_KEY_PAN_FRACTION = 0.1;
+
 // The panel (and the video with it — everything below the header is
 // width-driven) can be resized by dragging its left edge, or stepped through
 // these presets with the size button. MIN_PANEL_WIDTH floors both; the ceiling
@@ -626,6 +631,38 @@ export function createInspiration(ctx) {
     viewEnd = win.end;
   }
 
+  // Keyboard equivalent of dragging the overview window's body: pans by a
+  // fixed fraction of the window's own (unchanged) width, using the same
+  // pure panZoomWindow the edge-of-drag auto-scroll already relies on, so it
+  // stays perfectly smooth rather than snapping between zoom levels the way
+  // the edge-resize keys below deliberately do.
+  function panOverviewByKey(direction) {
+    const dur = playerDuration();
+    if (dur <= 0) return;
+    const win = panZoomWindow(viewStart, viewEnd, dur, direction, OVERVIEW_KEY_PAN_FRACTION);
+    viewStart = win.start;
+    viewEnd = win.end;
+    updateLoopUI();
+  }
+
+  // Keyboard equivalent of "click the overview background to jump there":
+  // moves the window (same width) flush against the clip's start or end,
+  // the two endpoints a keyboard user can't otherwise name without a pointer
+  // coordinate — anywhere in between is still reachable by panning from one.
+  function jumpOverviewToEdge(edge) {
+    const dur = playerDuration();
+    if (dur <= 0) return;
+    const span = viewEnd - viewStart;
+    if (edge === "start") {
+      viewStart = 0;
+      viewEnd = Math.min(dur, span);
+    } else {
+      viewEnd = dur;
+      viewStart = Math.max(0, dur - span);
+    }
+    updateLoopUI();
+  }
+
   function updatePlayToggleUI() {
     const btn = byId("inspirationPlayToggle");
     if (!btn) return;
@@ -694,8 +731,12 @@ export function createInspiration(ctx) {
     updateLoopUI();
     if (loopEnabled && player && playerReady) {
       const t = player.getCurrentTime();
-      // Same allowSeekAhead=false reasoning as the loop poll's seek-back.
-      if (t < span.a || t >= span.b) player.seekTo(span.a, false);
+      // Unlike the loop poll's seek-back (which only ever seeks to an A
+      // that's already played, hence buffered), A here may never have
+      // played at all — the markers can be dragged into a region the
+      // player hasn't buffered yet — so this seek must be allowed to
+      // request a new stream rather than silently no-op.
+      if (t < span.a || t >= span.b) player.seekTo(span.a, true);
     }
   }
 
@@ -778,11 +819,37 @@ export function createInspiration(ctx) {
     same three interactions a video editor's overview/minimap gives you,
     rather than the zoom stepper being the only way to move around once
     zoomed in.
+
+    All three are pointer-only otherwise, so the strip itself is a single
+    tabindex="0" focus stop (content/songs.md) exposing the same three
+    actions from the keyboard: Left/Right pans (panOverviewByKey), Up/Down
+    zooms (the same changeZoom the +/- buttons already use, so keyboard and
+    button zoom always land on the same ZOOM_LEVELS step), Home/End jumps to
+    the clip's start/end (jumpOverviewToEdge) as the keyboard-reachable
+    equivalent of an arbitrary background-click target. The two edge
+    handles stay pointer-only decoration on top of that one focus stop
+    rather than becoming separate tab stops of their own — everything they
+    do is already reachable through it.
   */
   function initOverview() {
     const overview = byId("inspirationLoopOverview");
     const win = byId("inspirationOverviewWindow");
     if (!overview || !win) return;
+
+    const OVERVIEW_KEYDOWN_ACTIONS = {
+      ArrowLeft: () => panOverviewByKey(-1),
+      ArrowRight: () => panOverviewByKey(1),
+      ArrowUp: () => changeZoom(1),
+      ArrowDown: () => changeZoom(-1),
+      Home: () => jumpOverviewToEdge("start"),
+      End: () => jumpOverviewToEdge("end"),
+    };
+    overview.addEventListener("keydown", (e) => {
+      const action = OVERVIEW_KEYDOWN_ACTIONS[e.key];
+      if (!action) return;
+      e.preventDefault();
+      action();
+    });
 
     overview.addEventListener("pointerdown", (e) => {
       const dur = playerDuration();

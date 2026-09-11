@@ -500,6 +500,66 @@ test("clicking the overview strip's background jumps the window there", async ()
   }
 });
 
+test("Left/Right arrow keys on the overview strip pan it, same width", async () => {
+  const page = mountPage();
+  const { window } = page;
+  try {
+    const overview = await openZoomedOverview(window);
+    const win = document.getElementById("inspirationOverviewWindow");
+
+    overview.dispatchEvent(new window.KeyboardEvent("keydown", { key: "ArrowRight" }));
+    assert.equal(win.style.left, "40%"); // 80/200
+    assert.equal(win.style.width, "25%"); // unchanged (50/200)
+
+    overview.dispatchEvent(new window.KeyboardEvent("keydown", { key: "ArrowLeft" }));
+    overview.dispatchEvent(new window.KeyboardEvent("keydown", { key: "ArrowLeft" }));
+    assert.equal(win.style.left, "35%"); // 70/200 — one step right, two back left
+    assert.equal(win.style.width, "25%");
+  } finally {
+    delete window.YT;
+    page.cleanup();
+  }
+});
+
+test("Up/Down arrow keys on the overview strip zoom, same as the +/- buttons", async () => {
+  const page = mountPage();
+  const { window } = page;
+  try {
+    const overview = await openZoomedOverview(window);
+    const zoomValue = document.getElementById("inspirationZoomValue");
+
+    overview.dispatchEvent(new window.KeyboardEvent("keydown", { key: "ArrowUp" }));
+    assert.equal(zoomValue.textContent, "8×");
+
+    overview.dispatchEvent(new window.KeyboardEvent("keydown", { key: "ArrowDown" }));
+    overview.dispatchEvent(new window.KeyboardEvent("keydown", { key: "ArrowDown" }));
+    assert.equal(zoomValue.textContent, "2×");
+  } finally {
+    delete window.YT;
+    page.cleanup();
+  }
+});
+
+test("Home/End on the overview strip jump the window to the clip's start/end", async () => {
+  const page = mountPage();
+  const { window } = page;
+  try {
+    const overview = await openZoomedOverview(window);
+    const win = document.getElementById("inspirationOverviewWindow");
+
+    overview.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Home" }));
+    assert.equal(win.style.left, "0%");
+    assert.equal(win.style.width, "25%"); // 50/200, same width as before jumping
+
+    overview.dispatchEvent(new window.KeyboardEvent("keydown", { key: "End" }));
+    assert.equal(win.style.left, "75%"); // 150/200
+    assert.equal(win.style.width, "25%");
+  } finally {
+    delete window.YT;
+    page.cleanup();
+  }
+});
+
 test("dragging a handle near the zoomed timeline's edge pans the window", async () => {
   const page = mountPage();
   const { window } = page;
@@ -538,7 +598,7 @@ test("setting point B auto-enables the loop toggle once A and B form a span", as
   try {
     let currentTime = 0;
     const seeks = [];
-    await openLoopPanel(window, { getCurrentTime: () => currentTime, seekTo: (t) => seeks.push(t) });
+    await openLoopPanel(window, { getCurrentTime: () => currentTime, seekTo: (t, allowSeekAhead) => seeks.push([t, allowSeekAhead]) });
 
     const toggle = document.getElementById("inspirationLoopToggle");
     assert.equal(toggle.getAttribute(ARIA_PRESSED), "false");
@@ -550,8 +610,11 @@ test("setting point B auto-enables the loop toggle once A and B form a span", as
     currentTime = 20;
     document.getElementById("inspirationSetB").dispatchEvent(new window.Event("click"));
     assert.equal(toggle.getAttribute(ARIA_PRESSED), "true"); // B completes the span — auto-armed
-    // Same seek-back-to-A the toggle button itself does when turned on by hand.
-    assert.deepEqual(seeks, [10]);
+    // Same seek-back-to-A the toggle button itself does when turned on by
+    // hand — allowSeekAhead=true, since A may not have played yet (unlike
+    // the loop poll's own repeat-seek, which only ever targets an A that's
+    // already buffered).
+    assert.deepEqual(seeks, [[10, true]]);
 
     // A later Set B press just moves B — already looping, so it isn't
     // re-toggled off.
