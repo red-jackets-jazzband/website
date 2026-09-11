@@ -1059,6 +1059,17 @@ video.video {
 .mixer-swatch--pattern {
   background: var(--rj-gold);
 }
+/*
+  Swing: also not a channel (see the metronome comment above) — the panel's
+  bottom-most control, a tune-wide fader feeding ABCjs's own `swing` synth
+  init option (songs/audio-player.js's synthParams, lib/audio-mix.js's
+  percentToAbcjsSwing) rather than baked into the ABC text like the channel
+  faders above it. Reuses the plain .mixer-fader-track/.mixer-readout look
+  (no mute button, no Voice picker, no gate — it's always live).
+*/
+.mixer-swatch--swing {
+  background: #6fae8a;
+}
 .mixer-backdrop {
   position: fixed;
   inset: 0;

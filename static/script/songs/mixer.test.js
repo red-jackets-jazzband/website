@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mountPage } from "../../../tests/helpers/dom.js";
 import { makeCtx } from "../../../tests/helpers/ctx.js";
 import {
-  createMixer, loadMixerState, loadGchordPatternState, loadHighQualityAudioState,
+  createMixer, loadMixerState, loadGchordPatternState, loadHighQualityAudioState, loadSwingState,
 } from "./mixer.js";
 import { GM_VOICES } from "../lib/gm-voices.js";
 import { GCHORD_PATTERNS } from "../lib/audio-mix.js";
@@ -371,6 +371,65 @@ test("refresh() gates the Pattern picker on hasChords, same as Bass/Chords", () 
     assert.equal(document.getElementById("mixerGchordPatternSelect").disabled, false);
   } finally {
     cleanup();
+  }
+});
+
+test("init seeds the Swing range from ctx.state.swing and shows Off at 0", () => {
+  const { cleanup } = setup();
+  try {
+    assert.equal(document.getElementById("mixerSwingRange").value, "0");
+    assert.equal(document.getElementById("mixerSwingReadout").textContent, "Off");
+  } finally {
+    cleanup();
+  }
+});
+
+test("dragging the Swing fader updates its readout live, and re-renders only once settled", (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const { ctx, rerenders, cleanup } = setup();
+  try {
+    const range = document.getElementById("mixerSwingRange");
+    range.value = "40";
+    range.dispatchEvent(new window.Event("input"));
+
+    assert.equal(ctx.state.swing, 40);
+    assert.equal(document.getElementById("mixerSwingReadout").textContent, "40%");
+    assert.equal(document.getElementById("mixerSwingFill").style.width, "40%");
+    assert.equal(rerenders.length, 0); // debounced, not yet applied
+
+    t.mock.timers.tick(300);
+    assert.equal(rerenders.length, 1);
+    assert.equal(window.localStorage.getItem("rj.mixerSwing"), "40");
+  } finally {
+    window.localStorage.clear();
+    cleanup();
+  }
+});
+
+test("releasing the Swing fader (change) applies immediately without waiting for the debounce", () => {
+  const { rerenders, cleanup } = setup();
+  try {
+    const range = document.getElementById("mixerSwingRange");
+    range.value = "60";
+    range.dispatchEvent(new window.Event("input"));
+    range.dispatchEvent(new window.Event("change"));
+    assert.equal(rerenders.length, 1);
+    assert.equal(window.localStorage.getItem("rj.mixerSwing"), "60");
+  } finally {
+    window.localStorage.clear();
+    cleanup();
+  }
+});
+
+test("loadSwingState defaults to 0 (off), reads back a persisted, clamped value", () => {
+  const page = mountPage();
+  try {
+    assert.equal(loadSwingState(), 0);
+    window.localStorage.setItem("rj.mixerSwing", "150"); // clamped
+    assert.equal(loadSwingState(), 100);
+  } finally {
+    window.localStorage.clear();
+    page.cleanup();
   }
 });
 

@@ -8,7 +8,7 @@ import { readFile } from "./read-file.js";
 import { createAudioPlayer } from "./audio-player.js";
 import { createSheet } from "./sheet.js";
 import {
-  createMixer, loadMixerState, loadGchordPatternState, loadHighQualityAudioState,
+  createMixer, loadMixerState, loadGchordPatternState, loadHighQualityAudioState, loadSwingState,
 } from "./mixer.js";
 import { createMetronome, loadMetronomeState } from "./metronome.js";
 import { createInspiration } from "./inspiration.js";
@@ -56,6 +56,7 @@ function createApp() {
       gchordPattern: loadGchordPatternState(),
       metronomeEnabled: loadMetronomeState(),
       highQualityAudio: loadHighQualityAudioState(),
+      swing: loadSwingState(),
     },
     readFile,
     storage: safeStorage,

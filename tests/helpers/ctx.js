@@ -29,6 +29,7 @@ export function makeCtx(overrides = {}) {
       gchordPattern: "jazz",
       metronomeEnabled: false,
       highQualityAudio: false,
+      swing: 0,
       ...overrides.state,
     },
     readFile: overrides.readFile || (() => {}),

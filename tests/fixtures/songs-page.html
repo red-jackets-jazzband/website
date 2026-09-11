@@ -151,6 +151,15 @@
           <select id="mixerGchordPatternSelect" class="mixer-voice-select" aria-label="Accompaniment pattern"></select>
           <p class="mixer-strip-note">This tune has no chord symbols to build an accompaniment from.</p>
         </div>
+        <div class="mixer-strip mixer-strip--swing" id="mixerStripSwing">
+          <span class="mixer-swatch mixer-swatch--swing" aria-hidden="true"></span>
+          <span class="mixer-strip-label">Swing</span>
+          <div class="mixer-fader-track">
+            <div class="mixer-fader-fill" id="mixerSwingFill"></div>
+            <input type="range" id="mixerSwingRange" min="0" max="100" value="0" aria-label="Swing amount">
+          </div>
+          <span class="mixer-readout" id="mixerSwingReadout">Off</span>
+        </div>
       </dialog>
       <div id="mixerBackdrop" class="mixer-backdrop" hidden></div>
     </div>

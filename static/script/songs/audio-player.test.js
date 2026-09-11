@@ -115,6 +115,23 @@ test("initForTune's setTune picks the soundfont from ctx.state.highQualityAudio"
   }
 });
 
+test("initForTune's setTune passes swing mapped from ctx.state.swing onto ABCjs's native 50-75 scale", async () => {
+  const { ctx, audio, cleanup } = setup({ swing: 0 });
+  const abcjs = createAbcjsStub({ audioSupported: true });
+  try {
+    withAbcjs(abcjs, () => audio.initForTune({ metaText: {} }));
+    await flush();
+    assert.equal(abcjs.calls.setTune.at(-1).params.swing, 50); // off
+
+    ctx.state.swing = 100;
+    withAbcjs(abcjs, () => audio.stop()); // re-primes via setTune with fresh synthParams
+    await flush();
+    assert.equal(abcjs.calls.setTune.at(-1).params.swing, 75); // maximum
+  } finally {
+    cleanup();
+  }
+});
+
 test("playPause resumes on the first press after pausing (ABCjs play() is a toggle)", async () => {
   const { audio, cleanup } = setup();
   const abcjs = createAbcjsStub({ audioSupported: true });
