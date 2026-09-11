@@ -563,8 +563,13 @@ video.video {
   gold is reserved for editable fields at rest) and only fills gold while
   it's actually playing.
 */
+/*
+  .sheet-actions (Print / Export WAV / iRealPro) shares this same pill shell
+  — see the comment above its own rule further down.
+*/
 /* Shares its shell (height, border, radius) with .sheet-stepper below. */
 .sheet-transport,
+.sheet-actions,
 .sheet-stepper {
   flex: none;
   display: flex;
@@ -577,14 +582,17 @@ video.video {
 }
 .sheet-transport .sheet-play-btn,
 .sheet-transport .sheet-icon-btn,
-#sheetmenu .sheet-transport .sheet-icon-btn {
+.sheet-actions .sheet-icon-btn,
+#sheetmenu .sheet-transport .sheet-icon-btn,
+#sheetmenu .sheet-actions .sheet-icon-btn {
   box-sizing: border-box;
   width: 42px;
   height: 100%;
   border: none;
   border-radius: 0;
 }
-#sheetmenu .sheet-transport > * + * {
+#sheetmenu .sheet-transport > * + *,
+#sheetmenu .sheet-actions > * + * {
   border-left: 1px solid rgba(255,255,255,.1);
 }
 .sheet-transport .sheet-play-btn {
@@ -765,17 +773,12 @@ video.video {
 }
 
 /*
-  Print / Export / iRealPro: icon-only 44px buttons (same footprint and
-  secondary styling as Stop / Mute-melody), grouped so they wrap together
-  when #sheetmenu runs out of width. iRealPro is appended here at runtime
-  by add_irealpro_link. These replace the old "More" overflow menu.
+  Print / Export WAV / iRealPro: one bordered pill of flush 42px icon
+  buttons divided by hairlines — the same shell as .sheet-transport's
+  Play/Stop/Mixer cluster, not three separate boxes with gaps between
+  them. iRealPro is appended here at runtime by updateIrealProLink. These
+  replace the old "More" overflow menu.
 */
-.sheet-actions {
-  flex: none;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
 .sheet-actions .sheet-icon-btn {
   color: rgba(236,234,230,.72);
   text-decoration: none;
@@ -1120,6 +1123,10 @@ video.video {
   their solid border should be — throwing their height 1px past the <button>
   siblings — and repaints their glyphs body-grey. Re-assert the intended
   border and colour through #sheetmenu so <a> and <button> controls match.
+  Print and iRealPro now live flush inside the .sheet-actions pill though
+  (no border of their own — the pill shell carries it), so the more specific
+  `#sheetmenu .sheet-actions .sheet-icon-btn` border:none rule above wins
+  over this one for them, the same way it already does inside .sheet-transport.
 */
 #sheetmenu .sheet-icon-btn,
 #sheetmenu .sheet-inspiration-link {
