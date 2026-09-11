@@ -68,6 +68,22 @@ function createApp() {
     return match ? match.name : humanizeSongFile(file);
   };
 
+  // The tab title as rendered by Hugo, e.g. "Red Jackets Jazzband - Songs" —
+  // captured once so the active song/setlist can be appended to it without
+  // hardcoding the site/page name here.
+  const baseTitle = document.title;
+
+  // Reflect whatever's on the sheet in the tab title: the open song takes
+  // priority (it's what's actually rendered, even back at the setlists home
+  // with a setlist no longer open — see setlist-home.js's `show()`), else the
+  // open setlist's name, else just the page's own base title.
+  ctx.updateTitle = () => {
+    let activeName = null;
+    if (ctx.state.currentSongFile) activeName = ctx.songName(ctx.state.currentSongFile);
+    else if (ctx.state.currentSetlistId) activeName = ctx.state.currentOpenSetlistName;
+    document.title = activeName ? `${baseTitle} - ${activeName}` : baseTitle;
+  };
+
   // The mobile "back" button leaves the sheet for whichever sidebar list you
   // came from — the Library song list, or an open setlist's song list.
   ctx.setSheetBackLabel = (label) => {
@@ -92,6 +108,7 @@ function createApp() {
     } else if (hash) {
       window.location.hash = hash;
     }
+    ctx.updateTitle();
   };
 
   // The URL the Inspiration panel's "copy link" button hands out: the current
