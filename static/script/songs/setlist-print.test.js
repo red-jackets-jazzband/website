@@ -197,3 +197,33 @@ test("a personal-setlist desc adds a cover page", async () => {
     cleanup();
   }
 });
+
+test("buildBooklet adds a generic-branded title page for a non-N.O.A.D.S. setlist", async () => {
+  const { ctx, print, settle, cleanup } = setup();
+  try {
+    ctx.state.currentSetlistId = "setlist_2026";
+    withAbcjs(createAbcjsStub(), () => print.buildBooklet("Setlist 2026", SONGS, ""));
+    await settle();
+    const titlepage = document.querySelector("#setlistPrintBooklet .setlist-titlepage");
+    assert.ok(titlepage);
+    assert.equal(titlepage.querySelector(".setlist-titlepage-title").textContent, "Red Jackets");
+    assert.equal(titlepage.querySelector(".setlist-titlepage-name").textContent, "Setlist 2026");
+    assert.equal(titlepage.querySelector(".setlist-titlepage-instrument").textContent, "concert pitch");
+  } finally {
+    cleanup();
+  }
+});
+
+test("buildBooklet keeps the original N.O.A.D.S. branding for that band setlist", async () => {
+  const { ctx, print, settle, cleanup } = setup();
+  try {
+    ctx.state.currentSetlistId = "noads_songbook";
+    withAbcjs(createAbcjsStub(), () => print.buildBooklet("N.O.A.D.S. Songbook", SONGS, ""));
+    await settle();
+    const titlepage = document.querySelector("#setlistPrintBooklet .setlist-titlepage");
+    assert.equal(titlepage.querySelector(".setlist-titlepage-title").textContent, "N.O.A.D.S.");
+    assert.equal(titlepage.querySelector(".setlist-titlepage-name").textContent, "streetclassics");
+  } finally {
+    cleanup();
+  }
+});
