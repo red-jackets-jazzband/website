@@ -115,21 +115,27 @@ function buildGchordPatternOptions(select) {
   tracking Melody/Comping's fader value (sticky, ready for whenever that's
   fixed for real) even while that one control is locked.
 
-  Next to the Metronome toggle sits a fifth, non-channel control: the
-  Pattern picker (#mixerGchordPatternSelect, ctx.state.gchordPattern), which
-  chooses the rhythm the Bass/Chords auto-accompaniment plays via
-  %%MIDI gchord (see lib/audio-mix.js's GCHORD_PATTERNS/resolveGchordPattern
-  and sheet.js's resolveRenderText). It gates on hasChords the same way
-  Bass/Chords do (updatePatternGate), since a pattern picked for an
-  accompaniment that isn't playing has nothing to audibly change.
+  Below the four channels sits a fifth, non-channel control: the Pattern
+  picker (#mixerGchordPatternSelect, ctx.state.gchordPattern), which chooses
+  the rhythm the Bass/Chords auto-accompaniment plays via %%MIDI gchord (see
+  lib/audio-mix.js's GCHORD_PATTERNS/resolveGchordPattern and sheet.js's
+  resolveRenderText). It gates on hasChords the same way Bass/Chords do
+  (updatePatternGate), since a pattern picked for an accompaniment that
+  isn't playing has nothing to audibly change.
 
-  At the bottom of the panel sits Swing (#mixerSwingRange, ctx.state.swing):
-  a tune-wide 0-100 fader, same look and drag/release behaviour as a channel
-  volume fader but ungated (there's no "no swing to mix" state — it's
-  audible on any tune). It maps onto ABCjs's own `swing` synth init option
-  (lib/audio-mix.js's percentToAbcjsSwing) rather than a %%MIDI text
-  directive, so audio-player.js's synthParams reads ctx.state.swing directly
-  instead of going through sheet.js's injectMixerAudio.
+  Next comes Swing (#mixerSwingRange, ctx.state.swing): a tune-wide 0-100
+  fader, same look and drag/release behaviour as a channel volume fader but
+  ungated (there's no "no swing to mix" state — it's audible on any tune).
+  It maps onto ABCjs's own `swing` synth init option (lib/audio-mix.js's
+  percentToAbcjsSwing) rather than a %%MIDI text directive, so
+  audio-player.js's synthParams reads ctx.state.swing directly instead of
+  going through sheet.js's injectMixerAudio.
+
+  At the bottom of the panel, Metronome and Quality share one row
+  (#mixerStripMetronome / #mixerStripQuality, each a plain
+  .mixer-toggle-item) — neither has a fader or Voice picker to wrap onto a
+  second line, so they sit side by side instead of stacking like every
+  strip above them.
 */
 function readoutText(channel, percent, muted) {
   if (muted) return "Muted";
