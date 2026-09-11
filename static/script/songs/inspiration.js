@@ -518,20 +518,15 @@ export function createInspiration(ctx) {
 
   /*
     The minimap strip showing where [viewStart, viewEnd] sits within the
-    whole clip — only worth showing once actually zoomed in (at 1x the
-    window covers the strip's full width, telling you nothing new), which
-    is also what makes zoom feel like a property of the progress bar itself
-    rather than a bolted-on separate control: the strip appears the moment
-    zooming makes it useful and disappears the moment it wouldn't be. A/B's
-    own position is echoed as a tick so they stay visible even zoomed away
-    from them entirely.
+    whole clip — always visible (its own zoom +/- buttons live right next to
+    it, see the markup) rather than only once actually zoomed, since it's the
+    permanent home for the zoom control now, not an extra that only earns
+    its place once zoomed. At 1x its window simply spans the whole strip,
+    same as a browser scrollbar's thumb filling the track when there's
+    nothing to scroll. A/B's own position is echoed as a tick so they stay
+    visible even when zoomed away from them entirely.
   */
   function updateOverviewUI(dur) {
-    const overview = byId("inspirationLoopOverview");
-    if (!overview) return;
-    const zoomed = dur > 0 && viewEnd - viewStart < dur - 0.001;
-    overview.hidden = !zoomed;
-    if (!zoomed) return;
     const win = byId("inspirationOverviewWindow");
     if (win) {
       const fa = timeToFraction(viewStart, dur);

@@ -405,15 +405,18 @@ test("zoom in/out buttons disable at ZOOM_LEVELS' ends", async () => {
   }
 });
 
-test("the overview strip appears only once zoomed, echoing the window and A/B ticks", async () => {
+test("the overview window covers the full strip at 1x and narrows once zoomed, echoing A/B ticks", async () => {
   const page = mountPage();
   const { window } = page;
   try {
     let currentTime = 100;
     await openLoopPanel(window, { getCurrentTime: () => currentTime });
 
-    const overview = document.getElementById("inspirationLoopOverview");
-    assert.equal(overview.hidden, true); // 1x: the window would cover the whole strip
+    // Always part of the progress bar, not hidden until zoomed: at 1x the
+    // window simply spans the whole strip.
+    const win = document.getElementById("inspirationOverviewWindow");
+    assert.equal(win.style.left, "0%");
+    assert.equal(win.style.width, "100%");
 
     document.getElementById("inspirationSetA").dispatchEvent(new window.Event("click")); // A=100
     currentTime = 150;
@@ -422,8 +425,6 @@ test("the overview strip appears only once zoomed, echoing the window and A/B ti
 
     document.getElementById("inspirationZoomIn").dispatchEvent(new window.Event("click")); // 2x -> [50,150]
 
-    assert.equal(overview.hidden, false);
-    const win = document.getElementById("inspirationOverviewWindow");
     assert.equal(win.style.left, "25%"); // 50/200
     assert.equal(win.style.width, "50%"); // (150-50)/200
 
