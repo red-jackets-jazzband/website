@@ -1,4 +1,4 @@
-import { computeChordOffset } from "./chords.js";
+import { computeChordOffset, BREAK_CHORD } from "./chords.js";
 
 /*
    Chord-tone comping generator.
@@ -858,13 +858,22 @@ function chordArgs(voices, keyScale) {
 // on: after voice-leading the black voice may well be sitting on a fifth.
 const VOICE_KEYS = ["R", "3", "5"];
 
-// Chord scheme -> per-bar arrays of triads, each triad [{pc}] root/3rd/5th first.
+// Chord scheme -> per-bar arrays of triads, each triad [{pc}] root/3rd/5th
+// first, or `null` for a break ("N.C.") slot — a deliberate silence the
+// comping voice should rest through rather than hold the previous chord
+// over. `last` (the "%"-hold memory) is left untouched by a break, so a
+// hold *after* one still continues whatever chord preceded the break, not
+// "N.C." itself.
 function extractChordNotes(chords) {
   const result = [];
   let last = "C";
   for (const measure of chords) {
     const row = [];
     for (const raw of measure.text) {
+      if (raw === BREAK_CHORD) {
+        row.push(null);
+        continue;
+      }
       let name = plainChordName(raw);
       if (name === "%" || name === "") name = last;
       name = name.split("/")[0];
@@ -954,6 +963,13 @@ function voiceLead(bars) {
   for (const bar of bars) {
     const voicedBar = [];
     for (const curr of bar) {
+      // A break ("N.C.") slot: pass the rest through untouched, and leave
+      // the voice-leading memory alone so the next real chord still leads
+      // on from whatever came before the silence.
+      if (curr === null) {
+        voicedBar.push(null);
+        continue;
+      }
       if (!homeRefs) homeRefs = seedRefs(curr);
       const pcKey = curr.map((t) => t.pc).join(",");
       const chordChanged = prevPcKey !== null && pcKey !== prevPcKey;
@@ -1073,24 +1089,32 @@ export function buildCompingTune(text, chords, song, pattern) {
     const cb = voiced[bar];
     let fragment;
     let barPalette;
+    // A `null` triple is a break ("N.C.") slot: draw a plain rest instead of
+    // a chord pattern, and contribute no palette entries (a rest draws no
+    // notehead onset for sheet-decorations.js to colour).
     if (cb.length === 1) {
-      const fn = bar % 2 === 0 ? pat.twobar1 : pat.twobar2;
-      fragment = fn.apply(null, chordArgs(cb[0], keyScale));
-      const order = cb[0].map((v) => v.fn);
-      barPalette = Array(countChords(fragment)).fill(order);
+      if (cb[0] === null) {
+        fragment = "z8";
+        barPalette = [];
+      } else {
+        const fn = bar % 2 === 0 ? pat.twobar1 : pat.twobar2;
+        fragment = fn.apply(null, chordArgs(cb[0], keyScale));
+        const order = cb[0].map((v) => v.fn);
+        barPalette = Array(countChords(fragment)).fill(order);
+      }
     } else if (cb.length === 2) {
-      const fragA = pat.half.apply(null, chordArgs(cb[0], keyScale));
-      const fragB = pat.half.apply(null, chordArgs(cb[1], keyScale));
+      const fragA = cb[0] === null ? "z4" : pat.half.apply(null, chordArgs(cb[0], keyScale));
+      const fragB = cb[1] === null ? "z4" : pat.half.apply(null, chordArgs(cb[1], keyScale));
       fragment = fragA + " " + fragB;
       barPalette = Array(countChords(fragA))
-        .fill(cb[0].map((v) => v.fn))
-        .concat(Array(countChords(fragB)).fill(cb[1].map((v) => v.fn)));
+        .fill(cb[0] === null ? [] : cb[0].map((v) => v.fn))
+        .concat(Array(countChords(fragB)).fill(cb[1] === null ? [] : cb[1].map((v) => v.fn)));
     } else {
       const durs = distribute(8, cb.length);
       fragment = cb
-        .map((triple, i) => chordArgs(triple, keyScale)[0] + durs[i])
+        .map((triple, i) => (triple === null ? "z" + durs[i] : chordArgs(triple, keyScale)[0] + durs[i]))
         .join(" ");
-      barPalette = cb.map((triple) => triple.map((v) => v.fn));
+      barPalette = cb.map((triple) => (triple === null ? [] : triple.map((v) => v.fn)));
     }
     compBars.push(rebeamBar(respellBar(fragment, keySig), lnum, lden));
     compPalettes.push(barPalette);
