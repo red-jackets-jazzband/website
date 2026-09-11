@@ -25,7 +25,7 @@ const PAUSE_ICON = '<span class="fa-solid fa-pause" aria-hidden="true"></span>';
 const LOADING_ICON = '<span class="fa-solid fa-spinner fa-spin" aria-hidden="true"></span>';
 
 function setButtonsDisabled(disabled) {
-  ["playPauseBtn", "stopBtn", "mixerBtn"].forEach((id) => {
+  ["playPauseBtn", "stopBtn", "mixerBtn", "exportWavBtn"].forEach((id) => {
     const btn = byId(id);
     if (btn) btn.disabled = disabled;
   });
@@ -85,6 +85,23 @@ export function createAudioPlayer(ctx) {
 
   let highlighted = [];
   let highlightedChordCell = null;
+
+  // The options for a fresh, offline ABCJS.synth.CreateSynth() render of the
+  // current tune (songs/wav-export.js) — everything synthParams() also feeds
+  // the live SynthController, plus a tempo. CreateSynth has no setWarp; its
+  // only tempo knob is millisecondsPerMeasure, so the Tempo stepper's warp
+  // percentage (100% = the tune's own Q:) is applied the same way setWarp
+  // applies it internally: scale the tune's native ms/measure by 100/warp%.
+  function exportSynthOptions() {
+    const visualObj = state.currentVisualObj;
+    if (!visualObj || typeof visualObj.millisecondsPerMeasure !== "function") return null;
+    const warpPercent = bpmToWarpPercent(ctx.state.tempoOverrideBpm, state.nativeQpm);
+    return {
+      visualObj,
+      millisecondsPerMeasure: (visualObj.millisecondsPerMeasure() * 100) / warpPercent,
+      options: synthParams(),
+    };
+  }
 
   function synthParams() {
     const params = {
@@ -472,6 +489,7 @@ export function createAudioPlayer(ctx) {
       state.repeatStart = start;
       state.repeatEnd = end;
     },
+    buildExportOptions: exportSynthOptions,
     initForTune,
     setupNotationClickHandler,
     updateTempoLabel,

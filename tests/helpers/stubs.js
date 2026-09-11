@@ -104,8 +104,21 @@ function fakeTune(text) {
   };
 }
 
-export function createAbcjsStub({ audioSupported = false } = {}) {
-  const calls = { renderAbc: [], parseOnly: [], setTune: [], synthControllers: [] };
+// A minimal AudioBuffer-shaped stand-in for what a real offline render would
+// hand back — enough for wav-export.js's encodeWav() to consume.
+function fakeAudioBuffer() {
+  return {
+    numberOfChannels: 1,
+    sampleRate: 44100,
+    length: 2,
+    getChannelData: () => Float32Array.from([0, 0.5]),
+  };
+}
+
+export function createAbcjsStub({ audioSupported = false, exportAudioBuffer } = {}) {
+  const calls = {
+    renderAbc: [], parseOnly: [], setTune: [], synthControllers: [], createSynths: [],
+  };
 
   const stub = {
     calls,
@@ -151,6 +164,19 @@ export function createAbcjsStub({ audioSupported = false } = {}) {
           return Promise.resolve();
         };
         calls.synthControllers.push(this);
+      },
+      // songs/wav-export.js's offline render: init() then prime() resolve
+      // once, populating audioBuffers[0] the way the real library does.
+      CreateSynth: function CreateSynth() {
+        this.audioBuffers = [];
+        this.init = (opts) => {
+          calls.createSynths.push({ instance: this, init: opts });
+          return Promise.resolve();
+        };
+        this.prime = () => {
+          this.audioBuffers = exportAudioBuffer === null ? [] : [exportAudioBuffer || fakeAudioBuffer()];
+          return Promise.resolve();
+        };
       },
     },
   };
