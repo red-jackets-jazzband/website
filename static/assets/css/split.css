@@ -737,11 +737,18 @@ video.video {
   <span>: a lone inline element on its own line in songs.md gets wrapped
   in a <p> by Goldmark, and that <p>'s margin threw the button ~10px
   above the sibling 44px controls). Centered flex so the mounted button
-  lines up with everything else in #sheetmenu.
+  lines up with everything else in #sheetmenu. Empty (no F: field on the
+  current tune, so inspiration.js never appends a button) collapses out of
+  #sheetmenu's flex flow entirely — otherwise, as a zero-width flex item, it
+  still counted for #sheetmenu's own `gap`, silently doubling the visible
+  space between Play and the Print/Export/iRealPro pill on either side of it.
 */
 #inspirationSlot {
   display: flex;
   align-items: center;
+}
+#inspirationSlot:empty {
+  display: none;
 }
 
 .sheet-inspiration-link {
