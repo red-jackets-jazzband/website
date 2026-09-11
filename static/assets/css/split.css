@@ -1394,13 +1394,15 @@ video.video {
 .inspiration-loop-readout[hidden] {
   display: none;
 }
-.inspiration-loop-speed {
+.inspiration-loop-speed,
+.inspiration-loop-zoom {
   flex: none;
   display: inline-flex;
   align-items: center;
   gap: 4px;
 }
-.inspiration-loop-speed-value {
+.inspiration-loop-speed-value,
+.inspiration-loop-zoom-value {
   min-width: 30px;
   text-align: center;
   font: 600 11px/1 "Montserrat", sans-serif;

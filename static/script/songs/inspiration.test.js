@@ -15,6 +15,38 @@ function inDom(fn) {
   }
 }
 
+// Mounts a mocked window.YT.Player (the shape every LoopTube-timeline test
+// needs: getCurrentTime/getDuration/seekTo/etc.), opens the panel through the
+// normal Inspiration-button click, and fires onReady so the track/A/B/zoom
+// controls are live. `overrides` patches individual player methods (e.g. a
+// mutable getCurrentTime, or a seekTo that records its calls); the caller
+// still owns `delete window.YT` and `page.cleanup()` in its own finally.
+async function openLoopPanel(window, overrides = {}) {
+  let fireReady = null;
+  window.YT = {
+    Player: function FakePlayer(_el, opts) {
+      fireReady = opts.events.onReady;
+      this.loadVideoById = () => {};
+      this.stopVideo = () => {};
+      this.getCurrentTime = () => 0;
+      this.getDuration = () => 200;
+      this.getPlaybackRate = () => 1;
+      this.getAvailablePlaybackRates = () => [0.5, 1, 2];
+      this.setPlaybackRate = () => {};
+      this.seekTo = () => {};
+      Object.assign(this, overrides);
+    },
+    PlayerState: { PLAYING: 1 },
+  };
+  const insp = createInspiration();
+  insp.init();
+  insp.updateLink(SAMPLE_URL, "X");
+  document.getElementById("inspirationLink").dispatchEvent(new window.Event("click"));
+  await new Promise((resolve) => { setTimeout(resolve, 0); });
+  fireReady();
+  return insp;
+}
+
 // Opens the panel, primes its bounding rect and starts a left-edge drag at
 // clientX 480 (the panel's left edge) — shared by the resize tests below,
 // which differ only in where the pointer moves to next.
@@ -237,33 +269,103 @@ test("a shared A/B link opens the video with the loop already set", async () => 
   }
 });
 
+test("zoom in narrows the timeline window around the current playhead", async () => {
+  const page = mountPage();
+  const { window } = page;
+  try {
+    let currentTime = 100;
+    await openLoopPanel(window, { getCurrentTime: () => currentTime });
+
+    const zoomOut = document.getElementById("inspirationZoomOut");
+    const zoomIn = document.getElementById("inspirationZoomIn");
+    const zoomValue = document.getElementById("inspirationZoomValue");
+    assert.equal(zoomValue.textContent, "1×");
+    assert.equal(zoomOut.disabled, true); // already the widest view
+
+    // A 200s clip, playhead at 100s -> smack in the middle either way, so a
+    // marker placed here reads 50% before and after zooming in.
+    document.getElementById("inspirationSetA").dispatchEvent(new window.Event("click"));
+    assert.equal(document.getElementById("inspirationLoopHandleA").style.left, "50%");
+
+    zoomIn.dispatchEvent(new window.Event("click")); // -> 2x, window [50, 150]
+    assert.equal(zoomValue.textContent, "2×");
+    assert.equal(zoomOut.disabled, false);
+    assert.equal(document.getElementById("inspirationLoopHandleA").style.left, "50%");
+
+    // A marker outside the now-narrower window is hidden, not clamped to an
+    // edge (which would look like a real, wrong marker).
+    currentTime = 199;
+    document.getElementById("inspirationSetB").dispatchEvent(new window.Event("click"));
+    assert.equal(document.getElementById("inspirationLoopHandleB").hidden, true);
+  } finally {
+    delete window.YT;
+    page.cleanup();
+  }
+});
+
+test("zoom in/out buttons disable at ZOOM_LEVELS' ends", async () => {
+  const page = mountPage();
+  const { window } = page;
+  try {
+    await openLoopPanel(window, { getCurrentTime: () => 100 });
+
+    const zoomOut = document.getElementById("inspirationZoomOut");
+    const zoomIn = document.getElementById("inspirationZoomIn");
+    const zoomValue = document.getElementById("inspirationZoomValue");
+
+    for (let i = 0; i < 10; i += 1) zoomIn.dispatchEvent(new window.Event("click"));
+    assert.equal(zoomValue.textContent, "32×"); // ZOOM_LEVELS' last entry
+    assert.equal(zoomIn.disabled, true);
+    assert.equal(zoomOut.disabled, false);
+
+    for (let i = 0; i < 10; i += 1) zoomOut.dispatchEvent(new window.Event("click"));
+    assert.equal(zoomValue.textContent, "1×");
+    assert.equal(zoomOut.disabled, true);
+  } finally {
+    delete window.YT;
+    page.cleanup();
+  }
+});
+
+test("dragging a handle near the zoomed timeline's edge pans the window", async () => {
+  const page = mountPage();
+  const { window } = page;
+  try {
+    await openLoopPanel(window, { getCurrentTime: () => 100 });
+
+    document.getElementById("inspirationSetA").dispatchEvent(new window.Event("click")); // A=100
+    const zoomIn = document.getElementById("inspirationZoomIn");
+    zoomIn.dispatchEvent(new window.Event("click")); // 2x -> [50, 150]
+    zoomIn.dispatchEvent(new window.Event("click")); // 4x -> [75, 125]
+
+    const track = document.getElementById("inspirationLoopTrack");
+    track.getBoundingClientRect = () => ({ left: 0, width: 200 });
+    const handleA = document.getElementById("inspirationLoopHandleA");
+
+    // Grab handle A (currently at 50% of [75,125], i.e. t=100) and drag to
+    // the track's left edge — inside EDGE_PAN_THRESHOLD of it.
+    handleA.dispatchEvent(new window.PointerEvent("pointerdown", { pointerId: 1, clientX: 100, bubbles: true }));
+    track.dispatchEvent(new window.PointerEvent("pointermove", { pointerId: 1, clientX: 2 }));
+
+    // The window panned left (toward 0) by one EDGE_PAN_STEP rather than
+    // trapping the drag at the pre-pan [75,125] floor: without panning, 1%
+    // into that window would land on 75.5s ("1:15"); with it, the window has
+    // shifted to [65,115] and 1% into that lands on 65.5s ("1:05") instead.
+    assert.equal(document.getElementById("inspirationLoopReadout").textContent, "1:05 – –");
+    assert.equal(document.getElementById("inspirationZoomValue").textContent, "4×"); // zoom level itself is untouched by panning
+  } finally {
+    delete window.YT;
+    page.cleanup();
+  }
+});
+
 test("setting point B auto-enables the loop toggle once A and B form a span", async () => {
   const page = mountPage();
   const { window } = page;
   try {
-    let fireReady = null;
     let currentTime = 0;
     const seeks = [];
-    window.YT = {
-      Player: function FakePlayer(_el, opts) {
-        fireReady = opts.events.onReady;
-        this.loadVideoById = () => {};
-        this.stopVideo = () => {};
-        this.getCurrentTime = () => currentTime;
-        this.getDuration = () => 200;
-        this.getPlaybackRate = () => 1;
-        this.getAvailablePlaybackRates = () => [0.5, 1, 2];
-        this.setPlaybackRate = () => {};
-        this.seekTo = (t) => seeks.push(t);
-      },
-      PlayerState: { PLAYING: 1 },
-    };
-    const insp = createInspiration();
-    insp.init();
-    insp.updateLink(SAMPLE_URL, "X");
-    document.getElementById("inspirationLink").dispatchEvent(new window.Event("click"));
-    await new Promise((resolve) => { setTimeout(resolve, 0); });
-    fireReady();
+    await openLoopPanel(window, { getCurrentTime: () => currentTime, seekTo: (t) => seeks.push(t) });
 
     const toggle = document.getElementById("inspirationLoopToggle");
     assert.equal(toggle.getAttribute(ARIA_PRESSED), "false");
@@ -293,28 +395,8 @@ test("setting point B too close to A to form a loop doesn't enable the toggle", 
   const page = mountPage();
   const { window } = page;
   try {
-    let fireReady = null;
     let currentTime = 0;
-    window.YT = {
-      Player: function FakePlayer(_el, opts) {
-        fireReady = opts.events.onReady;
-        this.loadVideoById = () => {};
-        this.stopVideo = () => {};
-        this.getCurrentTime = () => currentTime;
-        this.getDuration = () => 200;
-        this.getPlaybackRate = () => 1;
-        this.getAvailablePlaybackRates = () => [0.5, 1, 2];
-        this.setPlaybackRate = () => {};
-        this.seekTo = () => {};
-      },
-      PlayerState: { PLAYING: 1 },
-    };
-    const insp = createInspiration();
-    insp.init();
-    insp.updateLink(SAMPLE_URL, "X");
-    document.getElementById("inspirationLink").dispatchEvent(new window.Event("click"));
-    await new Promise((resolve) => { setTimeout(resolve, 0); });
-    fireReady();
+    await openLoopPanel(window, { getCurrentTime: () => currentTime });
 
     currentTime = 10;
     document.getElementById("inspirationSetA").dispatchEvent(new window.Event("click"));

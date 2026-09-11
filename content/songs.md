@@ -246,6 +246,11 @@ Retrieved from www.redjackets.nl - <span id="instrumentText"></span>
       <button type="button" class="inspiration-loop-btn" id="inspirationLoopToggle" title="Loop between A and B" aria-label="Loop between A and B" aria-pressed="false"><span class="fa-solid fa-repeat" aria-hidden="true"></span></button>
       <button type="button" class="inspiration-loop-btn" id="inspirationLoopClear" title="Clear A and B" aria-label="Clear loop markers"><span class="fa-solid fa-xmark" aria-hidden="true"></span></button>
       <span class="inspiration-loop-readout" id="inspirationLoopReadout" hidden></span>
+      <span class="inspiration-loop-zoom" id="inspirationLoopZoom" title="Timeline zoom">
+        <button type="button" class="inspiration-loop-btn" id="inspirationZoomOut" aria-label="Zoom out" disabled><span class="fa-solid fa-magnifying-glass-minus" aria-hidden="true"></span></button>
+        <span class="inspiration-loop-zoom-value" id="inspirationZoomValue">1&times;</span>
+        <button type="button" class="inspiration-loop-btn" id="inspirationZoomIn" aria-label="Zoom in"><span class="fa-solid fa-magnifying-glass-plus" aria-hidden="true"></span></button>
+      </span>
       <span class="inspiration-loop-speed" id="inspirationLoopSpeed" title="Playback speed">
         <button type="button" class="inspiration-loop-btn" id="inspirationSpeedDown" aria-label="Slower">&minus;</button>
         <span class="inspiration-loop-speed-value" id="inspirationSpeedValue">1&times;</span>
