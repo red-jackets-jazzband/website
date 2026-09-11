@@ -270,6 +270,36 @@ function scanDurationMultiplier(str, i) {
   return { end: denomEnd, mult: mult / denom };
 }
 
+// Like stripDelimited("[", "]", ...) but the replacement carries the
+// chord's own duration instead of a fixed placeholder: a bracket that spells
+// each tone's length out individually ("[F2_d2]", with no shared duration
+// trailing the "]" — the "_Break rhythm" bars in happy_feet_blues' part C)
+// must still count as one duration-2 event, not silently default to 1.
+// ABCjs itself takes a chord's duration from its first note, so this reads
+// the same one.
+function stripChordBrackets(str) {
+  let result = "";
+  let i = 0;
+  while (i < str.length) {
+    if (str[i] !== "[") {
+      result += str[i];
+      i += 1;
+      continue;
+    }
+    const end = str.indexOf("]", i + 1);
+    if (end === -1) {
+      result += str.slice(i);
+      break;
+    }
+    const inner = str.slice(i + 1, end);
+    const noteEnd = scanNoteLetter(inner, 0, CHORD_NOTE_LETTERS);
+    const durText = noteEnd === -1 ? "" : inner.slice(noteEnd, scanDurationMultiplier(inner, noteEnd).end);
+    result += "Y" + durText;
+    i = end + 1;
+  }
+  return result;
+}
+
 export function measureBarSlots(segment, lnum, lden) {
   const unitSlots = (8 * lnum) / lden;
   let s = String(segment);
@@ -277,7 +307,7 @@ export function measureBarSlots(segment, lnum, lden) {
   s = stripDelimited(s, "!", "!", "");
   s = stripInlineFields(s);
   s = stripDelimited(s, "{", "}", "");
-  s = stripDelimited(s, "[", "]", "Y");
+  s = stripChordBrackets(s);
 
   let total = 0;
   let matched = false;
