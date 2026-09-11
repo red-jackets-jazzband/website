@@ -9,6 +9,12 @@ import {
   stepPlaybackRate,
   loopLeadSeconds,
   shouldLoopSeek,
+  ZOOM_LEVELS,
+  computeZoomWindow,
+  timeToViewFraction,
+  viewFractionToTime,
+  stepZoom,
+  panZoomWindow,
 } from "./looptube.js";
 
 test("formatClock renders m:ss under an hour", () => {
@@ -69,4 +75,47 @@ test("shouldLoopSeek fires near B and when the head runs before A", () => {
   assert.equal(shouldLoopSeek(25, 10, 40, 0.2), false);
   assert.equal(shouldLoopSeek(2, 10, 40, 0.2), true);
   assert.equal(shouldLoopSeek(NaN, 10, 40, 0.2), false);
+});
+
+test("computeZoomWindow centers a narrower window on the given time", () => {
+  // 200s clip, 4x zoom -> a 50s-wide window centered on 100.
+  assert.deepEqual(computeZoomWindow(100, 200, 4), { start: 75, end: 125 });
+});
+
+test("computeZoomWindow clamps the window inside [0, duration]", () => {
+  assert.deepEqual(computeZoomWindow(10, 200, 4), { start: 0, end: 50 });
+  assert.deepEqual(computeZoomWindow(195, 200, 4), { start: 150, end: 200 });
+});
+
+test("computeZoomWindow falls back to the full clip at 1x or with no duration", () => {
+  assert.deepEqual(computeZoomWindow(100, 200, 1), { start: 0, end: 200 });
+  assert.deepEqual(computeZoomWindow(100, 0, 4), { start: 0, end: 0 });
+});
+
+test("timeToViewFraction / viewFractionToTime round-trip within a zoomed window", () => {
+  assert.equal(timeToViewFraction(100, 75, 125), 0.5);
+  assert.equal(timeToViewFraction(75, 75, 125), 0);
+  assert.equal(timeToViewFraction(125, 75, 125), 1);
+  assert.equal(timeToViewFraction(200, 75, 125), 1); // clamped past the window
+  assert.equal(viewFractionToTime(0.5, 75, 125), 100);
+  assert.equal(timeToViewFraction(10, 0, 0), 0); // zero-width window
+});
+
+test("stepZoom walks ZOOM_LEVELS and clamps at the ends", () => {
+  assert.equal(stepZoom(1, 1), 2);
+  assert.equal(stepZoom(2, -1), 1);
+  assert.equal(stepZoom(1, -1), 1); // already at the widest view
+  assert.equal(stepZoom(ZOOM_LEVELS.at(-1), 1), ZOOM_LEVELS.at(-1)); // already at the narrowest
+});
+
+test("panZoomWindow shifts a zoomed window and clamps at the clip's ends", () => {
+  assert.deepEqual(panZoomWindow(75, 125, 200, 1, 0.2), { start: 85, end: 135 });
+  assert.deepEqual(panZoomWindow(75, 125, 200, -1, 0.2), { start: 65, end: 115 });
+  // Panning off either edge clamps the window without shrinking it.
+  assert.deepEqual(panZoomWindow(0, 50, 200, -1, 0.5), { start: 0, end: 50 });
+  assert.deepEqual(panZoomWindow(150, 200, 200, 1, 0.5), { start: 150, end: 200 });
+});
+
+test("panZoomWindow is a no-op once the window already covers the whole clip", () => {
+  assert.deepEqual(panZoomWindow(0, 200, 200, 1, 0.2), { start: 0, end: 200 });
 });

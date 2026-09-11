@@ -2,13 +2,20 @@ import { byId, on } from "../lib/dom.js";
 import { youtubeEmbedUrl, extractYouTubeId } from "../lib/youtube.js";
 import { PREF_KEYS, readPref, writePref } from "../lib/preferences.js";
 import {
-  formatClock, timeToFraction, fractionToTime, normalizeLoop,
-  clampHandleDrag, stepPlaybackRate, loopLeadSeconds, shouldLoopSeek,
+  formatClock, normalizeLoop, clampHandleDrag, stepPlaybackRate, loopLeadSeconds, shouldLoopSeek,
+  ZOOM_LEVELS, computeZoomWindow, timeToViewFraction, viewFractionToTime, stepZoom, panZoomWindow,
 } from "../lib/looptube.js";
 
 const LOOP_POLL_MS = 80;
 const LOOP_MIN_GAP = 1; // seconds — the shortest loop the toggle will accept
 const EDGE_MARGIN = 8; // px — how close to a window edge the panel may be dragged
+
+// While dragging a handle on a zoomed-in timeline, getting within this
+// fraction of either track edge auto-scrolls the view (by this fraction of
+// its own width per pointermove tick) so the drag can keep reaching times
+// currently off-screen, rather than trapping the handle at the visible edge.
+const EDGE_PAN_THRESHOLD = 0.04;
+const EDGE_PAN_STEP = 0.2;
 
 // The panel (and the video with it — everything below the header is
 // width-driven) can be resized by dragging its left edge, or stepped through
@@ -77,13 +84,17 @@ function trackFraction(track, e) {
   return Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
 }
 
-function positionLoopHandle(el, value, dur) {
+// `value` is a marker's absolute time; [viewStart, viewEnd) is the timeline's
+// current zoomed window — a marker outside it is hidden rather than clamped
+// to the track's edge, since a clamped position would look like a real (but
+// wrong) marker instead of "not currently in view".
+function positionLoopHandle(el, value, viewStart, viewEnd) {
   if (!el) return;
-  if (value === null || dur <= 0) {
+  if (value === null || viewEnd <= viewStart || value < viewStart || value > viewEnd) {
     el.hidden = true;
     return;
   }
-  el.style.left = `${timeToFraction(value, dur) * 100}%`;
+  el.style.left = `${timeToViewFraction(value, viewStart, viewEnd) * 100}%`;
   el.hidden = false;
 }
 
@@ -166,6 +177,14 @@ export function createInspiration(ctx) {
   let loopEnabled = false;
   let loopPollId = null;
   let loopDragging = null; // "a" | "b" | null
+  // The timeline's current zoomed window (seconds) — [0, duration] at 1x.
+  // Only ever moved explicitly: changeZoom() re-centers it on the playhead
+  // when the zoom level changes, and a drag nearing its edge pans it (see
+  // maybePanZoomWindow) — never a passive side effect of an unrelated
+  // updateLoopUI() refresh, which would yank it out from under the user.
+  let zoomLevel = ZOOM_LEVELS[0];
+  let viewStart = 0;
+  let viewEnd = 0;
   let panelWidth = PANEL_WIDTHS[0];
   // A shared link's `a`/`b` markers, parked until the next tune with a
   // reference calls updateLink() so we know which video to open.
@@ -421,16 +440,19 @@ export function createInspiration(ctx) {
   function updatePlayhead(t) {
     const played = byId("inspirationLoopPlayed");
     if (!played) return;
-    const dur = player && player.getDuration ? player.getDuration() : 0;
-    played.style.width = `${timeToFraction(t, dur) * 100}%`;
+    // Clamps to the near/far edge of the current view when the playhead is
+    // outside it (e.g. still playing past a zoomed-in window) — the same
+    // "clipped, not wrong" reading a scrolled-out-of-view progress bar gets
+    // anywhere else, so it's left as a plain clamp rather than hidden.
+    played.style.width = `${timeToViewFraction(t, viewStart, viewEnd) * 100}%`;
   }
 
-  function updateLoopRange(dur) {
+  function updateLoopRange() {
     const range = byId("inspirationLoopRange");
     if (!range) return;
-    if (loopA !== null && loopB !== null && dur > 0) {
-      const fa = timeToFraction(Math.min(loopA, loopB), dur);
-      const fb = timeToFraction(Math.max(loopA, loopB), dur);
+    if (loopA !== null && loopB !== null && viewEnd > viewStart) {
+      const fa = timeToViewFraction(Math.min(loopA, loopB), viewStart, viewEnd);
+      const fb = timeToViewFraction(Math.max(loopA, loopB), viewStart, viewEnd);
       range.style.left = `${fa * 100}%`;
       range.style.width = `${(fb - fa) * 100}%`;
       range.hidden = false;
@@ -452,18 +474,36 @@ export function createInspiration(ctx) {
     }
   }
 
+  function updateZoomUI(dur) {
+    const value = byId("inspirationZoomValue");
+    if (value) value.textContent = `${zoomLevel}×`;
+    const hasVideo = dur > 0;
+    const zoomOut = byId("inspirationZoomOut");
+    const zoomIn = byId("inspirationZoomIn");
+    if (zoomOut) zoomOut.disabled = !hasVideo || zoomLevel === ZOOM_LEVELS[0];
+    if (zoomIn) zoomIn.disabled = !hasVideo || zoomLevel === ZOOM_LEVELS[ZOOM_LEVELS.length - 1];
+  }
+
   function updateLoopUI() {
     const dur = playerDuration();
-    positionLoopHandle(byId("inspirationLoopHandleA"), loopA, dur);
-    positionLoopHandle(byId("inspirationLoopHandleB"), loopB, dur);
+    // The view only auto-tracks the full clip at 1x — see the zoomLevel/
+    // viewStart/viewEnd doc comment above for why any narrower window is
+    // left alone here rather than recomputed on every refresh.
+    if (zoomLevel === ZOOM_LEVELS[0]) {
+      viewStart = 0;
+      viewEnd = dur;
+    }
+    positionLoopHandle(byId("inspirationLoopHandleA"), loopA, viewStart, viewEnd);
+    positionLoopHandle(byId("inspirationLoopHandleB"), loopB, viewStart, viewEnd);
 
     const setA = byId("inspirationSetA");
     const setB = byId("inspirationSetB");
     if (setA) setA.classList.toggle("armed", loopA !== null);
     if (setB) setB.classList.toggle("armed", loopB !== null);
 
-    updateLoopRange(dur);
+    updateLoopRange();
     updateLoopReadout();
+    updateZoomUI(dur);
 
     const canLoop = normalizeLoop(loopA, loopB, LOOP_MIN_GAP) !== null;
     if (!canLoop && loopEnabled) loopEnabled = false;
@@ -471,6 +511,37 @@ export function createInspiration(ctx) {
     if (toggle) {
       toggle.disabled = !canLoop;
       toggle.setAttribute("aria-pressed", loopEnabled ? "true" : "false");
+    }
+  }
+
+  // Re-centers the view window on the current playhead each time the zoom
+  // level changes — the natural "zoom in on where I am" a user reaches for
+  // the control expecting, rather than an arbitrary fixed point.
+  function changeZoom(direction) {
+    const dur = playerDuration();
+    if (dur <= 0) return;
+    zoomLevel = stepZoom(zoomLevel, direction);
+    const center = player && playerReady && player.getCurrentTime ? player.getCurrentTime() : (viewStart + viewEnd) / 2;
+    const win = computeZoomWindow(center, dur, zoomLevel);
+    viewStart = win.start;
+    viewEnd = win.end;
+    updateLoopUI();
+  }
+
+  // Auto-scrolls the zoomed view when `frac` (the drag's current position on
+  // the visible track, 0..1) is near an edge — see EDGE_PAN_THRESHOLD/STEP.
+  // A no-op once the view already covers the whole clip (panZoomWindow's own
+  // guard), so this is safe to call unconditionally on every drag tick.
+  function maybePanZoomWindow(frac, dur) {
+    let win = null;
+    if (frac <= EDGE_PAN_THRESHOLD && viewStart > 0) {
+      win = panZoomWindow(viewStart, viewEnd, dur, -1, EDGE_PAN_STEP);
+    } else if (frac >= 1 - EDGE_PAN_THRESHOLD && viewEnd < dur) {
+      win = panZoomWindow(viewStart, viewEnd, dur, 1, EDGE_PAN_STEP);
+    }
+    if (win) {
+      viewStart = win.start;
+      viewEnd = win.end;
     }
   }
 
@@ -487,6 +558,9 @@ export function createInspiration(ctx) {
     loopEnabled = false;
     loopDragging = null;
     shareResumeAt = null;
+    zoomLevel = ZOOM_LEVELS[0];
+    viewStart = 0;
+    viewEnd = 0; // recomputed to [0, duration] on the updateLoopUI() call below
     const bar = byId("inspirationLoopBar");
     if (bar) bar.hidden = false;
     if (player && playerReady && player.setPlaybackRate) player.setPlaybackRate(1);
@@ -547,6 +621,8 @@ export function createInspiration(ctx) {
     on("inspirationLoopClear", "click", clearLoopMarkers);
     on("inspirationSpeedDown", "click", () => changeSpeed(-1));
     on("inspirationSpeedUp", "click", () => changeSpeed(1));
+    on("inspirationZoomOut", "click", () => changeZoom(-1));
+    on("inspirationZoomIn", "click", () => changeZoom(1));
 
     const track = byId("inspirationLoopTrack");
     if (!track) return;
@@ -557,24 +633,28 @@ export function createInspiration(ctx) {
         track.setPointerCapture(e.pointerId);
         return;
       }
-      if (!player || !playerReady) return;
-      const dur = playerDuration();
-      if (dur > 0) player.seekTo(fractionToTime(trackFraction(track, e), dur), true);
+      if (!player || !playerReady || viewEnd <= viewStart) return;
+      player.seekTo(viewFractionToTime(trackFraction(track, e), viewStart, viewEnd), true);
     });
     track.addEventListener("pointermove", (e) => {
       if (!loopDragging) return;
       const dur = playerDuration();
       if (dur <= 0) return;
       const frac = trackFraction(track, e);
+      // Pan before mapping frac -> time, so a drag held at the edge scrolls
+      // the window under a stationary pointer instead of getting stuck once
+      // the visible track runs out.
+      maybePanZoomWindow(frac, dur);
+      const span = viewEnd - viewStart;
       let otherTime;
       if (loopDragging === "a") {
-        otherTime = loopB === null ? dur : loopB;
+        otherTime = loopB === null ? viewEnd : loopB;
       } else {
-        otherTime = loopA === null ? 0 : loopA;
+        otherTime = loopA === null ? viewStart : loopA;
       }
-      const otherFrac = timeToFraction(otherTime, dur);
-      const clamped = clampHandleDrag(frac, otherFrac, loopDragging, LOOP_MIN_GAP / dur);
-      const time = fractionToTime(clamped, dur);
+      const otherFrac = timeToViewFraction(otherTime, viewStart, viewEnd);
+      const clamped = clampHandleDrag(frac, otherFrac, loopDragging, span > 0 ? LOOP_MIN_GAP / span : 0);
+      const time = viewFractionToTime(clamped, viewStart, viewEnd);
       if (loopDragging === "a") loopA = time;
       else loopB = time;
       updateLoopUI();
