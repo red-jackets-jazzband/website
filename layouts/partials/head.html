@@ -2,14 +2,15 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 
 <!-- SEO -->
-<title>{{ if .IsPage }}{{ .Title }} - {{ end }}{{ .Site.Title }}</title>
+{{ $pageLabel := .Params.tagline | default .Title }}
+<title>{{ .Site.Title }}{{ if .IsPage }} - {{ $pageLabel }}{{ end }}</title>
 {{ with .Site.Params.author }}<meta name="author" content="{{ . }}" />{{ end }}
 {{ with .Site.Params.description }}<meta name="description" content="{{ . }}" />{{ end }}
 <meta name="robots" content="index, follow" />
 <meta name="referrer" content="always" />
 
 <!-- Social & Open Graph -->
-<meta property="og:title" content="{{ if .IsPage }}{{ .Title }} - {{ end }}{{ .Site.Title }}" />
+<meta property="og:title" content="{{ .Site.Title }}{{ if .IsPage }} - {{ $pageLabel }}{{ end }}" />
 {{ with .Site.Params.description }}<meta property="og:description" content="{{ . }}" />{{ end }}
 <meta property="og:url" content="{{ .Site.BaseURL }}" />
 {{ with .Site.Params.shareImage }}
