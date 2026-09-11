@@ -15,17 +15,20 @@ function inDom(fn) {
   }
 }
 
-// Mounts a mocked window.YT.Player (the shape every LoopTube-timeline test
-// needs: getCurrentTime/getDuration/seekTo/etc.), opens the panel through the
-// normal Inspiration-button click, and fires onReady so the track/A/B/zoom
-// controls are live. `overrides` patches individual player methods (e.g. a
-// mutable getCurrentTime, or a seekTo that records its calls); the caller
-// still owns `delete window.YT` and `page.cleanup()` in its own finally.
-async function openLoopPanel(window, overrides = {}) {
-  let fireReady = null;
+// Mounts the mocked window.YT.Player every LoopTube-timeline test needs
+// (getCurrentTime/getDuration/seekTo/etc.) without driving the actual open
+// sequence — for the one test below (the shared-link one) that has to
+// interleave its own assertions between mounting the mock and firing
+// onReady. `overrides` patches individual player methods (e.g. a mutable
+// getCurrentTime, a seekTo/playVideo/pauseVideo that records its calls).
+// Returns { ready, state }, the two event callbacks the real onReady/
+// onStateChange wire up once FakePlayer is actually constructed.
+function mockYouTubePlayer(window, overrides = {}) {
+  const events = {};
   window.YT = {
     Player: function FakePlayer(_el, opts) {
-      fireReady = opts.events.onReady;
+      events.ready = opts.events.onReady;
+      events.state = opts.events.onStateChange;
       this.loadVideoById = () => {};
       this.stopVideo = () => {};
       this.getCurrentTime = () => 0;
@@ -38,13 +41,25 @@ async function openLoopPanel(window, overrides = {}) {
     },
     PlayerState: { PLAYING: 1 },
   };
+  return events;
+}
+
+// Mounts the mock (see above), opens the panel through the normal
+// Inspiration-button click, and fires onReady so the track/A/B/zoom
+// controls are live — the sequence every test but the shared-link one
+// needs. The caller still owns `delete window.YT` and `page.cleanup()` in
+// its own finally. Returns `insp` (rarely needed — most tests only ever
+// drive the panel through its DOM) and `fireState`, a helper for simulating
+// the player's onStateChange (e.g. `fireState(YT_PLAYING)`).
+async function openLoopPanel(window, overrides = {}) {
+  const events = mockYouTubePlayer(window, overrides);
   const insp = createInspiration();
   insp.init();
   insp.updateLink(SAMPLE_URL, "X");
   document.getElementById("inspirationLink").dispatchEvent(new window.Event("click"));
   await new Promise((resolve) => { setTimeout(resolve, 0); });
-  fireReady();
-  return insp;
+  events.ready();
+  return { insp, fireState: (data) => events.state({ data }) };
 }
 
 // Opens the panel already zoomed to 4x ([75,125] of a 200s clip, playhead
@@ -239,24 +254,8 @@ test("a shared A/B link opens the video with the loop already set", async () => 
   const page = mountPage();
   const { window } = page;
   try {
-    let fireReady = null;
-    let fireState = null;
     const seeks = [];
-    window.YT = {
-      Player: function FakePlayer(_el, opts) {
-        fireReady = opts.events.onReady;
-        fireState = opts.events.onStateChange;
-        this.loadVideoById = () => {};
-        this.stopVideo = () => {};
-        this.getCurrentTime = () => 0;
-        this.getDuration = () => 200;
-        this.getPlaybackRate = () => 1;
-        this.getAvailablePlaybackRates = () => [0.5, 1, 2];
-        this.setPlaybackRate = () => {};
-        this.seekTo = (t) => seeks.push(t);
-      },
-      PlayerState: { PLAYING: 1 },
-    };
+    const events = mockYouTubePlayer(window, { seekTo: (t) => seeks.push(t) });
     const insp = createInspiration();
     insp.init();
     insp.applyShareState({ a: 12, b: 30 });
@@ -268,11 +267,11 @@ test("a shared A/B link opens the video with the loop already set", async () => 
     );
 
     await new Promise((resolve) => { setTimeout(resolve, 0); });
-    fireReady();
+    events.ready();
     // The shared start point (loop A) lands only once the video is playing,
     // not on onReady — a replacement video wouldn't have re-fired onReady.
     assert.deepEqual(seeks, []);
-    fireState({ data: 1 });
+    events.state({ data: 1 });
 
     assert.deepEqual(seeks, [12]);
     assert.equal(document.getElementById("inspirationLoopHandleA").style.left, "6%");
@@ -287,32 +286,11 @@ test("the play/pause button drives the player and its icon follows player state"
   const page = mountPage();
   const { window } = page;
   try {
-    let fireReady = null;
-    let fireState = null;
     const calls = [];
-    window.YT = {
-      Player: function FakePlayer(_el, opts) {
-        fireReady = opts.events.onReady;
-        fireState = opts.events.onStateChange;
-        this.loadVideoById = () => {};
-        this.stopVideo = () => {};
-        this.getCurrentTime = () => 0;
-        this.getDuration = () => 200;
-        this.getPlaybackRate = () => 1;
-        this.getAvailablePlaybackRates = () => [0.5, 1, 2];
-        this.setPlaybackRate = () => {};
-        this.seekTo = () => {};
-        this.playVideo = () => calls.push("play");
-        this.pauseVideo = () => calls.push("pause");
-      },
-      PlayerState: { PLAYING: 1 },
-    };
-    const insp = createInspiration();
-    insp.init();
-    insp.updateLink(SAMPLE_URL, "X");
-    document.getElementById("inspirationLink").dispatchEvent(new window.Event("click"));
-    await new Promise((resolve) => { setTimeout(resolve, 0); });
-    fireReady();
+    const { fireState } = await openLoopPanel(window, {
+      playVideo: () => calls.push("play"),
+      pauseVideo: () => calls.push("pause"),
+    });
 
     const toggle = document.getElementById("inspirationPlayToggle");
     const icon = toggle.querySelector("span");
@@ -327,7 +305,7 @@ test("the play/pause button drives the player and its icon follows player state"
     // The player reports it's now playing -> the button flips to pause and
     // picks up the same solid-gold .playing look as the sheet's own Play
     // button (.sheet-play-btn.playing) while actually playing.
-    fireState({ data: 1 });
+    fireState(1);
     assert.equal(icon.className, "fa-solid fa-pause");
     assert.equal(toggle.getAttribute("aria-label"), "Pause");
     assert.equal(toggle.classList.contains("playing"), true);
@@ -337,7 +315,7 @@ test("the play/pause button drives the player and its icon follows player state"
     assert.deepEqual(calls, ["play", "pause"]);
 
     // Any non-playing state (e.g. paused) flips the icon back.
-    fireState({ data: 2 });
+    fireState(2);
     assert.equal(icon.className, "fa-solid fa-play");
     assert.equal(toggle.getAttribute("aria-label"), "Play");
     assert.equal(toggle.classList.contains("playing"), false);
