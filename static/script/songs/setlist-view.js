@@ -294,6 +294,7 @@ export function createSetlistView(ctx) {
         type: "button",
         class: "setlist-song-title",
         text: ctx.songName(song.file),
+        ...(personalEntry ? { title: "Alt+↑/↓ to reorder" } : {}),
         on: { click: () => openSetlistSong(song, index) },
       }),
     ]);
@@ -393,6 +394,29 @@ export function createSetlistView(ctx) {
       }
     }
     refreshOpenPersonal();
+  }
+
+  // Alt+Up/Alt+Down on any focusable element of a row (title button, divider
+  // input, drag handle): the keyboard peer of a pointer-drag, one slot at a
+  // time. Clamped at both ends (no wraparound). Wired into initArrowNav
+  // rather than the drag handle alone, so it works no matter which part of
+  // the row currently has focus.
+  function moveRowByKeyboard(row, personalId, dir) {
+    const rows = draggableRows();
+    const pos = rows.indexOf(row);
+    const target = pos + dir;
+    if (pos === -1 || target < 0 || target >= rows.length) return;
+    row.parentNode.insertBefore(row, dir < 0 ? rows[target] : rows[target].nextSibling);
+    renumberOpen();
+    focusHandleAfterRender = target;
+    // If the moved row is the song currently open in the sheet, carry its
+    // index pointer along with it — otherwise a later plain Up/Down would
+    // step from the now-stale pre-move index instead of continuing from
+    // where the song just landed.
+    if (row.dataset.songFile && row.dataset.songFile === ctx.state.currentSongFile) {
+      ctx.state.currentSetlistSongIndex = target;
+    }
+    persistOrder(personalId, draggableRows().map((r) => Number(r.dataset.setlistIndex)));
   }
 
   function beginRowDrag(e, handle, row, personalId) {
@@ -744,18 +768,38 @@ export function createSetlistView(ctx) {
     });
   }
 
+  // Alt+Up/Alt+Down anywhere inside an open personal setlist's row (title
+  // button, divider input, drag handle) reorders that row instead of falling
+  // through to song navigation.
+  function moveFocusedRowOnAltArrow(e) {
+    if (ctx.state.setlistsView !== "open" || !ctx.state.currentPersonalId) return false;
+    const row = e.target.closest?.(".setlist-song-row, .setlist-divider-row");
+    if (!row) return false;
+    e.preventDefault();
+    moveRowByKeyboard(row, ctx.state.currentPersonalId, e.key === "ArrowDown" ? 1 : -1);
+    return true;
+  }
+
+  function handlePlainArrowNav(e) {
+    if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
+    if (ctx.state.setlistsView !== "open" || ownsArrowKeys(e.target)) return;
+    e.preventDefault();
+    const down = e.key === "ArrowDown";
+    if (stepSong(down ? 1 : -1)) return;
+    // Stepped past the last song: hand off to the "Add to setlist" tray
+    // (personal setlists only — a band setlist has no such tray) instead
+    // of just clamping in place.
+    if (down) byId("setlistAddSongSearch")?.focus();
+  }
+
   function initArrowNav() {
     document.addEventListener("keydown", (e) => {
       if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
-      if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
-      if (ctx.state.setlistsView !== "open" || ownsArrowKeys(e.target)) return;
-      e.preventDefault();
-      const down = e.key === "ArrowDown";
-      if (stepSong(down ? 1 : -1)) return;
-      // Stepped past the last song: hand off to the "Add to setlist" tray
-      // (personal setlists only — a band setlist has no such tray) instead
-      // of just clamping in place.
-      if (down) byId("setlistAddSongSearch")?.focus();
+      if (e.altKey && !e.metaKey && !e.ctrlKey && !e.shiftKey) {
+        moveFocusedRowOnAltArrow(e);
+        return;
+      }
+      handlePlainArrowNav(e);
     });
   }
 
