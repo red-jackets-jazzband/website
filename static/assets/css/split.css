@@ -2794,6 +2794,19 @@ select.rj-modal-input {
 .setlist-song-title:hover {
   color: var(--rj-hover);
 }
+.setlist-song-title:focus-visible {
+  outline: none;
+}
+/* Keyboard focus anywhere in a row (its title, semitone field, drag handle
+   or remove button) highlights the whole row rather than just that one
+   control — e.g. arrowing up out of the "Add to setlist" tray lands on the
+   last row's title, and the row itself should read as focused, not just
+   the song name text. */
+.setlist-song-row:focus-within,
+.setlist-divider-row:focus-within {
+  background: rgba(255,255,255,.06);
+  border-radius: 6px;
+}
 .setlist-song-key-badge {
   flex: none;
   font: 600 11px "JetBrains Mono", monospace;
