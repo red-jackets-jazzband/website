@@ -22,6 +22,7 @@ const SYNTH_PARAMS = {
 
 const PLAY_ICON = '<span class="fa-solid fa-play" aria-hidden="true"></span>';
 const PAUSE_ICON = '<span class="fa-solid fa-pause" aria-hidden="true"></span>';
+const LOADING_ICON = '<span class="fa-solid fa-spinner fa-spin" aria-hidden="true"></span>';
 
 function setButtonsDisabled(disabled) {
   ["playPauseBtn", "stopBtn", "mixerBtn"].forEach((id) => {
@@ -72,6 +73,7 @@ export function createAudioPlayer(ctx) {
   const state = {
     synthController: null,
     isPlaying: false,
+    isLoadingPlayback: false,
     totalMs: 0,
     currentVisualObj: null,
     nativeQpm: null,
@@ -105,6 +107,12 @@ export function createAudioPlayer(ctx) {
   function updatePlayButton() {
     const btn = byId("playPauseBtn");
     if (!btn) return;
+    if (state.isLoadingPlayback) {
+      btn.innerHTML = LOADING_ICON;
+      btn.title = "Loading…";
+      btn.classList.remove("playing");
+      return;
+    }
     btn.innerHTML = state.isPlaying ? PAUSE_ICON : PLAY_ICON;
     btn.title = state.isPlaying ? "Pause" : "Play";
     btn.classList.toggle("playing", state.isPlaying);
@@ -117,6 +125,7 @@ export function createAudioPlayer(ctx) {
   // button" and risking a new one that forgets the metronome notification.
   function setIsPlaying(playing) {
     state.isPlaying = playing;
+    state.isLoadingPlayback = false;
     updatePlayButton();
     ctx.metronome.onPlaybackChange(playing);
   }
@@ -299,12 +308,29 @@ export function createAudioPlayer(ctx) {
     if (!sc || typeof sc.play !== "function") return;
     const btn = byId("playPauseBtn");
     if (btn && btn.disabled) return; // audio still loading / mid-reset
+    if (state.isLoadingPlayback) return; // already starting — ignore a second press
+
+    // Starting from a stop/pause isn't instant — SynthController primes its
+    // MIDI buffer before the first sample plays, and that gap is exactly
+    // where a press otherwise looks ignored. Swap in a spinner for it;
+    // pausing an already-playing tune is effectively instant, so it's left
+    // showing the Pause icon throughout.
+    const starting = !state.isPlaying;
+    if (starting) {
+      state.isLoadingPlayback = true;
+      updatePlayButton();
+    }
     Promise.resolve(sc.play())
       .then(() => {
         if (sc !== state.synthController) return;
         setIsPlaying(Boolean(sc.isStarted));
       })
-      .catch((err) => console.warn("Play/pause failed:", err));
+      .catch((err) => {
+        console.warn("Play/pause failed:", err);
+        if (sc !== state.synthController) return;
+        state.isLoadingPlayback = false;
+        updatePlayButton();
+      });
   }
 
   function stop() {
