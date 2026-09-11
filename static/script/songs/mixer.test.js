@@ -2,7 +2,9 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mountPage } from "../../../tests/helpers/dom.js";
 import { makeCtx } from "../../../tests/helpers/ctx.js";
-import { createMixer, loadMixerState, loadGchordPatternState } from "./mixer.js";
+import {
+  createMixer, loadMixerState, loadGchordPatternState, loadHighQualityAudioState,
+} from "./mixer.js";
 import { GM_VOICES } from "../lib/gm-voices.js";
 import { GCHORD_PATTERNS } from "../lib/audio-mix.js";
 
@@ -369,6 +371,43 @@ test("refresh() gates the Pattern picker on hasChords, same as Bass/Chords", () 
     assert.equal(document.getElementById("mixerGchordPatternSelect").disabled, false);
   } finally {
     cleanup();
+  }
+});
+
+test("clicking the Quality toggle flips ctx.state.highQualityAudio, persists it, updates the button, and re-renders at once", () => {
+  const { ctx, rerenders, cleanup } = setup();
+  try {
+    const btn = document.getElementById("mixerHighQualityToggleBtn");
+    assert.equal(btn.classList.contains("is-active"), false);
+
+    btn.dispatchEvent(new window.Event("click"));
+    assert.equal(ctx.state.highQualityAudio, true);
+    assert.equal(btn.classList.contains("is-active"), true);
+    assert.equal(btn.getAttribute("aria-pressed"), "true");
+    assert.equal(btn.querySelector(".fa-solid").classList.contains("fa-toggle-on"), true);
+    assert.equal(btn.title, "Disable high quality audio");
+    assert.equal(rerenders.length, 1);
+    assert.equal(window.localStorage.getItem("rj.highQualityAudio"), "1");
+
+    btn.dispatchEvent(new window.Event("click"));
+    assert.equal(ctx.state.highQualityAudio, false);
+    assert.equal(rerenders.length, 2);
+    assert.equal(window.localStorage.getItem("rj.highQualityAudio"), "0");
+  } finally {
+    window.localStorage.clear();
+    cleanup();
+  }
+});
+
+test("loadHighQualityAudioState defaults to off, and reflects a persisted '1'", () => {
+  const page = mountPage();
+  try {
+    assert.equal(loadHighQualityAudioState(), false);
+    window.localStorage.setItem("rj.highQualityAudio", "1");
+    assert.equal(loadHighQualityAudioState(), true);
+  } finally {
+    window.localStorage.clear();
+    page.cleanup();
   }
 });
 

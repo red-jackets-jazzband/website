@@ -1039,6 +1039,16 @@ video.video {
   color: #222222;
 }
 /*
+  Quality: also not a channel (see the metronome comment above) — a toggle
+  between the default FatBoy soundfont and the richer, much larger MusyngKite
+  set (songs/audio-player.js's synthParams, songs/mixer.js's wireQuality).
+  Reuses .mixer-metronome-toggle's on/off look — same kind of control, just a
+  different setting.
+*/
+.mixer-swatch--quality {
+  background: #7fa6c9;
+}
+/*
   Pattern: also not a channel (see the metronome comment above) — a single
   <select> choosing the Bass/Chords auto-accompaniment's %%MIDI gchord rhythm
   (songs/mixer.js, lib/audio-mix.js's GCHORD_PATTERNS). Reuses the Voice

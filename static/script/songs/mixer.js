@@ -229,12 +229,34 @@ export function createMixer(ctx) {
     if (select) select.disabled = inactive;
   }
 
+  // Quality is a third non-channel control, next to Metronome: a real toggle
+  // (songs/audio-player.js's synthParams reads ctx.state.highQualityAudio to
+  // pick FatBoy vs the much richer/heavier MusyngKite soundfont) rather than
+  // a per-channel Voice choice, so it lives here rather than in gm-voices.js.
+  // No gate — switching soundfonts is always meaningful, tune or no chords.
+  function updateQualityToggleVisual() {
+    const btn = byId("mixerHighQualityToggleBtn");
+    if (!btn) return;
+    const enabled = ctx.state.highQualityAudio;
+    btn.classList.toggle("is-active", enabled);
+    btn.setAttribute("aria-pressed", enabled ? "true" : "false");
+    const icon = btn.querySelector(".fa-solid");
+    if (icon) {
+      icon.classList.toggle("fa-toggle-on", enabled);
+      icon.classList.toggle("fa-toggle-off", !enabled);
+    }
+    const label = `${enabled ? "Disable" : "Enable"} high quality audio`;
+    btn.title = label;
+    btn.setAttribute("aria-label", label);
+  }
+
   function refresh() {
     CHANNELS.forEach((channel) => {
       updateStripVisual(channel);
       updateGate(channel);
     });
     updatePatternGate();
+    updateQualityToggleVisual();
   }
 
   function wireStrip(channel) {
@@ -313,9 +335,22 @@ export function createMixer(ctx) {
     });
   }
 
+  // A plain preference flip, applied at once like Pattern — full re-engrave
+  // is the only way to hand the new soundFontUrl to a fresh SynthController
+  // (see audio-player.js's initForTune), so there's nothing to debounce here.
+  function wireQuality() {
+    on("mixerHighQualityToggleBtn", "click", () => {
+      ctx.state.highQualityAudio = !ctx.state.highQualityAudio;
+      writePref(PREF_KEYS.highQualityAudio, ctx.state.highQualityAudio ? "1" : "0");
+      updateQualityToggleVisual();
+      ctx.sheet.rerender();
+    });
+  }
+
   function init() {
     CHANNELS.forEach(wireStrip);
     wirePattern();
+    wireQuality();
 
     on("mixerCloseBtn", "click", () => setOpen(false));
     on("mixerBackdrop", "click", () => setOpen(false));
@@ -370,4 +405,12 @@ export function loadGchordPatternState() {
   const stored = readPref(PREF_KEYS.mixerGchordPattern);
   const isValid = GCHORD_PATTERNS.some((p) => p.value === stored);
   return isValid ? stored : DEFAULT_GCHORD_PATTERN_VALUE;
+}
+
+// ctx.state.highQualityAudio's initial value, seeded from the persisted
+// pref — off by default, same reasoning as DEFAULT_MUTED's Bass/Chords:
+// nothing should suddenly start fetching ~5x-bigger soundfont files the
+// first time this ships.
+export function loadHighQualityAudioState() {
+  return readPref(PREF_KEYS.highQualityAudio) === "1";
 }

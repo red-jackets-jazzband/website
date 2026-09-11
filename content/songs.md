@@ -150,6 +150,11 @@ aliases: ["/setlists/", "/songbook/"]
       <span class="mixer-strip-label">Metronome</span>
       <button type="button" id="mixerMetronomeToggleBtn" class="mixer-mute-btn mixer-metronome-toggle" aria-pressed="false" title="Enable metronome" aria-label="Enable metronome"><span class="fa-solid fa-toggle-off" aria-hidden="true"></span></button>
     </div>
+    <div class="mixer-strip mixer-strip--quality" id="mixerStripQuality">
+      <span class="mixer-swatch mixer-swatch--quality" aria-hidden="true"></span>
+      <span class="mixer-strip-label">Quality</span>
+      <button type="button" id="mixerHighQualityToggleBtn" class="mixer-mute-btn mixer-metronome-toggle" aria-pressed="false" title="Enable high quality audio" aria-label="Enable high quality audio"><span class="fa-solid fa-toggle-off" aria-hidden="true"></span></button>
+    </div>
     <div class="mixer-strip mixer-strip--pattern" id="mixerStripPattern">
       <span class="mixer-swatch mixer-swatch--pattern" aria-hidden="true"></span>
       <span class="mixer-strip-label">Pattern</span>
