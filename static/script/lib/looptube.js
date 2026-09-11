@@ -107,6 +107,21 @@ export function stepZoom(current, direction) {
   return ZOOM_LEVELS[Math.max(0, Math.min(ZOOM_LEVELS.length - 1, idx))];
 }
 
+// The ZOOM_LEVELS entry whose implied window width (duration/level) is
+// closest to `span` seconds — lets a free-form drag (the overview strip's
+// resizable window edges) snap onto the same discrete steps the +/- buttons
+// use, so dragging and stepping stay interchangeable instead of drifting the
+// window to a width neither control could otherwise reach.
+export function nearestZoomLevel(duration, span) {
+  const dur = Math.max(0, Number(duration) || 0);
+  const s = Math.max(1e-6, Number(span) || 0);
+  const ideal = dur > 0 ? dur / s : ZOOM_LEVELS[0];
+  return ZOOM_LEVELS.reduce(
+    (best, level) => (Math.abs(level - ideal) < Math.abs(best - ideal) ? level : best),
+    ZOOM_LEVELS[0],
+  );
+}
+
 // Shifts a zoomed [viewStart, viewEnd] window by panFraction of its own
 // width in `direction` (-1 left/earlier, +1 right/later), clamped inside
 // [0, duration]. Used to auto-scroll the timeline when a drag reaches its

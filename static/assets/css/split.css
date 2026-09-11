@@ -1298,6 +1298,63 @@ video.video {
 .inspiration-loop[hidden] {
   display: none;
 }
+/*
+  The zoomed timeline's own minimap — shown only once actually zoomed in
+  (songs/inspiration.js's updateOverviewUI hides it otherwise, since a window
+  spanning the whole strip shows nothing a plain progress bar doesn't
+  already). Sits right above the zoomed timeline so the two read as one
+  progress bar with a "detail" view under an "overview" one, rather than
+  zoom being a separate control bolted on elsewhere.
+*/
+.inspiration-loop-overview {
+  position: relative;
+  height: 8px;
+  margin: 8px 12px 0;
+  border-radius: 3px;
+  background: #232323;
+  cursor: pointer;
+  touch-action: none;
+}
+.inspiration-loop-overview[hidden] {
+  display: none;
+}
+.inspiration-loop-overview-tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--rj-gold);
+  opacity: .6;
+  pointer-events: none;
+}
+.inspiration-loop-overview-window {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  min-width: 6px;
+  background: rgba(212,175,74,.3);
+  border: 1px solid var(--rj-gold);
+  border-radius: 2px;
+  cursor: grab;
+}
+.inspiration-loop-overview-window:active {
+  cursor: grabbing;
+}
+/* Invisible wider hit-targets straddling each edge, so resizing doesn't
+   demand pixel-perfect aim at a 1px border. */
+.inspiration-loop-overview-handle {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 10px;
+  cursor: ew-resize;
+}
+.inspiration-loop-overview-handle--start {
+  left: -5px;
+}
+.inspiration-loop-overview-handle--end {
+  right: -5px;
+}
 .inspiration-loop-timeline {
   position: relative;
   height: 18px;

@@ -4,6 +4,7 @@ import { PREF_KEYS, readPref, writePref } from "../lib/preferences.js";
 import {
   formatClock, normalizeLoop, clampHandleDrag, stepPlaybackRate, loopLeadSeconds, shouldLoopSeek,
   ZOOM_LEVELS, computeZoomWindow, timeToViewFraction, viewFractionToTime, stepZoom, panZoomWindow,
+  timeToFraction, nearestZoomLevel,
 } from "../lib/looptube.js";
 
 const LOOP_POLL_MS = 80;
@@ -98,6 +99,20 @@ function positionLoopHandle(el, value, viewStart, viewEnd) {
   el.hidden = false;
 }
 
+// A loop marker's position on the overview strip, which always spans the
+// whole clip regardless of the main timeline's current zoom — so this maps
+// against `duration`, not a view window, and (unlike positionLoopHandle)
+// never has an "outside the visible range" case to hide for.
+function positionOverviewTick(el, value, duration) {
+  if (!el) return;
+  if (value === null || duration <= 0) {
+    el.hidden = true;
+    return;
+  }
+  el.style.left = `${timeToFraction(value, duration) * 100}%`;
+  el.hidden = false;
+}
+
 function maxPanelWidth() {
   return Math.max(MIN_PANEL_WIDTH, window.innerWidth - EDGE_MARGIN * 2);
 }
@@ -189,6 +204,13 @@ export function createInspiration(ctx) {
   let zoomLevel = ZOOM_LEVELS[0];
   let viewStart = 0;
   let viewEnd = 0;
+  // The overview strip's own drag state — "pan" (dragging the window body,
+  // width unchanged) or "start"/"end" (dragging one of its edges, which
+  // resizes the window and snaps zoomLevel to the nearest ZOOM_LEVELS entry
+  // via nearestZoomLevel). overviewDragAnchor* only matter mid-pan.
+  let overviewDragging = null; // "pan" | "start" | "end" | null
+  let overviewDragAnchorTime = 0;
+  let overviewDragAnchorCenter = 0;
   let panelWidth = PANEL_WIDTHS[0];
   // A shared link's `a`/`b` markers, parked until the next tune with a
   // reference calls updateLink() so we know which video to open.
@@ -494,6 +516,33 @@ export function createInspiration(ctx) {
     if (zoomIn) zoomIn.disabled = !hasVideo || zoomLevel === ZOOM_LEVELS[ZOOM_LEVELS.length - 1];
   }
 
+  /*
+    The minimap strip showing where [viewStart, viewEnd] sits within the
+    whole clip — only worth showing once actually zoomed in (at 1x the
+    window covers the strip's full width, telling you nothing new), which
+    is also what makes zoom feel like a property of the progress bar itself
+    rather than a bolted-on separate control: the strip appears the moment
+    zooming makes it useful and disappears the moment it wouldn't be. A/B's
+    own position is echoed as a tick so they stay visible even zoomed away
+    from them entirely.
+  */
+  function updateOverviewUI(dur) {
+    const overview = byId("inspirationLoopOverview");
+    if (!overview) return;
+    const zoomed = dur > 0 && viewEnd - viewStart < dur - 0.001;
+    overview.hidden = !zoomed;
+    if (!zoomed) return;
+    const win = byId("inspirationOverviewWindow");
+    if (win) {
+      const fa = timeToFraction(viewStart, dur);
+      const fb = timeToFraction(viewEnd, dur);
+      win.style.left = `${fa * 100}%`;
+      win.style.width = `${(fb - fa) * 100}%`;
+    }
+    positionOverviewTick(byId("inspirationOverviewTickA"), loopA, dur);
+    positionOverviewTick(byId("inspirationOverviewTickB"), loopB, dur);
+  }
+
   function updateLoopUI() {
     const dur = playerDuration();
     // The view only auto-tracks the full clip at 1x — see the zoomLevel/
@@ -514,6 +563,7 @@ export function createInspiration(ctx) {
     updateLoopRange();
     updateLoopReadout();
     updateZoomUI(dur);
+    updateOverviewUI(dur);
 
     const canLoop = normalizeLoop(loopA, loopB, LOOP_MIN_GAP) !== null;
     if (!canLoop && loopEnabled) loopEnabled = false;
@@ -555,6 +605,32 @@ export function createInspiration(ctx) {
     }
   }
 
+  // Dragging the overview window's body pans it: the width (and so
+  // zoomLevel) never changes, only where it's centered — computed from how
+  // far the pointer has moved since the drag started, not from the pointer's
+  // own absolute position, so wherever on the window it was grabbed stays
+  // under the pointer throughout the drag instead of snapping to center.
+  function panOverviewWindow(pointerTime, dur) {
+    const center = overviewDragAnchorCenter + (pointerTime - overviewDragAnchorTime);
+    const win = computeZoomWindow(center, dur, zoomLevel);
+    viewStart = win.start;
+    viewEnd = win.end;
+  }
+
+  // Dragging one of the window's edges resizes it: the OTHER edge is the
+  // anchor, the dragged point's distance from it is snapped to the nearest
+  // ZOOM_LEVELS entry (nearestZoomLevel) so resizing and the +/- stepper
+  // always agree on the same set of reachable widths, and the new window is
+  // centered between the anchor and the drag point (so both edges settle
+  // near where the drag actually put them, not just the anchored one).
+  function resizeOverviewWindow(edge, pointerTime, dur) {
+    const anchor = edge === "start" ? viewEnd : viewStart;
+    zoomLevel = nearestZoomLevel(dur, Math.abs(anchor - pointerTime));
+    const win = computeZoomWindow((anchor + pointerTime) / 2, dur, zoomLevel);
+    viewStart = win.start;
+    viewEnd = win.end;
+  }
+
   function updatePlayToggleUI() {
     const btn = byId("inspirationPlayToggle");
     if (!btn) return;
@@ -587,6 +663,7 @@ export function createInspiration(ctx) {
     loopB = null;
     loopEnabled = false;
     loopDragging = null;
+    overviewDragging = null;
     shareResumeAt = null;
     zoomLevel = ZOOM_LEVELS[0];
     viewStart = 0;
@@ -698,6 +775,59 @@ export function createInspiration(ctx) {
     });
   }
 
+  /*
+    The minimap strip (see updateOverviewUI's doc comment): grabbing its
+    window body pans (panOverviewWindow), grabbing one of the two edge
+    handles resizes (resizeOverviewWindow), and clicking its background
+    outside the window jumps straight there at the current zoom level — the
+    same three interactions a video editor's overview/minimap gives you,
+    rather than the zoom stepper being the only way to move around once
+    zoomed in.
+  */
+  function initOverview() {
+    const overview = byId("inspirationLoopOverview");
+    const win = byId("inspirationOverviewWindow");
+    if (!overview || !win) return;
+
+    overview.addEventListener("pointerdown", (e) => {
+      const dur = playerDuration();
+      if (dur <= 0) return;
+      const handle = e.target.closest && e.target.closest(".inspiration-loop-overview-handle");
+      if (handle) {
+        overviewDragging = handle.id === "inspirationOverviewHandleEnd" ? "end" : "start";
+        overview.setPointerCapture(e.pointerId);
+        return;
+      }
+      const t = trackFraction(overview, e) * dur;
+      if (e.target === win || win.contains(e.target)) {
+        overviewDragging = "pan";
+        overviewDragAnchorTime = t;
+        overviewDragAnchorCenter = (viewStart + viewEnd) / 2;
+        overview.setPointerCapture(e.pointerId);
+        return;
+      }
+      // Background click (not the window, not a handle) -> jump there at once.
+      const jumped = computeZoomWindow(t, dur, zoomLevel);
+      viewStart = jumped.start;
+      viewEnd = jumped.end;
+      updateLoopUI();
+    });
+    overview.addEventListener("pointermove", (e) => {
+      if (!overviewDragging) return;
+      const dur = playerDuration();
+      if (dur <= 0) return;
+      const t = trackFraction(overview, e) * dur;
+      if (overviewDragging === "pan") panOverviewWindow(t, dur);
+      else resizeOverviewWindow(overviewDragging, t, dur);
+      updateLoopUI();
+    });
+    overview.addEventListener("pointerup", (e) => {
+      if (!overviewDragging) return;
+      overviewDragging = null;
+      if (overview.hasPointerCapture(e.pointerId)) overview.releasePointerCapture(e.pointerId);
+    });
+  }
+
   // ---- panel size ------------------------------------------------
 
   function updateSizeButtonIcon() {
@@ -768,6 +898,7 @@ export function createInspiration(ctx) {
     const header = byId("inspirationPanelHeader");
     if (!panel || !header) return;
     initLoopBar();
+    initOverview();
     on("inspirationCloseBtn", "click", closePanel);
     on("inspirationShareBtn", "click", copyShareLink);
     on("inspirationSizeBtn", "click", () => cyclePanelSize(panel));

@@ -15,6 +15,7 @@ import {
   viewFractionToTime,
   stepZoom,
   panZoomWindow,
+  nearestZoomLevel,
 } from "./looptube.js";
 
 test("formatClock renders m:ss under an hour", () => {
@@ -106,6 +107,19 @@ test("stepZoom walks ZOOM_LEVELS and clamps at the ends", () => {
   assert.equal(stepZoom(2, -1), 1);
   assert.equal(stepZoom(1, -1), 1); // already at the widest view
   assert.equal(stepZoom(ZOOM_LEVELS.at(-1), 1), ZOOM_LEVELS.at(-1)); // already at the narrowest
+});
+
+test("nearestZoomLevel picks the ZOOM_LEVELS entry whose implied width is closest", () => {
+  // 200s clip: level 4 implies a 50s window, level 8 a 25s window.
+  assert.equal(nearestZoomLevel(200, 50), 4);
+  assert.equal(nearestZoomLevel(200, 45), 4); // closer to 50 than to 25
+  assert.equal(nearestZoomLevel(200, 30), 8); // closer to 25 than to 50
+  assert.equal(nearestZoomLevel(200, 25), 8);
+});
+
+test("nearestZoomLevel clamps to the ends for spans outside ZOOM_LEVELS' range", () => {
+  assert.equal(nearestZoomLevel(200, 1000), ZOOM_LEVELS[0]); // wider than the full clip
+  assert.equal(nearestZoomLevel(200, 0.001), ZOOM_LEVELS.at(-1)); // far narrower than the narrowest level
 });
 
 test("panZoomWindow shifts a zoomed window and clamps at the clip's ends", () => {
