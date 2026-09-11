@@ -260,6 +260,46 @@ test("a Tempo nudge on a never-played sheet doesn't light up a chord cell", asyn
   }
 });
 
+test("a torn-down controller's belated callback doesn't move the cursor once a newer one has taken over", async () => {
+  const { audio, cleanup } = setup();
+  const abcjs = createAbcjsStub({ audioSupported: true });
+  try {
+    withAbcjs(abcjs, () => audio.initForTune({ metaText: {} }));
+    await flush();
+    const staleCursorControl = abcjs.calls.synthControllers[0]._cursorControl;
+
+    // A second render (e.g. a mixer change, or picking the song again)
+    // swaps in a fresh controller while the first is still reachable —
+    // pause() can't stop async work the first controller hadn't finished.
+    withAbcjs(abcjs, () => audio.initForTune({ metaText: {} }));
+    await flush();
+    withAbcjs(abcjs, () => audio.playPause());
+    await flush();
+    assert.equal(audio.isPlaying, true);
+
+    // The stale controller's own setWarp/go from a tempo change made just
+    // before the rerender finally unwinds and fires onEvent. It must not
+    // repaint the cursor now that it's retired.
+    document.getElementById("chordtable").innerHTML = '<span class="chordCell">C</span>';
+    const staleNote = document.createElement("span");
+    staleNote._abcMeasureIdx = 0;
+    staleCursorControl.onEvent({ elements: [[staleNote]] });
+
+    assert.equal(staleNote.classList.contains("abcjs-current-note"), false);
+    assert.equal(
+      document.querySelector("#chordtable .chordCell").classList.contains("chordCell-playing"),
+      false,
+    );
+
+    // A belated onFinished from the same stale controller must not stop
+    // playback or clear the current highlight either.
+    staleCursorControl.onFinished();
+    assert.equal(audio.isPlaying, true);
+  } finally {
+    cleanup();
+  }
+});
+
 test("setRepeatBoundaries is accepted (shape from scanRepeatBoundaries)", () => {
   const { audio, cleanup } = setup();
   try {

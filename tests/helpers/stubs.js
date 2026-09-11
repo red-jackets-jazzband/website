@@ -105,7 +105,7 @@ function fakeTune(text) {
 }
 
 export function createAbcjsStub({ audioSupported = false } = {}) {
-  const calls = { renderAbc: [], parseOnly: [], setTune: [] };
+  const calls = { renderAbc: [], parseOnly: [], setTune: [], synthControllers: [] };
 
   const stub = {
     calls,
@@ -126,7 +126,15 @@ export function createAbcjsStub({ audioSupported = false } = {}) {
         // Mirrors ABCjs 6.6.4: play() toggles `isStarted` (resume/pause both
         // go through it), setTune() resets it, pause() leaves it untouched.
         this.isStarted = false;
-        this.load = (_target, cursorControl) => { stub.cursorControl = cursorControl; };
+        // Recorded per instance (`this._cursorControl`), not just on the
+        // stub as a whole, so a test can hang onto an earlier controller's
+        // own cursorControl after a later initForTune() has overwritten
+        // `stub.cursorControl` — needed to simulate a torn-down controller's
+        // callback firing late.
+        this.load = (_target, cursorControl) => {
+          this._cursorControl = cursorControl;
+          stub.cursorControl = cursorControl;
+        };
         this.setTune = (tune, opts, params) => {
           calls.setTune.push({ tune, opts, params });
           this.isStarted = false;
@@ -137,11 +145,12 @@ export function createAbcjsStub({ audioSupported = false } = {}) {
         // ABCjs's real setWarp() ends with an internal seek that fires one
         // event callback; mirror that so tests can prove the highlight guard.
         this.setWarp = () => {
-          if (stub.cursorControl && stub.cursorControl.onEvent) {
-            stub.cursorControl.onEvent({ elements: stub._warpEventElements || [] });
+          if (this._cursorControl && this._cursorControl.onEvent) {
+            this._cursorControl.onEvent({ elements: stub._warpEventElements || [] });
           }
           return Promise.resolve();
         };
+        calls.synthControllers.push(this);
       },
     },
   };
