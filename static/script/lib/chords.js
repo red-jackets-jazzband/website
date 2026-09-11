@@ -17,7 +17,17 @@ export function replaceAccidentalWithUtf8Char(note) {
 
 // Reads the chords from an abcjs tune (parsed intermediate format) into a
 // list of measures, each `{ text: [chordStrings...], leftRepeat?, ... }`.
-export function parseChordScheme(song) {
+//
+// By default, measures inside a second-or-later ("[2", "[3", ...) repeat
+// ending are dropped: the chord table (and its repeat-boundary highlighting)
+// wants the scheme's one canonical pass, not a tag/outro ending's extra bars
+// thrown in on top — that's what lets a blues head with a coda still
+// simplify down to a clean 12-bar grid. `includeAlternateEndings: true`
+// keeps every measure instead, one entry per physical bar exactly as
+// printed — buildCompingTune needs that full count, or the comping voice
+// runs out of bars (and falls silent) the moment the melody enters such an
+// ending, e.g. happy_feet_blues's part C outro.
+export function parseChordScheme(song, { includeAlternateEndings = false } = {}) {
   let chords = [];
   let currentMeasure = { text: [] };
 
@@ -59,7 +69,8 @@ export function parseChordScheme(song) {
             inAlternativeEnding = false;
           }
 
-          if (!inAlternativeEnding) {
+          const skipEnding = inAlternativeEnding && !includeAlternateEndings;
+          if (!skipEnding) {
             if (didNotParseChordInThisMeasure && parsedValidChord && noteOrRestInMeasure) {
               currentMeasure.text.push(" % ");
             }
@@ -76,7 +87,7 @@ export function parseChordScheme(song) {
           }
         }
 
-        if (!inAlternativeEnding) {
+        if (!(inAlternativeEnding && !includeAlternateEndings)) {
           if (element.chord !== undefined && isValidChordName(element.chord[0].name)) {
             const chord = replaceAccidentalWithUtf8Char(element.chord[0].name);
             currentMeasure.text.push(chord);
@@ -92,7 +103,7 @@ export function parseChordScheme(song) {
   // flush above, so the final measure's chords are still sitting unpushed in
   // currentMeasure — flush them here or the chord table (and comping) loses
   // the last bar.
-  if (!inAlternativeEnding && currentMeasure.text.length > 0) {
+  if (!(inAlternativeEnding && !includeAlternateEndings) && currentMeasure.text.length > 0) {
     chords.push(currentMeasure);
   }
 

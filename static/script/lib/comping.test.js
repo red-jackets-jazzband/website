@@ -220,6 +220,20 @@ test("measureBarSlots doesn't mistake a second-ending bracket ([2 ...) for an in
   assert.equal(measureBarSlots("[2 c4 c4", 1, 8), 8);
 });
 
+test("measureBarSlots reads a chord's duration off its first note when it isn't given after the closing bracket", () => {
+  // happy_feet_blues' part C ("_Break rhythm") spells every chord tone's
+  // length out individually, e.g. "[F2_d2]" rather than the more usual
+  // "[Fd]2" — ABCjs itself takes the chord's duration from its first note
+  // (confirmed against a real parse), so this must too, or the bar reads as
+  // shorter than it is and buildVoiceBody mistakes it for a sub-bar pickup.
+  assert.equal(measureBarSlots("[F2_d2]", 1, 8), 2);
+  assert.equal(measureBarSlots("[F2_d2] [F2d2] [F2d2] [F2d2]", 1, 8), 8);
+  // a bare, un-numbered chord tone still defaults to one slot
+  assert.equal(measureBarSlots("[Fd]", 1, 8), 1);
+  // a trailing duration after "]" (the usual form) still works
+  assert.equal(measureBarSlots("[CEG]2", 1, 8), 2);
+});
+
 test("measureBarSlots keeps an unclosed inline field's text verbatim instead of dropping it", () => {
   // No closing "]" — the field-stripper's own fallback keeps the rest of the
   // segment untouched (the same "no closing delimiter" contract as
