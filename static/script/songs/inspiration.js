@@ -118,6 +118,17 @@ function positionOverviewTick(el, value, duration) {
   el.hidden = false;
 }
 
+// The overview strip's own "played so far" marker (see the CSS doc comment
+// on .inspiration-loop-overview-played) — mapped against the whole clip via
+// timeToFraction, not the zoomed view timeToViewFraction uses for the main
+// timeline's played bar, so it keeps tracking the real playhead even once
+// zoomed away from it.
+function updateOverviewPlayed(t, dur) {
+  const el = byId("inspirationOverviewPlayed");
+  if (!el) return;
+  el.style.width = `${timeToFraction(t, dur) * 100}%`;
+}
+
 function maxPanelWidth() {
   return Math.max(MIN_PANEL_WIDTH, window.innerWidth - EDGE_MARGIN * 2);
 }
@@ -485,12 +496,14 @@ export function createInspiration(ctx) {
 
   function updatePlayhead(t) {
     const played = byId("inspirationLoopPlayed");
-    if (!played) return;
-    // Clamps to the near/far edge of the current view when the playhead is
-    // outside it (e.g. still playing past a zoomed-in window) — the same
-    // "clipped, not wrong" reading a scrolled-out-of-view progress bar gets
-    // anywhere else, so it's left as a plain clamp rather than hidden.
-    played.style.width = `${timeToViewFraction(t, viewStart, viewEnd) * 100}%`;
+    if (played) {
+      // Clamps to the near/far edge of the current view when the playhead is
+      // outside it (e.g. still playing past a zoomed-in window) — the same
+      // "clipped, not wrong" reading a scrolled-out-of-view progress bar gets
+      // anywhere else, so it's left as a plain clamp rather than hidden.
+      played.style.width = `${timeToViewFraction(t, viewStart, viewEnd) * 100}%`;
+    }
+    updateOverviewPlayed(t, playerDuration());
   }
 
   function updateLoopRange() {
@@ -538,7 +551,10 @@ export function createInspiration(ctx) {
     its place once zoomed. At 1x its window simply spans the whole strip,
     same as a browser scrollbar's thumb filling the track when there's
     nothing to scroll. A/B's own position is echoed as a tick so they stay
-    visible even when zoomed away from them entirely.
+    visible even when zoomed away from them entirely. The playhead itself is
+    echoed the same way — see updateOverviewPlayed/.inspiration-loop-overview-played
+    — so overall progress through the clip stays visible here too, not just
+    on the zoomed timeline below.
   */
   function updateOverviewUI(dur) {
     const win = byId("inspirationOverviewWindow");
@@ -714,6 +730,8 @@ export function createInspiration(ctx) {
     if (player && playerReady && player.setPlaybackRate) player.setPlaybackRate(1);
     const played = byId("inspirationLoopPlayed");
     if (played) played.style.width = "0%";
+    const overviewPlayed = byId("inspirationOverviewPlayed");
+    if (overviewPlayed) overviewPlayed.style.width = "0%";
     updateSpeedLabel();
     updateLoopUI();
   }

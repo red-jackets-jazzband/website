@@ -1400,6 +1400,23 @@ video.video {
 .inspiration-loop-overview-handle--end {
   right: -5px;
 }
+/* Same "played so far" bar as .inspiration-loop-played below, mapped against
+   the whole clip's duration rather than the zoomed view — so progress stays
+   visible on the overview strip even once zoomed away from the playhead,
+   the one thing the window rectangle (which only tracks the visible range)
+   can't show on its own. Painted after the window so it stays visible on
+   top of that translucent overlay rather than getting tinted under it. */
+.inspiration-loop-overview-played {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  height: 2px;
+  width: 0;
+  transform: translateY(-50%);
+  background: rgba(236,234,230,.55);
+  border-radius: 1px;
+  pointer-events: none;
+}
 .inspiration-loop-timeline {
   position: relative;
   height: 18px;

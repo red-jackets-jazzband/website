@@ -418,6 +418,39 @@ test("the overview window covers the full strip at 1x and narrows once zoomed, e
   }
 });
 
+test("the overview strip's played marker tracks the playhead against the full clip, not the zoomed view", async () => {
+  const page = mountPage();
+  const { window } = page;
+  try {
+    let currentTime = 0;
+    let tick = null;
+    window.setInterval = (fn) => { tick = fn; return 1; };
+    window.clearInterval = () => { tick = null; };
+
+    const { fireState } = await openLoopPanel(window, { getCurrentTime: () => currentTime });
+    const overviewPlayed = document.getElementById("inspirationOverviewPlayed");
+    assert.equal(overviewPlayed.style.width, "0%");
+
+    fireState(1); // PLAYING — starts the loop poll
+    assert.ok(tick, "loop poll should be running");
+
+    currentTime = 50; // 50/200 of the 200s clip
+    tick();
+    assert.equal(overviewPlayed.style.width, "25%");
+
+    // Zoom in around the current playhead — the zoomed timeline's own played
+    // bar would now read differently (it's relative to the narrower view),
+    // but the overview marker still reads against the whole clip.
+    document.getElementById("inspirationZoomIn").dispatchEvent(new window.Event("click"));
+    currentTime = 100; // 100/200
+    tick();
+    assert.equal(overviewPlayed.style.width, "50%");
+  } finally {
+    delete window.YT;
+    page.cleanup();
+  }
+});
+
 test("dragging the overview window's body pans it without changing the zoom level", async () => {
   const page = mountPage();
   const { window } = page;
