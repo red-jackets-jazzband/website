@@ -50,7 +50,7 @@ export function irealProFromAbc(song, chords) {
   // in the header above is unrelated) — our own BREAK_CHORD display text
   // ("N.C.") isn't a chord iReal Pro can parse, so it's translated here the
   // same way "%" is translated to iReal Pro's "x" (repeat previous bar).
-  const breakChordPattern = new RegExp(BREAK_CHORD.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g");
+  const breakChordPattern = new RegExp(BREAK_CHORD.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`), "g");
   irealProText = irealProText
     .replace(breakChordPattern, "n")
     .replace(/Ø/g, "h")

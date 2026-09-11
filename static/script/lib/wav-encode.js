@@ -10,7 +10,7 @@ const PCM_FORMAT = 1;
 const HEADER_SIZE = 44;
 
 function writeAscii(view, offset, text) {
-  for (let i = 0; i < text.length; i += 1) view.setUint8(offset + i, text.charCodeAt(i));
+  for (let i = 0; i < text.length; i += 1) view.setUint8(offset + i, text.codePointAt(i));
 }
 
 // Float sample (nominally -1..1, clamped) -> signed 16-bit PCM.
