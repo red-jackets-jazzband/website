@@ -81,6 +81,11 @@ export function createAudioPlayer(ctx) {
     chordOffset: 0,
     repeatStart: undefined,
     repeatEnd: undefined,
+    // Bumped on every initForTune() call (a new song, or a same-song
+    // re-render from a Key/Tempo/Comping change) so an in-flight Export WAV
+    // (songs/wav-export.js) can tell whether the sheet it started rendering
+    // is still the one on screen once its offline synth finally resolves.
+    renderGeneration: 0,
   };
 
   let highlighted = [];
@@ -392,6 +397,7 @@ export function createAudioPlayer(ctx) {
   }
 
   function initForTune(visualObj) {
+    state.renderGeneration += 1;
     if (!ABCJS.synth || typeof ABCJS.synth.supportsAudio !== "function"
       || !ABCJS.synth.supportsAudio()) {
       return;
@@ -484,6 +490,13 @@ export function createAudioPlayer(ctx) {
     },
     get beatsPerMeasure() {
       return beatsPerMeasure(meterValueOf(state.currentVisualObj));
+    },
+    // songs/wav-export.js reads this before its offline synth's await chain
+    // and again after, to tell whether a newer render (a song switch, or a
+    // same-song Key/Tempo/Comping re-render) has since superseded the export
+    // it started.
+    get renderGeneration() {
+      return state.renderGeneration;
     },
     setRepeatBoundaries({ start, end }) {
       state.repeatStart = start;

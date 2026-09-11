@@ -112,6 +112,38 @@ test("Export WAV is a no-op when there's no tune to render (buildExportOptions r
   }
 });
 
+test("Export WAV keeps the initiating song's filename and leaves a superseding render's button alone", async () => {
+  const { ctx, cleanup } = setup();
+  ctx.audio.renderGeneration = 1;
+  const abcjs = createAbcjsStub();
+  const download = stubDownload();
+  try {
+    const btn = clickExport(ctx, abcjs);
+
+    // A newer render supersedes this export while its offline synth is
+    // still priming — a song switch, or a same-song Key/Tempo/Comping
+    // re-render. audio-player.js's initForTune bumps renderGeneration for
+    // both cases; ctx.state.currentSongFile only changes for the former.
+    ctx.audio.renderGeneration = 2;
+    ctx.state.currentSongFile = "some_other_song.abc";
+
+    await flush();
+    await flush();
+
+    // Downloaded under the song that was open when export started, not
+    // whichever one is open now.
+    assert.equal(download.clicked.length, 1);
+    assert.equal(download.clicked[0].download, "basin_street.wav");
+    // The button belongs to the newer render now; the superseded export's
+    // finally must not stomp it back to idle.
+    assert.equal(btn.disabled, true);
+    assert.ok(btn.querySelector(SPINNER_SELECTOR));
+  } finally {
+    download.restore();
+    cleanup();
+  }
+});
+
 test("Export WAV recovers (button re-enabled, no download) when the render produces no audio", async () => {
   const { ctx, cleanup } = setup();
   const abcjs = createAbcjsStub({ exportAudioBuffer: null });

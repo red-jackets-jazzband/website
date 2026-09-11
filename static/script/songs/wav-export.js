@@ -14,6 +14,14 @@ async function exportWav(ctx, btn) {
   const built = ctx.audio.buildExportOptions();
   if (!built) return;
 
+  // Captured before the first await: if a newer render supersedes this one
+  // while synth.init()/prime() are in flight (the user switches songs, or
+  // re-renders the same one via Key/Tempo/Comping), the download must still
+  // be named after *this* export's song, and the button must be left alone
+  // for whichever render owns it now rather than being stomped back to idle.
+  const song = ctx.state.currentSongFile;
+  const generation = ctx.audio.renderGeneration;
+
   btn.disabled = true;
   btn.innerHTML = BUSY_ICON;
   try {
@@ -22,12 +30,14 @@ async function exportWav(ctx, btn) {
     await synth.prime();
     const buffer = synth.audioBuffers?.[0];
     if (!buffer) throw new Error("No audio rendered for this tune");
-    downloadBlob(wavFilename(ctx.state.currentSongFile), new Blob([encodeWav(buffer)], { type: "audio/wav" }));
+    downloadBlob(wavFilename(song), new Blob([encodeWav(buffer)], { type: "audio/wav" }));
   } catch (err) {
     console.warn("WAV export failed:", err);
   } finally {
-    btn.disabled = false;
-    btn.innerHTML = IDLE_ICON;
+    if (ctx.audio.renderGeneration === generation) {
+      btn.disabled = false;
+      btn.innerHTML = IDLE_ICON;
+    }
   }
 }
 

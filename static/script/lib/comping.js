@@ -257,17 +257,35 @@ function scanNoteLetter(str, i, letters) {
 
 // Scans an optional duration suffix — digits, then an optional run of "/"s
 // with their own optional digits (e.g. "2", "/2", "3/2", "/") — returning
-// both the index just past it and the numerator/denominator it spelled out.
+// the index just past it, the resulting multiplier, and the exact
+// numerator/denominator it spelled out (num/den, before any reduction) so a
+// caller that needs to combine two duration suffixes exactly — see
+// stripChordBrackets below — can multiply the fractions instead of the
+// already-rounded float `mult`.
 function scanDurationMultiplier(str, i) {
   const numEnd = scanRun(str, i, isDigit);
   const numerator = str.slice(i, numEnd);
-  const mult = numerator ? Number.parseInt(numerator, 10) : 1;
-  if (str[numEnd] !== "/") return { end: numEnd, mult };
+  const num = numerator ? Number.parseInt(numerator, 10) : 1;
+  if (str[numEnd] !== "/") return { end: numEnd, mult: num, num, den: 1 };
   const slashEnd = scanRun(str, numEnd, isSlash);
   const denomEnd = scanRun(str, slashEnd, isDigit);
   const denominator = str.slice(slashEnd, denomEnd);
-  const denom = denominator ? Number.parseInt(denominator, 10) : 2 ** (slashEnd - numEnd);
-  return { end: denomEnd, mult: mult / denom };
+  const den = denominator ? Number.parseInt(denominator, 10) : 2 ** (slashEnd - numEnd);
+  return { end: denomEnd, mult: num / den, num, den };
+}
+
+// Formats the product of two duration-suffix fractions (see
+// scanDurationMultiplier) as the ABC suffix text that would reproduce that
+// same combined multiplier if re-scanned — "" for 1, a bare integer when the
+// product is whole, otherwise "num/den".
+function multiplyDurationSuffixes(a, b) {
+  const num = a.num * b.num;
+  const den = a.den * b.den;
+  const g = gcd(num, den);
+  const n = num / g;
+  const d = den / g;
+  if (n === 1 && d === 1) return "";
+  return d === 1 ? String(n) : n + "/" + d;
 }
 
 // Like stripDelimited("[", "]", ...) but the replacement carries the
@@ -276,7 +294,10 @@ function scanDurationMultiplier(str, i) {
 // trailing the "]" — the "_Break rhythm" bars in happy_feet_blues' part C)
 // must still count as one duration-2 event, not silently default to 1.
 // ABCjs itself takes a chord's duration from its first note, so this reads
-// the same one.
+// the same one. A duration suffix can *also* trail the closing "]" itself
+// ("[F2_d2]2" — the whole chord doubled on top of its own first note's
+// length); the two multipliers are independent ABC duration modifiers and
+// must be multiplied together, not have their digit text concatenated.
 function stripChordBrackets(str) {
   let result = "";
   let i = 0;
@@ -293,9 +314,10 @@ function stripChordBrackets(str) {
     }
     const inner = str.slice(i + 1, end);
     const noteEnd = scanNoteLetter(inner, 0, CHORD_NOTE_LETTERS);
-    const durText = noteEnd === -1 ? "" : inner.slice(noteEnd, scanDurationMultiplier(inner, noteEnd).end);
-    result += "Y" + durText;
-    i = end + 1;
+    const innerDur = noteEnd === -1 ? { num: 1, den: 1 } : scanDurationMultiplier(inner, noteEnd);
+    const outerDur = scanDurationMultiplier(str, end + 1);
+    result += "Y" + multiplyDurationSuffixes(innerDur, outerDur);
+    i = outerDur.end;
   }
   return result;
 }
