@@ -384,7 +384,25 @@ export function createAudioPlayer(ctx) {
     buildTimingMap(visualObj);
 
     state.synthController = new ABCJS.synth.SynthController();
-    state.synthController.load("#abc-player-container", cursorControl, {
+    const ctrl = state.synthController;
+    // pause() above can't stop a controller whose own setTune/go or a
+    // tempo change's setWarp is still mid-flight (e.g. it's between
+    // destroying its old timer and priming a new one) — there's nothing
+    // running yet to pause. Left unguarded, that stale controller's own
+    // onStart/onEvent/onFinished still lands on the shared cursorControl
+    // below once its async chain unwinds, and — since highlightEvent's own
+    // guard only checks the *current* controller's isStarted, not which
+    // controller actually fired — it repaints the cursor at its own stale
+    // position on top of (or instead of) wherever the new controller
+    // actually is, which is what makes the highlight look like it's
+    // jumping between two positions. Tying every callback to the
+    // controller that was current when load() was called closes that off.
+    ctrl.load("#abc-player-container", {
+      onStart() { if (ctrl === state.synthController) cursorControl.onStart(); },
+      onEvent(ev) { if (ctrl === state.synthController) cursorControl.onEvent(ev); },
+      onFinished() { if (ctrl === state.synthController) cursorControl.onFinished(); },
+      onBeat() {},
+    }, {
       displayLoop: false,
       displayRestart: false,
       displayPlay: false,
@@ -395,7 +413,6 @@ export function createAudioPlayer(ctx) {
       displayWarp: true,
     });
 
-    const ctrl = state.synthController;
     ctrl.setTune(visualObj, false, synthParams())
       .then(() => {
         if (ctrl !== state.synthController) return;
