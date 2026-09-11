@@ -563,6 +563,10 @@ export function createInspiration(ctx) {
     const label = isPlaying ? "Pause" : "Play";
     btn.title = label;
     btn.setAttribute("aria-label", label);
+    // Same treatment as the sheet's own Play button (.sheet-play-btn.playing):
+    // a solid gold fill while actually playing, the one control in its shell
+    // that earns that at rest rather than only on hover/press.
+    btn.classList.toggle("playing", isPlaying);
   }
 
   function togglePlayPause() {
