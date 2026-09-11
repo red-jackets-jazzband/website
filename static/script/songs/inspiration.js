@@ -503,6 +503,12 @@ export function createInspiration(ctx) {
     if (which === "a") loopA = t;
     else loopB = t;
     updateLoopUI();
+    // B is normally the second (last) marker placed — flip looping on right
+    // away instead of making the toggle a separate third click, as long as
+    // it now has a playable A-B span to loop. toggleLoopEnabled no-ops
+    // without one (and calls updateLoopUI itself), so no extra guard needed
+    // beyond "isn't already on".
+    if (which === "b" && !loopEnabled) toggleLoopEnabled();
   }
 
   function toggleLoopEnabled() {

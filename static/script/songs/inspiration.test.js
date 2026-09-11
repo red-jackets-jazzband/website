@@ -4,6 +4,7 @@ import { mountPage } from "../../../tests/helpers/dom.js";
 import { createInspiration } from "./inspiration.js";
 
 const SAMPLE_URL = "https://youtu.be/abcdefghijk";
+const ARIA_PRESSED = "aria-pressed";
 
 function inDom(fn) {
   const page = mountPage();
@@ -217,7 +218,7 @@ test("a shared A/B link opens the video with the loop already set", async () => 
 
     assert.equal(document.getElementById("inspirationPanel").hidden, false);
     assert.equal(
-      document.getElementById("inspirationLoopToggle").getAttribute("aria-pressed"), "true",
+      document.getElementById("inspirationLoopToggle").getAttribute(ARIA_PRESSED), "true",
     );
 
     await new Promise((resolve) => { setTimeout(resolve, 0); });
@@ -230,6 +231,99 @@ test("a shared A/B link opens the video with the loop already set", async () => 
     assert.deepEqual(seeks, [12]);
     assert.equal(document.getElementById("inspirationLoopHandleA").style.left, "6%");
     assert.equal(document.getElementById("inspirationLoopHandleB").style.left, "15%");
+  } finally {
+    delete window.YT;
+    page.cleanup();
+  }
+});
+
+test("setting point B auto-enables the loop toggle once A and B form a span", async () => {
+  const page = mountPage();
+  const { window } = page;
+  try {
+    let fireReady = null;
+    let currentTime = 0;
+    const seeks = [];
+    window.YT = {
+      Player: function FakePlayer(_el, opts) {
+        fireReady = opts.events.onReady;
+        this.loadVideoById = () => {};
+        this.stopVideo = () => {};
+        this.getCurrentTime = () => currentTime;
+        this.getDuration = () => 200;
+        this.getPlaybackRate = () => 1;
+        this.getAvailablePlaybackRates = () => [0.5, 1, 2];
+        this.setPlaybackRate = () => {};
+        this.seekTo = (t) => seeks.push(t);
+      },
+      PlayerState: { PLAYING: 1 },
+    };
+    const insp = createInspiration();
+    insp.init();
+    insp.updateLink(SAMPLE_URL, "X");
+    document.getElementById("inspirationLink").dispatchEvent(new window.Event("click"));
+    await new Promise((resolve) => { setTimeout(resolve, 0); });
+    fireReady();
+
+    const toggle = document.getElementById("inspirationLoopToggle");
+    assert.equal(toggle.getAttribute(ARIA_PRESSED), "false");
+
+    currentTime = 10;
+    document.getElementById("inspirationSetA").dispatchEvent(new window.Event("click"));
+    assert.equal(toggle.getAttribute(ARIA_PRESSED), "false"); // A alone isn't a loop yet
+
+    currentTime = 20;
+    document.getElementById("inspirationSetB").dispatchEvent(new window.Event("click"));
+    assert.equal(toggle.getAttribute(ARIA_PRESSED), "true"); // B completes the span — auto-armed
+    // Same seek-back-to-A the toggle button itself does when turned on by hand.
+    assert.deepEqual(seeks, [10]);
+
+    // A later Set B press just moves B — already looping, so it isn't
+    // re-toggled off.
+    currentTime = 25;
+    document.getElementById("inspirationSetB").dispatchEvent(new window.Event("click"));
+    assert.equal(toggle.getAttribute(ARIA_PRESSED), "true");
+  } finally {
+    delete window.YT;
+    page.cleanup();
+  }
+});
+
+test("setting point B too close to A to form a loop doesn't enable the toggle", async () => {
+  const page = mountPage();
+  const { window } = page;
+  try {
+    let fireReady = null;
+    let currentTime = 0;
+    window.YT = {
+      Player: function FakePlayer(_el, opts) {
+        fireReady = opts.events.onReady;
+        this.loadVideoById = () => {};
+        this.stopVideo = () => {};
+        this.getCurrentTime = () => currentTime;
+        this.getDuration = () => 200;
+        this.getPlaybackRate = () => 1;
+        this.getAvailablePlaybackRates = () => [0.5, 1, 2];
+        this.setPlaybackRate = () => {};
+        this.seekTo = () => {};
+      },
+      PlayerState: { PLAYING: 1 },
+    };
+    const insp = createInspiration();
+    insp.init();
+    insp.updateLink(SAMPLE_URL, "X");
+    document.getElementById("inspirationLink").dispatchEvent(new window.Event("click"));
+    await new Promise((resolve) => { setTimeout(resolve, 0); });
+    fireReady();
+
+    currentTime = 10;
+    document.getElementById("inspirationSetA").dispatchEvent(new window.Event("click"));
+    currentTime = 10.5; // under LOOP_MIN_GAP — not a playable span
+    document.getElementById("inspirationSetB").dispatchEvent(new window.Event("click"));
+
+    const toggle = document.getElementById("inspirationLoopToggle");
+    assert.equal(toggle.getAttribute(ARIA_PRESSED), "false");
+    assert.equal(toggle.disabled, true);
   } finally {
     delete window.YT;
     page.cleanup();
