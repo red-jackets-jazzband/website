@@ -459,8 +459,13 @@ export function createInspiration(ctx) {
           // allowSeekAhead=false: A has already played, so it's buffered —
           // this skips the "new stream request" the player would otherwise
           // make, which is what flashes the native controls back into view
-          // on every repeat.
+          // on every repeat. That mode is also known to leave the player
+          // stalled/paused instead of resuming (confirmed empirically: the
+          // loop would play through once and then just stop) — the explicit
+          // playVideo() forces it to keep going, and is a no-op when it was
+          // already playing.
           player.seekTo(span.a, false);
+          if (player.playVideo) player.playVideo();
           t = span.a;
         }
       }
