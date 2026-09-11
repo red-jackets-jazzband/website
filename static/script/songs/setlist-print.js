@@ -228,7 +228,11 @@ export function createSetlistPrint(ctx) {
       instrumentText: instrumentLabel(instrument()).toLowerCase(),
     });
     container.append(titlePage);
-    fitTitlePage(titlePage);
+    // Held in the same pendingReads gate as the per-song .abc reads below, so
+    // a print doesn't fire with the title/name still sized off a fallback
+    // font while Saniretro/AkuraPopo are still loading.
+    pendingReads += 1;
+    fitTitlePage(titlePage).then(() => readSettled(seq));
     if (desc) container.append(coverPage(name, desc));
     container.append(frontMatter(name, songs));
 

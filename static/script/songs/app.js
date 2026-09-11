@@ -97,6 +97,10 @@ function createApp() {
   // (`a`/`b`) are never written here — they only ride the Inspiration "copy
   // link" button (see ctx.shareUrl).
   ctx.syncHash = () => {
+    // Runs even when the hash itself doesn't change: a deep link into an
+    // already-matching hash, or a renamed personal setlist whose id (and so
+    // whose hash) stays the same, both still need the tab title refreshed.
+    ctx.updateTitle();
     const hash = buildSongsHash({
       song: songSlug(ctx.state.currentSongFile),
       setlist: ctx.state.currentSetlistId,
@@ -109,7 +113,6 @@ function createApp() {
     } else if (hash) {
       window.location.hash = hash;
     }
-    ctx.updateTitle();
   };
 
   // The URL the Inspiration panel's "copy link" button hands out: the current

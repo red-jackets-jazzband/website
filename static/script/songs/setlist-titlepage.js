@@ -55,7 +55,11 @@ export function fitTextWidth(textEl, targetWidth, maxFont) {
   buildTitlePage below — its own construction happens before the caller
   appends it to the live #setlistPrintBooklet, so fitting can't happen there:
   getBBox() needs the element actually in the rendered document). Fits now,
-  and again once Saniretro/AkuraPopo are confirmed loaded.
+  and again once Saniretro/AkuraPopo are confirmed loaded. Returns a promise
+  that resolves once that final refit has happened (or immediately, in an
+  environment with no FontFaceSet), so a caller — setlist-print.js's
+  buildBooklet — can hold a print until the real fonts are in and measured,
+  the same way it already holds for the per-song .abc reads.
 
   The first render can measure under a fallback face (narrower or wider than
   the real one), which throws off the fit computed from it — same issue as
@@ -81,11 +85,12 @@ export function fitTitlePage(page) {
   };
   refit();
   if (document.fonts?.load) {
-    Promise.all([
+    return Promise.all([
       document.fonts.load("16px Saniretro"),
       document.fonts.load("16px AkuraPopo"),
     ]).then(refit, refit);
   }
+  return Promise.resolve();
 }
 
 /*

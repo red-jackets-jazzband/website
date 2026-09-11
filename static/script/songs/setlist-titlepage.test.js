@@ -3,6 +3,9 @@ import assert from "node:assert/strict";
 import { mountPage } from "../../../tests/helpers/dom.js";
 import { buildTitlePage, fitTitlePage, fitTextWidth } from "./setlist-titlepage.js";
 
+const TITLE_SELECTOR = ".setlist-titlepage-title";
+const NAME_SELECTOR = ".setlist-titlepage-name";
+
 function inDom(fn) {
   const page = mountPage();
   try {
@@ -16,9 +19,9 @@ test("buildTitlePage renders the N.O.A.D.S. branding for the original songbook",
   inDom(() => {
     const page = buildTitlePage({ isNoads: true, setlistName: "Anything", instrumentText: "bb clarinet" });
     assert.equal(page.className, "setlist-titlepage");
-    assert.equal(page.querySelector(".setlist-titlepage-title").textContent, "N.O.A.D.S.");
+    assert.equal(page.querySelector(TITLE_SELECTOR).textContent, "N.O.A.D.S.");
     assert.equal(page.querySelector(".setlist-titlepage-sub").textContent, "songbook");
-    assert.equal(page.querySelector(".setlist-titlepage-name").textContent, "streetclassics");
+    assert.equal(page.querySelector(NAME_SELECTOR).textContent, "streetclassics");
     assert.equal(page.querySelector(".setlist-titlepage-url").textContent, "www.redjackets.nl");
     assert.equal(page.querySelector(".setlist-titlepage-instrument").textContent, "bb clarinet");
     const image = page.querySelector("image");
@@ -30,9 +33,9 @@ test("buildTitlePage renders the N.O.A.D.S. branding for the original songbook",
 test("buildTitlePage swaps in generic branding for any other setlist", () => {
   inDom(() => {
     const page = buildTitlePage({ isNoads: false, setlistName: "Summer Wedding 2026", instrumentText: "trumpet" });
-    assert.equal(page.querySelector(".setlist-titlepage-title").textContent, "Red Jackets");
+    assert.equal(page.querySelector(TITLE_SELECTOR).textContent, "Red Jackets");
     assert.equal(page.querySelector(".setlist-titlepage-sub").textContent, "songbook");
-    assert.equal(page.querySelector(".setlist-titlepage-name").textContent, "Summer Wedding 2026");
+    assert.equal(page.querySelector(NAME_SELECTOR).textContent, "Summer Wedding 2026");
   });
 });
 
@@ -40,8 +43,8 @@ test("fitTitlePage fits the title/name text of an attached page (patched getBBox
   inDom(() => {
     const page = buildTitlePage({ isNoads: false, setlistName: "Setlist 2026", instrumentText: "trumpet" });
     document.body.append(page); // must be attached before fitting — see buildTitlePage's own doc comment
-    const title = page.querySelector(".setlist-titlepage-title");
-    const name = page.querySelector(".setlist-titlepage-name");
+    const title = page.querySelector(TITLE_SELECTOR);
+    const name = page.querySelector(NAME_SELECTOR);
     title.getBBox = () => ({ width: 250 });
     name.getBBox = () => ({ width: 150 });
     fitTitlePage(page);
@@ -50,14 +53,55 @@ test("fitTitlePage fits the title/name text of an attached page (patched getBBox
   });
 });
 
+test("fitTitlePage returns a promise that resolves once a delayed refit lands", async () => {
+  // Not run through inDom(): that helper's cleanup() runs synchronously in a
+  // `finally`, which would tear the jsdom window down before an awaited
+  // callback here got to finish.
+  const mounted = mountPage();
+  try {
+    const titlePage = buildTitlePage({ isNoads: false, setlistName: "Setlist 2026", instrumentText: "trumpet" });
+    document.body.append(titlePage);
+    const title = titlePage.querySelector(TITLE_SELECTOR);
+    const name = titlePage.querySelector(NAME_SELECTOR);
+    // The first getBBox() call (before fonts load) reports a fallback-face
+    // measurement; a second, different one (after) simulates the real face
+    // landing with different metrics — fitTitlePage's caller (setlist-print.js)
+    // needs the returned promise to only resolve once *that* refit has run.
+    let loaded = false;
+    title.getBBox = () => ({ width: loaded ? 300 : 250 });
+    name.getBBox = () => ({ width: loaded ? 200 : 150 });
+    // Both the Saniretro and AkuraPopo load() calls resolve off this one
+    // controllable promise — the point here is just "fonts still loading",
+    // not distinguishing the two faces.
+    let resolveFonts;
+    const fontsPromise = new Promise((resolve) => { resolveFonts = resolve; });
+    document.fonts = { load: () => fontsPromise };
+    try {
+      const fitted = fitTitlePage(titlePage);
+      assert.equal(typeof fitted.then, "function", "returns a thenable");
+      const beforeFontsLoaded = title.getAttribute("font-size");
+
+      loaded = true;
+      resolveFonts();
+      await fitted;
+
+      assert.notEqual(title.getAttribute("font-size"), beforeFontsLoaded, "refit after fonts landed");
+    } finally {
+      delete document.fonts;
+    }
+  } finally {
+    mounted.cleanup();
+  }
+});
+
 test("fitTitlePage is a no-op (keeps the placeholder size) before the page is attached", () => {
   inDom(() => {
     // mountPage's default getBBox stub reports a zero-width box, the same
     // shape a real browser reports for a not-yet-attached SVG node.
     const page = buildTitlePage({ isNoads: true, setlistName: "x", instrumentText: "" });
     fitTitlePage(page);
-    assert.equal(page.querySelector(".setlist-titlepage-title").getAttribute("font-size"), "64.419");
-    assert.equal(page.querySelector(".setlist-titlepage-name").getAttribute("font-size"), "38.197");
+    assert.equal(page.querySelector(TITLE_SELECTOR).getAttribute("font-size"), "64.419");
+    assert.equal(page.querySelector(NAME_SELECTOR).getAttribute("font-size"), "38.197");
   });
 });
 
