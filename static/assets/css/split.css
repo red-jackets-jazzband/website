@@ -3200,7 +3200,7 @@ body:has(#rjLibrary) .split-bio {
   so the instrument keeps its own full-width line but everything else packs
   onto the line below it.
 
-  That single row needs ~750px of #sheetmenu width to actually fit without
+  That single row needs ~740px of #sheetmenu width to actually fit without
   spilling a control onto a third line, and the theme's own generic
   split-layout rules (`.fs-split`'s 30%/70% image/content split above 800px,
   `.split-content-vertically-center`'s 800px max-width at every size) don't
@@ -3213,13 +3213,22 @@ body:has(#rjLibrary) .split-bio {
   to the songs page only (`body:has(#rjLibrary)`) — this page is a control
   panel, not a bio page, so it doesn't need that reading-width cap, and no
   other split-layout page is affected.
+
+  Below 744px (narrower than the iPad Mini's 744px portrait width) even the
+  tightened single row doesn't fit and a control spills onto a third line —
+  measured directly, the row needs 740px and starts wrapping again below
+  that. Rather than compress the controls further (there's no room left to
+  give without making them too small to tap), this block's lower bound stops
+  at 744px and anything narrower falls through to the 1024px block above's
+  phone-style stacked grouping instead, which has room to spare down to
+  phone widths.
 */
-@media (min-width: 700px) and (max-width: 1024px) {
+@media (min-width: 744px) and (max-width: 1024px) {
   #sheetmenu {
     justify-content: flex-start;
     /* Tightened from the base 10px so the row still fits the narrowest
-       common tablet (iPad Mini, 744px portrait) without spilling a control
-       onto a third line. */
+       width this block now applies to (744px, iPad Mini portrait) without
+       spilling a control onto a third line. */
     gap: 8px;
   }
   .sheet-adjust {
