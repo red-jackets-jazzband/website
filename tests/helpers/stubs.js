@@ -183,7 +183,9 @@ export function createAudioContextStub({ currentTime = 0 } = {}) {
     currentTime,
     destination: {},
     resumeCalls: 0,
+    constructorCalls: 0,
     oscillators: [],
+    gains: [],
     createOscillator() {
       const osc = {
         type: null,
@@ -208,6 +210,7 @@ export function createAudioContextStub({ currentTime = 0 } = {}) {
         events,
         connect: () => node,
       };
+      instance.gains.push(node);
       return node;
     },
     resume() {
@@ -217,6 +220,7 @@ export function createAudioContextStub({ currentTime = 0 } = {}) {
     },
   };
   function FakeAudioContext() {
+    instance.constructorCalls += 1;
     return instance;
   }
   return { Ctor: FakeAudioContext, instance };
