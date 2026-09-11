@@ -304,15 +304,19 @@ test("the play/pause button drives the player and its icon follows player state"
     const icon = toggle.querySelector("span");
     assert.equal(icon.className, "fa-solid fa-play");
     assert.equal(toggle.getAttribute("aria-label"), "Play");
+    assert.equal(toggle.classList.contains("playing"), false);
 
     // Not playing yet -> the click should ask the player to start.
     toggle.dispatchEvent(new window.Event("click"));
     assert.deepEqual(calls, ["play"]);
 
-    // The player reports it's now playing -> the button flips to pause.
+    // The player reports it's now playing -> the button flips to pause and
+    // picks up the same solid-gold .playing look as the sheet's own Play
+    // button (.sheet-play-btn.playing) while actually playing.
     fireState({ data: 1 });
     assert.equal(icon.className, "fa-solid fa-pause");
     assert.equal(toggle.getAttribute("aria-label"), "Pause");
+    assert.equal(toggle.classList.contains("playing"), true);
 
     // Playing -> the next click should ask the player to pause.
     toggle.dispatchEvent(new window.Event("click"));
@@ -322,6 +326,7 @@ test("the play/pause button drives the player and its icon follows player state"
     fireState({ data: 2 });
     assert.equal(icon.className, "fa-solid fa-play");
     assert.equal(toggle.getAttribute("aria-label"), "Play");
+    assert.equal(toggle.classList.contains("playing"), false);
   } finally {
     delete window.YT;
     page.cleanup();
