@@ -626,13 +626,13 @@ test("setting point B too close to A to form a loop doesn't enable the toggle", 
   }
 });
 
-// Regression test for a real YouTube IFrame API quirk: seekTo(seconds, false)
-// (used here to avoid flashing the native controls on every repeat, see the
-// loopTick doc comment) can leave the player stalled/paused instead of
-// resuming, rather than firing a fresh PLAYING event on its own. Without an
-// explicit playVideo() after the seek, onPlayerStateChange's stopLoopPoll()
-// would then never get undone, so the loop would play through once and just
-// stop — exactly what forcing playVideo() after the seek guards against.
+// Regression test for a real YouTube IFrame API quirk (see the loopTick doc
+// comment): a repeat-seek can leave the player silently stalled at A —
+// reporting itself as still playing, with getCurrentTime() frozen, and no
+// onStateChange firing to trigger a recovery. The explicit playVideo() after
+// the seek is the backstop for that; this also pins the seek itself back to
+// allowSeekAhead=true (a prior version used false to avoid flashing the
+// native controls, which turned out to cause exactly this stall).
 test("the loop poll's repeat-seek forces a resume so the loop survives more than one repeat", async () => {
   const page = mountPage();
   const { window } = page;
@@ -666,7 +666,7 @@ test("the loop poll's repeat-seek forces a resume so the loop survives more than
 
     currentTime = 19.95; // within shouldLoopSeek's lead of B
     tick();
-    assert.deepEqual(seeks, [[10, true], [10, false]]);
+    assert.deepEqual(seeks, [[10, true], [10, true]]);
     assert.equal(plays.length, 1, "playVideo must be called to force the resume");
     assert.ok(tick, "the poll must still be running after the forced resume");
 
@@ -674,7 +674,7 @@ test("the loop poll's repeat-seek forces a resume so the loop survives more than
     // playVideo() call: the first repeat's stall permanently stopped the poll.
     currentTime = 19.95;
     tick();
-    assert.deepEqual(seeks.at(-1), [10, false]);
+    assert.deepEqual(seeks.at(-1), [10, true]);
     assert.equal(plays.length, 2);
   } finally {
     delete window.YT;
