@@ -35,7 +35,11 @@ import { computeChordOffset } from "./chords.js";
 // triad planed one diatonic scale step below / above) and nu2 (two steps
 // above). Patterns that don't need the step tokens just ignore the extras.
 
-const PATTERNS = {
+// Exported (alongside the UI-facing COMPING_PATTERNS metadata above) so each
+// pattern's exact rhythm template can be unit-tested directly with plain
+// placeholder tokens, instead of only indirectly through buildCompingTune's
+// full voice-leading pipeline — see comping.test.js.
+export const PATTERNS = {
   on_2_and_4: {
     twobar1: (n) => `z2 ${n}2 z2 ${n}2`,
     twobar2: (n) => `${n} z z ${n}-${n}4`,
