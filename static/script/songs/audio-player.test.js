@@ -155,6 +155,50 @@ test("playPause resumes on the first press after pausing (ABCjs play() is a togg
   }
 });
 
+test("playPause shows a loading spinner while starting, not while pausing", async () => {
+  const { audio, cleanup } = setup();
+  const abcjs = createAbcjsStub({ audioSupported: true });
+  try {
+    withAbcjs(abcjs, () => audio.initForTune({ metaText: {} }));
+    await flush();
+
+    const btn = document.getElementById("playPauseBtn");
+    assert.equal(btn.querySelector(".fa-spinner"), null);
+
+    audio.playPause(); // starting — sc.play()'s promise hasn't settled yet
+    assert.ok(btn.querySelector(".fa-spinner"));
+    assert.equal(btn.classList.contains("playing"), false);
+    await flush();
+    assert.equal(btn.querySelector(".fa-spinner"), null);
+    assert.equal(btn.classList.contains("playing"), true);
+
+    audio.playPause(); // pausing — no gap to cover, no spinner
+    assert.equal(btn.querySelector(".fa-spinner"), null);
+    await flush();
+  } finally {
+    cleanup();
+  }
+});
+
+test("a second press while starting is ignored (no double sc.play())", async () => {
+  const { audio, cleanup } = setup();
+  const abcjs = createAbcjsStub({ audioSupported: true });
+  try {
+    withAbcjs(abcjs, () => audio.initForTune({ metaText: {} }));
+    await flush();
+
+    // The stub's play() toggles isStarted and resolves immediately, so a
+    // second, un-ignored call here would flip it right back to false —
+    // exactly what the isLoadingPlayback guard exists to prevent.
+    audio.playPause();
+    audio.playPause(); // still loading from the first press — must be ignored
+    await flush();
+    assert.equal(audio.isPlaying, true);
+  } finally {
+    cleanup();
+  }
+});
+
 test("playPause is a no-op while the transport buttons are disabled", async () => {
   const { audio, cleanup } = setup();
   const abcjs = createAbcjsStub({ audioSupported: true });
