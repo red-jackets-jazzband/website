@@ -1447,18 +1447,69 @@ video.video {
   border-radius: 2px;
   pointer-events: none;
 }
+/*
+  A/B is a flag-tab-plus-stem pin, not a plain slider bar: the stem is the
+  exact-position indicator (a 2px line, same weight as the overview strip's
+  ticks), the tab is the readable A/B label, and the two get the same dark-
+  border + drop-shadow treatment as .inspiration-loop-handle used to apply
+  to the whole bar, now scoped to just the tab that needs the lift off the
+  track. The tab's one square corner (bottom-left for A, bottom-right for
+  B) points into the A-B range so the pair reads as "start/end of this
+  span" rather than two identical, interchangeable blobs. Letter comes from
+  `content` on the ID selectors below, not markup, since the two buttons
+  are otherwise identical elements distinguished only by id.
+*/
 .inspiration-loop-handle {
   position: absolute;
   top: -2px;
-  width: 12px;
-  height: 22px;
-  margin-left: -6px;
+  bottom: -2px;
+  width: 16px;
+  margin-left: -8px;
   padding: 0;
-  border: 1px solid rgba(0,0,0,.35);
-  border-radius: 3px;
-  background: var(--rj-gold);
+  border: none;
+  background: none;
   cursor: ew-resize;
   touch-action: none;
+}
+.inspiration-loop-handle::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 3px;
+  width: 10px;
+  height: 14px;
+  display: grid;
+  place-items: center;
+  background: var(--rj-gold);
+  color: #222222;
+  font: 700 9px/1 "Montserrat", sans-serif;
+  border: 1px solid rgba(0,0,0,.35);
+  border-radius: 3px 3px 3px 0;
+  box-shadow: 0 1px 2px rgba(0,0,0,.35);
+}
+#inspirationLoopHandleA::before {
+  content: "A";
+}
+#inspirationLoopHandleB::before {
+  content: "B";
+  border-radius: 3px 3px 0 3px;
+}
+.inspiration-loop-handle::after {
+  content: "";
+  position: absolute;
+  top: 13px;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--rj-gold);
+  border-radius: 1px;
+}
+.inspiration-loop-handle:focus-visible {
+  outline: none;
+}
+.inspiration-loop-handle:focus-visible::before {
+  box-shadow: 0 0 0 2px var(--rj-gold), 0 1px 2px rgba(0,0,0,.35);
 }
 .inspiration-loop-controls {
   display: flex;
