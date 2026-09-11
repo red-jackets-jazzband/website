@@ -20,7 +20,7 @@ async function exportWav(ctx, btn) {
     const synth = new ABCJS.synth.CreateSynth();
     await synth.init(built);
     await synth.prime();
-    const buffer = synth.audioBuffers && synth.audioBuffers[0];
+    const buffer = synth.audioBuffers?.[0];
     if (!buffer) throw new Error("No audio rendered for this tune");
     downloadBlob(wavFilename(ctx.state.currentSongFile), new Blob([encodeWav(buffer)], { type: "audio/wav" }));
   } catch (err) {

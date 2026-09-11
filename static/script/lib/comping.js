@@ -1100,15 +1100,15 @@ export function buildCompingTune(text, chords, song, pattern) {
         const fn = bar % 2 === 0 ? pat.twobar1 : pat.twobar2;
         fragment = fn.apply(null, chordArgs(cb[0], keyScale));
         const order = cb[0].map((v) => v.fn);
-        barPalette = Array(countChords(fragment)).fill(order);
+        barPalette = new Array(countChords(fragment)).fill(order);
       }
     } else if (cb.length === 2) {
       const fragA = cb[0] === null ? "z4" : pat.half.apply(null, chordArgs(cb[0], keyScale));
       const fragB = cb[1] === null ? "z4" : pat.half.apply(null, chordArgs(cb[1], keyScale));
       fragment = fragA + " " + fragB;
-      barPalette = Array(countChords(fragA))
+      barPalette = new Array(countChords(fragA))
         .fill(cb[0] === null ? [] : cb[0].map((v) => v.fn))
-        .concat(Array(countChords(fragB)).fill(cb[1] === null ? [] : cb[1].map((v) => v.fn)));
+        .concat(new Array(countChords(fragB)).fill(cb[1] === null ? [] : cb[1].map((v) => v.fn)));
     } else {
       const durs = distribute(8, cb.length);
       fragment = cb
