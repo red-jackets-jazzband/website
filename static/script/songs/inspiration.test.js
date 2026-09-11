@@ -595,7 +595,7 @@ test("dragging a handle near the zoomed timeline's edge pans the window", async 
     // trapping the drag at the pre-pan [75,125] floor: without panning, 1%
     // into that window would land on 75.5s ("1:15"); with it, the window has
     // shifted to [65,115] and 1% into that lands on 65.5s ("1:05") instead.
-    assert.equal(document.getElementById("inspirationLoopReadout").textContent, "1:05 – –");
+    assert.equal(document.getElementById("inspirationSetATime").textContent, "1:05");
     assert.equal(document.getElementById("inspirationZoomValue").textContent, "4×"); // zoom level itself is untouched by panning
   } finally {
     delete window.YT;
