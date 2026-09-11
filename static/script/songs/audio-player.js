@@ -23,6 +23,11 @@ const SYNTH_PARAMS = {
 const PLAY_ICON = '<span class="fa-solid fa-play" aria-hidden="true"></span>';
 const PAUSE_ICON = '<span class="fa-solid fa-pause" aria-hidden="true"></span>';
 const LOADING_ICON = '<span class="fa-solid fa-spinner fa-spin" aria-hidden="true"></span>';
+// Mirrors wav-export.js's own IDLE_ICON: a render superseding an in-flight
+// export leaves that export's button stuck on its spinner (its own finally
+// block's generation guard skips the reset since it's no longer current), so
+// the new render's enable path below must restore it itself.
+const EXPORT_WAV_IDLE_ICON = '<span class="fa-solid fa-file-audio" aria-hidden="true"></span>';
 
 function setButtonsDisabled(disabled) {
   ["playPauseBtn", "stopBtn", "mixerBtn", "exportWavBtn"].forEach((id) => {
@@ -455,6 +460,8 @@ export function createAudioPlayer(ctx) {
         if (ctrl !== state.synthController) return;
         setLoadingVisible(false);
         setButtonsDisabled(false);
+        const exportBtn = byId("exportWavBtn");
+        if (exportBtn) exportBtn.innerHTML = EXPORT_WAV_IDLE_ICON;
         if (ctx.state.tempoOverrideBpm !== null) applyTempo();
       })
       .catch((err) => {
