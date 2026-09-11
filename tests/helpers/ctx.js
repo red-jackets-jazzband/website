@@ -18,6 +18,7 @@ export function makeCtx(overrides = {}) {
       currentSongFile: null,
       currentSetlistSongIndex: null,
       currentLibraryIndex: null,
+      currentLibrarySongName: undefined,
       currentSongText: undefined,
       compingActive: false,
       hasChords: false,
