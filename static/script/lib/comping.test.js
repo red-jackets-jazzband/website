@@ -180,6 +180,18 @@ test("measureBarSlots sums a bar segment in eighth slots", () => {
   assert.equal(measureBarSlots("   ", 1, 4), 0);
 });
 
+test("measureBarSlots strips a mid-tune inline field ([M:...], [L:...], [Q:...]) without counting it as a note", () => {
+  assert.equal(measureBarSlots("[M:3/4]c4 c4", 1, 8), 8); // field consumed silently, notes counted normally
+  assert.equal(measureBarSlots("[L:1/8]c c c c", 1, 8), 4);
+  assert.equal(measureBarSlots("[Q:1/4=120]", 1, 8), 0); // a bar that's only a field change has no note slots
+});
+
+test("measureBarSlots doesn't mistake a second-ending bracket ([2 ...) for an inline field", () => {
+  // "[2" is ABC's repeat-ending marker (a digit, not a letter+colon field) —
+  // it must not swallow the notes that follow it.
+  assert.equal(measureBarSlots("[2 c4 c4", 1, 8), 8);
+});
+
 test("buildVoiceBody matches a short pickup's length when given L", () => {
   // Bellamina: a two-eighth pickup at L:1/4 before the first chorded bar
   const melody = "B/2=A/2 || B2 G B/2=A/2 | B2 G B/2=A/2 |";
