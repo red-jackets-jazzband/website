@@ -233,6 +233,10 @@ test("measureBarSlots reads a chord's duration off its first note when it isn't 
   assert.equal(measureBarSlots("[Fd]", 1, 8), 1);
   // a trailing duration after "]" (the usual form) still works
   assert.equal(measureBarSlots("[CEG]2", 1, 8), 2);
+  // both a first-note duration inside the bracket AND a trailing duration
+  // after it are independent ABC duration modifiers that multiply (2 * 2 =
+  // 4 slots), not two digit strings concatenated into a bogus "22"
+  assert.equal(measureBarSlots("[F2_d2]2", 1, 8), 4);
 });
 
 test("measureBarSlots keeps an unclosed inline field's text verbatim instead of dropping it", () => {
