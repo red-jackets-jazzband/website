@@ -26,6 +26,16 @@ test("renderChordTable lays cells out in reading order with 4 columns", () => {
   });
 });
 
+test("renderChordTable shows a break (\"N.C.\") marker as plain text, alone or alongside a real chord", () => {
+  inDom((container) => {
+    renderChordTable([bar(["C"]), bar(["N.C."]), bar(["F7", "N.C."])], container);
+    assert.deepEqual(
+      [...container.querySelectorAll(".chordDiv")].map((d) => d.textContent),
+      ["C", "N.C.", "F7,N.C."],
+    );
+  });
+});
+
 test("renderChordTable switches to 8 columns past 16 measures", () => {
   inDom((container) => {
     renderChordTable(Array.from({ length: 17 }, (_, i) => bar([`C${i}`])), container);
