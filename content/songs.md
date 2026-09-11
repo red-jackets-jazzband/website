@@ -234,6 +234,14 @@ Retrieved from www.redjackets.nl - <span id="instrumentText"></span>
     <iframe id="inspirationVideoFrame" src="" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen title="Inspiration video" loading="lazy"></iframe>
   </div>
   <div class="inspiration-loop" id="inspirationLoopBar" hidden>
+    <div class="inspiration-loop-overview" id="inspirationLoopOverview" title="Drag to pan, or drag an edge to zoom" hidden>
+      <div class="inspiration-loop-overview-tick" id="inspirationOverviewTickA" hidden></div>
+      <div class="inspiration-loop-overview-tick" id="inspirationOverviewTickB" hidden></div>
+      <div class="inspiration-loop-overview-window" id="inspirationOverviewWindow">
+        <div class="inspiration-loop-overview-handle inspiration-loop-overview-handle--start" id="inspirationOverviewHandleStart" aria-hidden="true"></div>
+        <div class="inspiration-loop-overview-handle inspiration-loop-overview-handle--end" id="inspirationOverviewHandleEnd" aria-hidden="true"></div>
+      </div>
+    </div>
     <div class="inspiration-loop-timeline" id="inspirationLoopTrack" title="Click to seek">
       <div class="inspiration-loop-range" id="inspirationLoopRange" hidden></div>
       <div class="inspiration-loop-played" id="inspirationLoopPlayed"></div>

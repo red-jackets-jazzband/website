@@ -47,6 +47,20 @@ async function openLoopPanel(window, overrides = {}) {
   return insp;
 }
 
+// Opens the panel already zoomed to 4x ([75,125] of a 200s clip, playhead
+// at 100) with the overview strip primed to a 1px == 1s scale, for the three
+// overview-drag tests below — they differ only in what they grab and where
+// they drag it to.
+async function openZoomedOverview(window) {
+  await openLoopPanel(window, { getCurrentTime: () => 100 });
+  const zoomIn = document.getElementById("inspirationZoomIn");
+  zoomIn.dispatchEvent(new window.Event("click")); // 2x -> [50,150]
+  zoomIn.dispatchEvent(new window.Event("click")); // 4x -> [75,125]
+  const overview = document.getElementById("inspirationLoopOverview");
+  overview.getBoundingClientRect = () => ({ left: 0, width: 200 });
+  return overview;
+}
+
 // Opens the panel, primes its bounding rect and starts a left-edge drag at
 // clientX 480 (the panel's left edge) — shared by the resize tests below,
 // which differ only in where the pointer moves to next.
@@ -385,6 +399,100 @@ test("zoom in/out buttons disable at ZOOM_LEVELS' ends", async () => {
     for (let i = 0; i < 10; i += 1) zoomOut.dispatchEvent(new window.Event("click"));
     assert.equal(zoomValue.textContent, "1×");
     assert.equal(zoomOut.disabled, true);
+  } finally {
+    delete window.YT;
+    page.cleanup();
+  }
+});
+
+test("the overview strip appears only once zoomed, echoing the window and A/B ticks", async () => {
+  const page = mountPage();
+  const { window } = page;
+  try {
+    let currentTime = 100;
+    await openLoopPanel(window, { getCurrentTime: () => currentTime });
+
+    const overview = document.getElementById("inspirationLoopOverview");
+    assert.equal(overview.hidden, true); // 1x: the window would cover the whole strip
+
+    document.getElementById("inspirationSetA").dispatchEvent(new window.Event("click")); // A=100
+    currentTime = 150;
+    document.getElementById("inspirationSetB").dispatchEvent(new window.Event("click")); // B=150
+    currentTime = 100;
+
+    document.getElementById("inspirationZoomIn").dispatchEvent(new window.Event("click")); // 2x -> [50,150]
+
+    assert.equal(overview.hidden, false);
+    const win = document.getElementById("inspirationOverviewWindow");
+    assert.equal(win.style.left, "25%"); // 50/200
+    assert.equal(win.style.width, "50%"); // (150-50)/200
+
+    const tickA = document.getElementById("inspirationOverviewTickA");
+    const tickB = document.getElementById("inspirationOverviewTickB");
+    assert.equal(tickA.hidden, false);
+    assert.equal(tickA.style.left, "50%"); // 100/200
+    assert.equal(tickB.hidden, false);
+    assert.equal(tickB.style.left, "75%"); // 150/200
+  } finally {
+    delete window.YT;
+    page.cleanup();
+  }
+});
+
+test("dragging the overview window's body pans it without changing the zoom level", async () => {
+  const page = mountPage();
+  const { window } = page;
+  try {
+    const overview = await openZoomedOverview(window);
+    const win = document.getElementById("inspirationOverviewWindow");
+
+    // Grab the window at its own center (t=100) and drag 20px/20s right.
+    win.dispatchEvent(new window.PointerEvent("pointerdown", { pointerId: 1, clientX: 100, bubbles: true }));
+    overview.dispatchEvent(new window.PointerEvent("pointermove", { pointerId: 1, clientX: 120 }));
+
+    assert.equal(document.getElementById("inspirationZoomValue").textContent, "4×"); // unchanged
+    assert.equal(win.style.left, "47.5%"); // 95/200
+    assert.equal(win.style.width, "25%"); // 50/200, same width as before the drag
+  } finally {
+    delete window.YT;
+    page.cleanup();
+  }
+});
+
+test("dragging an overview handle resizes the window and snaps zoom to the nearest level", async () => {
+  const page = mountPage();
+  const { window } = page;
+  try {
+    const overview = await openZoomedOverview(window);
+    const startHandle = document.getElementById("inspirationOverviewHandleStart");
+
+    // Drag the start edge from 75 out to 25 -> a 100s span, anchored on the
+    // unmoved end (125) -> snaps to the nearest ZOOM_LEVELS entry, 2x.
+    startHandle.dispatchEvent(new window.PointerEvent("pointerdown", { pointerId: 1, clientX: 75, bubbles: true }));
+    overview.dispatchEvent(new window.PointerEvent("pointermove", { pointerId: 1, clientX: 25 }));
+
+    assert.equal(document.getElementById("inspirationZoomValue").textContent, "2×");
+    const win = document.getElementById("inspirationOverviewWindow");
+    assert.equal(win.style.left, "12.5%"); // 25/200
+    assert.equal(win.style.width, "50%"); // 100/200
+  } finally {
+    delete window.YT;
+    page.cleanup();
+  }
+});
+
+test("clicking the overview strip's background jumps the window there", async () => {
+  const page = mountPage();
+  const { window } = page;
+  try {
+    const overview = await openZoomedOverview(window);
+
+    overview.dispatchEvent(new window.PointerEvent("pointerdown", { pointerId: 1, clientX: 10 }));
+
+    assert.equal(document.getElementById("inspirationZoomValue").textContent, "4×"); // unchanged
+    const win = document.getElementById("inspirationOverviewWindow");
+    assert.equal(win.style.left, "0%");
+    assert.equal(win.style.width, "25%"); // 50/200
   } finally {
     delete window.YT;
     page.cleanup();
