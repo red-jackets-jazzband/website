@@ -813,7 +813,12 @@ video.video {
   sets `top`/`right` from the button's own rect on open; the sub-1024px media
   query below overrides those inline coordinates (with !important, since
   inline style otherwise always wins over a stylesheet) to dock it as a
-  bottom sheet instead.
+  bottom sheet instead. That bottom sheet also caps its own height and
+  scrolls internally (see the media query) — the panel has grown a strip at a
+  time (Metronome, Quality, Pattern, Swing) since this dock was first written
+  for four short channel strips, and a mobile browser's own bottom chrome
+  (URL bar / tab strip) can eat into the visible viewport below the
+  `bottom: 0` edge, hiding whatever doesn't fit without a scroll of its own.
 */
 .mixer-panel {
   position: fixed;
@@ -1109,6 +1114,9 @@ video.video {
     top: auto !important;
     width: auto !important;
     max-width: none !important;
+    max-height: calc(100dvh - 32px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     border-radius: 16px 16px 0 0;
     padding-bottom: 22px;
   }
