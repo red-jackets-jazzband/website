@@ -11,6 +11,7 @@ export function makeCtx(overrides = {}) {
       activeTab: "library",
       setlistsView: "home",
       currentPersonalId: null,
+      currentSetlistId: null,
       currentOpenSongs: null,
       currentOpenSetlistName: "",
       currentOpenSetlistDesc: "",
