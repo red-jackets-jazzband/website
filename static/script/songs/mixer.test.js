@@ -8,7 +8,7 @@ import {
 import { GM_VOICES } from "../lib/gm-voices.js";
 import { GCHORD_PATTERNS } from "../lib/audio-mix.js";
 
-function setup(mixerState = {}) {
+function setup(mixerState = {}, stateOverrides = {}) {
   const page = mountPage();
   const rerenders = [];
   const ctx = makeCtx({
@@ -21,6 +21,7 @@ function setup(mixerState = {}) {
         melodyProgram: null, bassProgram: null, chordsProgram: null, compingProgram: null,
         ...mixerState,
       },
+      ...stateOverrides,
     },
     sheet: { rerender: () => rerenders.push(1) },
   });
@@ -398,6 +399,17 @@ test("init seeds the Swing range from ctx.state.swing and shows Off at 0", () =>
   try {
     assert.equal(document.getElementById("mixerSwingRange").value, "0");
     assert.equal(document.getElementById("mixerSwingReadout").textContent, "Off");
+  } finally {
+    cleanup();
+  }
+});
+
+test("init seeds the Swing range, readout, and fill from a non-default ctx.state.swing", () => {
+  const { cleanup } = setup({}, { swing: 40 });
+  try {
+    assert.equal(document.getElementById("mixerSwingRange").value, "40");
+    assert.equal(document.getElementById("mixerSwingReadout").textContent, "40%");
+    assert.equal(document.getElementById("mixerSwingFill").style.width, "40%");
   } finally {
     cleanup();
   }
