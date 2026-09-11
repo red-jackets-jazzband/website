@@ -19,6 +19,13 @@ test("noteChroma resolves natural, flat, and sharp notes", () => {
   assert.equal(noteChroma("B♭"), 10); // unicode flat, as chords are stored after replaceAccidentalWithUtf8Char
 });
 
+test("noteChroma doesn't throw on an empty note name", () => {
+  // An empty string reaches the manual fallback table's `normalized[0]`
+  // as undefined; every real caller happens to always pass a non-empty
+  // key/chord root, but the function shouldn't crash if one ever doesn't.
+  assert.equal(noteChroma(""), 0);
+});
+
 test("noteChroma falls through to the manual table when Tonal returns NaN chroma", () => {
   // Regression test: Tonal.Note.get("Am") — a chord-like string, not a
   // plain note — returns { chroma: NaN, empty: true, ... } in the browser.
@@ -106,4 +113,14 @@ test("transposeKeyName spells the resulting key, flats for black notes", () => {
   assert.equal(transposeKeyName("F", 2), "G");
   assert.equal(transposeKeyName("Ebmaj", 0), "E♭"); // mode word ignored
   assert.equal(transposeKeyName("C", 14), "D"); // wraps past an octave
+});
+
+test("transposeKeyName falls back to no transposition for a non-finite semitone count", () => {
+  // Math.round(Infinity) is Infinity, which turns the modulo below into NaN
+  // and indexes the key-name table out of bounds — every real caller already
+  // clamps its semitone value before this is reached, but the function
+  // shouldn't silently return undefined if one ever doesn't.
+  assert.equal(transposeKeyName("C", Infinity), "C");
+  assert.equal(transposeKeyName("C", -Infinity), "C");
+  assert.equal(transposeKeyName("C", NaN), "C");
 });
