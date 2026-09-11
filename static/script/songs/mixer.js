@@ -28,6 +28,13 @@ const VOLUME_LOCKED = new Set(["melody", "comping"]);
 // both read from ctx.state, kept in sync by sheet.js on every render.
 const GATE_STATE_KEY = { melody: null, bass: "hasChords", chords: "hasChords", comping: "compingActive" };
 
+// Swing isn't a channel either (no mute/Voice, no CHANNELS entry) — a single
+// tune-wide fader next to Pattern, feeding ABCjs's own `swing` synth option
+// (see lib/audio-mix.js's percentToAbcjsSwing doc comment) rather than
+// anything baked into the ABC text. No gate: it's audible on any tune with
+// eighth notes, chords or not.
+const SWING_DEFAULT_PERCENT = 0;
+
 function clampPercent(value) {
   const n = Number(value);
   if (!Number.isFinite(n)) return 100;
@@ -115,6 +122,14 @@ function buildGchordPatternOptions(select) {
   and sheet.js's resolveRenderText). It gates on hasChords the same way
   Bass/Chords do (updatePatternGate), since a pattern picked for an
   accompaniment that isn't playing has nothing to audibly change.
+
+  At the bottom of the panel sits Swing (#mixerSwingRange, ctx.state.swing):
+  a tune-wide 0-100 fader, same look and drag/release behaviour as a channel
+  volume fader but ungated (there's no "no swing to mix" state — it's
+  audible on any tune). It maps onto ABCjs's own `swing` synth init option
+  (lib/audio-mix.js's percentToAbcjsSwing) rather than a %%MIDI text
+  directive, so audio-player.js's synthParams reads ctx.state.swing directly
+  instead of going through sheet.js's injectMixerAudio.
 */
 function readoutText(channel, percent, muted) {
   if (muted) return "Muted";
@@ -148,6 +163,7 @@ export function createMixer(ctx) {
       const program = m[`${channel}Program`];
       writePref(programKey(channel), program === null ? "" : String(program));
     });
+    writePref(PREF_KEYS.mixerSwing, String(ctx.state.swing));
   }
 
   function commit() {
@@ -250,6 +266,16 @@ export function createMixer(ctx) {
     btn.setAttribute("aria-label", label);
   }
 
+  // Swing's own fader/readout, mirroring updateStripVisual's fill+readout
+  // pair but without a channel's mute/gate concerns.
+  function updateSwingVisual() {
+    const percent = ctx.state.swing;
+    const fill = byId("mixerSwingFill");
+    if (fill) fill.style.width = `${percent}%`;
+    const readout = byId("mixerSwingReadout");
+    if (readout) readout.textContent = percent === 0 ? "Off" : `${percent}%`;
+  }
+
   function refresh() {
     CHANNELS.forEach((channel) => {
       updateStripVisual(channel);
@@ -257,6 +283,7 @@ export function createMixer(ctx) {
     });
     updatePatternGate();
     updateQualityToggleVisual();
+    updateSwingVisual();
   }
 
   function wireStrip(channel) {
@@ -335,6 +362,21 @@ export function createMixer(ctx) {
     });
   }
 
+  // Same drag-to-adjust shape as a channel fader (scheduleApply while
+  // dragging, applyNow on release) — reuses clampPercent since Swing shares
+  // the same 0-100 domain as a volume fader.
+  function wireSwing() {
+    const range = byId("mixerSwingRange");
+    if (!range) return;
+    range.value = String(ctx.state.swing);
+    range.addEventListener("input", () => {
+      ctx.state.swing = clampPercent(range.value);
+      updateSwingVisual();
+      scheduleApply();
+    });
+    range.addEventListener("change", applyNow);
+  }
+
   // A plain preference flip, applied at once like Pattern — full re-engrave
   // is the only way to hand the new soundFontUrl to a fresh SynthController
   // (see audio-player.js's initForTune), so there's nothing to debounce here.
@@ -351,6 +393,7 @@ export function createMixer(ctx) {
     CHANNELS.forEach(wireStrip);
     wirePattern();
     wireQuality();
+    wireSwing();
 
     on("mixerCloseBtn", "click", () => setOpen(false));
     on("mixerBackdrop", "click", () => setOpen(false));
@@ -413,4 +456,12 @@ export function loadGchordPatternState() {
 // first time this ships.
 export function loadHighQualityAudioState() {
   return readPref(PREF_KEYS.highQualityAudio) === "1";
+}
+
+// ctx.state.swing's initial value, seeded from the persisted pref — off
+// (straight eighths) by default, same reasoning as every other new control
+// here: nothing should suddenly sound different the first time this ships.
+export function loadSwingState() {
+  const stored = readPref(PREF_KEYS.mixerSwing);
+  return stored === null ? SWING_DEFAULT_PERCENT : clampPercent(stored);
 }

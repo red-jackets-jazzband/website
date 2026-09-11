@@ -2,7 +2,7 @@ import { byId } from "../lib/dom.js";
 import {
   DEFAULT_BPM, TEMPO_MIN_BPM, TEMPO_MAX_BPM, clampBpm, resolveBpm, bpmToWarpPercent,
 } from "../lib/tempo.js";
-import { computeVoicesOff } from "../lib/audio-mix.js";
+import { computeVoicesOff, percentToAbcjsSwing } from "../lib/audio-mix.js";
 import { beatsPerMeasure } from "../lib/metronome.js";
 
 // Two of the three classic MIDI.js soundfont sets (see lib/gm-voices.js's
@@ -63,7 +63,10 @@ function meterValueOf(visualObj) {
   accompaniment directives — see lib/audio-mix.js's doc comment). Bass/Chords'
   volume and voice, and Melody/Comping's voice, are baked into the ABC text
   instead (sheet.js + lib/audio-mix.js's injectMixerAudio) — this file never
-  reads ctx.state.mixer for those.
+  reads ctx.state.mixer for those. Swing (ctx.state.swing, the Mixer panel's
+  bottom-most, tune-wide fader) is a third case: read directly here via
+  lib/audio-mix.js's percentToAbcjsSwing into ABCjs's own `swing` synth init
+  option, since it's neither a per-voice mute nor a %%MIDI text directive.
 */
 export function createAudioPlayer(ctx) {
   const state = {
@@ -85,6 +88,7 @@ export function createAudioPlayer(ctx) {
     const params = {
       ...SYNTH_PARAMS,
       soundFontUrl: ctx.state.highQualityAudio ? HIGH_QUALITY_SOUNDFONT_URL : STANDARD_SOUNDFONT_URL,
+      swing: percentToAbcjsSwing(ctx.state.swing),
     };
     const { voicesOff } = computeVoicesOff({
       compingActive: ctx.state.compingActive,
