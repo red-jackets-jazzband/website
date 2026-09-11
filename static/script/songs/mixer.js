@@ -469,5 +469,9 @@ export function loadHighQualityAudioState() {
 // here: nothing should suddenly sound different the first time this ships.
 export function loadSwingState() {
   const stored = readPref(PREF_KEYS.mixerSwing);
-  return stored === null ? SWING_DEFAULT_PERCENT : clampPercent(stored);
+  const n = Number(stored);
+  // clampPercent's own not-a-number fallback is 100 — right for a volume
+  // fader's "missing means full volume" default, wrong here: a corrupted
+  // rj.mixerSwing value should fall back to off, not maximum swing.
+  return stored === null || !Number.isFinite(n) ? SWING_DEFAULT_PERCENT : clampPercent(n);
 }

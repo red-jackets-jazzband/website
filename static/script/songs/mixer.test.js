@@ -442,6 +442,17 @@ test("loadSwingState defaults to 0 (off), reads back a persisted, clamped value"
   }
 });
 
+test("loadSwingState falls back to off on a corrupted (non-numeric) stored value", () => {
+  const page = mountPage();
+  try {
+    window.localStorage.setItem("rj.mixerSwing", "invalid");
+    assert.equal(loadSwingState(), 0);
+  } finally {
+    window.localStorage.clear();
+    page.cleanup();
+  }
+});
+
 test("clicking the Quality toggle flips ctx.state.highQualityAudio, persists it, updates the button, and re-renders at once", () => {
   const { ctx, rerenders, cleanup } = setup();
   try {
