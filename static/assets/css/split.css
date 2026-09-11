@@ -891,6 +891,7 @@ video.video {
   flex: 0 0 46px;
   font: 600 11px/1.2 "Montserrat", sans-serif;
   color: #ece6e6;
+  white-space: nowrap;
 }
 .mixer-fader-track {
   position: relative;
