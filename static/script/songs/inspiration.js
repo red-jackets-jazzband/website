@@ -400,7 +400,11 @@ export function createInspiration(ctx) {
       if (span) {
         const rate = player.getPlaybackRate ? player.getPlaybackRate() : 1;
         if (shouldLoopSeek(t, span.a, span.b, loopLeadSeconds(rate, LOOP_POLL_MS))) {
-          player.seekTo(span.a, true);
+          // allowSeekAhead=false: A has already played, so it's buffered —
+          // this skips the "new stream request" the player would otherwise
+          // make, which is what flashes the native controls back into view
+          // on every repeat.
+          player.seekTo(span.a, false);
           t = span.a;
         }
       }
@@ -508,7 +512,8 @@ export function createInspiration(ctx) {
     updateLoopUI();
     if (loopEnabled && player && playerReady) {
       const t = player.getCurrentTime();
-      if (t < span.a || t >= span.b) player.seekTo(span.a, true);
+      // Same allowSeekAhead=false reasoning as the loop poll's seek-back.
+      if (t < span.a || t >= span.b) player.seekTo(span.a, false);
     }
   }
 
