@@ -207,11 +207,15 @@ export function createAudioContextStub({ currentTime = 0 } = {}) {
   const instance = {
     state: "running",
     currentTime,
+    sampleRate: 44100,
     destination: {},
     resumeCalls: 0,
     constructorCalls: 0,
     oscillators: [],
     gains: [],
+    bufferSources: [],
+    biquadFilters: [],
+    buffers: [],
     createOscillator() {
       const osc = {
         type: null,
@@ -238,6 +242,40 @@ export function createAudioContextStub({ currentTime = 0 } = {}) {
       };
       instance.gains.push(node);
       return node;
+    },
+    createBuffer(numberOfChannels, length, sampleRate) {
+      const channelData = new Float32Array(length);
+      const buffer = {
+        numberOfChannels,
+        length,
+        sampleRate,
+        getChannelData: () => channelData,
+      };
+      instance.buffers.push(buffer);
+      return buffer;
+    },
+    createBufferSource() {
+      const source = {
+        buffer: null,
+        startedAt: null,
+        stoppedAt: null,
+        onended: null,
+        connect: () => source,
+        start(t) { source.startedAt = t; },
+        stop(t) { source.stoppedAt = t; },
+      };
+      instance.bufferSources.push(source);
+      return source;
+    },
+    createBiquadFilter() {
+      const filter = {
+        type: null,
+        frequency: { value: 0 },
+        Q: { value: 0 },
+        connect: () => filter,
+      };
+      instance.biquadFilters.push(filter);
+      return filter;
     },
     resume() {
       instance.resumeCalls += 1;
