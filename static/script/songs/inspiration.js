@@ -877,13 +877,20 @@ export function createInspiration(ctx) {
       if (loopDragging) dragLoopHandle(track, e);
       else if (scrubbing) scrubToPointer(track, e);
     });
-    track.addEventListener("pointerup", (e) => {
+    const endTrackDrag = (e) => {
       if (!loopDragging && !scrubbing) return;
       loopDragging = null;
       scrubbing = false;
       if (track.hasPointerCapture(e.pointerId)) track.releasePointerCapture(e.pointerId);
       updateLoopUI();
-    });
+    };
+    track.addEventListener("pointerup", endTrackDrag);
+    // A pointercancel (e.g. the browser reclaiming the gesture for scroll
+    // or a system gesture) never fires pointerup, so without this handler
+    // scrubbing/loopDragging would stay stuck true and the loop poll's
+    // "!loopDragging && !scrubbing" guard (see its own comment above) would
+    // never let playback resume driving the played-bar again.
+    track.addEventListener("pointercancel", endTrackDrag);
   }
 
   /*
