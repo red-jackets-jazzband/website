@@ -87,16 +87,19 @@ aliases: ["/setlists/", "/songbook/"]
   </div>
 
   <div id="inspirationSlot"></div>
-  <!-- Keep the next two on the same HTML block (no blank lines): a lone <button>
-       on its own line gets wrapped in a <p> by Goldmark, and that <p> becomes
-       the flex child instead of the button — knocking it out of the top-row
-       alignment (same gotcha as #inspirationSlot). advancedToggleBtn lives here
-       (grouped with Inspiration), not next to compingSlot below, so it wraps
-       onto the same mobile-portrait line as Inspiration instead of stranding
-       itself alone on a trailing line. -->
-  <button id="advancedToggleBtn" class="sheet-icon-btn sheet-advanced-toggle" type="button" title="More controls" aria-label="Show more controls" aria-expanded="false"><span class="fa-solid fa-angles-right" aria-hidden="true"></span></button>
+  <!-- Keep the next two on the same HTML block (no blank lines): a lone
+       element on its own line gets wrapped in a <p> by Goldmark, and that
+       <p> becomes the flex child instead of the element itself — knocking
+       it out of the top-row alignment. -->
   <span class="audio-loading" id="audioLoadingLabel">...</span>
   </div>
+  <!-- advancedToggleBtn is absolutely positioned (see .sheet-advanced-toggle
+       in split.css) as a small drawer handle straddling the seam between
+       #sheetmenu and the sheet paper below it, so it no longer needs to sit
+       inside the flex toolbar above. Kept on the same HTML block as
+       #compingSlot (no blank line) for the same Goldmark-wraps-a-lone-element
+       gotcha called out above. -->
+  <button id="advancedToggleBtn" class="sheet-icon-btn sheet-advanced-toggle" type="button" title="More controls" aria-label="Show more controls" aria-expanded="false"><span class="fa-solid fa-angles-right" aria-hidden="true"></span></button>
   <div id="compingSlot" class="sheet-comping sheet-adv-item"></div>
   <dialog id="mixerPanel" class="mixer-panel" aria-label="Mixer">
     <div class="mixer-head">
