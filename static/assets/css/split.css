@@ -3508,14 +3508,20 @@ body:has(#rjLibrary) .split-bio {
     #sheetmenu's own) on the narrowest phones instead of overflowing —
     Inspiration and the advanced-toggle end up sharing that wrapped second
     line together, rather than the toggle stranding itself alone below.
+    Column gap is tightened from the base 10px to 4px here: at the narrowest
+    real phone widths (measured at 360px, e.g. Galaxy S8/S9/S10e) the
+    available row is only ~262px, 4px short of the two 128px pills
+    (Key+Tempo, or Play/Stop/Mixer + Print/Export/iRealPro) plus a 10px gap —
+    just enough to tip each pair onto its own line and balloon this section
+    to six total rows instead of the intended four. 4px of column gap gives
+    both pairs their fit back with a couple of pixels to spare.
   */
   .sheet-adjust {
     display: flex;
     flex-wrap: wrap;
     flex-basis: 100%;
     justify-content: center;
-    gap: 10px;
-    row-gap: 8px;
+    gap: 8px 4px;
   }
   /*
     Key/Tempo used to grow to fill their whole line, which read as two
