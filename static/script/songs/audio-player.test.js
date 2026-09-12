@@ -59,30 +59,6 @@ test("stepTempo with no native tempo steps from the default bpm", () => {
   }
 });
 
-// setWarp (inside applyTempo) reprimes ABCjs's own MIDI buffer, which can
-// leave the Metronome's independent clock (songs/metronome.js) measurably
-// out of phase with the real audio by the time that settles — stepTempo
-// flags the next real bar line to correct it, rather than trying to guess
-// a compensating offset itself. See metronome.js's resyncOnNextBar/onBarStart.
-test("stepTempo flags the Metronome to resync at the next bar line", () => {
-  const page = mountPage();
-  const resyncCalls = [];
-  const ctx = makeCtx({
-    state: { tempoOverrideBpm: null, compingActive: false },
-    metronome: {
-      init: () => {}, refresh: () => {}, onPlaybackChange: () => {}, onBarStart: () => {},
-      resyncOnNextBar: () => resyncCalls.push(1),
-    },
-  });
-  const audio = createAudioPlayer(ctx);
-  try {
-    audio.stepTempo(4);
-    assert.equal(resyncCalls.length, 1);
-  } finally {
-    page.cleanup();
-  }
-});
-
 // audio-player.js's cursorControl.onEvent is where ABCjs reports real
 // playback crossing into a new measure (ev.measureStart) — the one honest
 // phase reference the Metronome's own independent clock ever gets.
@@ -93,7 +69,7 @@ test("a measureStart event tells the Metronome a real bar line just passed, but 
     state: { tempoOverrideBpm: null, compingActive: false },
     metronome: {
       init: () => {}, refresh: () => {}, onPlaybackChange: () => {},
-      onBarStart: () => barStarts.push(1), resyncOnNextBar: () => {},
+      onBarStart: () => barStarts.push(1),
     },
   });
   const audio = createAudioPlayer(ctx);
@@ -276,7 +252,6 @@ function setupWithMetronomeSpy() {
       refresh: () => {},
       onPlaybackChange: (playing, fromStart) => calls.push([playing, fromStart]),
       onBarStart: () => {},
-      resyncOnNextBar: () => {},
     },
   });
   const audio = createAudioPlayer(ctx);

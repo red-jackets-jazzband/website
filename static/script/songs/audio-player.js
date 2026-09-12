@@ -359,11 +359,6 @@ export function createAudioPlayer(ctx) {
     ctx.state.tempoOverrideBpm = clampBpm(base + delta);
     updateTempoLabel();
     applyTempo();
-    // setWarp (inside applyTempo) reprimes ABCjs's own MIDI buffer, which
-    // can leave the Metronome's independent clock measurably out of phase
-    // by the time that settles — flag the next real bar line to correct it
-    // (see songs/metronome.js's resyncOnNextBar doc comment).
-    ctx.metronome.resyncOnNextBar();
   }
 
   // ---- transport ------------------------------------------------------
