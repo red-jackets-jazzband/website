@@ -95,8 +95,8 @@ aliases: ["/setlists/", "/songbook/"]
        onto the same mobile-portrait line as Inspiration instead of stranding
        itself alone on a trailing line. -->
   <button id="advancedToggleBtn" class="sheet-icon-btn sheet-advanced-toggle" type="button" title="More controls" aria-label="Show more controls" aria-expanded="false"><span class="fa-solid fa-angles-right" aria-hidden="true"></span></button>
-  </div>
   <span class="audio-loading" id="audioLoadingLabel">...</span>
+  </div>
   <div id="compingSlot" class="sheet-comping sheet-adv-item"></div>
   <dialog id="mixerPanel" class="mixer-panel" aria-label="Mixer">
     <div class="mixer-head">
