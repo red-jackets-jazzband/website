@@ -75,7 +75,9 @@ export function makeCtx(overrides = {}) {
     mixer: overrides.mixer || {
       init: () => {}, toggle: () => {}, refresh: () => {}, syncVoices: () => {},
     },
-    metronome: overrides.metronome || { init: () => {}, refresh: () => {}, onPlaybackChange: () => {} },
+    metronome: overrides.metronome || {
+      init: () => {}, refresh: () => {}, onPlaybackChange: () => {}, onBarStart: () => {}, resyncOnNextBar: () => {},
+    },
     inspiration: { updateLink: () => {}, init: () => {}, ...overrides.inspiration },
     setlistData: overrides.setlistData,
     setlistHome: overrides.setlistHome,

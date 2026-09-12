@@ -393,18 +393,35 @@ function startFresh(ctx, metronome) {
   metronome.onPlaybackChange(true, true);
 }
 
-test("holds off ticking during a rubato/chordless intro (ctx.audio.chordOffset), then starts on schedule", (t) => {
+// Both tests below share the same 3s-intro scenario (beatsPerMeasure: 3 has
+// no backbeat to gate on, so this is purely about the intro delay, not
+// accent placement -- 2 intro bars * 3 beats * 0.5s = 3s) before diverging
+// to prove something different about what happens next (the delay expiring
+// on schedule, a pause/resume not reapplying it) -- so only the setup (which
+// doesn't need window.AudioContext stubbed yet) is shared here; arming the
+// toggle itself has to happen inside the caller's own withAudioContext.
+function setupThreeSecondIntro(t) {
   t.mock.timers.enable({ apis: ["setInterval"] });
-  // beatsPerMeasure: 3 has no backbeat to gate on, so this is purely about
-  // the intro delay, not accent placement. 2 intro bars * 3 beats * 0.5s = 3s.
   const { ctx, metronome, cleanup } = setup({ isPlaying: false, beatsPerMeasure: 3, chordOffset: 2 });
   const { Ctor, instance } = createAudioContextStub();
+  return { ctx, metronome, cleanup, Ctor, instance };
+}
+
+// Arms the toggle from a genuine fresh start and confirms nothing has
+// clicked yet mid-intro -- must run inside withAudioContext(Ctor, ...), same
+// as ensureAudioContext() reading window.AudioContext at click/start time.
+function armDuringIntro(t, ctx, metronome, instance) {
+  document.getElementById("mixerMetronomeToggleBtn").click();
+  startFresh(ctx, metronome);
+  t.mock.timers.tick(25);
+  assert.equal(instance.bufferSources.length, 0, "still inside the intro delay");
+}
+
+test("holds off ticking during a rubato/chordless intro (ctx.audio.chordOffset), then starts on schedule", (t) => {
+  const { ctx, metronome, cleanup, Ctor, instance } = setupThreeSecondIntro(t);
   try {
     withAudioContext(Ctor, () => {
-      document.getElementById("mixerMetronomeToggleBtn").click();
-      startFresh(ctx, metronome);
-      t.mock.timers.tick(25);
-      assert.equal(instance.bufferSources.length, 0, "no click during the intro");
+      armDuringIntro(t, ctx, metronome, instance);
 
       // Still inside the lookahead window for the first post-intro click
       // (due at t=3.03) rather than past it, for the same reason as the
@@ -522,17 +539,10 @@ test("a 3/4 tune ticks every beat (no backbeat to lean on)", (t) => {
 });
 
 test("resuming from a mid-tune pause ticks immediately, without reapplying the intro delay", (t) => {
-  t.mock.timers.enable({ apis: ["setInterval"] });
-  // beatsPerMeasure: 3 has no backbeat to gate on, so every scheduled click
-  // sounds -- this is purely about whether the intro delay reapplies.
-  const { ctx, metronome, cleanup } = setup({ isPlaying: false, beatsPerMeasure: 3, chordOffset: 2 });
-  const { Ctor, instance } = createAudioContextStub();
+  const { ctx, metronome, cleanup, Ctor, instance } = setupThreeSecondIntro(t);
   try {
     withAudioContext(Ctor, () => {
-      document.getElementById("mixerMetronomeToggleBtn").click();
-      startFresh(ctx, metronome); // a genuine fresh start -- the 3s intro delay applies
-      t.mock.timers.tick(25);
-      assert.equal(instance.bufferSources.length, 0, "still inside the intro delay");
+      armDuringIntro(t, ctx, metronome, instance);
 
       // Pause mid-intro, then resume -- this mirrors audio-player.js's
       // playPause(), which marks a pause as pausedMidway so the following
@@ -566,6 +576,104 @@ test("enabling the metronome mid-playback ticks immediately, without applying th
     });
   } finally {
     window.localStorage.clear();
+    cleanup();
+  }
+});
+
+// audio-player.js's cursorControl calls onBarStart() every time real
+// playback (its own ABCjs SynthController) crosses into a new measure --
+// the one honest phase reference this metronome's own, independent
+// AudioContext clock ever gets. These tests drive it directly, the same way
+// the tests above simulate audio-player.js's onPlaybackChange rather than
+// going through a real SynthController.
+
+test("a toggle enabled mid-playback ticks on a guessed phase, then onBarStart corrects it to the real bar line -- once", (t) => {
+  t.mock.timers.enable({ apis: ["setInterval"] });
+  // beatsPerMeasure: 3 has no backbeat to gate on, so every scheduled click
+  // sounds -- this is about phase correction, not accent placement.
+  const { metronome, cleanup } = setup({ isPlaying: true, beatsPerMeasure: 3, nativeQpm: 120 });
+  const { Ctor, instance } = createAudioContextStub();
+  try {
+    withAudioContext(Ctor, () => {
+      document.getElementById("mixerMetronomeToggleBtn").click(); // guessed start, phase unknown
+      t.mock.timers.tick(25);
+      assert.equal(instance.bufferSources.length, 1, "the guessed phase ticks immediately");
+
+      // The real bar line arrives later, before the guessed schedule's own
+      // next click (due at 0.53) -- this is what corrects it for real.
+      instance.currentTime = 0.4;
+      metronome.onBarStart();
+      t.mock.timers.tick(25);
+      assert.equal(instance.bufferSources.length, 2, "the correction produced a click of its own");
+      assert.ok(
+        Math.abs(instance.bufferSources[1].startedAt - 0.43) < 1e-9,
+        "anchored to the real bar line (0.4 + 0.03), not the guessed schedule's own 0.53",
+      );
+
+      // A second bar line shouldn't re-correct -- resyncPending is one-shot,
+      // so this is a no-op and the clock just keeps counting on from its
+      // now-correct phase.
+      instance.currentTime = 5;
+      metronome.onBarStart();
+      t.mock.timers.tick(25);
+      assert.equal(instance.bufferSources.length, 2, "no re-correction landed inside this tick's lookahead window");
+
+      // Proves it: the natural (uncorrected) schedule catches up to a click
+      // at 5.43 (0.93 + 9 beats of 0.5s, from the corrected clock's own
+      // post-0.43 schedule), not onBarStart's own 5.03 anchor — which is
+      // exactly why the tick just above produced nothing yet.
+      instance.currentTime = 5.4;
+      t.mock.timers.tick(25);
+      assert.equal(instance.bufferSources.length, 3);
+      assert.ok(Math.abs(instance.bufferSources[2].startedAt - 5.43) < 1e-9);
+    });
+  } finally {
+    window.localStorage.clear();
+    cleanup();
+  }
+});
+
+test("resyncOnNextBar flags a running metronome to realign at the next real bar line, correcting tempo-change drift", (t) => {
+  t.mock.timers.enable({ apis: ["setInterval"] });
+  const { ctx, metronome, cleanup } = setup({ isPlaying: false, beatsPerMeasure: 3, chordOffset: 0 });
+  const { Ctor, instance } = createAudioContextStub();
+  try {
+    withAudioContext(Ctor, () => {
+      document.getElementById("mixerMetronomeToggleBtn").click(); // armed, not yet playing
+      startFresh(ctx, metronome); // a genuine fresh start -- phase is known, nothing pending
+      t.mock.timers.tick(25);
+      assert.equal(instance.bufferSources.length, 1, "ticks immediately, no intro to skip");
+
+      // Simulate audio-player.js's stepTempo applying a Tempo-stepper nudge
+      // -- doesn't touch the clock itself, only arms the next bar line.
+      metronome.resyncOnNextBar();
+      instance.currentTime = 0.4; // short of the old schedule's own next click, due at 0.53
+      t.mock.timers.tick(25);
+      assert.equal(instance.bufferSources.length, 1, "resyncOnNextBar alone schedules nothing");
+
+      // The real bar line arrives (audio-player.js's onEvent, measureStart)
+      // -- this is what actually realigns the clock.
+      metronome.onBarStart();
+      t.mock.timers.tick(25);
+      assert.equal(instance.bufferSources.length, 2, "the flagged resync produced a corrected click");
+      assert.ok(
+        Math.abs(instance.bufferSources[1].startedAt - 0.43) < 1e-9,
+        "anchored to the real bar line (0.4 + 0.03), not the old schedule's own 0.53",
+      );
+    });
+  } finally {
+    window.localStorage.clear();
+    cleanup();
+  }
+});
+
+test("resyncOnNextBar and onBarStart are no-ops while the metronome isn't running", () => {
+  const { ctx, metronome, cleanup } = setup({ isPlaying: false });
+  try {
+    assert.doesNotThrow(() => metronome.resyncOnNextBar());
+    assert.doesNotThrow(() => metronome.onBarStart());
+    assert.equal(ctx.state.metronomeEnabled, false); // neither call turned it on
+  } finally {
     cleanup();
   }
 });
