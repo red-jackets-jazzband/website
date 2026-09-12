@@ -230,9 +230,26 @@ export function createAudioPlayer(ctx) {
     }
   }
 
+  // Tells the Metronome (songs/metronome.js) whenever real playback crosses
+  // into a new measure — the one honest phase reference its own independent
+  // click clock ever gets, used to correct a guessed phase (a toggle enabled
+  // mid-playback, or a resume from a pause) and to realign after a tempo
+  // change reprimes ABCjs's MIDI buffer. Guarded the same way highlightEvent
+  // is just below: ABCjs also fires this callback from setWarp()'s own
+  // internal seek even on a sheet that's paused, which isn't a real bar
+  // line actually passing.
+  function notifyMetronomeBarStart(ev) {
+    if (!ev || !ev.measureStart) return;
+    const ctrl = state.synthController;
+    if (ctrl && ctrl.isStarted) ctx.metronome.onBarStart();
+  }
+
   const cursorControl = {
     onStart: clearHighlight,
-    onEvent: highlightEvent,
+    onEvent(ev) {
+      notifyMetronomeBarStart(ev);
+      highlightEvent(ev);
+    },
     onFinished() {
       setIsPlaying(false);
       // A tune that played to the end restarts from position 0 next time,
@@ -342,6 +359,11 @@ export function createAudioPlayer(ctx) {
     ctx.state.tempoOverrideBpm = clampBpm(base + delta);
     updateTempoLabel();
     applyTempo();
+    // setWarp (inside applyTempo) reprimes ABCjs's own MIDI buffer, which
+    // can leave the Metronome's independent clock measurably out of phase
+    // by the time that settles — flag the next real bar line to correct it
+    // (see songs/metronome.js's resyncOnNextBar doc comment).
+    ctx.metronome.resyncOnNextBar();
   }
 
   // ---- transport ------------------------------------------------------

@@ -124,6 +124,14 @@ function playClick(audioCtx, noiseBuffer, time) {
   scheduling tick (never snapshotted), so a Tempo-stepper nudge or a new tune
   takes effect on the very next click with no extra wiring.
 */
+
+// Where the clock should land "right now" with no delay — used both by a
+// phase-guessing start() and by onBarStart()'s own correction, so the two
+// always anchor a fresh beat 1 the same way.
+function anchorNow(audio) {
+  return audio.currentTime + 0.05 - CLICK_ADVANCE_SECONDS;
+}
+
 export function createMetronome(ctx) {
   let audioCtx = null;
   let noiseBuffer = null;
@@ -131,6 +139,9 @@ export function createMetronome(ctx) {
   let running = false;
   let nextNoteTime = 0;
   let beatIndex = 0;
+  // True whenever the running clock's current phase is a guess rather than
+  // a known position — see start()'s and onBarStart()'s own doc comments.
+  let resyncPending = false;
   // Ticks tick()'s already scheduled up to SCHEDULE_AHEAD_SECONDS into the
   // future — stop()'s clearInterval only stops *future* scheduling ticks,
   // it does nothing about a tick that's already been handed to the
@@ -180,8 +191,10 @@ export function createMetronome(ctx) {
   // mid-tune pause, or the metronome toggle itself being flipped on while
   // the sheet is already playing, ticks immediately and unphased instead:
   // there's no way to know the real current position, so counting from
-  // "beat 1 now" is the same simplification already documented above for a
-  // mid-measure resume, just applied a beat sooner.
+  // "beat 1 now" is the honest guess. That guess is often wrong — the sheet
+  // could be anywhere in the measure — so it's marked resyncPending, and
+  // onBarStart() below corrects it for real the moment the tune's own
+  // playback actually crosses into a new measure.
   function start(fromStart) {
     const audio = ensureAudioContext();
     if (!audio) return; // no Web Audio support — the toggle just does nothing audible
@@ -199,15 +212,17 @@ export function createMetronome(ctx) {
       // the clock's very first beat instead (see pickupStartBeatIndex).
       beatIndex = introBars > 0 ? 0 : pickupStartBeatIndex(pickupBeats, beats);
     }
-    nextNoteTime = audio.currentTime + 0.05 - CLICK_ADVANCE_SECONDS + delay;
+    nextNoteTime = anchorNow(audio) + delay;
     timerId = setInterval(tick, LOOKAHEAD_INTERVAL_MS);
     running = true;
+    resyncPending = !fromStart;
   }
 
   function stop() {
     if (timerId !== null) clearInterval(timerId);
     timerId = null;
     running = false;
+    resyncPending = false;
     // Cut off any click already scheduled inside the lookahead window —
     // otherwise pausing (or toggling off) mid-window still lets it sound.
     // .stop() on a node whose own scheduled stop already elapsed throws;
@@ -236,6 +251,43 @@ export function createMetronome(ctx) {
     const shouldRun = ctx.state.metronomeEnabled && ctx.audio.isPlaying;
     if (shouldRun && !running) start(fromStart);
     else if (!shouldRun && running) stop();
+  }
+
+  /*
+    audio-player.js calls this every time the tune's own real playback
+    crosses into a new measure (its cursorControl.onEvent, gated on
+    ev.measureStart) — the one honest phase reference this metronome's
+    independent clock ever gets, since it otherwise free-runs on its own
+    AudioContext with no link to ABCjs's SynthController. Only acts while
+    resyncPending: set by start()'s own phase-guessing branch (a toggle
+    enabled mid-playback, or a resume from a mid-tune pause — see its doc
+    comment) and by resyncOnNextBar() below (a tempo change). Snapping
+    straight to beat 1 here — rather than trying to compute which beat
+    "now" actually falls inside the new measure — is deliberate: a
+    resync only ever needs to happen once per phase-loss, and the very
+    next bar line is itself always beat 1, so there's nothing to compute.
+  */
+  function onBarStart() {
+    if (!running || !resyncPending) return;
+    if (!audioCtx) return;
+    beatIndex = 0;
+    nextNoteTime = anchorNow(audioCtx);
+    resyncPending = false;
+  }
+
+  /*
+    audio-player.js's stepTempo calls this right when the Tempo stepper
+    applies a new bpm through SynthController.setWarp — which reprimes
+    ABCjs's own MIDI buffer and can leave this metronome's independent
+    clock measurably ahead or behind the real audio by the time that
+    settles (there's nothing to measure the real gap against, since the
+    two clocks share no common reference). Rather than guess a
+    compensating offset, just flag the next real bar line (onBarStart
+    above) to correct it for real, the same mechanism a phase-guessing
+    start() already relies on.
+  */
+  function resyncOnNextBar() {
+    if (running) resyncPending = true;
   }
 
   function updateToggleVisual() {
@@ -273,6 +325,8 @@ export function createMetronome(ctx) {
     onPlaybackChange(playing, fromStart) {
       syncRunning(fromStart);
     },
+    onBarStart,
+    resyncOnNextBar,
   };
 }
 
