@@ -573,7 +573,7 @@ video.video {
     align-items: center;
     gap: 10px;
     row-gap: 8px;
-    padding: 12px 16px;
+    padding: 12px 16px 18px;
     position: relative;
 }
 
@@ -961,23 +961,46 @@ video.video {
   border-radius: 50%;
   box-shadow: 0 0 0 1px rgba(255,255,255,.35) inset;
 }
-.mixer-swatch--melody {
-  background: #f0eee9;
-}
 .mixer-swatch--bass {
   background: #8a6244;
 }
 .mixer-swatch--chords {
   background: var(--rj-body);
 }
-.mixer-swatch--comping {
-  background: var(--rj-hover);
+/*
+  Voice strips (songs/mixer.js's buildVoiceStrip, one per the tune's resolved
+  voices — an ordinary tune's own Melody, a chart's own named staves like
+  Trumpet + Sousaphone, or Comping) have no established colour coding the way
+  Bass/Chords do above — these just cycle by list position so 2-4 voices on
+  one tune stay visually distinguishable.
+*/
+.mixer-swatch--voice-0 {
+  background: #7fa6c9;
+}
+.mixer-swatch--voice-1 {
+  background: #c98a7f;
+}
+.mixer-swatch--voice-2 {
+  background: #9fc97f;
+}
+.mixer-swatch--voice-3 {
+  background: #c9b17f;
 }
 .mixer-strip-label {
   flex: 0 0 46px;
   font: 600 11px/1.2 "Montserrat", sans-serif;
   color: #ece6e6;
   white-space: nowrap;
+}
+/* A resolved voice's own name can run longer than the fixed Bass/Chords
+   labels above ("Sousaphone" vs "Bass") — let it size to its text instead of
+   the fixed 46px column, but still clip with an ellipsis rather than push
+   the Voice picker/mute button off the panel. */
+.mixer-strip--voice .mixer-strip-label {
+  flex: 0 1 auto;
+  max-width: 96px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .mixer-fader-track {
   position: relative;
@@ -1077,42 +1100,32 @@ video.video {
   border-color: var(--rj-gold);
   color: #ece6e6;
 }
-/* Melody/Comping: Mute and Voice are real; volume isn't (see
+/* Every resolved voice strip: Mute and Voice are real; volume isn't (see
    lib/audio-mix.js's doc comment for why) — their fader is permanently
    dimmed (and `disabled` in the markup) rather than left interactive with
    no audible effect. */
 .mixer-strip--volume-locked .mixer-fader-track {
   opacity: .4;
 }
-.mixer-strip-note {
-  display: none;
-  flex: 0 0 100%;
-  margin: 4px 0 0;
-  font: 400 11.5px/1.5 "Lora", serif;
-  font-style: italic;
-  color: rgba(236,234,230,.45);
+/* #mixerVoicesSection wraps the tune's resolved voice strips (songs/
+   mixer.js's rebuildVoiceStrips) — a plain block, not a .mixer-strip itself,
+   so it needs its own top margin next to its neighbours (.mixer-strip +
+   .mixer-strip only fires between two direct .mixer-strip siblings, not
+   through this wrapper) and something to space its own first child from the
+   strip above it. */
+.mixer-strip + .mixer-voices-section,
+.mixer-voices-section + .mixer-strip {
+  margin-top: 10px;
 }
 /* Bass/Chords need chord symbols to build an accompaniment from — a gated
-   channel with nothing to mix is dimmed out of interaction and swaps in an
-   explainer, rather than left clickable with no audible effect (see
+   channel with nothing to mix hides the whole strip (swatch, label, fader,
+   mute, Voice, readout) rather than leaving a dead control visible (see
    songs/mixer.js's updateGate). */
-.mixer-strip.is-inactive .mixer-fader-track,
-.mixer-strip.is-inactive .mixer-mute-btn,
-.mixer-strip.is-inactive .mixer-voice-select {
-  opacity: .4;
-  pointer-events: none;
-}
-.mixer-strip.is-inactive .mixer-strip-note {
-  display: block;
-}
-/* Comping needs its own pattern turned on; with no comping voice at all
-   there's nothing in its row worth even dimming — hide the whole strip
-   (swatch, label, fader, mute, Voice, readout), not just its controls. */
-.mixer-strip--comping.is-inactive {
+.mixer-strip.is-inactive {
   display: none;
 }
 /*
-  Metronome: not a channel like the four above it — no volume fader, no
+  Metronome: not a channel like Bass/Chords above it — no volume fader, no
   Voice picker, nothing to gate on the current tune (see songs/mixer.js's
   CHANNELS / GATE_STATE_KEY, neither of which lists it) — just a toggle
   button, real on/off, wired by songs/metronome.js.
@@ -1154,8 +1167,8 @@ video.video {
   <select> choosing the Bass/Chords auto-accompaniment's %%MIDI gchord rhythm
   (songs/mixer.js, lib/audio-mix.js's GCHORD_PATTERNS). Reuses the Voice
   pickers' .mixer-voice-select look (same indented full-width row under the
-  label) and the Bass/Chords gate's .is-inactive / .mixer-strip-note styling
-  above, since it needs chord symbols to do anything just like they do.
+  label) and the Bass/Chords gate's .is-inactive styling above, since it
+  needs chord symbols to do anything just like they do.
 */
 .mixer-swatch--pattern {
   background: var(--rj-gold);
