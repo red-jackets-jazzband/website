@@ -3642,7 +3642,12 @@ body:has(#rjLibrary) .split-bio {
     gap: 8px;
   }
   .sheet-adjust {
-    display: contents;
+    display: flex;
+    flex-wrap: wrap;
+    flex-basis: 100%;
+    justify-content: center;
+    gap: 10px;
+    row-gap: 8px;
   }
   #keyStepper,
   #tempoStepper {
