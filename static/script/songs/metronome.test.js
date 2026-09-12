@@ -587,7 +587,7 @@ test("enabling the metronome mid-playback ticks immediately, without applying th
 // the tests above simulate audio-player.js's onPlaybackChange rather than
 // going through a real SynthController.
 
-test("a toggle enabled mid-playback ticks on a guessed phase, then onBarStart corrects it to the real bar line -- once", (t) => {
+test("a toggle enabled mid-playback ticks on a guessed phase, then onBarStart corrects it to the real bar line -- every time", (t) => {
   t.mock.timers.enable({ apis: ["setInterval"] });
   // beatsPerMeasure: 3 has no backbeat to gate on, so every scheduled click
   // sounds -- this is about phase correction, not accent placement.
@@ -610,22 +610,17 @@ test("a toggle enabled mid-playback ticks on a guessed phase, then onBarStart co
         "anchored to the real bar line (0.4 + 0.03), not the guessed schedule's own 0.53",
       );
 
-      // A second bar line shouldn't re-correct -- resyncPending is one-shot,
-      // so this is a no-op and the clock just keeps counting on from its
-      // now-correct phase.
+      // A second, later bar line re-anchors again -- every bar resyncs, not
+      // just the first one after a phase-guess, so two independent clocks
+      // can never drift apart for more than a single bar.
       instance.currentTime = 5;
       metronome.onBarStart();
       t.mock.timers.tick(25);
-      assert.equal(instance.bufferSources.length, 2, "no re-correction landed inside this tick's lookahead window");
-
-      // Proves it: the natural (uncorrected) schedule catches up to a click
-      // at 5.43 (0.93 + 9 beats of 0.5s, from the corrected clock's own
-      // post-0.43 schedule), not onBarStart's own 5.03 anchor — which is
-      // exactly why the tick just above produced nothing yet.
-      instance.currentTime = 5.4;
-      t.mock.timers.tick(25);
-      assert.equal(instance.bufferSources.length, 3);
-      assert.ok(Math.abs(instance.bufferSources[2].startedAt - 5.43) < 1e-9);
+      assert.equal(instance.bufferSources.length, 3, "the second bar line produced its own correction");
+      assert.ok(
+        Math.abs(instance.bufferSources[2].startedAt - 5.03) < 1e-9,
+        "anchored to the second real bar line (5 + 0.03), not the first correction's own drifting schedule",
+      );
     });
   } finally {
     window.localStorage.clear();
@@ -633,29 +628,24 @@ test("a toggle enabled mid-playback ticks on a guessed phase, then onBarStart co
   }
 });
 
-test("resyncOnNextBar flags a running metronome to realign at the next real bar line, correcting tempo-change drift", (t) => {
+test("onBarStart re-anchors a freshly (and correctly) started metronome too, correcting tempo-change drift without a separate flag", (t) => {
   t.mock.timers.enable({ apis: ["setInterval"] });
   const { ctx, metronome, cleanup } = setup({ isPlaying: false, beatsPerMeasure: 3, chordOffset: 0 });
   const { Ctor, instance } = createAudioContextStub();
   try {
     withAudioContext(Ctor, () => {
       document.getElementById("mixerMetronomeToggleBtn").click(); // armed, not yet playing
-      startFresh(ctx, metronome); // a genuine fresh start -- phase is known, nothing pending
+      startFresh(ctx, metronome); // a genuine fresh start -- phase is already known
       t.mock.timers.tick(25);
       assert.equal(instance.bufferSources.length, 1, "ticks immediately, no intro to skip");
 
       // Simulate audio-player.js's stepTempo applying a Tempo-stepper nudge
-      // -- doesn't touch the clock itself, only arms the next bar line.
-      metronome.resyncOnNextBar();
+      // (via setWarp) -- this doesn't touch the metronome's own clock at
+      // all; only the next real bar line (below) does.
       instance.currentTime = 0.4; // short of the old schedule's own next click, due at 0.53
+      metronome.onBarStart(); // audio-player.js's onEvent, measureStart
       t.mock.timers.tick(25);
-      assert.equal(instance.bufferSources.length, 1, "resyncOnNextBar alone schedules nothing");
-
-      // The real bar line arrives (audio-player.js's onEvent, measureStart)
-      // -- this is what actually realigns the clock.
-      metronome.onBarStart();
-      t.mock.timers.tick(25);
-      assert.equal(instance.bufferSources.length, 2, "the flagged resync produced a corrected click");
+      assert.equal(instance.bufferSources.length, 2, "the bar line re-anchored the clock");
       assert.ok(
         Math.abs(instance.bufferSources[1].startedAt - 0.43) < 1e-9,
         "anchored to the real bar line (0.4 + 0.03), not the old schedule's own 0.53",
@@ -667,12 +657,11 @@ test("resyncOnNextBar flags a running metronome to realign at the next real bar 
   }
 });
 
-test("resyncOnNextBar and onBarStart are no-ops while the metronome isn't running", () => {
+test("onBarStart is a no-op while the metronome isn't running", () => {
   const { ctx, metronome, cleanup } = setup({ isPlaying: false });
   try {
-    assert.doesNotThrow(() => metronome.resyncOnNextBar());
     assert.doesNotThrow(() => metronome.onBarStart());
-    assert.equal(ctx.state.metronomeEnabled, false); // neither call turned it on
+    assert.equal(ctx.state.metronomeEnabled, false); // the call didn't turn it on
   } finally {
     cleanup();
   }
