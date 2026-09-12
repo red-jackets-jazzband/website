@@ -60,6 +60,7 @@ export function makeCtx(overrides = {}) {
     audio: overrides.audio || {
       transposeSemitones: 0,
       chordOffset: 0,
+      pickupBeats: 0,
       isPlaying: false,
       nativeQpm: 120,
       beatsPerMeasure: 4,
