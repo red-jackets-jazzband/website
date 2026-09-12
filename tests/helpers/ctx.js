@@ -22,11 +22,18 @@ export function makeCtx(overrides = {}) {
       currentSongText: undefined,
       compingActive: false,
       hasChords: false,
+      instrumentVoices: [],
+      // A single implicit "Melody" voice, same as lib/audio-mix.js's
+      // resolveMixerVoices would produce for an ordinary tune with no V:
+      // declaration of its own and Comping off.
+      mixerVoices: [{
+        id: "1", index: 0, label: "Melody", slug: "melody", muted: false, program: null,
+      }],
       tempoOverrideBpm: null,
       mixer: {
-        melodyVolume: 100, bassVolume: 100, chordsVolume: 100, compingVolume: 100,
-        melodyMuted: false, bassMuted: true, chordsMuted: true, compingMuted: false,
-        melodyProgram: null, bassProgram: null, chordsProgram: null, compingProgram: null,
+        bassVolume: 100, chordsVolume: 100,
+        bassMuted: true, chordsMuted: true,
+        bassProgram: null, chordsProgram: null,
       },
       gchordPattern: "jazz",
       metronomeEnabled: false,
@@ -64,7 +71,9 @@ export function makeCtx(overrides = {}) {
       playPause: () => {},
       stop: () => {},
     },
-    mixer: overrides.mixer || { init: () => {}, toggle: () => {}, refresh: () => {} },
+    mixer: overrides.mixer || {
+      init: () => {}, toggle: () => {}, refresh: () => {}, syncVoices: () => {},
+    },
     metronome: overrides.metronome || { init: () => {}, refresh: () => {}, onPlaybackChange: () => {} },
     inspiration: { updateLink: () => {}, init: () => {}, ...overrides.inspiration },
     setlistData: overrides.setlistData,
