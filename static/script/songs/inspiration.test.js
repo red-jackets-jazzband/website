@@ -741,6 +741,40 @@ test("clicking the timeline to seek while paused moves the played bar immediatel
   }
 });
 
+test("dragging the timeline's played bar scrubs playback, following the pointer on every move", async () => {
+  const page = mountPage();
+  const { window } = page;
+  try {
+    const seeks = [];
+    await openLoopPanel(window, {
+      getCurrentTime: () => 0,
+      getDuration: () => 200,
+      seekTo: (t) => seeks.push(t),
+    });
+
+    const track = document.getElementById("inspirationLoopTrack");
+    track.getBoundingClientRect = () => ({ left: 0, width: 200 });
+    track.setPointerCapture = () => {};
+    track.hasPointerCapture = () => true;
+    track.releasePointerCapture = () => {};
+
+    track.dispatchEvent(new window.PointerEvent("pointerdown", { pointerId: 1, clientX: 40 })); // 20%
+    track.dispatchEvent(new window.PointerEvent("pointermove", { pointerId: 1, clientX: 100 })); // 50%
+    track.dispatchEvent(new window.PointerEvent("pointermove", { pointerId: 1, clientX: 160 })); // 80%
+
+    assert.deepEqual(seeks, [40, 100, 160]);
+    assert.equal(document.getElementById("inspirationLoopPlayed").style.width, "80%");
+
+    seeks.length = 0;
+    track.dispatchEvent(new window.PointerEvent("pointerup", { pointerId: 1 }));
+    track.dispatchEvent(new window.PointerEvent("pointermove", { pointerId: 1, clientX: 20 }));
+    assert.deepEqual(seeks, []); // scrubbing stopped on pointerup
+  } finally {
+    delete window.YT;
+    page.cleanup();
+  }
+});
+
 test("the share button copies the link ctx.shareUrl builds from the markers", () => {
   inDom(({ window }) => {
     const copied = [];
