@@ -251,12 +251,14 @@ export function createMetronome(ctx) {
   /*
     audio-player.js calls this every time the tune's own real playback
     crosses into a new measure (its cursorControl.onEvent, gated on
-    ev.measureStart) — the one honest phase reference this metronome's
-    independent clock ever gets, since it otherwise free-runs on its own
-    AudioContext with no link to ABCjs's SynthController. Re-anchors to beat
-    1 unconditionally on *every* bar line, not just to correct a known
-    phase-guess (a toggle enabled mid-playback, a resume from a mid-tune
-    pause, or a tempo change re-priming ABCjs's MIDI buffer): two
+    ev.measureStart), passing along that measure's own index — the one
+    honest phase reference this metronome's independent clock ever gets,
+    since it otherwise free-runs on its own AudioContext with no link to
+    ABCjs's SynthController. Re-anchors to beat 1 on *every* bar line at or
+    past the tune's own chordless intro (ctx.audio.chordOffset — the same
+    "leading chordless bars" count comping.js rests through), not just to
+    correct a known phase-guess (a toggle enabled mid-playback, a resume from
+    a mid-tune pause, or a tempo change re-priming ABCjs's MIDI buffer): two
     independent clocks drift against each other continuously, not just at
     those moments, so resyncing only when something is known to have gone
     wrong would let ordinary clock drift compound silently between
@@ -264,9 +266,18 @@ export function createMetronome(ctx) {
     compute which beat "now" actually falls inside the new measure — is
     deliberate: the very next bar line is itself always beat 1, so there's
     nothing to compute.
+
+    A bar still inside the intro (measureIdx < chordOffset) is left alone
+    instead: resyncing there would immediately erase the very delay start()
+    computed to skip that intro (introDelaySeconds), making the click track
+    tick right through a rubato passage with no chords under it. An unknown
+    measureIdx (ABCjs didn't tag this event, or there's no intro to worry
+    about — chordOffset 0) always resyncs, same as before.
   */
-  function onBarStart() {
+  function onBarStart(measureIdx) {
     if (!running || !audioCtx) return;
+    const introBars = ctx.audio.chordOffset || 0;
+    if (Number.isFinite(measureIdx) && measureIdx < introBars) return;
     beatIndex = 0;
     nextNoteTime = anchorNow(audioCtx);
   }
