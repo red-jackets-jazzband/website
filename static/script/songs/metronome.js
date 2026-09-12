@@ -214,14 +214,10 @@ export function createMetronome(ctx) {
     running = true;
   }
 
-  function stop() {
-    if (timerId !== null) clearInterval(timerId);
-    timerId = null;
-    running = false;
-    // Cut off any click already scheduled inside the lookahead window —
-    // otherwise pausing (or toggling off) mid-window still lets it sound.
-    // .stop() on a node whose own scheduled stop already elapsed throws;
-    // that's just it finishing on its own, nothing to do about it.
+  // Cuts off any click already scheduled inside the lookahead window.
+  // .stop() on a node whose own scheduled stop already elapsed throws;
+  // that's just it finishing on its own, nothing to do about it.
+  function cancelScheduledVoices() {
     scheduledVoices.forEach((source) => {
       try {
         source.stop();
@@ -230,6 +226,15 @@ export function createMetronome(ctx) {
       }
     });
     scheduledVoices = [];
+  }
+
+  function stop() {
+    if (timerId !== null) clearInterval(timerId);
+    timerId = null;
+    running = false;
+    // Otherwise pausing (or toggling off) mid-window still lets a
+    // previously scheduled click sound.
+    cancelScheduledVoices();
   }
 
   // The one place that decides whether the click should be running right
@@ -278,6 +283,9 @@ export function createMetronome(ctx) {
     if (!running || !audioCtx) return;
     const introBars = ctx.audio.chordOffset || 0;
     if (Number.isFinite(measureIdx) && measureIdx < introBars) return;
+    // A click already queued from before this re-anchor would otherwise
+    // still sound at its old, now-stale time once the clock jumps.
+    cancelScheduledVoices();
     beatIndex = 0;
     nextNoteTime = anchorNow(audioCtx);
   }
