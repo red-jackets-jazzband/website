@@ -181,4 +181,26 @@ export default [
       "max-params": "off",
     },
   },
+  {
+    // CI/dev-tooling scripts (e.g. the ABC notation linter) run in Node,
+    // not the browser.
+    files: ["scripts/**/*.js"],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: "module",
+      globals: { ...globals.node },
+    },
+    plugins: {
+      "@stylistic": stylistic,
+      sonarjs: sonarjs.configs.recommended.plugins.sonarjs,
+      regexp: regexpPlugin,
+      unicorn: unicornPlugin,
+    },
+    rules: {
+      ...sonarjs.configs.recommended.rules,
+      ...STRICT_RULES,
+      ...STYLISTIC_RULES,
+      "sonarjs/no-unused-vars": "off",
+    },
+  },
 ];
