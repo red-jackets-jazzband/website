@@ -246,44 +246,81 @@ export function resolveMixerVoices(rawVoices, compingActive) {
   last in the header silently wins the *entire tune's* program, melody
   included (confirmed by decoding actual generated MIDI bytes: two different
   header-trailing %%MIDI program lines emitted one Program Change, on the
-  same channel, at the second line's value only). A body declaration doesn't
-  have this problem, so it's preferred whenever the voice has one — which,
-  for every shape buildCompingTune produces, it always does (the comping
-  voice's own declaration is body-only to begin with; an ordinary tune's
-  synthesized "V:1"/"V:2" pair each reappear in the body too). Only a voice
-  with no body declaration at all (a genuinely single-voice tune, comping
-  off, so nothing else can collide with its one header-scoped directive)
-  falls back to its header line.
+  same channel, at the second line's value only).
+
+  Priority per voice id, highest wins ties broken by first occurrence: a
+  real body "V:<id>" declaration line (bodyDecl) > a body-only inline
+  "[V:<id>]" switch (inline) > a header-only "V:<id>" line (header, the
+  fallback that hits the shared-slot bug above). A voice with only a header
+  line and no body reference at all still falls back to it (nothing else to
+  scope to). This matters because some tunes — short_dressed_gal.abc,
+  feel_like_funkin_it_up.abc — declare their voice names in a header "V:1
+  name=..." line (parseVoiceList needs it; inline markers never carry a
+  name= of their own) but never re-declare the voice as its own body line,
+  switching between voices only via inline "[V:1]"/"[V:2]" markers that
+  introduce each system. Left alone, both voices' header lines collide in
+  the shared slot exactly as described above — this is why Instrument/Voice
+  pickers could end up sounding identical for two different voices despite
+  each being set to a different program.
+
+  Confirmed by decoding actual generated MIDI bytes (the same method used
+  above): trailing the %%MIDI line directly off the inline "[V:1]"/"[V:2]"
+  marker itself — even split onto its own line first, so the directive still
+  starts a line — does *not* scope per voice either. Both voices' tracks came
+  out on the first voice's program; the second inline switch's directive was
+  silently dropped rather than colliding the way two header lines do. What
+  does work, decoded the same way: inserting a genuine bare "V:<id>" line
+  (no brackets — a real declaration, not a switch) immediately *before* that
+  first inline-marker line, then the %%MIDI line, and leaving the original
+  "[V:<id>] <notes...>" line completely untouched after it. Two lines are
+  added, nothing is split — safe for the printed layout for the same reason
+  buildCompingTune's own bare "V:1"/"V:2" declaration lines are (the sheet
+  renders with `responsive: "resize"`, songs/sheet.js, which reflows the note
+  stream into systems by available width rather than treating each source
+  line as fixed).
 */
 function injectVoicePrograms(text, programsById) {
   const lines = text.split("\n");
   const kIndex = lines.findIndex((l) => l.startsWith("K:"));
+  const PRIORITY = { header: 0, inline: 1, bodyDecl: 2 };
   const chosen = new Map();
-  lines.forEach((line, index) => {
-    const m = /^V:\s*(\S+)/.exec(line);
-    if (!m) return;
-    const id = m[1];
-    const isBody = kIndex !== -1 && index > kIndex;
+  function consider(id, index, kind) {
     const prev = chosen.get(id);
-    if (!prev || (isBody && !prev.isBody)) chosen.set(id, { index, isBody });
+    if (!prev || PRIORITY[kind] > PRIORITY[prev.kind]) {
+      chosen.set(id, { index, kind });
+    }
+  }
+  lines.forEach((line, index) => {
+    const header = /^V:\s*(\S+)/.exec(line);
+    if (header) {
+      const isBody = kIndex !== -1 && index > kIndex;
+      consider(header[1], index, isBody ? "bodyDecl" : "header");
+      return;
+    }
+    const inline = /^\[V:\s*([^\]\s]+)\]/.exec(line);
+    if (inline) consider(inline[1], index, "inline");
   });
-  const insertAfter = new Map();
-  chosen.forEach(({ index }, id) => {
+  const insertions = new Map();
+  chosen.forEach(({ index, kind }, id) => {
     const program = programsById.get(id);
-    if (program !== undefined) insertAfter.set(index, program);
+    if (program !== undefined) insertions.set(index, { id, program, before: kind === "inline" });
   });
   return lines
     .flatMap((line, index) => {
-      if (!insertAfter.has(index)) return [line];
-      return [line, `%%MIDI program ${insertAfter.get(index)}`];
+      const ins = insertions.get(index);
+      if (!ins) return [line];
+      const directive = `%%MIDI program ${ins.program}`;
+      if (ins.before) return [`V:${ins.id}`, directive, line];
+      return [line, directive];
     })
     .join("\n");
 }
 
-// True once `text` declares at least one voice of its own (a real "V:<id>"
-// line, wherever it falls relative to K:) — i.e. whether injectVoicePrograms
+// True once `text` declares at least one voice of its own — a real "V:<id>"
+// line (wherever it falls relative to K:) or a body-only "[V:<id>]" inline
+// switch (short_dressed_gal.abc's shape) — i.e. whether injectVoicePrograms
 // above has anything to attach a scoped %%MIDI program line to at all.
-const HAS_VOICE_DECLARATION = /^V:\s*\S+/m;
+const HAS_VOICE_DECLARATION = /^(?:V:\s*\S+|\[V:\s*[^\]\s]+\])/m;
 
 /*
   Stamp Bass/Chords' full accompaniment directives, and every other voice's
