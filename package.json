@@ -4,11 +4,12 @@
   "type": "module",
   "description": "Dev tooling (lint + unit tests) for the Red Jackets Jazzband Hugo site's vanilla JS. Not part of the Hugo build or the GitHub Pages deploy.",
   "scripts": {
-    "lint": "npm run lint:js && npm run lint:css && npm run lint:dup && npm run lint:types",
-    "lint:js": "eslint --max-warnings 0 static/script tests eslint.config.js",
+    "lint": "npm run lint:js && npm run lint:css && npm run lint:dup && npm run lint:types && npm run lint:abc",
+    "lint:js": "eslint --max-warnings 0 static/script scripts tests eslint.config.js",
     "lint:css": "stylelint \"static/assets/css/**/*.css\"",
     "lint:dup": "jscpd --config jscpd.config.json",
     "lint:types": "tsc -p tsconfig.lib.json",
+    "lint:abc": "node scripts/lint-abc.js",
     "audit": "npm audit --audit-level=high",
     "test": "node --test \"static/script/lib/*.test.js\" \"static/script/songs/*.test.js\" \"tests/**/*.test.js\""
   },
@@ -16,6 +17,7 @@
     "@eslint/js": "^10.0.1",
     "@stylistic/eslint-plugin": "^5.10.0",
     "@types/node": "^26.5.0",
+    "abcjs": "^6.6.4",
     "eslint": "^10.10.0",
     "eslint-plugin-regexp": "^3.3.0",
     "eslint-plugin-sonarjs": "^4.2.0",
