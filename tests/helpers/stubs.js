@@ -105,7 +105,7 @@ function fakeTune(text) {
 }
 
 // A minimal AudioBuffer-shaped stand-in for what a real offline render would
-// hand back — enough for wav-export.js's encodeWav() to consume.
+// hand back — enough for mp3-export.js's encodeMp3() to consume.
 function fakeAudioBuffer() {
   return {
     numberOfChannels: 1,
@@ -115,6 +115,7 @@ function fakeAudioBuffer() {
   };
 }
 
+/** @param {{ audioSupported?: boolean, exportAudioBuffer?: any }} [options] */
 export function createAbcjsStub({ audioSupported = false, exportAudioBuffer } = {}) {
   const calls = {
     renderAbc: [], parseOnly: [], setTune: [], synthControllers: [], createSynths: [],
@@ -165,7 +166,7 @@ export function createAbcjsStub({ audioSupported = false, exportAudioBuffer } = 
         };
         calls.synthControllers.push(this);
       },
-      // songs/wav-export.js's offline render: init() then prime() resolve
+      // songs/mp3-export.js's offline render: init() then prime() resolve
       // once, populating audioBuffers[0] the way the real library does.
       CreateSynth: function CreateSynth() {
         this.audioBuffers = [];
@@ -191,6 +192,43 @@ export function withAbcjs(stub, fn) {
   } finally {
     if (real === undefined) delete globalThis.ABCJS;
     else globalThis.ABCJS = real;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// lamejs — the vendored MP3 encoder (static/script/lamejs-1.2.1-min.js) is a
+// classic script with no DOM dependency, but real encoding isn't worth
+// running under the test suite; this fake records what lib/mp3-encode.js
+// asks of it and hands back one deterministic byte per call.
+// ---------------------------------------------------------------------------
+
+export function createLamejsStub() {
+  const calls = { constructed: [], encodeBuffer: [], flush: 0 };
+  function Mp3Encoder(channels, sampleRate, kbps) {
+    calls.constructed.push({ channels, sampleRate, kbps });
+    this.encodeBuffer = (left, right) => {
+      calls.encodeBuffer.push({
+        left: Int16Array.from(left),
+        right: right ? Int16Array.from(right) : undefined,
+      });
+      return Int8Array.from([calls.encodeBuffer.length]);
+    };
+    this.flush = () => {
+      calls.flush += 1;
+      return Int8Array.from([0xff]);
+    };
+  }
+  return { calls, Mp3Encoder };
+}
+
+export function withLamejs(stub, fn) {
+  const real = globalThis.lamejs;
+  globalThis.lamejs = stub;
+  try {
+    return fn();
+  } finally {
+    if (real === undefined) delete globalThis.lamejs;
+    else globalThis.lamejs = real;
   }
 }
 

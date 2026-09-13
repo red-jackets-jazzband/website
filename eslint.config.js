@@ -114,6 +114,7 @@ export default [
         ABCJS: "readonly",
         Tonal: "readonly",
         YT: "readonly",
+        lamejs: "readonly",
       },
     },
     plugins: {

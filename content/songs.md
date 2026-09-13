@@ -7,6 +7,7 @@ aliases: ["/setlists/", "/songbook/"]
 
 <script src="/script/abcjs_midi_6.6.4-min.js" type="text/javascript"></script>
 <script src="/script/tonal.4.6.9-min.js" type="text/javascript"></script>
+<script src="/script/lamejs-1.2.1-min.js" type="text/javascript"></script>
 <script type="module" src="/script/songs-page.js"></script>
 
 <div class="rj-songs-layout" data-default-tab="library">
@@ -83,7 +84,7 @@ aliases: ["/setlists/", "/songbook/"]
 
   <div class="sheet-actions" id="sheetActions">
     <a id="printLink" class="sheet-icon-btn" href="#" title="Print this page" aria-label="Print this page"><span class="fa-solid fa-print" aria-hidden="true"></span></a>
-    <button id="exportWavBtn" class="sheet-icon-btn" type="button" disabled title="Export as WAV" aria-label="Export as WAV"><span class="fa-solid fa-file-audio" aria-hidden="true"></span></button>
+    <button id="exportMp3Btn" class="sheet-icon-btn" type="button" disabled title="Export as MP3" aria-label="Export as MP3"><span class="fa-solid fa-file-audio" aria-hidden="true"></span></button>
   </div>
 
   <div id="inspirationSlot"></div>
