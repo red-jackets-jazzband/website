@@ -291,3 +291,24 @@ test("a native multi-voice chart with a real V: declaration always finds a scopi
   assert.match(out, /\nV:1\n%%MIDI program 56\n"C" C8 \|/);
   assert.doesNotMatch(out, /%%MIDI program 56\nK:/);
 });
+
+test("injectMixerAudio (short_dressed_gal.abc's shape: header names, but voices only ever switched inline) scopes each program off a bare V: line inserted before the first inline switch, not the header lines", () => {
+  const abc = [
+    "X:1", "T:Test", 'V:1 name="Clarinet"', 'V:2 name="Trumpet"', "K:Bb",
+    '[V:1] "Bb" f d2 f2 |', "[V:2] d B2 d2 |",
+  ].join("\n");
+  const out = injectMixerAudio(abc, {
+    hasChords: false, bassPercent: 0, chordsPercent: 0, voicePrograms: new Map([["1", 71], ["2", 56]]),
+  });
+  // the header name= lines are left bare -- a program trailing either of
+  // them would land in the tune's one shared slot and the second would
+  // silently win for both voices, the exact bug this shape hit in practice.
+  assert.match(out, /name="Clarinet"\nV:2 name="Trumpet"\nK:Bb\n/);
+  // each program is scoped off a real "V:<id>" line inserted right before
+  // that voice's own first inline switch -- confirmed against ABCjs's own
+  // generated MIDI bytes: trailing the directive off the inline marker
+  // itself (even split onto its own line) silently drops the second one
+  // instead of scoping it, unlike a genuine bare V: declaration line.
+  assert.match(out, /K:Bb\nV:1\n%%MIDI program 71\n\[V:1\] "Bb" f d2 f2 \|\n/);
+  assert.match(out, /V:2\n%%MIDI program 56\n\[V:2\] d B2 d2 \|$/);
+});
