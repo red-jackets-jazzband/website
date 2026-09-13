@@ -312,3 +312,29 @@ test("injectMixerAudio (short_dressed_gal.abc's shape: header names, but voices 
   assert.match(out, /K:Bb\nV:1\n%%MIDI program 71\n\[V:1\] "Bb" f d2 f2 \|\n/);
   assert.match(out, /V:2\n%%MIDI program 56\n\[V:2\] d B2 d2 \|$/);
 });
+
+test("injectMixerAudio splits a line at each chosen inline marker's own boundary when several switches share one line", () => {
+  // Both voices are only ever switched inline, and both switches live on the
+  // very same system line -- the insertion for the second marker must not
+  // disturb the first voice's own "[V:1] ..." segment that precedes it.
+  const abc = [
+    "X:1", "T:Test", 'V:1 name="Clarinet"', 'V:2 name="Trumpet"', "K:Bb",
+    "[V:1] f d2 f2 [V:2] d B2 d2 |",
+  ].join("\n");
+  const out = injectMixerAudio(abc, {
+    hasChords: false, bassPercent: 0, chordsPercent: 0, voicePrograms: new Map([["1", 71], ["2", 56]]),
+  });
+  assert.match(out, /K:Bb\nV:1\n%%MIDI program 71\n\[V:1\] f d2 f2 \nV:2\n%%MIDI program 56\n\[V:2\] d B2 d2 \|$/);
+});
+
+test("injectMixerAudio keeps notes ahead of a chosen inline marker on their own line, and leaves a later marker for an already-scoped voice untouched", () => {
+  // Voice 1 already has a real body declaration ("V:1" right after K:), so
+  // its own later inline "[V:1]" marker on this line is just a pass-through
+  // switch, not an insertion point -- only voice 2's marker gets split out.
+  const abc = ["X:1", "T:Test", "K:C", "V:1", '"C" C4 [V:2] E4 [V:1] C4 |'].join("\n");
+  const out = injectMixerAudio(abc, {
+    hasChords: false, bassPercent: 0, chordsPercent: 0, voicePrograms: new Map([["1", 71], ["2", 56]]),
+  });
+  assert.match(out, /\nV:1\n%%MIDI program 71\n"C" C4 \n/);
+  assert.match(out, /\nV:2\n%%MIDI program 56\n\[V:2\] E4 \[V:1\] C4 \|$/);
+});

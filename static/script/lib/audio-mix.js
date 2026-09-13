@@ -159,6 +159,13 @@ function accompanimentLines(hasChords, {
   don't overwrite an already-found name, and inline markers never carry one
   themselves.
 */
+// Matches an inline "[V:<id>]" voice-switch marker wherever it falls within
+// a line -- not just at the very start -- so a line can carry notes before
+// the marker (a voice switch mid-system) or more than one marker (several
+// short switches on one line). Shared by parseVoiceList, hasVoiceDeclaration
+// and injectVoicePrograms below so all three agree on what counts as one.
+const INLINE_VOICE_MARKER = /\[V:\s*([^\]\s]+)\]/g;
+
 export function parseVoiceList(abcText) {
   const voices = new Map();
   const order = [];
@@ -180,7 +187,7 @@ export function parseVoiceList(abcText) {
       useName(header[1], line);
       return;
     }
-    for (const inline of line.matchAll(/\[V:\s*([^\]\s]+)\]/g)) {
+    for (const inline of line.matchAll(INLINE_VOICE_MARKER)) {
       ensure(inline[1]);
     }
   });
@@ -278,49 +285,92 @@ export function resolveMixerVoices(rawVoices, compingActive) {
   renders with `responsive: "resize"`, songs/sheet.js, which reflows the note
   stream into systems by available width rather than treating each source
   line as fixed).
+
+  A chosen inline marker isn't always alone at the start of its line, though
+  — INLINE_VOICE_MARKER matches wherever "[V:<id>]" falls, so the same line
+  can carry notes before the marker (a switch mid-system) or more than one
+  marker (several short switches in one line), and only one of those markers
+  may be the one actually being scoped here. Splitting only at the *chosen*
+  marker's boundary — pushing whatever came before it (notes still in the
+  previous voice, or an earlier untouched marker) out as its own line, then
+  the inserted "V:<id>"/%%MIDI pair, then the rest of the line starting at
+  the marker itself — reproduces the "two lines added, nothing else split"
+  shape above even when the marker isn't already alone on its line.
 */
 function injectVoicePrograms(text, programsById) {
   const lines = text.split("\n");
   const kIndex = lines.findIndex((l) => l.startsWith("K:"));
   const PRIORITY = { header: 0, inline: 1, bodyDecl: 2 };
   const chosen = new Map();
-  function consider(id, index, kind) {
+  function consider(id, kind, location) {
     const prev = chosen.get(id);
     if (!prev || PRIORITY[kind] > PRIORITY[prev.kind]) {
-      chosen.set(id, { index, kind });
+      chosen.set(id, { kind, location });
     }
   }
-  lines.forEach((line, index) => {
+  lines.forEach((line, lineIndex) => {
     const header = /^V:\s*(\S+)/.exec(line);
     if (header) {
-      const isBody = kIndex !== -1 && index > kIndex;
-      consider(header[1], index, isBody ? "bodyDecl" : "header");
+      const isBody = kIndex !== -1 && lineIndex > kIndex;
+      consider(header[1], isBody ? "bodyDecl" : "header", { lineIndex });
       return;
     }
-    const inline = /^\[V:\s*([^\]\s]+)\]/.exec(line);
-    if (inline) consider(inline[1], index, "inline");
+    for (const inline of line.matchAll(INLINE_VOICE_MARKER)) {
+      consider(inline[1], "inline", { lineIndex, col: inline.index });
+    }
   });
-  const insertions = new Map();
-  chosen.forEach(({ index, kind }, id) => {
+
+  // Header/bodyDecl insertions just append a line after the declaration, one
+  // per line (a declaration line names exactly one voice); inline insertions
+  // may share a line with other markers, so those are grouped per line and
+  // sorted left to right to split that line at each chosen marker in turn.
+  const appendAfter = new Map();
+  const inlineByLine = new Map();
+  chosen.forEach(({ kind, location }, id) => {
     const program = programsById.get(id);
-    if (program !== undefined) insertions.set(index, { id, program, before: kind === "inline" });
+    if (program === undefined) return;
+    if (kind === "inline") {
+      const list = inlineByLine.get(location.lineIndex) ?? [];
+      list.push({ id, col: location.col, program });
+      inlineByLine.set(location.lineIndex, list);
+    } else {
+      appendAfter.set(location.lineIndex, program);
+    }
   });
+  inlineByLine.forEach((list) => list.sort((a, b) => a.col - b.col));
+
   return lines
-    .flatMap((line, index) => {
-      const ins = insertions.get(index);
-      if (!ins) return [line];
-      const directive = `%%MIDI program ${ins.program}`;
-      if (ins.before) return [`V:${ins.id}`, directive, line];
-      return [line, directive];
+    .flatMap((line, lineIndex) => {
+      const after = appendAfter.get(lineIndex);
+      if (after !== undefined) return [line, `%%MIDI program ${after}`];
+
+      const markers = inlineByLine.get(lineIndex);
+      if (!markers) return [line];
+
+      const out = [];
+      let segmentStart = 0;
+      markers.forEach(({ id, col, program }) => {
+        const prefix = line.slice(segmentStart, col);
+        if (prefix !== "") out.push(prefix);
+        out.push(`V:${id}`, `%%MIDI program ${program}`);
+        segmentStart = col;
+      });
+      out.push(line.slice(segmentStart));
+      return out;
     })
     .join("\n");
 }
 
 // True once `text` declares at least one voice of its own — a real "V:<id>"
 // line (wherever it falls relative to K:) or a body-only "[V:<id>]" inline
-// switch (short_dressed_gal.abc's shape) — i.e. whether injectVoicePrograms
-// above has anything to attach a scoped %%MIDI program line to at all.
-const HAS_VOICE_DECLARATION = /^(?:V:\s*\S+|\[V:\s*[^\]\s]+\])/m;
+// switch (short_dressed_gal.abc's shape), anywhere in its line — i.e.
+// whether injectVoicePrograms above has anything to attach a scoped
+// %%MIDI program line to at all.
+const HEADER_VOICE_DECLARATION = /^V:\s*\S+/m;
+
+function hasVoiceDeclaration(text) {
+  return HEADER_VOICE_DECLARATION.test(text) || text.search(INLINE_VOICE_MARKER) !== -1;
+}
 
 /*
   Stamp Bass/Chords' full accompaniment directives, and every other voice's
@@ -354,7 +404,7 @@ export function injectMixerAudio(abcText, {
     }),
   );
 
-  if (HAS_VOICE_DECLARATION.test(withAccompaniment)) {
+  if (hasVoiceDeclaration(withAccompaniment)) {
     return injectVoicePrograms(withAccompaniment, voicePrograms);
   }
 
