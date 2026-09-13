@@ -144,30 +144,47 @@ function accompanimentLines(hasChords, {
   `name: null` (not a fallback label) for a voice with no name="..." of its
   own — resolveMixerVoices below owns turning that into a display name.
 
-  Matches only lines that themselves start with "V:" (optionally with
-  leading digits’ worth of whitespace after the colon, e.g. "V: 1") — a
-  voice's *declaration*, wherever it falls relative to K: (some tunes declare
-  voices before it, honky_tonk_town_riffs.abc after). Inline mid-line voice
-  switches some tunes use instead of a repeated header line ("[V:1] ... |")
-  never match this regex (the line starts with "[", not "V:"), so they're
-  correctly not counted as a second declaration of the same voice. A voice's
-  name is read from whichever of its lines carries a `name="..."` attribute
-  first — later bare re-declarations (a body voice-switch marker with no
-  attributes) don't overwrite an already-found name.
+  A voice is discovered from either of two forms, whichever it's first seen
+  in: a header-style line that itself starts with "V:" (optionally with
+  leading whitespace after the colon, e.g. "V: 1") — a voice's proper
+  *declaration*, wherever it falls relative to K: (some tunes declare voices
+  before it, honky_tonk_town_riffs.abc after) — or an inline mid-line switch
+  ("[V:2] ..."), which most multi-voice tunes here use only to re-select an
+  already header-declared voice between systems, but which short_dressed_gal.
+  abc uses as the *only* place either of its two voices is ever named — it
+  has no "V:" header line at all. Treating only header lines as declarations
+  would leave such a tune looking like one implicit voice. A voice's name is
+  read from whichever of its lines carries a `name="..."` attribute first —
+  later bare re-declarations (a header or inline marker with no attributes)
+  don't overwrite an already-found name, and inline markers never carry one
+  themselves.
 */
 export function parseVoiceList(abcText) {
   const voices = new Map();
+  const order = [];
+  function ensure(id) {
+    if (!voices.has(id)) {
+      voices.set(id, null);
+      order.push(id);
+    }
+  }
+  function useName(id, line) {
+    if (voices.get(id)) return;
+    const nameMatch = /name="([^"]*)"/.exec(line);
+    if (nameMatch) voices.set(id, nameMatch[1]);
+  }
   abcText.split("\n").forEach((line) => {
-    const m = /^V:\s*(\S+)/.exec(line);
-    if (!m) return;
-    const id = m[1];
-    if (!voices.has(id)) voices.set(id, null);
-    if (!voices.get(id)) {
-      const nameMatch = /name="([^"]*)"/.exec(line);
-      if (nameMatch) voices.set(id, nameMatch[1]);
+    const header = /^V:\s*(\S+)/.exec(line);
+    if (header) {
+      ensure(header[1]);
+      useName(header[1], line);
+      return;
+    }
+    for (const inline of line.matchAll(/\[V:\s*([^\]\s]+)\]/g)) {
+      ensure(inline[1]);
     }
   });
-  return Array.from(voices.entries()).map(([id, name], index) => ({ id, index, name }));
+  return order.map((id, index) => ({ id, index, name: voices.get(id) }));
 }
 
 /*

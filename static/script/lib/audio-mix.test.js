@@ -160,7 +160,7 @@ test("parseVoiceList reports name: null for a voice with no name=\"...\" attribu
   ]);
 });
 
-test("parseVoiceList is unaffected by declaration order relative to K:, and ignores inline [V:n] body markers", () => {
+test("parseVoiceList is unaffected by declaration order relative to K:, and an inline [V:n] body marker doesn't overwrite an already-declared voice's name", () => {
   const abc = [
     "X:1", "T:Test", "K:Bb", 'V:1 name="Root"', 'V:2 name="Third"',
     "V: 1", '"Bb" B4|', "V: 2", "d4|", "[V:1] more |",
@@ -168,6 +168,21 @@ test("parseVoiceList is unaffected by declaration order relative to K:, and igno
   assert.deepEqual(parseVoiceList(abc), [
     { id: "1", index: 0, name: "Root" },
     { id: "2", index: 1, name: "Third" },
+  ]);
+});
+
+test("parseVoiceList finds voices declared only via inline [V:n] markers, with no V: header line at all", () => {
+  // short_dressed_gal.abc's actual shape: two voices, neither ever declared
+  // by a "V:" header line — only by the "[V:1]"/"[V:2]" markers that
+  // introduce each system.
+  const abc = [
+    "X:1", "T:Test", "K:Bb",
+    '[V:1] "Bb" f d2 f2 |', "[V:2]      d B2 d2 |",
+    '[V:1] "Bb" b f2 b2 |', "[V:2]      d B2 d2 |",
+  ].join("\n");
+  assert.deepEqual(parseVoiceList(abc), [
+    { id: "1", index: 0, name: null },
+    { id: "2", index: 1, name: null },
   ]);
 });
 
