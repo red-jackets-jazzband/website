@@ -9,6 +9,10 @@ Description: Split is a centrally-divided layout for a professional online prese
 @import url("https://fonts.googleapis.com/css?family=Montserrat:400,600");
 @import url("https://fonts.googleapis.com/css?family=Lora");
 @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap");
+/* Practice-note bubbles (songs/practice-notes.js) — purely decorative, so
+   hotlinked like the two above rather than self-hosted like the songbook
+   title page's MuseJazzText/Saniretro/AkuraPopo (load-bearing/licensed). */
+@import url("https://fonts.googleapis.com/css2?family=Caveat:wght@500&display=swap");
 
 /*
   Design tokens: names for the colors already in use throughout this file
@@ -1214,6 +1218,140 @@ video.video {
     border-radius: 16px 16px 0 0;
     padding-bottom: 22px;
   }
+}
+
+/*
+  Sheet edit mode / practice notes (songs/sheet-edit-mode.js,
+  songs/practice-notes.js). #editModeBtn itself needs no new rule — it's a
+  plain .sheet-icon-btn, toggled .active the same way #mixerBtn is.
+
+  #editPopover is a small floating menu/form, positioned via inline
+  left/top (client coordinates, set by sheet-edit-mode.js's openPopoverAt)
+  rather than the mixer panel's own button-relative top/right — it opens at
+  the click point, not off a fixed control. `position: fixed` for the same
+  reason #mixerPanel/#inspirationPanel use it: #rjSheet clips overflow.
+*/
+.rj-edit-popover {
+  position: fixed;
+  z-index: 21;
+  min-width: 160px;
+  max-width: 220px;
+  background: #222222;
+  color: #ece6e6;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 10px;
+  box-shadow: 0 18px 44px rgba(0,0,0,.6);
+  padding: 8px;
+  font-family: "Montserrat", sans-serif;
+  font-size: 13px;
+}
+.rj-edit-popover[hidden] {
+  display: none;
+}
+.rj-edit-popover-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.rj-edit-popover-action {
+  text-align: left;
+  background: #2f2f2f;
+  color: #ece6e6;
+  border: 1px solid rgba(255,255,255,.11);
+  border-radius: 6px;
+  padding: 7px 10px;
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .rj-edit-popover-action:hover {
+    background: var(--rj-gold);
+    color: #222222;
+  }
+}
+.rj-edit-popover-textarea {
+  width: 100%;
+  min-height: 48px;
+  resize: vertical;
+  box-sizing: border-box;
+  background: #2f2f2f;
+  color: #ece6e6;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-family: inherit;
+  font-size: 13px;
+}
+.rj-edit-popover-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+.rj-edit-popover-btn {
+  background: #2f2f2f;
+  color: #ece6e6;
+  border: 1px solid rgba(255,255,255,.11);
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+.rj-edit-popover-btn-primary {
+  background: var(--rj-gold);
+  color: #222222;
+  border-color: transparent;
+}
+.rj-edit-popover-btn-danger:hover {
+  background: var(--rj-hover);
+  color: #ece6e6;
+  border-color: transparent;
+}
+
+/*
+  Practice-note bubbles (songs/practice-notes.js): native SVG sibling nodes
+  drawn right after their anchor note, same as sheet-decorations.js's part
+  markers — see that module's own doc comment for why (no foreignObject,
+  #notation isn't position: relative). MuseJazzText draws the rest of the
+  sheet; this handwriting face (hotlinked the same way Montserrat/Lora are
+  above — purely decorative, unlike the self-hosted title-page fonts) is
+  what makes a practice note read as a jotted annotation rather than more
+  engraving.
+*/
+.rj-practice-note-bubble-bg {
+  fill: #fff7d6;
+  stroke: #b08d1f;
+  stroke-width: 1;
+}
+.rj-practice-note-bubble-text {
+  font-family: "Caveat", "Segoe Script", cursive;
+  font-size: 12px;
+  fill: #3a2f00;
+}
+.rj-practice-note-bubble-edit-handle {
+  font-size: 8px;
+  fill: #b08d1f;
+  cursor: pointer;
+}
+
+/*
+  Patched-note indicator (songs/note-patches.js's patchedNoteKeys, applied by
+  sheet-decorations.js's applyPatchIndicators): a static tint, not an
+  interpolated colour like applyCompingColors' notehead fills above — it
+  only ever means "this note/rest was edited from the published .abc", so
+  one fixed colour reads consistently across every song and voice.
+*/
+.rj-patched-note path,
+.rj-patched-note ellipse,
+.rj-patched-note rect {
+  fill: #5b8dc9;
+}
+
+/* In edit mode a note/rest click adds/edits a practice note or a musical
+   patch (pitch/rest) instead of seeking — the existing gold "this seeks"
+   hover hint (see "Make notes clickable" below) would misleadingly promise
+   the suppressed behavior, so edit mode swaps in the theme's own magenta
+   hover accent instead, a deliberately different cue. */
+.rj-edit-mode #notation svg g[class*="abcjs-note"]:hover path,
+.rj-edit-mode #notation svg g[class*="abcjs-note"]:hover ellipse {
+  fill: var(--rj-hover) !important;
 }
 
 /*

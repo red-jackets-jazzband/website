@@ -7,6 +7,9 @@ import { humanizeSongFile } from "../lib/filename.js";
 import { readFile } from "./read-file.js";
 import { createAudioPlayer } from "./audio-player.js";
 import { createSheet } from "./sheet.js";
+import { createSheetEditMode } from "./sheet-edit-mode.js";
+import { createPracticeNotes } from "./practice-notes.js";
+import { createNotePatches } from "./note-patches.js";
 import {
   createMixer, loadMixerState, loadGchordPatternState, loadHighQualityAudioState, loadSwingState,
 } from "./mixer.js";
@@ -166,6 +169,9 @@ function createApp() {
   ctx.audio = createAudioPlayer(ctx);
   ctx.metronome = createMetronome(ctx);
   ctx.sheet = createSheet(ctx);
+  ctx.editMode = createSheetEditMode();
+  ctx.practiceNotes = createPracticeNotes(ctx);
+  ctx.notePatches = createNotePatches(ctx);
   ctx.mixer = createMixer(ctx);
   ctx.inspiration = createInspiration(ctx);
   ctx.library = createLibraryTab(ctx);
@@ -185,6 +191,9 @@ function createApp() {
     createCompingDropdown(ctx);
     initSheetControls(ctx);
     initMp3Export(ctx);
+    ctx.editMode.init();
+    ctx.practiceNotes.init();
+    ctx.notePatches.init();
     ctx.mixer.init();
     ctx.metronome.init();
     ctx.inspiration.init();
