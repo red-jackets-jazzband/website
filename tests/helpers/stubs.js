@@ -140,7 +140,7 @@ export function createAbcjsStub({ audioSupported = false, exportAudioBuffer } = 
     synth: {
       supportsAudio: () => audioSupported,
       SynthController: function SynthController() {
-        // Mirrors ABCjs 6.6.4: play() toggles `isStarted` (resume/pause both
+        // Mirrors ABCjs 6.7.0: play() toggles `isStarted` (resume/pause both
         // go through it), setTune() resets it, pause() leaves it untouched.
         this.isStarted = false;
         // Recorded per instance (`this._cursorControl`), not just on the
