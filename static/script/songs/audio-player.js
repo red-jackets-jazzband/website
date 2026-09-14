@@ -496,6 +496,9 @@ export function createAudioPlayer(ctx) {
   }
 
   function handleNotationClick(e) {
+    // Edit mode repurposes a click on the notation for adding/editing
+    // practice notes and patches instead — see songs/sheet-edit-mode.js.
+    if (ctx.editMode && ctx.editMode.isActive()) return;
     const notation = byId("notation");
     let node = e.target;
     while (node && node !== notation) {

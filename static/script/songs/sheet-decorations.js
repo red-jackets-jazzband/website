@@ -145,3 +145,29 @@ export function applyCompingColors(container, palette, voiceIndex = 1) {
     });
   }
 }
+
+/*
+  Flags every currently-patched note/rest (songs/note-patches.js's
+  patchedNoteKeys — flat note positions with a pitch/rest edit) with a
+  static rj-patched-note class, so a musical correction reads visibly
+  different from the surrounding untouched notation (a subtle dotted
+  underline/tint — see split.css — not a colour). Mirrors
+  applyCompingColors' onset-matching above, but keyed by the persisted flat
+  position (lib/note-address.js) rather than a drawn-onset ordinal, since a
+  patch addresses one specific note, not "the Nth chord this render happened
+  to draw". Voice 0 only — see note-patches.js's own V1-scope comment — so
+  the flat position is just this element's 0-based index among the same
+  ".abcjs-note.abcjs-v0, .abcjs-rest.abcjs-v0" selector lib/note-address.js's
+  own flatNoteIndex/voiceNoteElements use, walked here directly rather than
+  through that helper (which resolves one element at a time) since every
+  voice-0 note/rest on the sheet needs checking anyway.
+*/
+export function applyPatchIndicators(container, patchedNotes) {
+  if (!container || !patchedNotes || !patchedNotes.length) return;
+  const flatIndices = new Set(patchedNotes);
+  let i = 0;
+  container.querySelectorAll("g.abcjs-note.abcjs-v0, g.abcjs-rest.abcjs-v0").forEach((group) => {
+    group.classList.toggle("rj-patched-note", flatIndices.has(i));
+    i += 1;
+  });
+}

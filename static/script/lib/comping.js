@@ -309,24 +309,28 @@ function stripInlineFields(str) {
   return result;
 }
 
-const CHORD_NOTE_LETTERS = "ABCDEFGabcdefg";
-const NOTE_LETTERS = CHORD_NOTE_LETTERS + "xz";
+export const CHORD_NOTE_LETTERS = "ABCDEFGabcdefg";
+export const NOTE_LETTERS = CHORD_NOTE_LETTERS + "xz";
 const PITCH_LETTERS = NOTE_LETTERS + "Z";
 
-function scanRun(str, i, isMember) {
+// Exported alongside measureBarSlots/tokenizeBar so lib/apply-patches.js's
+// position-preserving bar scanner can index note/rest/chord tokens the same
+// way this file does, instead of a second copy of the same character-class
+// regexes (a real jscpd risk per CLAUDE.md's 1% duplication gate).
+export function scanRun(str, i, isMember) {
   let j = i;
   while (j < str.length && isMember(str[j])) j += 1;
   return j;
 }
-const isAccidental = (c) => c === "_" || c === "^" || c === "=";
-const isOctaveMark = (c) => c === "'" || c === ",";
+export const isAccidental = (c) => c === "_" || c === "^" || c === "=";
+export const isOctaveMark = (c) => c === "'" || c === ",";
 const isDigit = (c) => c >= "0" && c <= "9";
 const isSlash = (c) => c === "/";
 
 // Scans one accidentals*-letter-octaves* note (the letter drawn from
 // `letters`), returning the index just past it, or -1 if there's no letter
 // from that set once the accidentals are skipped.
-function scanNoteLetter(str, i, letters) {
+export function scanNoteLetter(str, i, letters) {
   const afterAccidentals = scanRun(str, i, isAccidental);
   if (afterAccidentals >= str.length || !letters.includes(str[afterAccidentals])) return -1;
   return scanRun(str, afterAccidentals + 1, isOctaveMark);
@@ -339,7 +343,7 @@ function scanNoteLetter(str, i, letters) {
 // caller that needs to combine two duration suffixes exactly — see
 // stripChordBrackets below — can multiply the fractions instead of the
 // already-rounded float `mult`.
-function scanDurationMultiplier(str, i) {
+export function scanDurationMultiplier(str, i) {
   const numEnd = scanRun(str, i, isDigit);
   const numerator = str.slice(i, numEnd);
   const num = numerator ? Number.parseInt(numerator, 10) : 1;
@@ -443,7 +447,7 @@ function scanDuration(str, i) {
 
 // Scans a "[note note ...]" chord bracket, returning the index just past
 // the "]", or -1 if `i` isn't the start of a well-formed one.
-function scanChordBracket(str, i) {
+export function scanChordBracket(str, i) {
   let j = i + 1;
   let sawNote = false;
   let noteEnd = scanNoteLetter(str, j, CHORD_NOTE_LETTERS);
@@ -455,6 +459,14 @@ function scanChordBracket(str, i) {
   return sawNote && str[j] === "]" ? j + 1 : -1;
 }
 
+// One tokenizeBar entry: either a bare "..." chord-symbol/annotation string,
+// or a note/rest/chord-bracket with its duration/tie/rest-ness — declared as
+// one type with every field optional (rather than left for checkJs to infer
+// a union from the two push() shapes below) so a plain `tok.annotation`
+// truthy check narrows cleanly for readers of rebeamBar below.
+/** @typedef {{ annotation?: string, pitch?: string, dur?: number, tie?: boolean, rest?: boolean }} BarToken */
+
+/** @param {BarToken[]} tokens @param {string} t */
 function pushNoteToken(tokens, t) {
   const tie = t.slice(-1) === "-";
   const body = tie ? t.slice(0, -1) : t;
@@ -471,7 +483,9 @@ function pushNoteToken(tokens, t) {
 // an unanchored `alt1|alt2|alt3` regex would have, without the quadratic
 // worst case that kind of pattern can hit when scanned across a long
 // non-matching run.
+/** @returns {BarToken[]} */
 export function tokenizeBar(str) {
+  /** @type {BarToken[]} */
   const tokens = [];
   let i = 0;
   while (i < str.length) {
@@ -603,7 +617,7 @@ function readMeter(text) {
   return SUPPORTED_METERS.has(m[1]) ? m[1] : null;
 }
 
-function readUnit(text) {
+export function readUnit(text) {
   const m = text.match(/^L:\s*(\d+)\s*\/\s*(\d+)/m);
   if (m) return [Number.parseInt(m[1], 10), Number.parseInt(m[2], 10)];
   return [1, 8];
@@ -621,7 +635,7 @@ function lastKLineIndex(lines) {
    before the last K: line, body is everything after it. Returns null when
    there is no K: line to split on.
 */
-function splitHeaderBody(text) {
+export function splitHeaderBody(text) {
   const lines = text.split("\n");
   const kIdx = lastKLineIndex(lines);
   if (kIdx === -1) return null;
@@ -635,7 +649,7 @@ function splitHeaderBody(text) {
 // Voice ids the tune itself declares, in order of first appearance -- e.g.
 // honky_tonk_town_riffs.abc's Root/Third/Fifth, or a Trumpet+Sousaphone
 // chart. [] for an ordinary tune with no V: lines of its own.
-function findVoiceIds(text) {
+export function findVoiceIds(text) {
   const ids = [];
   const seen = new Set();
   for (const line of text.split("\n")) {
@@ -656,7 +670,7 @@ function findVoiceIds(text) {
 // left buildCompingTune free to hand the generated Comping voice an id one of
 // them already has -- see its own call site below. In order of first
 // appearance, like findVoiceIds.
-function findInlineVoiceIds(text) {
+export function findInlineVoiceIds(text) {
   const ids = [];
   const seen = new Set();
   for (const line of text.split("\n")) {
@@ -735,7 +749,7 @@ function extractVoiceBody(text, targetId) {
 // followed by an `F:` YouTube link (shake_that_thing, shame_shame_shame)
 // leaves that URL sitting in the body, and its letters parse as a phantom
 // leading bar that shoves the whole comping voice down a system.
-const ALWAYS_STRIP = /^\s*(w:|W:|s:|P:|N:|O:|F:|I:|r:|%)/;
+export const ALWAYS_STRIP = /^\s*(w:|W:|s:|P:|N:|O:|F:|I:|r:|%)/;
 
 // `splitHeaderBody` splits on the *last* K: line, so a tune that orders its
 // header `K:` before `L:`/`M:`/`Q:` (all_of_me, isle_of_capri, jada order K:
@@ -768,7 +782,7 @@ function stripNonMusicLines(body) {
 // `\|\d+` must come before the optional-colon form: an unqualified `:?`
 // would otherwise "succeed" on zero characters and misparse ":|2" as ":|"
 // followed by a bare "2".
-const BARLINE = /:(?:\|\d+|\|:?|:)|\|(?:\|:?|:|\]|\d+)?|\[(?:\|:?|\d+(?:[-,]\d+)*)/g;
+export const BARLINE = /:(?:\|\d+|\|:?|:)|\|(?:\|:?|:|\]|\d+)?|\[(?:\|:?|\d+(?:[-,]\d+)*)/g;
 
 /*
    Walk a melody body's barlines and, for every segment that carries notes,

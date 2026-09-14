@@ -7,8 +7,11 @@ import {
   injectMixerAudio, resolveGchordPattern, parseVoiceList, resolveMixerVoices,
 } from "../lib/audio-mix.js";
 import { guessGmProgram } from "../lib/gm-voices.js";
+import { applyPatchesToAbc } from "../lib/apply-patches.js";
+import { listPatches } from "../lib/patches-store.js";
+import { patchedNoteKeys } from "./note-patches.js";
 import { renderChordTable, scanRepeatBoundaries, fitChordTable } from "./chord-table.js";
-import { stylePartMarkers, applyCompingColors } from "./sheet-decorations.js";
+import { stylePartMarkers, applyCompingColors, applyPatchIndicators } from "./sheet-decorations.js";
 import { updateIrealProLink } from "./irealpro-link.js";
 import { updateInspirationExtLinks } from "./inspiration-links.js";
 import { parseInspirationLinks, firstYoutubeUrl } from "../lib/inspiration-links.js";
@@ -74,6 +77,16 @@ function stylePartMarkersWhenReady(notationEl) {
   }
 }
 
+// Draw the practice-note bubbles now, and again once the handwriting font
+// has loaded — same reasoning as stylePartMarkersWhenReady above, since
+// bubble sizing needs real glyph metrics too.
+function renderPracticeNotesWhenReady(ctx, notationEl, songFile) {
+  ctx.practiceNotes.renderOverlays(notationEl, songFile);
+  if (document.fonts && document.fonts.status !== "loaded") {
+    document.fonts.ready.then(() => ctx.practiceNotes.renderOverlays(notationEl, songFile));
+  }
+}
+
 function updateInstrumentFooter() {
   const select = byId("instrument");
   const footer = byId("instrumentText");
@@ -99,6 +112,18 @@ function buildComping(abcText, compingValue) {
   // reaches such an ending. See parseChordScheme's doc comment.
   const concertChords = parseChordScheme(concertSong, { includeAlternateEndings: true });
   return buildCompingTune(abcText, concertChords, concertSong, compingValue);
+}
+
+// Personal patches (lib/patches-store.js) are applied post-clef-rewrite,
+// pre-transpose-in-text — see lib/apply-patches.js's doc comment for why
+// that ordering means patches never need to be transpose-aware. `songFile`
+// falls back to the currently open song for the live sheet (render()/
+// rerender() never pass it); the booklet path (setlist-print.js) always
+// passes the song it's rendering explicitly, since that's never the
+// currently open song.
+function resolvePatchedText(ctx, abcText, songFile) {
+  const patches = listPatches(ctx.storage(), songFile ?? ctx.state.currentSongFile);
+  return applyPatchesToAbc(abcText, patches);
 }
 
 function compingRequest(isBooklet, chords) {
@@ -265,7 +290,7 @@ export function createSheet(ctx) {
 
   function engrave(text, opts) {
     const {
-      notationId, chordId, titleId,
+      notationId, chordId, titleId, songFile,
       titlePrefix = "", addLink = false, isBooklet = false, extraTransposeSteps = 0,
     } = opts;
 
@@ -278,14 +303,20 @@ export function createSheet(ctx) {
     if (!isBooklet) ctx.audio.transposeSemitones = audio;
     ctx.state.currentSongText = abcText;
 
-    const song = parseTune(abcText, visual);
+    // Kept local to this render rather than overwriting
+    // ctx.state.currentSongText above, which rerender() replays verbatim on
+    // every subsequent Key/Tempo/Comping change — overwriting it here would
+    // double-apply patches on the next re-render.
+    const patchedText = resolvePatchedText(ctx, abcText, songFile);
+
+    const song = parseTune(patchedText, visual);
     const chords = parseChordScheme(song);
     const displayChords = instrumentValue === "concert_+_roman"
       ? convertChordsToRoman(chords, song)
       : chords;
     ctx.audio.chordOffset = computeChordOffset(song);
 
-    const comping = applyComping(abcText, chords, isBooklet);
+    const comping = applyComping(patchedText, chords, isBooklet);
     ctx.state.compingActive = comping.active;
     syncInstrumentVoices(text, comping.active, isBooklet);
 
@@ -309,11 +340,13 @@ export function createSheet(ctx) {
     const visualObjs = ABCJS.renderAbc(notationId, renderText, abcParams(visual));
 
     if (comping.active) applyCompingColors(notationEl, comping.palette, compingVoiceIndex());
+    applyPatchIndicators(notationEl, patchedNoteKeys(ctx, songFile));
 
     notationEl.querySelectorAll(".abcjs-title").forEach((node) => {
       node.setAttribute("display", "none");
     });
     stylePartMarkersWhenReady(notationEl);
+    renderPracticeNotesWhenReady(ctx, notationEl, songFile);
 
     const chordEl = byId(chordId);
     renderChordTable(displayChords, chordEl);
@@ -339,6 +372,10 @@ export function createSheet(ctx) {
     const stepper = byId("transpose");
     if (stepper) stepper.value = transposeSemitones || 0;
     ctx.state.tempoOverrideBpm = null;
+    // Leaving edit mode on across a song change would leave click-to-seek
+    // silently suppressed on the new song — see sheet-edit-mode.js's own
+    // doc comment.
+    ctx.editMode.setActive(false);
     engrave(text, { ...LIVE_TARGETS, addLink: true });
   }
 

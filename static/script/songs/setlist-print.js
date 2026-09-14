@@ -229,6 +229,7 @@ export function createSetlistPrint(ctx) {
           titleId: `setlistPrintTitle-${n}`,
           titlePrefix: `${entry.displayNumber}. `,
           extraTransposeSteps: extra,
+          songFile: entry.item.file,
         });
         fillSongMeta(n, resolvedExportSongMeta(text, entry.item, instrument()));
         youtubeIds[n - 1] = firstYoutubeIdFromAbc(text);

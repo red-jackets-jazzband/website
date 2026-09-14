@@ -77,6 +77,20 @@ export function makeCtx(overrides = {}) {
     mixer: overrides.mixer || {
       init: () => {}, toggle: () => {}, refresh: () => {}, syncVoices: () => {},
     },
+    editMode: overrides.editMode || {
+      init: () => {},
+      isActive: () => false,
+      setActive: () => {},
+      toggle: () => {},
+      registerActions: () => {},
+      setBubbleHandlers: () => {},
+      openPopoverAt: () => {},
+      replacePopoverBody: () => {},
+      closePopover: () => {},
+    },
+    practiceNotes: overrides.practiceNotes || {
+      init: () => {}, renderOverlays: () => {},
+    },
     metronome: overrides.metronome || {
       init: () => {}, refresh: () => {}, onPlaybackChange: () => {}, onBarStart: () => {},
     },
