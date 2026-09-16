@@ -139,6 +139,11 @@ export function createAudioPlayer(ctx) {
   // only tempo knob is millisecondsPerMeasure, so the Tempo stepper's warp
   // percentage (100% = the tune's own Q:) is applied the same way setWarp
   // applies it internally: scale the tune's native ms/measure by 100/warp%.
+  // Also hands over the Repeat stepper's own count and repeatRestartFraction
+  // (see its own doc comment) so mp3-export.js's repeatAudioBuffer can render
+  // the same practice loop — pickup skipped on every pass but the first —
+  // into the exported file, rather than the export always being a single
+  // playthrough regardless of what the sheet is set to loop.
   function exportSynthOptions() {
     const visualObj = state.currentVisualObj;
     if (!visualObj || typeof visualObj.millisecondsPerMeasure !== "function") return null;
@@ -147,6 +152,8 @@ export function createAudioPlayer(ctx) {
       visualObj,
       millisecondsPerMeasure: (visualObj.millisecondsPerMeasure() * 100) / warpPercent,
       options: synthParams(),
+      repeatCount: ctx.state.repeatCount,
+      restartFraction: repeatRestartFraction(),
     };
   }
 

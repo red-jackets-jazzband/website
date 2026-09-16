@@ -58,6 +58,45 @@ function concatChunks(chunks) {
   return result;
 }
 
+/*
+  Concatenates `times` playthroughs of a rendered buffer into one longer
+  buffer, so Export MP3 (songs/mp3-export.js) respects the sheet's Repeat
+  stepper the same way live playback's practice loop does. The first
+  playthrough always plays in full; every later one starts `restartFraction`
+  of the way through instead of at the very top — the export-side mirror of
+  audio-player.js's own repeat restart, which skips a tune's pickup/anacrusis
+  on every pass but the first (see its repeatRestartFraction doc comment).
+  restartFraction is a plain 0..1 fraction of the tune's own duration (not a
+  sample count or a time in seconds), so the same value the live player
+  computes off its own timing map applies here unchanged regardless of what
+  tempo *this* buffer happens to have been rendered at.
+  `times` that isn't a real repeat count (missing, 1, or less) returns the
+  buffer as-is.
+*/
+export function repeatAudioBuffer(buffer, times, restartFraction = 0) {
+  const count = Number.isInteger(times) ? times : 1;
+  if (count <= 1) return buffer;
+  const { numberOfChannels, sampleRate, length } = buffer;
+  const skip = Math.max(0, Math.min(length, Math.round(restartFraction * length)));
+  const tailLength = length - skip;
+  const totalLength = length + tailLength * (count - 1);
+  const channels = [];
+  for (let c = 0; c < numberOfChannels; c += 1) {
+    const source = buffer.getChannelData(c);
+    const out = new Float32Array(totalLength);
+    out.set(source);
+    let offset = length;
+    for (let r = 1; r < count; r += 1) {
+      out.set(source.subarray(skip), offset);
+      offset += tailLength;
+    }
+    channels.push(out);
+  }
+  return {
+    numberOfChannels, sampleRate, length: totalLength, getChannelData: (c) => channels[c],
+  };
+}
+
 export function encodeMp3(audioBuffer) {
   const { numberOfChannels, sampleRate } = audioBuffer;
   const stereo = numberOfChannels >= 2;

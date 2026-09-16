@@ -170,6 +170,59 @@ test("Export MP3 keeps the initiating song's filename and leaves a superseding r
   }
 });
 
+// Drives one export end-to-end against a fixed 4-sample render ([0, 1, -1,
+// 0], converting to the exact PCM values [0, 0x7fff, -0x8000, 0] already
+// verified against the real conversion table elsewhere) and returns the
+// encoded left channel, so the three repeat-respecting tests below only need
+// to state their own buildExportOptions overrides and expected output.
+async function exportedLeftChannel(buildExportOptionsOverrides) {
+  const { ctx, cleanup } = setup({
+    buildExportOptions: () => ({
+      visualObj: { metaText: {} }, millisecondsPerMeasure: 500, options: {}, ...buildExportOptionsOverrides,
+    }),
+  });
+  const exportAudioBuffer = {
+    numberOfChannels: 1,
+    sampleRate: 44100,
+    length: 4,
+    getChannelData: () => Float32Array.from([0, 1, -1, 0]),
+  };
+  const abcjs = createAbcjsStub({ exportAudioBuffer });
+  const download = stubDownload();
+  const lamejs = stubLamejs();
+  try {
+    clickExport(ctx, abcjs);
+    await flush();
+    await flush();
+    return { left: Array.from(lamejs.stub.calls.encodeBuffer[0].left), encodeCalls: lamejs.stub.calls.encodeBuffer.length };
+  } finally {
+    download.restore();
+    lamejs.restore();
+    cleanup();
+  }
+}
+
+test("Export MP3 loops the render per buildExportOptions' repeatCount when it's greater than 1", async () => {
+  const onePass = [0, 0x7fff, -0x8000, 0];
+  const { left, encodeCalls } = await exportedLeftChannel({ repeatCount: 2, restartFraction: 0 });
+
+  assert.equal(encodeCalls, 1); // 8 samples fits one 1152-sample chunk
+  assert.deepEqual(left, [...onePass, ...onePass]);
+});
+
+test("Export MP3 skips the pickup on every repeat pass but the first, per buildExportOptions' restartFraction", async () => {
+  const { left } = await exportedLeftChannel({ repeatCount: 2, restartFraction: 0.5 });
+
+  // full first pass (4 samples) + the post-pickup tail only (last 2 samples)
+  assert.deepEqual(left, [0, 0x7fff, -0x8000, 0, -0x8000, 0]);
+});
+
+test("Export MP3 with no repeatCount from buildExportOptions renders a single playthrough (backward compatible)", async () => {
+  const { left } = await exportedLeftChannel({});
+
+  assert.deepEqual(left, [0, 0x7fff, -0x8000, 0]);
+});
+
 test("Export MP3 recovers (button re-enabled, no download) when the render produces no audio", async () => {
   const { ctx, cleanup } = setup();
   const abcjs = createAbcjsStub({ exportAudioBuffer: null });
