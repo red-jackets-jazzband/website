@@ -66,6 +66,15 @@
         </div>
         <button type="button" id="tempoUpBtn" class="sheet-stepper-btn" aria-label="Faster">&plus;</button>
       </div>
+
+      <div class="sheet-stepper" id="repeatStepper" title="Repeat">
+        <button type="button" id="repeatDownBtn" class="sheet-stepper-btn" aria-label="Fewer repeats">&minus;</button>
+        <div class="sheet-stepper-value">
+          <input type="number" id="repeatCount" name="quantity" value="1" min="1" max="20" aria-label="Number of times to play this song in a row">
+          <span class="sheet-stepper-label" id="repeatCountLabel">repeats</span>
+        </div>
+        <button type="button" id="repeatUpBtn" class="sheet-stepper-btn" aria-label="More repeats">&plus;</button>
+      </div>
       </div>
 
       <div class="sheet-adjust">

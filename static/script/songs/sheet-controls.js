@@ -55,6 +55,17 @@ function stepTranspose(delta) {
   input.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
+// Same pattern as stepTranspose, for the Repeat stepper's #repeatCount field —
+// the "input" listener below (ctx.audio.setRepeatCount) does the clamping and
+// persisting, this just nudges the field and fires that listener.
+function stepRepeatCount(delta) {
+  const input = byId("repeatCount");
+  if (!input) return;
+  const next = Number(input.value || 1) + delta;
+  input.value = Math.max(Number(input.min), Math.min(Number(input.max), next));
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
 // The double-chevron button that reveals the "advanced" controls (currently
 // just the comping dropdown). State lives as `.show-advanced` on #sheetmenu and
 // is persisted; toggling re-renders so the comping staff appears with it.
@@ -131,6 +142,11 @@ export function initSheetControls(ctx) {
   on("keyDownBtn", "click", () => stepTranspose(-1));
   on("tempoUpBtn", "click", () => ctx.audio.stepTempo(TEMPO_STEP));
   on("tempoDownBtn", "click", () => ctx.audio.stepTempo(-TEMPO_STEP));
+  const repeatCountInput = byId("repeatCount");
+  if (repeatCountInput) repeatCountInput.value = String(ctx.state.repeatCount);
+  on("repeatCount", "input", () => ctx.audio.setRepeatCount(byId("repeatCount").value));
+  on("repeatUpBtn", "click", () => stepRepeatCount(1));
+  on("repeatDownBtn", "click", () => stepRepeatCount(-1));
   on("playPauseBtn", "click", () => ctx.audio.playPause());
   on("stopBtn", "click", () => ctx.audio.stop());
   on("mixerBtn", "click", () => ctx.mixer.toggle());

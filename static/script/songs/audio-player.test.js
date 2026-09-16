@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mountPage } from "../../../tests/helpers/dom.js";
 import { makeCtx } from "../../../tests/helpers/ctx.js";
 import { createAbcjsStub, withAbcjs } from "../../../tests/helpers/stubs.js";
-import { createAudioPlayer } from "./audio-player.js";
+import { createAudioPlayer, loadRepeatCountState } from "./audio-player.js";
 
 const flush = () => new Promise((resolve) => { setTimeout(resolve, 0); });
 const SPINNER_SELECTOR = ".fa-spinner";
@@ -522,6 +522,141 @@ test("a torn-down controller's belated callback doesn't move the cursor once a n
     staleCursorControl.onFinished();
     assert.equal(audio.isPlaying, true);
   } finally {
+    cleanup();
+  }
+});
+
+test("loadRepeatCountState defaults to 1, reflects a persisted value, and rejects out-of-range/corrupt values", () => {
+  const page = mountPage();
+  try {
+    assert.equal(loadRepeatCountState(), 1);
+    window.localStorage.setItem("rj.repeatCount", "5");
+    assert.equal(loadRepeatCountState(), 5);
+    window.localStorage.setItem("rj.repeatCount", "999");
+    assert.equal(loadRepeatCountState(), 1); // out of range -> default
+    window.localStorage.setItem("rj.repeatCount", "banana");
+    assert.equal(loadRepeatCountState(), 1);
+  } finally {
+    window.localStorage.clear();
+    page.cleanup();
+  }
+});
+
+test("onFinished doesn't loop when repeatCount is 1 (the default)", async () => {
+  const { audio, cleanup } = setup({ repeatCount: 1 });
+  const abcjs = createAbcjsStub({ audioSupported: true });
+  try {
+    withAbcjs(abcjs, () => audio.initForTune({ metaText: {} }));
+    await flush();
+    withAbcjs(abcjs, () => audio.playPause());
+    await flush();
+    assert.equal(audio.isPlaying, true);
+
+    const sc = abcjs.calls.synthControllers.at(-1);
+    withAbcjs(abcjs, () => sc._cursorControl.onFinished());
+    assert.equal(audio.isPlaying, false);
+    assert.deepEqual(abcjs.calls.seek, []); // never restarted
+  } finally {
+    cleanup();
+  }
+});
+
+test("onFinished replays from the top while fewer playthroughs have completed than repeatCount, then stops", async () => {
+  const { audio, cleanup } = setup({ repeatCount: 3 });
+  const abcjs = createAbcjsStub({ audioSupported: true });
+  try {
+    withAbcjs(abcjs, () => audio.initForTune({ metaText: {} }));
+    await flush();
+    withAbcjs(abcjs, () => audio.playPause());
+    await flush();
+
+    const sc = abcjs.calls.synthControllers.at(-1);
+
+    withAbcjs(abcjs, () => sc._cursorControl.onFinished()); // 1st playthrough done
+    assert.equal(audio.isPlaying, true, "loops instead of stopping");
+    assert.deepEqual(abcjs.calls.seek, [0]);
+
+    withAbcjs(abcjs, () => sc._cursorControl.onFinished()); // 2nd playthrough done
+    assert.equal(audio.isPlaying, true, "loops again");
+    assert.deepEqual(abcjs.calls.seek, [0, 0]);
+
+    withAbcjs(abcjs, () => sc._cursorControl.onFinished()); // 3rd (final) playthrough done
+    assert.equal(audio.isPlaying, false, "stops after the requested count");
+    assert.deepEqual(abcjs.calls.seek, [0, 0]); // no further restart
+  } finally {
+    cleanup();
+  }
+});
+
+test("Stop resets the repeat count so the next Play starts a fresh loop", async () => {
+  const { audio, cleanup } = setup({ repeatCount: 2 });
+  const abcjs = createAbcjsStub({ audioSupported: true });
+  try {
+    withAbcjs(abcjs, () => audio.initForTune({ metaText: {} }));
+    await flush();
+    withAbcjs(abcjs, () => audio.playPause());
+    await flush();
+
+    let sc = abcjs.calls.synthControllers.at(-1);
+    withAbcjs(abcjs, () => sc._cursorControl.onFinished()); // loops once (1 of 2 done)
+    assert.equal(audio.isPlaying, true);
+
+    withAbcjs(abcjs, () => audio.stop());
+    await flush();
+
+    withAbcjs(abcjs, () => audio.playPause()); // fresh Play after Stop
+    await flush();
+    sc = abcjs.calls.synthControllers.at(-1);
+
+    withAbcjs(abcjs, () => sc._cursorControl.onFinished());
+    assert.equal(audio.isPlaying, true, "the reset count loops again rather than stopping early");
+  } finally {
+    cleanup();
+  }
+});
+
+test("updateRepeatLabel shows live progress while playing a multi-repeat loop", async () => {
+  const { audio, cleanup } = setup({ repeatCount: 3 });
+  const abcjs = createAbcjsStub({ audioSupported: true });
+  try {
+    withAbcjs(abcjs, () => audio.initForTune({ metaText: {} }));
+    await flush();
+    assert.equal(document.getElementById("repeatCountLabel").textContent, "repeats");
+
+    withAbcjs(abcjs, () => audio.playPause());
+    await flush();
+    assert.equal(document.getElementById("repeatCountLabel").textContent, "1 of 3");
+
+    const sc = abcjs.calls.synthControllers.at(-1);
+    withAbcjs(abcjs, () => sc._cursorControl.onFinished());
+    assert.equal(document.getElementById("repeatCountLabel").textContent, "2 of 3");
+
+    withAbcjs(abcjs, () => sc._cursorControl.onFinished());
+    withAbcjs(abcjs, () => sc._cursorControl.onFinished());
+    assert.equal(document.getElementById("repeatCountLabel").textContent, "repeats"); // done
+  } finally {
+    cleanup();
+  }
+});
+
+test("setRepeatCount clamps to [1, 20], persists, and syncs the field", async () => {
+  const { ctx, audio, cleanup } = setup();
+  try {
+    audio.setRepeatCount(999);
+    assert.equal(ctx.state.repeatCount, 20);
+    assert.equal(document.getElementById("repeatCount").value, "20");
+    assert.equal(window.localStorage.getItem("rj.repeatCount"), "20");
+
+    audio.setRepeatCount(-5);
+    assert.equal(ctx.state.repeatCount, 1);
+
+    audio.setRepeatCount("not a number");
+    assert.equal(ctx.state.repeatCount, 1);
+
+    audio.setRepeatCount(4.6);
+    assert.equal(ctx.state.repeatCount, 5); // rounded
+  } finally {
+    window.localStorage.clear();
     cleanup();
   }
 });
