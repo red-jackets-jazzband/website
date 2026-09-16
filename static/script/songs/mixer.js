@@ -125,13 +125,16 @@ function buildGchordPatternOptions(select) {
   (lib/audio-mix.js) resolves each one's display name (a real name="..." if
   the ABC has one, else "Melody"/"Melody 1"/"Melody 2".../"Comping" — see its
   own doc comment) and sheet.js hands the result to syncVoices() on every
-  render. Every row is the same shape: Mute + Voice picker real (read by
-  sheet.js at render time via lib/audio-mix.js's injectMixerAudio, and Mute
-  via audio-player.js's computeVoicesOff — see lib/audio-mix.js's doc comment
-  for why not volume too), fader `disabled` (`.mixer-strip--volume-locked`).
-  Persisted by a slug of the voice's own resolved name, not by song + numeric
-  id, so e.g. every "Sousaphone" part across every song on this site — or
-  every song's own "Comping" voice — shares one sticky Mute/Voice choice.
+  render. Every row is the same shape and all three controls are real: Mute
+  (audio-player.js's computeVoicesOff), Voice, and Volume (both read by
+  sheet.js at render time via lib/audio-mix.js's injectMixerAudio — Voice as
+  a per-voice %%MIDI program line, Volume as a per-voice %%MIDI beat line;
+  see injectMixerAudio's and beatStressLine's own doc comments for why a
+  fader wasn't possible until %%MIDI beat, not %%MIDI vol, turned out to
+  scope a persistent level per voice). Persisted by a slug of the voice's own
+  resolved name, not by song + numeric id, so e.g. every "Sousaphone" part
+  across every song on this site — or every song's own "Comping" voice —
+  shares one sticky Mute/Voice/Volume choice.
 
   Below Bass/Chords sits a third fixed control: the Pattern picker
   (#mixerGchordPatternSelect, ctx.state.gchordPattern), which chooses the
@@ -202,6 +205,9 @@ function voiceMutedKey(slug) {
 function voiceProgramKey(slug) {
   return `rj.mixerVoice.${slug}.program`;
 }
+function voiceVolumeKey(slug) {
+  return `rj.mixerVoice.${slug}.volume`;
+}
 
 // A stable signature for the current tune's resolved voice list — cheap to
 // compare so syncVoices() below can skip rebuilding the panel's DOM on every
@@ -219,17 +225,15 @@ function voiceListSignature(voices) {
 // rebuildVoiceStrips/updateVoiceRowVisual need.
 function buildVoiceStrip(voice) {
   const swatchClass = VOICE_SWATCH_CLASSES[voice.index % VOICE_SWATCH_CLASSES.length];
-  const fill = el("div", { class: "mixer-fader-fill" });
+  const fill = el("div", { class: "mixer-fader-fill", style: { width: `${voice.volume}%` } });
   const range = el("input", {
     type: "range",
     min: "0",
     max: "100",
-    value: "100",
-    disabled: true,
-    title: "Volume control isn't available for this voice yet — use Mute",
+    value: String(voice.volume),
     attrs: { "aria-label": `${voice.label} volume` },
   });
-  const readout = el("span", { class: "mixer-readout", text: "—" });
+  const readout = el("span", { class: "mixer-readout", text: readoutText(voice.volume, voice.muted) });
   const muteIcon = el("span", { class: "fa-solid fa-volume-high", attrs: { "aria-hidden": "true" } });
   const muteBtn = el("button", {
     type: "button",
@@ -246,7 +250,7 @@ function buildVoiceStrip(voice) {
 
   const strip = el("div", {
     id: `mixerVoiceStrip-${voice.slug}`,
-    class: "mixer-strip mixer-strip--volume-locked mixer-strip--voice",
+    class: "mixer-strip mixer-strip--voice",
   }, [
     el("span", { class: `mixer-swatch ${swatchClass}`, attrs: { "aria-hidden": "true" } }),
     el("span", { class: "mixer-strip-label", text: voice.label, attrs: { title: voice.label } }),
@@ -257,7 +261,7 @@ function buildVoiceStrip(voice) {
   ]);
 
   return {
-    strip, readout, muteBtn, muteIcon, select,
+    strip, fill, range, readout, muteBtn, muteIcon, select,
   };
 }
 
@@ -267,14 +271,16 @@ function buildVoiceStrip(voice) {
 function persistVoiceState(v) {
   writePref(voiceMutedKey(v.slug), v.muted ? "1" : "0");
   writePref(voiceProgramKey(v.slug), v.program === null ? "" : String(v.program));
+  writePref(voiceVolumeKey(v.slug), String(v.volume));
 }
 
 // Same reasoning as persistVoiceState above: only reads its own destructured
 // argument, no ctx or other createMixer-local state.
 function updateVoiceRowVisual({
-  v, readout, muteBtn, muteIcon,
+  v, fill, readout, muteBtn, muteIcon,
 }) {
-  readout.textContent = v.muted ? "Muted" : "—";
+  fill.style.width = `${v.volume}%`;
+  readout.textContent = readoutText(v.volume, v.muted);
   muteBtn.classList.toggle("is-muted", v.muted);
   muteBtn.setAttribute("aria-pressed", v.muted ? "true" : "false");
   muteIcon.classList.toggle("fa-volume-xmark", v.muted);
@@ -331,6 +337,26 @@ export function createMixer(ctx) {
     ctx.sheet.rerender();
   }
 
+  // A voice's own volume fader debounces/commits the same way a channel
+  // fader does (scheduleApply/applyNow above), sharing the one applyTimer —
+  // but persists that one voice's own state (persistVoiceState) rather than
+  // the fixed Bass/Chords channels' persist().
+  function scheduleVoiceApply(v) {
+    clearTimeout(applyTimer);
+    applyTimer = setTimeout(() => {
+      applyTimer = null;
+      persistVoiceState(v);
+      ctx.sheet.rerender();
+    }, APPLY_DEBOUNCE_MS);
+  }
+
+  function applyVoiceNow(v) {
+    clearTimeout(applyTimer);
+    applyTimer = null;
+    persistVoiceState(v);
+    ctx.sheet.rerender();
+  }
+
   // { v, readout, muteBtn, muteIcon, select } per row currently in
   // #mixerVoicesList, in the same order as ctx.state.mixerVoices (whose
   // entries these closures share by reference — mutating v.muted/v.program
@@ -351,6 +377,12 @@ export function createMixer(ctx) {
         persistVoiceState(v);
         ctx.sheet.rerender();
       });
+      row.range.addEventListener("input", () => {
+        v.volume = clampPercent(row.range.value);
+        updateVoiceRowVisual({ v, ...row });
+        scheduleVoiceApply(v);
+      });
+      row.range.addEventListener("change", () => applyVoiceNow(v));
       on(row.muteBtn, "click", () => {
         v.muted = !v.muted;
         updateVoiceRowVisual({ v, ...row });
@@ -383,7 +415,11 @@ export function createMixer(ctx) {
       const muted = readPref(voiceMutedKey(v.slug)) === "1";
       const storedProgram = readPref(voiceProgramKey(v.slug));
       const program = storedProgram === null || storedProgram === "" ? null : Number(storedProgram);
-      return { ...v, muted, program };
+      const storedVolume = readPref(voiceVolumeKey(v.slug));
+      const volume = storedVolume === null ? 100 : clampPercent(storedVolume);
+      return {
+        ...v, muted, program, volume,
+      };
     });
     rebuildVoiceStrips();
   }
