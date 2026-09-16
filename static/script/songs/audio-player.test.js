@@ -764,6 +764,44 @@ test("Stop pressed while a repeat restart is mid-flight doesn't resume playback"
   }
 });
 
+// A second instance of the same race, caught by CodeRabbit on the fix above:
+// the deferred restart's own async sc.play() rejection handler had the same
+// `sc !== state.synthController` guard but not the stopToken one. A Stop
+// followed by a fresh Play reuses the *same* SynthController (stop() resets
+// it via setTune rather than swapping in a new one), so if the *earlier*
+// repeat restart's play() promise rejects only after that fresh Play has
+// already started, the identity check alone can't tell the rejection is
+// stale — it would call stopAfterFailedRepeat() and stop the genuinely new
+// playthrough the user is now listening to.
+test("a stale repeat-restart rejection doesn't stop a fresh Play that already reused the same controller", async () => {
+  const {
+    audio, abcjs, cleanup, play,
+  } = await setupPlayingTune({ repeatCount: 2 });
+  try {
+    const sc = await play();
+    let rejectRepeatPlay;
+    sc.play = () => new Promise((_resolve, reject) => { rejectRepeatPlay = reject; });
+
+    withAbcjs(abcjs, () => sc._cursorControl.onFinished()); // schedules the deferred restart
+    await flush(); // the restart's own setTimeout(0) fires: seek + play (left pending)
+    assert.equal(typeof rejectRepeatPlay, "function");
+
+    withAbcjs(abcjs, () => audio.stop());
+    await flush();
+    sc.play = () => { sc.isStarted = !sc.isStarted; return Promise.resolve(); }; // restore for the fresh Play below
+    await play(); // fresh Play, reusing the same stub controller
+    assert.equal(audio.isPlaying, true);
+
+    // The *earlier* repeat restart's play() promise finally rejects late.
+    rejectRepeatPlay(new Error("boom"));
+    await flush();
+
+    assert.equal(audio.isPlaying, true, "the stale rejection must not stop the genuinely-new playthrough");
+  } finally {
+    cleanup();
+  }
+});
+
 test("updateRepeatLabel shows live progress while playing a multi-repeat loop", async () => {
   const { abcjs, cleanup, play } = await setupPlayingTune({ repeatCount: 3 });
   try {
