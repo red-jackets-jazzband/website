@@ -162,6 +162,17 @@ export const PATTERNS = {
     twobar2: (n) => `${n}2 z6`,
     half: (n) => `z ${n}2 z`,
   },
+  // Honky Tonk Riff: the syncopated left-hand riff figure from "Down in
+  // Honky Tonk Town" — four punchy off-beat stabs on the beat in bar 1,
+  // answered in bar 2 by the same four stabs shifted a half-beat later, so
+  // the "and" of beat 1 gets a quick double hit before the pattern falls
+  // back into step. A two-bar call-and-response rather than one bar
+  // repeated, same shape as the walk-down/full-walk patterns above.
+  honky_tonk_riff: {
+    twobar1: (n) => `${n} z ${n} z ${n} z ${n} z`,
+    twobar2: (n) => `z ${n} ${n} z ${n} z ${n} z`,
+    half: (n) => `${n} z ${n} z`,
+  },
 };
 
 const GROUP_BASE = "Base patterns";
@@ -179,6 +190,7 @@ export const COMPING_PATTERNS = [
   { value: "clave_2_3", label: "2-3 clave", group: GROUP_TRADITIONAL },
   { value: "three_hit", label: "3 hit", group: GROUP_TRADITIONAL },
   { value: "i_got_a_woman", label: "I Got a Woman", group: GROUP_TRADITIONAL },
+  { value: "honky_tonk_riff", label: "Honky Tonk Riff", group: GROUP_TRADITIONAL },
   { value: "on_2_and_4", label: "On 2 and 4", group: GROUP_BASE },
   { value: "hold_over", label: "Hold over", group: GROUP_BASE },
   { value: "hit_and_hold", label: "Hit and hold", group: GROUP_BASE },
