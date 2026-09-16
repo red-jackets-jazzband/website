@@ -870,6 +870,38 @@ test("releasing a voice row's volume fader (change) applies immediately without 
   }
 });
 
+test("dragging a channel fader and then a voice fader within the same debounce window persists both, not just the second one", (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const { ctx, mixer, rerenders, cleanup } = setup();
+  try {
+    mixer.syncVoices(FUNKIN_VOICES);
+
+    // Bass fader starts a debounced apply...
+    const bassRange = document.getElementById("mixerBassRange");
+    bassRange.value = "42";
+    bassRange.dispatchEvent(new window.Event("input"));
+
+    // ...then, before it settles, a voice fader interrupts it (e.g. two
+    // simultaneous touches on the mobile bottom-sheet Mixer) and shares the
+    // same applyTimer, cancelling and rescheduling it.
+    const voiceRange = document.querySelector(`#${SOUSAPHONE_STRIP_ID} input[type="range"]`);
+    voiceRange.value = "30";
+    voiceRange.dispatchEvent(new window.Event("input"));
+
+    t.mock.timers.tick(300);
+    assert.equal(rerenders.length, 1);
+    // Both controls' changes must survive, even though only the voice
+    // fader's own "input" handler fired after the Bass fader's.
+    assert.equal(ctx.state.mixer.bassVolume, 42);
+    assert.equal(window.localStorage.getItem("rj.mixerBassVolume"), "42");
+    assert.equal(ctx.state.mixerVoices[1].volume, 30);
+    assert.equal(window.localStorage.getItem("rj.mixerVoice.sousaphone.volume"), "30");
+  } finally {
+    window.localStorage.clear();
+    cleanup();
+  }
+});
+
 test("syncVoices seeds each voice's volume from its own persisted rj.mixerVoice.<slug>.volume pref, defaulting to 100 when unset", () => {
   const { ctx, mixer, cleanup } = setup();
   try {
