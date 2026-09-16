@@ -164,13 +164,16 @@ export const PATTERNS = {
   },
   // Honky Tonk Riff: the syncopated left-hand riff figure from "Down in
   // Honky Tonk Town" — four punchy off-beat stabs on the beat in bar 1,
-  // answered in bar 2 by the same four stabs shifted a half-beat later, so
-  // the "and" of beat 1 gets a quick double hit before the pattern falls
-  // back into step. A two-bar call-and-response rather than one bar
-  // repeated, same shape as the walk-down/full-walk patterns above.
+  // answered in bar 2 by the same four stabs shifted a half-beat later. In
+  // the source riff that second bar's own second hit is a quick lower
+  // neighbor sliding up into the chord (its "G/4B/2" grace note) rather
+  // than a flat repeat, so this pattern plays that hit as a one-slot step
+  // approach (`nd`) resolving into the next stab. A two-bar call-and-
+  // response rather than one bar repeated, same shape as the walk-down/
+  // full-walk patterns above.
   honky_tonk_riff: {
     twobar1: (n) => `${n} z ${n} z ${n} z ${n} z`,
-    twobar2: (n) => `z ${n} ${n} z ${n} z ${n} z`,
+    twobar2: (n, nd) => `z ${n} ${nd} ${n} z ${n} z ${n}`,
     half: (n) => `${n} z ${n} z`,
   },
 };
