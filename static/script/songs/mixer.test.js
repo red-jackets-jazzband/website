@@ -653,7 +653,7 @@ test("before any song is open, the voices list is empty (no strips)", () => {
   }
 });
 
-test("syncVoices builds one strip per resolved voice, titled from its label, same shape as Bass/Chords minus a working fader", () => {
+test("syncVoices builds one strip per resolved voice, titled from its label, same shape as Bass/Chords — Mute, Voice and Volume all real", () => {
   const { ctx, mixer, cleanup } = setup();
   try {
     mixer.syncVoices(FUNKIN_VOICES);
@@ -664,13 +664,16 @@ test("syncVoices builds one strip per resolved voice, titled from its label, sam
     assert.equal(rows[0].querySelector(".mixer-strip-label").textContent, "Trumpet");
     assert.equal(rows[1].id, SOUSAPHONE_STRIP_ID);
     assert.equal(rows[1].querySelector(".mixer-strip-label").textContent, "Sousaphone");
-    // Mute + Voice picker real, fader locked (same reasoning as Melody/Comping before this generalisation).
-    assert.equal(rows[0].querySelector('input[type="range"]').disabled, true);
+    // Mute, Voice picker and volume fader are all real and enabled.
+    const range = rows[0].querySelector('input[type="range"]');
+    assert.equal(range.disabled, false);
+    assert.equal(range.value, "100");
+    assert.equal(rows[0].querySelector(".mixer-readout").textContent, "100%");
     assert.equal(rows[0].querySelector(".mixer-voice-select").disabled, false);
 
-    assert.deepEqual(ctx.state.mixerVoices.map((v) => [v.id, v.label, v.muted, v.program]), [
-      ["1", "Trumpet", false, null],
-      ["2", "Sousaphone", false, null],
+    assert.deepEqual(ctx.state.mixerVoices.map((v) => [v.id, v.label, v.muted, v.program, v.volume]), [
+      ["1", "Trumpet", false, null, 100],
+      ["2", "Sousaphone", false, null, 100],
     ]);
   } finally {
     window.localStorage.clear();
@@ -818,6 +821,65 @@ test("syncVoices seeds each voice's mute/program from its own persisted rj.mixer
     // The other voice, with no persisted prefs, keeps the plain defaults.
     assert.equal(ctx.state.mixerVoices[0].muted, false);
     assert.equal(ctx.state.mixerVoices[0].program, null);
+  } finally {
+    window.localStorage.clear();
+    cleanup();
+  }
+});
+
+test("a voice row's volume fader updates its readout/fill live, debounces the re-render, and persists under a slug key", (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const { ctx, mixer, rerenders, cleanup } = setup();
+  try {
+    mixer.syncVoices(FUNKIN_VOICES);
+    const range = document.querySelector(`#${SOUSAPHONE_STRIP_ID} input[type="range"]`);
+    range.value = "30";
+    range.dispatchEvent(new window.Event("input"));
+
+    assert.equal(ctx.state.mixerVoices[1].volume, 30);
+    assert.equal(document.querySelector(`#${SOUSAPHONE_STRIP_ID} .mixer-readout`).textContent, "30%");
+    assert.equal(document.querySelector(`#${SOUSAPHONE_STRIP_ID} .mixer-fader-fill`).style.width, "30%");
+    assert.equal(rerenders.length, 0); // debounced, not yet applied
+
+    t.mock.timers.tick(300);
+    assert.equal(rerenders.length, 1);
+    assert.equal(window.localStorage.getItem("rj.mixerVoice.sousaphone.volume"), "30");
+
+    // The other voice's own level is untouched.
+    assert.equal(ctx.state.mixerVoices[0].volume, 100);
+  } finally {
+    window.localStorage.clear();
+    cleanup();
+  }
+});
+
+test("releasing a voice row's volume fader (change) applies immediately without waiting for the debounce", () => {
+  const { ctx, mixer, rerenders, cleanup } = setup();
+  try {
+    mixer.syncVoices(FUNKIN_VOICES);
+    const range = document.querySelector(`#${SOUSAPHONE_STRIP_ID} input[type="range"]`);
+    range.value = "15";
+    range.dispatchEvent(new window.Event("input"));
+    range.dispatchEvent(new window.Event("change"));
+    assert.equal(ctx.state.mixerVoices[1].volume, 15);
+    assert.equal(rerenders.length, 1);
+    assert.equal(window.localStorage.getItem("rj.mixerVoice.sousaphone.volume"), "15");
+  } finally {
+    window.localStorage.clear();
+    cleanup();
+  }
+});
+
+test("syncVoices seeds each voice's volume from its own persisted rj.mixerVoice.<slug>.volume pref, defaulting to 100 when unset", () => {
+  const { ctx, mixer, cleanup } = setup();
+  try {
+    window.localStorage.setItem("rj.mixerVoice.sousaphone.volume", "40");
+    mixer.syncVoices(FUNKIN_VOICES);
+    assert.equal(ctx.state.mixerVoices[1].volume, 40);
+    assert.equal(document.querySelector(`#${SOUSAPHONE_STRIP_ID} input[type="range"]`).value, "40");
+    assert.equal(document.querySelector(`#${SOUSAPHONE_STRIP_ID} .mixer-readout`).textContent, "40%");
+    // The other voice, with no persisted volume, defaults to full.
+    assert.equal(ctx.state.mixerVoices[0].volume, 100);
   } finally {
     window.localStorage.clear();
     cleanup();

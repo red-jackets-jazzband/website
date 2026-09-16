@@ -27,7 +27,7 @@ export function makeCtx(overrides = {}) {
       // resolveMixerVoices would produce for an ordinary tune with no V:
       // declaration of its own and Comping off.
       mixerVoices: [{
-        id: "1", index: 0, label: "Melody", slug: "melody", muted: false, program: null,
+        id: "1", index: 0, label: "Melody", slug: "melody", muted: false, program: null, volume: 100,
       }],
       tempoOverrideBpm: null,
       repeatCount: 1,
