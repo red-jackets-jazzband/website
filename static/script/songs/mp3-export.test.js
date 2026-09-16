@@ -173,8 +173,11 @@ test("Export MP3 keeps the initiating song's filename and leaves a superseding r
 // Drives one export end-to-end against a fixed 4-sample render ([0, 1, -1,
 // 0], converting to the exact PCM values [0, 0x7fff, -0x8000, 0] already
 // verified against the real conversion table elsewhere) and returns the
-// encoded left channel, so the three repeat-respecting tests below only need
-// to state their own buildExportOptions overrides and expected output.
+// encoded left channel (every encodeBuffer call's samples, concatenated in
+// order — encodeMp3 streams one repeat pass per call rather than
+// concatenating them first, see its own doc comment), so the three
+// repeat-respecting tests below only need to state their own
+// buildExportOptions overrides and expected output.
 async function exportedLeftChannel(buildExportOptionsOverrides) {
   const { ctx, cleanup } = setup({
     buildExportOptions: () => ({
@@ -194,7 +197,10 @@ async function exportedLeftChannel(buildExportOptionsOverrides) {
     clickExport(ctx, abcjs);
     await flush();
     await flush();
-    return { left: Array.from(lamejs.stub.calls.encodeBuffer[0].left), encodeCalls: lamejs.stub.calls.encodeBuffer.length };
+    return {
+      left: lamejs.stub.calls.encodeBuffer.flatMap((call) => Array.from(call.left)),
+      encodeCalls: lamejs.stub.calls.encodeBuffer.length,
+    };
   } finally {
     download.restore();
     lamejs.restore();
@@ -206,7 +212,7 @@ test("Export MP3 loops the render per buildExportOptions' repeatCount when it's 
   const onePass = [0, 0x7fff, -0x8000, 0];
   const { left, encodeCalls } = await exportedLeftChannel({ repeatCount: 2, restartFraction: 0 });
 
-  assert.equal(encodeCalls, 1); // 8 samples fits one 1152-sample chunk
+  assert.equal(encodeCalls, 2); // one call per playthrough, never concatenated first
   assert.deepEqual(left, [...onePass, ...onePass]);
 });
 

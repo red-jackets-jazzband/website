@@ -77,6 +77,18 @@ function pickupBeatsOf(visualObj) {
   return visualObj.getPickupLength() / beatLength;
 }
 
+// Calls fn() and reports {ok: false} if it throws synchronously, instead of
+// letting that throw propagate — shared by tryRepeat()'s own seek() and
+// play() calls, since both need the same "warn and back out" recovery.
+function tryCall(fn) {
+  try {
+    return { ok: true, value: fn() };
+  } catch (err) {
+    console.warn("Repeat restart failed:", err);
+    return { ok: false };
+  }
+}
+
 /*
   Owns the sheet's audio: the ABCjs SynthController lifecycle, the transport
   buttons' visual state, note/chord-cell highlighting during playback, the
@@ -302,28 +314,20 @@ export function createAudioPlayer(ctx) {
     const sc = state.synthController;
     if (!sc || typeof sc.seek !== "function" || typeof sc.play !== "function") return false;
     clearHighlight();
-    try {
-      sc.seek(repeatRestartFraction());
-    } catch (err) {
-      console.warn("Repeat restart failed:", err);
-      return false;
-    }
+    if (!tryCall(() => sc.seek(repeatRestartFraction())).ok) return false;
+
     // sc.play() can throw synchronously (before returning any promise to
     // resolve/catch) as well as reject asynchronously, the same as in
     // playPause() — guard both so a failed restart falls back to a clean
     // stop instead of leaving state.isPlaying stuck true with nothing
     // actually playing. Only commit repeatsPlayed/the label once play()
     // is confirmed not to have thrown synchronously.
-    let playResult;
-    try {
-      playResult = sc.play();
-    } catch (err) {
-      console.warn("Repeat restart failed:", err);
-      return false;
-    }
+    const played = tryCall(() => sc.play());
+    if (!played.ok) return false;
+
     state.repeatsPlayed += 1;
     updateRepeatLabel();
-    Promise.resolve(playResult).catch((err) => {
+    Promise.resolve(played.value).catch((err) => {
       console.warn("Repeat restart failed:", err);
       if (sc !== state.synthController) return;
       setIsPlaying(false);
