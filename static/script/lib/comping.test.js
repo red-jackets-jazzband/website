@@ -313,7 +313,7 @@ test("COMPING_PATTERNS exposes 21 patterns, each with a builder set", () => {
   }
   const groups = [...new Set(COMPING_PATTERNS.map((p) => p.group))];
   assert.deepEqual(groups, [
-    "Base patterns", "Step down", "Step up & down", "Named grooves",
+    "Named grooves", "Base patterns", "Step down", "Step up & down",
   ]);
 });
 
