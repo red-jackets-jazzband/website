@@ -78,18 +78,22 @@ export const DEFAULT_PROGRAM = {
   per-channel controls). Each `pattern` string is built from abcjs's own
   synth-side gchord alphabet (its source, not abc2midi's — the two parsers
   accept different letters): "b" plays the chord's root bass note and the
-  full chord together, "f" the root alone, "c" the chord alone, "z" a rest.
-  One letter is one pulse of the tune's basic note length; abcjs stretches
-  or repeats the string to fill each bar. "jazz" is the pattern this file
-  hardcoded before the picker existed (ABCjs's own "jazz" example,
+  full chord together, "f" the root alone, "c" the chord alone, "z" a rest,
+  and "g"/"h"/"i"/"j" pluck a single chord tone each — root/3rd/5th/7th, in
+  that order ("do"/"mi"/"sol"/"ti" in abcjs's own source, see chord-track.js's
+  parseGChord) — rather than the whole chord at once, for a broken-chord/
+  arpeggiated texture the block-chord letters above can't produce. One letter
+  is one pulse of the tune's basic note length; abcjs stretches or repeats
+  the string to fill each bar. "jazz" is the pattern this file hardcoded
+  before the picker existed (ABCjs's own "jazz" example,
   https://examples.abcjs.net/accompaniment) — kept as the default `value` so
   an untouched picker changes nothing audible. `pattern: null` ("Default")
   means "emit no %%MIDI gchord line at all" — hasChords still gets bassprog/
   chordprog/bassvol/chordvol (see accompanimentLines), just whichever
   built-in pattern abc2midi/abcjs falls back to on its own.
-  As with the Bass/Chords GM program defaults above, the non-jazz patterns
-  here are a reasonable rhythmic guess from reading the gchord alphabet, not
-  yet confirmed by ear in a real browser.
+  As with the Bass/Chords GM program defaults above, every non-jazz pattern
+  here (including the four below) is a reasonable rhythmic guess from
+  reading the gchord alphabet, not yet confirmed by ear in a real browser.
 */
 export const GCHORD_PATTERNS = [
   { value: "default", label: "Default", pattern: null },
@@ -98,6 +102,10 @@ export const GCHORD_PATTERNS = [
   { value: "four-beat", label: "Four-beat (root+chord each beat)", pattern: "bzbzbzbz" },
   { value: "waltz", label: "Waltz (root, chord, chord)", pattern: "fzczcz" },
   { value: "latin", label: "Latin/Calypso (root, off-beat chords)", pattern: "fczczczc" },
+  { value: "bossa", label: "Bossa Nova (root, syncopated chords)", pattern: "fzczzczc" },
+  { value: "charleston", label: "Charleston (root, chord on the \"and\" of 2)", pattern: "bzzczzzz" },
+  { value: "reggae", label: "Reggae (chords on every off-beat)", pattern: "zczczczc" },
+  { value: "arpeggio", label: "Arpeggio (rolled chord, one tone per beat)", pattern: "gzhzizjz" },
 ];
 
 export const DEFAULT_GCHORD_PATTERN_VALUE = "jazz";
