@@ -382,7 +382,14 @@ export function createAudioPlayer(ctx) {
       updateRepeatLabel();
       Promise.resolve(played.value).catch((err) => {
         console.warn("Repeat restart failed:", err);
+        // Same two-part guard as above, not just the controller identity
+        // check: this rejection can land well after it was attached (a real
+        // async failure), by which time a Stop + fresh Play may have already
+        // reused this exact controller for a genuinely new playthrough — the
+        // stopToken check is what tells a stale rejection from *this*
+        // failed restart apart from that new one.
         if (sc !== state.synthController) return;
+        if (state.stopToken !== stopTokenAtSchedule) return;
         stopAfterFailedRepeat();
       });
     }, 0);
