@@ -114,6 +114,9 @@ export function createAudioPlayer(ctx) {
     // tryRepeat()'s own doc comment for how this drives the Repeat stepper.
     repeatsPlayed: 0,
     totalMs: 0,
+    // Set by buildTimingMap — see its own doc comment. undefined for a tune
+    // with no pickup (or before any tune has loaded).
+    firstBarMs: undefined,
     currentVisualObj: null,
     nativeQpm: null,
     transposeSemitones: 0,
@@ -280,7 +283,7 @@ export function createAudioPlayer(ctx) {
     see setRepeatCount). Only a *natural* finish loops this way — an
     explicit Stop, or loading a new tune, always resets repeatsPlayed to 0,
     so the next Play starts a fresh count.
-    sc.seek(0) + sc.play() mirrors what a fresh Play already does on a
+    sc.seek(...) + sc.play() mirrors what a fresh Play already does on a
     stopped controller (isStarted is false once a tune finishes — see
     playPause()'s own doc comment on that toggle) rather than reaching for
     ABCjs's own isLooping/toggleLoop: that loops forever and skips the
@@ -293,7 +296,7 @@ export function createAudioPlayer(ctx) {
     if (!sc || typeof sc.seek !== "function" || typeof sc.play !== "function") return false;
     clearHighlight();
     try {
-      sc.seek(0);
+      sc.seek(repeatRestartFraction());
     } catch (err) {
       console.warn("Repeat restart failed:", err);
       return false;
@@ -302,6 +305,22 @@ export function createAudioPlayer(ctx) {
     updateRepeatLabel();
     Promise.resolve(sc.play()).catch((err) => console.warn("Repeat restart failed:", err));
     return true;
+  }
+
+  // Where a repeat restarts: the true top (fraction 0) for an ordinary tune,
+  // but a tune with a pickup/anacrusis instead restarts at the first double
+  // bar — state.firstBarMs, the offset of measureIdx 1 (the pickup itself is
+  // always measureIdx 0) — so the lead-in note(s) aren't replayed every time
+  // round the loop. This also keeps the chord-table cursor aligned with the
+  // chord schema on the restart: resolveChordCell maps straight off the same
+  // measureIdx the audio is actually at, pickup skipped or not, so it always
+  // lands on the same cell real (non-repeat) playback would.
+  function repeatRestartFraction() {
+    if (pickupBeatsOf(state.currentVisualObj) > 0
+      && state.firstBarMs !== undefined && state.totalMs > 0) {
+      return Math.max(0, Math.min(1, state.firstBarMs / state.totalMs));
+    }
+    return 0;
   }
 
   const cursorControl = {
@@ -330,6 +349,13 @@ export function createAudioPlayer(ctx) {
     repeated section is visited twice — keep the first visit's values, and
     when a repeat brings us back to an already-tagged measure, snap the running
     measure counter back to that measure's stored index.
+
+    Also records state.firstBarMs — the ms offset where measureIdx first
+    reaches 1, i.e. the tune's first full bar after a pickup/anacrusis (the
+    partial first measure is always measureIdx 0). tryRepeat()'s own doc
+    comment explains what this feeds: restarting a practice loop at this
+    offset instead of 0 for a tune with a pickup, so the loop doesn't replay
+    the lead-in note(s) every time round.
   */
   function buildTimingMap(visualObj) {
     if (typeof ABCJS.TimingCallbacks !== "function") return;
@@ -342,10 +368,12 @@ export function createAudioPlayer(ctx) {
       let maxMs = 0;
       let measureIdx = 0;
       let seenFirstEvent = false;
+      let firstBarMs;
       for (const t of timings) {
         if (t.type !== "event" || !t.elements || t.milliseconds === undefined) continue;
         if (t.measureStart && seenFirstEvent) measureIdx += 1;
         seenFirstEvent = true;
+        if (measureIdx === 1 && firstBarMs === undefined) firstBarMs = t.milliseconds;
         if (t.milliseconds > maxMs) maxMs = t.milliseconds;
         const taggedIdx = firstTaggedMeasure(t.elements);
         if (taggedIdx !== undefined) {
@@ -355,6 +383,7 @@ export function createAudioPlayer(ctx) {
         tagElements(t.elements, t.milliseconds, measureIdx);
       }
       state.totalMs = maxMs + 500; // a little slack so the last note isn't at fraction 1
+      state.firstBarMs = firstBarMs;
     } catch (err) {
       console.warn("buildTimingMap error:", err);
     }
@@ -541,6 +570,7 @@ export function createAudioPlayer(ctx) {
     state.pausedMidway = false; // a freshly (re)loaded tune's next Play is a fresh start
     state.repeatsPlayed = 0;
     state.totalMs = 0;
+    state.firstBarMs = undefined;
     state.currentVisualObj = visualObj;
     // ABCjs's own getBpm(), not a raw read of metaText.tempo.bpm: a tune with
     // no Q: field at all has metaText.tempo undefined, but ABCjs's synth

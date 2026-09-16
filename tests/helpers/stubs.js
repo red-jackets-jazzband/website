@@ -131,8 +131,11 @@ export function createAbcjsStub({ audioSupported = false, exportAudioBuffer } = 
       calls.parseOnly.push({ abc, params });
       return [fakeTune(abc)];
     },
+    // A test can seed stub._noteTimings before calling initForTune to
+    // exercise audio-player.js's buildTimingMap with specific measure/ms
+    // shapes (e.g. a pickup) — defaults to empty, same as before this hook.
     TimingCallbacks: function TimingCallbacks() {
-      this.noteTimings = [];
+      this.noteTimings = stub._noteTimings || [];
     },
     synth: {
       supportsAudio: () => audioSupported,
