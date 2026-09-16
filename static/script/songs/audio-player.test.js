@@ -242,20 +242,23 @@ test("playPause resumes on the first press after pausing (ABCjs play() is a togg
 // argument (threaded through to ctx.metronome.onPlaybackChange) is how it
 // knows the difference. These spy on that argument directly rather than on
 // any audible effect, since audio-player.js is what computes it.
-function setupWithMetronomeSpy() {
+function setupWithMetronomeSpy(stateOverrides = {}) {
   const page = mountPage();
   const calls = [];
+  const barStarts = [];
   const ctx = makeCtx({
-    state: { tempoOverrideBpm: null, compingActive: false },
+    state: { tempoOverrideBpm: null, compingActive: false, ...stateOverrides },
     metronome: {
       init: () => {},
       refresh: () => {},
       onPlaybackChange: (playing, fromStart) => calls.push([playing, fromStart]),
-      onBarStart: () => {},
+      onBarStart: (measureIdx) => barStarts.push(measureIdx),
     },
   });
   const audio = createAudioPlayer(ctx);
-  return { page, audio, calls, cleanup: page.cleanup };
+  return {
+    page, audio, calls, barStarts, cleanup: page.cleanup,
+  };
 }
 
 test("playPause reports fromStart:true only for a genuine first Play, never a pause or resume", async () => {
@@ -486,6 +489,43 @@ test("buildExportOptions scales millisecondsPerMeasure by the Tempo stepper's wa
   }
 });
 
+test("buildExportOptions carries the Repeat stepper's count and its own pickup-aware restart fraction", async () => {
+  const { audio, cleanup } = setup({ repeatCount: 4 });
+  const abcjs = createAbcjsStub({ audioSupported: true });
+  abcjs._noteTimings = PICKUP_SHAPED_TIMINGS;
+  try {
+    withAbcjs(abcjs, () => audio.initForTune({
+      metaText: {},
+      millisecondsPerMeasure: () => 500,
+      getPickupLength: () => 0.25, // a quarter-note pickup
+      getBeatLength: () => 0.25,
+    }));
+    await flush();
+
+    const built = audio.buildExportOptions();
+    assert.equal(built.repeatCount, 4);
+    // same fraction the live repeat restart seeks to: firstBarMs(500) / totalMs(1500)
+    assert.equal(built.restartFraction, 500 / 1500);
+  } finally {
+    cleanup();
+  }
+});
+
+test("buildExportOptions's restartFraction is 0 for a tune with no pickup", async () => {
+  const { audio, cleanup } = setup({ repeatCount: 3 });
+  const abcjs = createAbcjsStub({ audioSupported: true });
+  try {
+    withAbcjs(abcjs, () => audio.initForTune({ metaText: {}, millisecondsPerMeasure: () => 500 }));
+    await flush();
+
+    const built = audio.buildExportOptions();
+    assert.equal(built.repeatCount, 3);
+    assert.equal(built.restartFraction, 0);
+  } finally {
+    cleanup();
+  }
+});
+
 test("a torn-down controller's belated callback doesn't move the cursor once a newer one has taken over", async () => {
   const { audio, cleanup } = setup();
   const abcjs = createAbcjsStub({ audioSupported: true });
@@ -684,6 +724,51 @@ test("updateRepeatLabel shows live progress while playing a multi-repeat loop", 
     withAbcjs(abcjs, () => sc._cursorControl.onFinished());
     withAbcjs(abcjs, () => sc._cursorControl.onFinished());
     assert.equal(document.getElementById("repeatCountLabel").textContent, "repeats"); // done
+  } finally {
+    cleanup();
+  }
+});
+
+// The metronome (songs/metronome.js) only starts/stops off setIsPlaying's
+// own onPlaybackChange notification (see its doc comment) and only resyncs
+// its click off a real measureStart event (notifyMetronomeBarStart). A
+// repeat restart (tryRepeat) deliberately never calls setIsPlaying — the
+// tune never really "stopped" from the metronome's perspective, so its click
+// should tick straight through the loop boundary uninterrupted — but real
+// playback does still need to keep reporting bar lines afterwards so the
+// click stays in phase. These two things are what this test checks.
+test("a repeat restart doesn't interrupt the metronome, and it still resyncs on the next real bar line", async () => {
+  const { audio, calls, barStarts, cleanup } = setupWithMetronomeSpy({ repeatCount: 2 });
+  const abcjs = createAbcjsStub({ audioSupported: true });
+  try {
+    withAbcjs(abcjs, () => audio.initForTune({ metaText: {} }));
+    await flush();
+    calls.length = 0; // drop initForTune's own setIsPlaying(false)
+
+    audio.playPause(); // first Play, from position 0
+    await flush();
+    assert.deepEqual(calls, [[true, true]]);
+
+    const sc = abcjs.calls.synthControllers.at(-1);
+    // Mirrors real ABCjs: a natural finish sets isStarted false internally
+    // before invoking cursorControl.onFinished (see tryRepeat's own doc
+    // comment) — the stub doesn't simulate that step itself, so it's set
+    // here to match what notifyMetronomeBarStart's isStarted guard sees for
+    // real once tryRepeat's own sc.play() resumes it.
+    sc.isStarted = false;
+    withAbcjs(abcjs, () => sc._cursorControl.onFinished()); // loops (1 of 2 done)
+    assert.equal(audio.isPlaying, true);
+
+    // The loop restart itself must not look like a stop/start cycle to the
+    // metronome — no extra onPlaybackChange entry beyond the original Play.
+    assert.deepEqual(calls, [[true, true]]);
+    // tryRepeat's own sc.play() already resumed the controller synchronously.
+    assert.equal(sc.isStarted, true);
+
+    // Real playback crossing the next bar line after the restart must still
+    // reach the metronome so its click stays in phase with the loop.
+    withAbcjs(abcjs, () => sc._cursorControl.onEvent({ measureStart: true, elements: [] }));
+    assert.deepEqual(barStarts, [undefined]); // no tagged measure on this bare event, but it fired
   } finally {
     cleanup();
   }
