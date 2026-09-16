@@ -403,6 +403,23 @@ export function createMixer(ctx) {
     const sig = voiceListSignature(voices);
     if (sig === voiceListSig) return;
     voiceListSig = sig;
+    // A voice fader/channel drag still mid-debounce (applyTimer pending) has
+    // its live change sitting only in ctx.state.mixer*/mixerVoices, not yet
+    // written to localStorage — persist() reads those fresh at commit time
+    // (see its own doc comment), so replacing ctx.state.mixerVoices below
+    // (a different song opened, or Comping toggled, mid-drag) before that
+    // timer fires would drop the pending change: persist() would run
+    // afterwards against the *new* voice list instead of the one the drag
+    // actually changed. Flush it now instead. No rerender() here — this
+    // already runs inside sheet.js's own render flow (engrave() ->
+    // syncInstrumentVoices() -> here), and scheduleApply/applyNow's
+    // rerender() is only for a standalone Mixer interaction to re-engrave on
+    // its own.
+    if (applyTimer !== null) {
+      clearTimeout(applyTimer);
+      applyTimer = null;
+      persist();
+    }
     const withSlugs = dedupeVoiceSlugs(voices);
     ctx.state.mixerVoices = withSlugs.map((v) => {
       const muted = readPref(voiceMutedKey(v.slug)) === "1";

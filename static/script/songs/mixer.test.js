@@ -12,6 +12,7 @@ const ARIA_PRESSED = "aria-pressed";
 const TRUMPET_STRIP_ID = "mixerVoiceStrip-trumpet";
 const SOUSAPHONE_STRIP_ID = "mixerVoiceStrip-sousaphone";
 const VOICE_ROWS_SELECTOR = "#mixerVoicesList .mixer-strip--voice";
+const SOUSAPHONE_VOLUME_KEY = "rj.mixerVoice.sousaphone.volume";
 
 function setup(mixerState = {}, stateOverrides = {}) {
   const page = mountPage();
@@ -843,7 +844,7 @@ test("a voice row's volume fader updates its readout/fill live, debounces the re
 
     t.mock.timers.tick(300);
     assert.equal(rerenders.length, 1);
-    assert.equal(window.localStorage.getItem("rj.mixerVoice.sousaphone.volume"), "30");
+    assert.equal(window.localStorage.getItem(SOUSAPHONE_VOLUME_KEY), "30");
 
     // The other voice's own level is untouched.
     assert.equal(ctx.state.mixerVoices[0].volume, 100);
@@ -863,7 +864,7 @@ test("releasing a voice row's volume fader (change) applies immediately without 
     range.dispatchEvent(new window.Event("change"));
     assert.equal(ctx.state.mixerVoices[1].volume, 15);
     assert.equal(rerenders.length, 1);
-    assert.equal(window.localStorage.getItem("rj.mixerVoice.sousaphone.volume"), "15");
+    assert.equal(window.localStorage.getItem(SOUSAPHONE_VOLUME_KEY), "15");
   } finally {
     window.localStorage.clear();
     cleanup();
@@ -895,7 +896,46 @@ test("dragging a channel fader and then a voice fader within the same debounce w
     assert.equal(ctx.state.mixer.bassVolume, 42);
     assert.equal(window.localStorage.getItem("rj.mixerBassVolume"), "42");
     assert.equal(ctx.state.mixerVoices[1].volume, 30);
-    assert.equal(window.localStorage.getItem("rj.mixerVoice.sousaphone.volume"), "30");
+    assert.equal(window.localStorage.getItem(SOUSAPHONE_VOLUME_KEY), "30");
+  } finally {
+    window.localStorage.clear();
+    cleanup();
+  }
+});
+
+test("syncVoices flushes a still-pending fader change before replacing the voice list (a different song opened mid-drag)", (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const { ctx, mixer, rerenders, cleanup } = setup();
+  try {
+    mixer.syncVoices(FUNKIN_VOICES);
+
+    // Drag the Sousaphone fader but don't release it (no "change" event, no
+    // tick past the debounce) -- its new value only lives in
+    // ctx.state.mixerVoices so far, not yet in localStorage.
+    const voiceRange = document.querySelector(`#${SOUSAPHONE_STRIP_ID} input[type="range"]`);
+    voiceRange.value = "20";
+    voiceRange.dispatchEvent(new window.Event("input"));
+    assert.equal(window.localStorage.getItem(SOUSAPHONE_VOLUME_KEY), null);
+
+    // A different song opens (sheet.js's engrave() -> syncInstrumentVoices()
+    // -> here) before that debounce ever fires, replacing the voice list
+    // outright -- the old Sousaphone object (and the drag's pending change)
+    // would otherwise be dropped along with it.
+    mixer.syncVoices([{ id: "1", index: 0, label: "Root" }, { id: "2", index: 1, label: "Third" }]);
+
+    // The interrupted drag's change was flushed to storage before the
+    // replacement, and flushing it didn't itself trigger a re-engrave (this
+    // already runs inside one).
+    assert.equal(window.localStorage.getItem(SOUSAPHONE_VOLUME_KEY), "20");
+    assert.equal(rerenders.length, 0);
+
+    // The debounce timer that would have fired against the *old* voice list
+    // is defused -- letting it run confirms nothing throws and nothing new
+    // gets persisted a second time.
+    t.mock.timers.tick(300);
+    assert.equal(rerenders.length, 0);
+
+    assert.deepEqual(ctx.state.mixerVoices.map((v) => v.label), ["Root", "Third"]);
   } finally {
     window.localStorage.clear();
     cleanup();
@@ -905,7 +945,7 @@ test("dragging a channel fader and then a voice fader within the same debounce w
 test("syncVoices seeds each voice's volume from its own persisted rj.mixerVoice.<slug>.volume pref, defaulting to 100 when unset", () => {
   const { ctx, mixer, cleanup } = setup();
   try {
-    window.localStorage.setItem("rj.mixerVoice.sousaphone.volume", "40");
+    window.localStorage.setItem(SOUSAPHONE_VOLUME_KEY, "40");
     mixer.syncVoices(FUNKIN_VOICES);
     assert.equal(ctx.state.mixerVoices[1].volume, 40);
     assert.equal(document.querySelector(`#${SOUSAPHONE_STRIP_ID} input[type="range"]`).value, "40");
