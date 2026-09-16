@@ -167,10 +167,16 @@ export const PATTERNS = {
   // answered in bar 2 by the same four stabs shifted a half-beat later. In
   // the source riff that second bar's own second hit is a quick lower
   // neighbor sliding up into the chord (its "G/4B/2" grace note) rather
-  // than a flat repeat, so this pattern plays that hit as a one-slot step
-  // approach (`nd`) resolving into the next stab. A two-bar call-and-
-  // response rather than one bar repeated, same shape as the walk-down/
-  // full-walk patterns above.
+  // than a flat repeat, so this pattern plays that hit as `nd` — not a
+  // single grace note on one voice, but the file's usual whole-triad,
+  // planed-one-diatonic-step-down token (see the "Rhythm patterns" doc
+  // comment above), resolving up into the next stab's `n`. Concretely: if
+  // `n` this beat is Cm in a Bb-major tune, `nd` plays a Bb-shaped voicing
+  // (Cm's C-Eb-G planed down one scale step along Bb major's Bb-C-D-Eb-F-
+  // G-A gives Bb-D-F) — the same "whole chord, one step away" relationship
+  // every other stepwise pattern here uses, just resolving upward instead
+  // of down. A two-bar call-and-response rather than one bar repeated, same
+  // shape as the walk-down/full-walk patterns above.
   honky_tonk_riff: {
     twobar1: (n) => `${n} z ${n} z ${n} z ${n} z`,
     twobar2: (n, nd) => `z ${n} ${nd} ${n} z ${n} z ${n}`,
