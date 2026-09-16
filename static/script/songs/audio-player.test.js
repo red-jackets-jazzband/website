@@ -628,6 +628,30 @@ test("onFinished replays from the top while fewer playthroughs have completed th
   }
 });
 
+test("onFinished recovers when the repeat restart's sc.play() throws synchronously", async () => {
+  const { audio, cleanup } = setup({ repeatCount: 3 });
+  const abcjs = createAbcjsStub({ audioSupported: true });
+  try {
+    withAbcjs(abcjs, () => audio.initForTune({ metaText: {} }));
+    await flush();
+    withAbcjs(abcjs, () => audio.playPause());
+    await flush();
+
+    const sc = abcjs.calls.synthControllers.at(-1);
+    sc.play = () => { throw new Error("boom"); };
+
+    withAbcjs(abcjs, () => sc._cursorControl.onFinished());
+    // The seek already happened, but the synchronous throw from play() must
+    // fall back to the same clean stop onFinished uses when repeats are
+    // exhausted, rather than leaving isPlaying stuck true.
+    assert.deepEqual(abcjs.calls.seek, [0]);
+    assert.equal(audio.isPlaying, false);
+    assert.equal(document.getElementById("repeatCountLabel").textContent, "repeats");
+  } finally {
+    cleanup();
+  }
+});
+
 // A pickup note (measureIdx 0) followed by the first full bar (measureIdx 1)
 // at 500ms, then one more note at 1000ms — the same noteTimings shape drives
 // both the pickup and no-pickup restart tests below; only the visualObj's
