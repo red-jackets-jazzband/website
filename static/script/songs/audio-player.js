@@ -140,6 +140,12 @@ export function createAudioPlayer(ctx) {
     // (songs/mp3-export.js) can tell whether the sheet it started rendering
     // is still the one on screen once its offline synth finally resolves.
     renderGeneration: 0,
+    // Bumped on every explicit stop() — see tryRepeat()'s own doc comment for
+    // why this exists: an onFinished-triggered repeat restart is deferred a
+    // macrotask, and a Stop pressed in that window reuses the *same*
+    // SynthController (just reset via setTune), so the restart's own
+    // `sc !== state.synthController` guard can't tell a Stop happened.
+    stopToken: 0,
   };
 
   let highlighted = [];
@@ -335,6 +341,15 @@ export function createAudioPlayer(ctx) {
     UI (and this loop) gets stuck showing that playthrough forever. A
     setTimeout(0) reliably runs after that pending microtask has settled, so
     the repeat's timer.start() is the last thing to touch isRunning.
+
+    An explicit Stop pressed in that same deferred window is a second race
+    this guards against, separately from the `sc !== state.synthController`
+    check above: stop() resets and reuses the *same* SynthController (via
+    setTune) rather than swapping in a new one, so that identity check alone
+    can't tell a Stop happened — without state.stopToken, this callback would
+    still seek+play right after a Stop, silently resuming audio the user just
+    told to stop. stopTokenAtSchedule is captured before the setTimeout, and
+    stop() bumps state.stopToken, so a Stop in between makes the two disagree.
   */
   function tryRepeat() {
     if (state.repeatsPlayed + 1 >= ctx.state.repeatCount) return false;
@@ -342,8 +357,10 @@ export function createAudioPlayer(ctx) {
     if (!sc || typeof sc.seek !== "function" || typeof sc.play !== "function") return false;
     clearHighlight();
 
+    const stopTokenAtSchedule = state.stopToken;
     setTimeout(() => {
       if (sc !== state.synthController) return;
+      if (state.stopToken !== stopTokenAtSchedule) return;
       if (!tryCall(() => sc.seek(repeatRestartFraction())).ok) {
         stopAfterFailedRepeat();
         return;
@@ -589,6 +606,10 @@ export function createAudioPlayer(ctx) {
 
   function stop() {
     if (!state.synthController || !state.currentVisualObj) return;
+    // Invalidates a repeat restart that's mid-flight in tryRepeat()'s own
+    // deferred setTimeout — see its doc comment for why a plain
+    // `sc !== state.synthController` check can't catch a Stop on its own.
+    state.stopToken += 1;
     try {
       state.synthController.pause();
     } catch {
