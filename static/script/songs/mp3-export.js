@@ -1,5 +1,5 @@
 import { byId, downloadBlob } from "../lib/dom.js";
-import { encodeMp3, repeatAudioBuffer } from "../lib/mp3-encode.js";
+import { encodeMp3 } from "../lib/mp3-encode.js";
 
 const IDLE_ICON = '<span class="fa-solid fa-file-audio" aria-hidden="true"></span>';
 const BUSY_ICON = '<span class="fa-solid fa-spinner fa-spin" aria-hidden="true"></span>';
@@ -30,8 +30,8 @@ async function exportMp3(ctx, btn) {
     await synth.prime();
     const buffer = synth.audioBuffers?.[0];
     if (!buffer) throw new Error("No audio rendered for this tune");
-    const looped = repeatAudioBuffer(buffer, built.repeatCount, built.restartFraction);
-    downloadBlob(mp3Filename(song), new Blob([encodeMp3(looped)], { type: "audio/mpeg" }));
+    const mp3 = encodeMp3(buffer, { repeatCount: built.repeatCount, restartFraction: built.restartFraction });
+    downloadBlob(mp3Filename(song), new Blob([mp3], { type: "audio/mpeg" }));
   } catch (err) {
     console.warn("MP3 export failed:", err);
   } finally {
@@ -48,13 +48,13 @@ async function exportMp3(ctx, btn) {
   into the visualObj the same way the live player reads them (see
   audio-player.js's buildExportOptions) — through a fresh, offline
   ABCJS.synth.CreateSynth(), which always renders exactly one playthrough.
-  repeatAudioBuffer (lib/mp3-encode.js) then concatenates that single render
-  into the Repeat stepper's own count — skipping the tune's pickup on every
-  pass but the first, same as the live practice loop — before encodeMp3
-  turns it into an .mp3 with the vendored lamejs encoder and downloads it.
-  The button is enabled/disabled alongside Play/Stop/Mixer in
-  audio-player.js's setButtonsDisabled, since export needs the same
-  audio-capable tune.
+  encodeMp3 (lib/mp3-encode.js) takes that single render straight through to
+  the vendored lamejs encoder, looping it into the Repeat stepper's own count
+  itself as it streams — skipping the tune's pickup on every pass but the
+  first, same as the live practice loop — rather than this file first
+  building a second, repeated copy of the raw audio. The button is
+  enabled/disabled alongside Play/Stop/Mixer in audio-player.js's
+  setButtonsDisabled, since export needs the same audio-capable tune.
 */
 export function initMp3Export(ctx) {
   const btn = byId("exportMp3Btn");
