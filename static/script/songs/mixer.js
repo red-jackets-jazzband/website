@@ -308,6 +308,18 @@ export function createMixer(ctx) {
   let open = false;
   let applyTimer = null;
 
+  // Persists *every* currently-known mixer control — both channels and every
+  // resolved voice — rather than just whichever one's drag triggered this
+  // call. All of them debounce through the one shared applyTimer below (so a
+  // rapid run of adjustments across different faders collapses into a single
+  // write), which only stays correct if every trigger flushes the full,
+  // current state: a version that persisted only the triggering control could
+  // silently drop an earlier, still-pending control's change whenever a
+  // second fader interrupts the first's debounce window before it fires
+  // (e.g. two faders dragged via multi-touch on the mobile bottom-sheet
+  // layout) — each control's own live state (ctx.state.mixer*/mixerVoices) is
+  // already up to date by the time persist() runs regardless of which
+  // control scheduled it, so writing all of it is both correct and cheap.
   function persist() {
     const m = ctx.state.mixer;
     CHANNELS.forEach((channel) => {
@@ -317,6 +329,7 @@ export function createMixer(ctx) {
       writePref(programKey(channel), program === null ? "" : String(program));
     });
     writePref(PREF_KEYS.mixerSwing, String(ctx.state.swing));
+    ctx.state.mixerVoices.forEach(persistVoiceState);
   }
 
   function commit() {
@@ -334,26 +347,6 @@ export function createMixer(ctx) {
     clearTimeout(applyTimer);
     applyTimer = null;
     persist();
-    ctx.sheet.rerender();
-  }
-
-  // A voice's own volume fader debounces/commits the same way a channel
-  // fader does (scheduleApply/applyNow above), sharing the one applyTimer —
-  // but persists that one voice's own state (persistVoiceState) rather than
-  // the fixed Bass/Chords channels' persist().
-  function scheduleVoiceApply(v) {
-    clearTimeout(applyTimer);
-    applyTimer = setTimeout(() => {
-      applyTimer = null;
-      persistVoiceState(v);
-      ctx.sheet.rerender();
-    }, APPLY_DEBOUNCE_MS);
-  }
-
-  function applyVoiceNow(v) {
-    clearTimeout(applyTimer);
-    applyTimer = null;
-    persistVoiceState(v);
     ctx.sheet.rerender();
   }
 
@@ -380,9 +373,9 @@ export function createMixer(ctx) {
       row.range.addEventListener("input", () => {
         v.volume = clampPercent(row.range.value);
         updateVoiceRowVisual({ v, ...row });
-        scheduleVoiceApply(v);
+        scheduleApply();
       });
-      row.range.addEventListener("change", () => applyVoiceNow(v));
+      row.range.addEventListener("change", applyNow);
       on(row.muteBtn, "click", () => {
         v.muted = !v.muted;
         updateVoiceRowVisual({ v, ...row });
