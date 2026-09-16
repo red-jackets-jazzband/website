@@ -154,12 +154,20 @@ export const PATTERNS = {
     twobar2: (n) => `${n} ${n} ${n} z z4`,
     half: (n) => `${n} ${n} z2`,
   },
+  // I Got a Woman: the gospel/R&B push figure — three separate quarter-note
+  // hits (no ties) on beat 2 and the "and" of beat 3 of bar 1, then landing
+  // on beat 1 of bar 2, silent otherwise. The two-bar phrase then repeats.
+  i_got_a_woman: {
+    twobar1: (n) => `z2 ${n}2 z ${n}2 z`,
+    twobar2: (n) => `${n}2 z6`,
+    half: (n) => `z ${n}2 z`,
+  },
 };
 
 const GROUP_BASE = "Base patterns";
 const GROUP_STEP_DOWN = "Step down";
 const GROUP_STEP_UP_DOWN = "Step up & down";
-const GROUP_TRADITIONAL = "Charleston & clave";
+const GROUP_TRADITIONAL = "Named grooves";
 
 // Ordered list for the sheet's <select>, grouped like the prototype's optgroups.
 export const COMPING_PATTERNS = [
@@ -183,6 +191,7 @@ export const COMPING_PATTERNS = [
   { value: "clave_3_2", label: "3-2 clave", group: GROUP_TRADITIONAL },
   { value: "clave_2_3", label: "2-3 clave", group: GROUP_TRADITIONAL },
   { value: "three_hit", label: "3 hit", group: GROUP_TRADITIONAL },
+  { value: "i_got_a_woman", label: "I Got a Woman", group: GROUP_TRADITIONAL },
 ];
 
 const PATTERN_LABEL = COMPING_PATTERNS.reduce((acc, p) => {

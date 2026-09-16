@@ -296,6 +296,7 @@ test("every COMPING_PATTERNS entry's rhythm templates match exactly", () => {
     clave_3_2: { twobar1: "N3 N3 N2", twobar2: "z2 N3 N3", half: "N3 N" },
     clave_2_3: { twobar1: "z2 N3 N3", twobar2: "N3 N3 N2", half: "z2 N2" },
     three_hit: { twobar1: "N N N z z4", twobar2: "N N N z z4", half: "N N z2" },
+    i_got_a_woman: { twobar1: "z2 N2 z N2 z", twobar2: "N2 z6", half: "z N2 z" },
   };
   assert.deepEqual(Object.keys(PATTERNS).sort(), Object.keys(expected).sort());
   for (const [name, pat] of Object.entries(PATTERNS)) {
@@ -305,14 +306,14 @@ test("every COMPING_PATTERNS entry's rhythm templates match exactly", () => {
   }
 });
 
-test("COMPING_PATTERNS exposes 20 patterns, each with a builder set", () => {
-  assert.equal(COMPING_PATTERNS.length, 20);
+test("COMPING_PATTERNS exposes 21 patterns, each with a builder set", () => {
+  assert.equal(COMPING_PATTERNS.length, 21);
   for (const p of COMPING_PATTERNS) {
     assert.ok(p.value && p.label && p.group, `${p.value} fully described`);
   }
   const groups = [...new Set(COMPING_PATTERNS.map((p) => p.group))];
   assert.deepEqual(groups, [
-    "Base patterns", "Step down", "Step up & down", "Charleston & clave",
+    "Base patterns", "Step down", "Step up & down", "Named grooves",
   ]);
 });
 
