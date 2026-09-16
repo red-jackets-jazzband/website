@@ -87,6 +87,10 @@ test("GCHORD_PATTERNS carries the expected value/label/pattern for every Pattern
     { value: "four-beat", label: "Four-beat (root+chord each beat)", pattern: "bzbzbzbz" },
     { value: "waltz", label: "Waltz (root, chord, chord)", pattern: "fzczcz" },
     { value: "latin", label: "Latin/Calypso (root, off-beat chords)", pattern: "fczczczc" },
+    { value: "bossa", label: "Bossa Nova (root, syncopated chords)", pattern: "fzczzczc" },
+    { value: "charleston", label: "Charleston (root, chord on the \"and\" of 2)", pattern: "bzzczzzz" },
+    { value: "reggae", label: "Reggae (chords on every off-beat)", pattern: "zczczczc" },
+    { value: "arpeggio", label: "Arpeggio (rolled chord, one tone per beat)", pattern: "gzhzizjz" },
   ]);
 });
 
@@ -94,6 +98,10 @@ test("resolveGchordPattern maps a Pattern-picker value to its gchord string, def
   assert.equal(resolveGchordPattern("jazz"), "bzczbzcz");
   assert.equal(resolveGchordPattern("two-beat"), "fzczfzcz");
   assert.equal(resolveGchordPattern("latin"), "fczczczc");
+  assert.equal(resolveGchordPattern("bossa"), "fzczzczc");
+  assert.equal(resolveGchordPattern("charleston"), "bzzczzzz");
+  assert.equal(resolveGchordPattern("reggae"), "zczczczc");
+  assert.equal(resolveGchordPattern("arpeggio"), "gzhzizjz");
   assert.equal(resolveGchordPattern("default"), null);
   const defaultEntry = GCHORD_PATTERNS.find((p) => p.value === DEFAULT_GCHORD_PATTERN_VALUE);
   assert.equal(resolveGchordPattern("not-a-real-pattern"), defaultEntry.pattern);
