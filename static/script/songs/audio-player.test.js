@@ -588,6 +588,56 @@ test("onFinished replays from the top while fewer playthroughs have completed th
   }
 });
 
+// A pickup note (measureIdx 0) followed by the first full bar (measureIdx 1)
+// at 500ms, then one more note at 1000ms — the same noteTimings shape drives
+// both the pickup and no-pickup restart tests below; only the visualObj's
+// own getPickupLength/getBeatLength decide whether tryRepeat treats it as
+// having a pickup to skip.
+const PICKUP_SHAPED_TIMINGS = [
+  { type: "event", elements: [[{}]], milliseconds: 0 }, // the pickup note
+  { type: "event", elements: [[{}]], milliseconds: 500, measureStart: true }, // first full bar
+  { type: "event", elements: [[{}]], milliseconds: 1000 },
+];
+
+async function setupAtRepeatRestart(visualObj) {
+  const { audio, cleanup } = setup({ repeatCount: 2 });
+  const abcjs = createAbcjsStub({ audioSupported: true });
+  abcjs._noteTimings = PICKUP_SHAPED_TIMINGS;
+  withAbcjs(abcjs, () => audio.initForTune(visualObj));
+  await flush();
+  withAbcjs(abcjs, () => audio.playPause());
+  await flush();
+  const sc = abcjs.calls.synthControllers.at(-1);
+  withAbcjs(abcjs, () => sc._cursorControl.onFinished());
+  return { audio, abcjs, cleanup };
+}
+
+test("onFinished restarts after the pickup (first double bar), not at the very top", async () => {
+  const { audio, abcjs, cleanup } = await setupAtRepeatRestart({
+    metaText: {},
+    getPickupLength: () => 0.25, // a quarter-note pickup
+    getBeatLength: () => 0.25, // quarter-note beat -> 1 beat of pickup
+  });
+  try {
+    assert.equal(audio.isPlaying, true);
+    // totalMs = maxMs(1000) + 500 slack = 1500; firstBarMs = 500 -> 500/1500
+    assert.equal(abcjs.calls.seek.at(-1), 500 / 1500);
+  } finally {
+    cleanup();
+  }
+});
+
+test("onFinished restarts at the very top for a tune with no pickup, even with the same noteTimings shape", async () => {
+  // No getPickupLength -> pickupBeatsOf is 0.
+  const { audio, abcjs, cleanup } = await setupAtRepeatRestart({ metaText: {} });
+  try {
+    assert.equal(audio.isPlaying, true);
+    assert.equal(abcjs.calls.seek.at(-1), 0);
+  } finally {
+    cleanup();
+  }
+});
+
 test("Stop resets the repeat count so the next Play starts a fresh loop", async () => {
   const { audio, cleanup } = setup({ repeatCount: 2 });
   const abcjs = createAbcjsStub({ audioSupported: true });
