@@ -308,9 +308,28 @@ export function createAudioPlayer(ctx) {
       console.warn("Repeat restart failed:", err);
       return false;
     }
+    // sc.play() can throw synchronously (before returning any promise to
+    // resolve/catch) as well as reject asynchronously, the same as in
+    // playPause() — guard both so a failed restart falls back to a clean
+    // stop instead of leaving state.isPlaying stuck true with nothing
+    // actually playing. Only commit repeatsPlayed/the label once play()
+    // is confirmed not to have thrown synchronously.
+    let playResult;
+    try {
+      playResult = sc.play();
+    } catch (err) {
+      console.warn("Repeat restart failed:", err);
+      return false;
+    }
     state.repeatsPlayed += 1;
     updateRepeatLabel();
-    Promise.resolve(sc.play()).catch((err) => console.warn("Repeat restart failed:", err));
+    Promise.resolve(playResult).catch((err) => {
+      console.warn("Repeat restart failed:", err);
+      if (sc !== state.synthController) return;
+      setIsPlaying(false);
+      state.pausedMidway = false;
+      clearHighlight();
+    });
     return true;
   }
 
