@@ -739,7 +739,7 @@ video.video {
 }
 
 /*
-  Purely a grouping node — wraps Key+Tempo, and separately
+  Purely a grouping node — wraps Key+Tempo+Repeat, and separately
   Play+Print/Export/iRealPro+Inspiration, so each group's row can be aligned
   independently of #sheetmenu's own justify-content (see the mobile override
   below). `display: contents` erases it from the box tree here, so on
@@ -796,7 +796,8 @@ video.video {
   color: rgba(236,234,230,.4);
   white-space: nowrap;
 }
-#transpose {
+#transpose,
+#repeatCount {
   width: 100%;
   background: none;
   border: none;
@@ -807,7 +808,9 @@ video.video {
   -moz-appearance: textfield;
 }
 #transpose::-webkit-inner-spin-button,
-#transpose::-webkit-outer-spin-button {
+#transpose::-webkit-outer-spin-button,
+#repeatCount::-webkit-inner-spin-button,
+#repeatCount::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
@@ -3562,7 +3565,8 @@ body:has(#rjLibrary) .split-bio {
     their own natural (different) sizes.
   */
   #keyStepper,
-  #tempoStepper {
+  #tempoStepper,
+  #repeatStepper {
     flex: none;
     box-sizing: border-box;
     width: 128px;
@@ -3684,7 +3688,8 @@ body:has(#rjLibrary) .split-bio {
     row-gap: 8px;
   }
   #keyStepper,
-  #tempoStepper {
+  #tempoStepper,
+  #repeatStepper {
     width: auto;
   }
   .sheet-stepper-value {

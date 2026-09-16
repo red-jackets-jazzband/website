@@ -30,6 +30,7 @@ export function makeCtx(overrides = {}) {
         id: "1", index: 0, label: "Melody", slug: "melody", muted: false, program: null,
       }],
       tempoOverrideBpm: null,
+      repeatCount: 1,
       mixer: {
         bassVolume: 100, chordsVolume: 100,
         bassMuted: true, chordsMuted: true,
@@ -65,6 +66,7 @@ export function makeCtx(overrides = {}) {
       nativeQpm: 120,
       beatsPerMeasure: 4,
       setRepeatBoundaries: () => {},
+      setRepeatCount: () => {},
       initForTune: () => {},
       setupNotationClickHandler: () => {},
       updateTempoLabel: () => {},

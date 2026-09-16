@@ -118,7 +118,7 @@ function fakeAudioBuffer() {
 /** @param {{ audioSupported?: boolean, exportAudioBuffer?: any }} [options] */
 export function createAbcjsStub({ audioSupported = false, exportAudioBuffer } = {}) {
   const calls = {
-    renderAbc: [], parseOnly: [], setTune: [], synthControllers: [], createSynths: [],
+    renderAbc: [], parseOnly: [], setTune: [], synthControllers: [], createSynths: [], seek: [],
   };
 
   const stub = {
@@ -156,6 +156,7 @@ export function createAbcjsStub({ audioSupported = false, exportAudioBuffer } = 
         };
         this.play = () => { this.isStarted = !this.isStarted; return Promise.resolve(); };
         this.pause = () => {};
+        this.seek = (fraction) => { calls.seek.push(fraction); };
         // ABCjs's real setWarp() ends with an internal seek that fires one
         // event callback; mirror that so tests can prove the highlight guard.
         this.setWarp = () => {
