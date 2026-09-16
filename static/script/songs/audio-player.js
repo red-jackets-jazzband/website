@@ -295,6 +295,16 @@ export function createAudioPlayer(ctx) {
     ctx.metronome.onBarStart(ev.elements ? firstTaggedMeasure(ev.elements) : undefined);
   }
 
+  // Shared by every way a repeat restart can fail to actually get audio
+  // going again — falls back to the same clean stop onFinished uses when
+  // repeats are exhausted, rather than leaving state.isPlaying stuck true
+  // with nothing actually playing.
+  function stopAfterFailedRepeat() {
+    setIsPlaying(false);
+    state.pausedMidway = false;
+    clearHighlight();
+  }
+
   /*
     Practicing on a loop: a tune that finishes naturally restarts from the
     top instead of stopping, as long as fewer playthroughs have completed
@@ -308,32 +318,57 @@ export function createAudioPlayer(ctx) {
     ABCjs's own isLooping/toggleLoop: that loops forever and skips the
     onFinished callback entirely (confirmed by reading the vendored
     SynthController source), leaving nothing here to count playthroughs from.
+
+    The seek+play is deferred a macrotask (setTimeout 0) rather than run
+    synchronously from onFinished — confirmed empirically (instrumenting the
+    real vendored SynthController in a browser) that calling sc.play() inline
+    here races the *same* Timer's own cleanup for the playthrough that just
+    ended: ABCJS's Timer.doTiming() detects "reached the end" and calls this
+    onFinished synchronously, but only *after* onFinished returns does it
+    queue `shouldStop(...).then(() => timer.stop())` for that finished
+    playthrough. That queued stop() still resets the Timer's isRunning flag
+    to false once it runs — and since it's the same Timer instance a
+    synchronous restart here just re-armed (via the repeat's own
+    timer.start()), that reset can land *after* the repeat's restart and
+    silently kill its own "reached the end" detection: the repeat's audio
+    genuinely keeps playing, but ABCJS never calls onFinished again, so the
+    UI (and this loop) gets stuck showing that playthrough forever. A
+    setTimeout(0) reliably runs after that pending microtask has settled, so
+    the repeat's timer.start() is the last thing to touch isRunning.
   */
   function tryRepeat() {
     if (state.repeatsPlayed + 1 >= ctx.state.repeatCount) return false;
     const sc = state.synthController;
     if (!sc || typeof sc.seek !== "function" || typeof sc.play !== "function") return false;
     clearHighlight();
-    if (!tryCall(() => sc.seek(repeatRestartFraction())).ok) return false;
 
-    // sc.play() can throw synchronously (before returning any promise to
-    // resolve/catch) as well as reject asynchronously, the same as in
-    // playPause() — guard both so a failed restart falls back to a clean
-    // stop instead of leaving state.isPlaying stuck true with nothing
-    // actually playing. Only commit repeatsPlayed/the label once play()
-    // is confirmed not to have thrown synchronously.
-    const played = tryCall(() => sc.play());
-    if (!played.ok) return false;
-
-    state.repeatsPlayed += 1;
-    updateRepeatLabel();
-    Promise.resolve(played.value).catch((err) => {
-      console.warn("Repeat restart failed:", err);
+    setTimeout(() => {
       if (sc !== state.synthController) return;
-      setIsPlaying(false);
-      state.pausedMidway = false;
-      clearHighlight();
-    });
+      if (!tryCall(() => sc.seek(repeatRestartFraction())).ok) {
+        stopAfterFailedRepeat();
+        return;
+      }
+
+      // sc.play() can throw synchronously (before returning any promise to
+      // resolve/catch) as well as reject asynchronously, the same as in
+      // playPause() — guard both so a failed restart falls back to a clean
+      // stop instead of leaving state.isPlaying stuck true with nothing
+      // actually playing. Only commit repeatsPlayed/the label once play()
+      // is confirmed not to have thrown synchronously.
+      const played = tryCall(() => sc.play());
+      if (!played.ok) {
+        stopAfterFailedRepeat();
+        return;
+      }
+
+      state.repeatsPlayed += 1;
+      updateRepeatLabel();
+      Promise.resolve(played.value).catch((err) => {
+        console.warn("Repeat restart failed:", err);
+        if (sc !== state.synthController) return;
+        stopAfterFailedRepeat();
+      });
+    }, 0);
     return true;
   }
 
