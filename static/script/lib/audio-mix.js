@@ -92,20 +92,32 @@ export const DEFAULT_PROGRAM = {
   chordprog/bassvol/chordvol (see accompanimentLines), just whichever
   built-in pattern abc2midi/abcjs falls back to on its own.
   As with the Bass/Chords GM program defaults above, every non-jazz pattern
-  here (including the four below) is a reasonable rhythmic guess from
-  reading the gchord alphabet, not yet confirmed by ear in a real browser.
+  here is a reasonable rhythmic guess from reading the gchord alphabet, not
+  yet confirmed by ear in a real browser. Picked to match this band's own
+  repertoire rather than a generic rhythm-section grab-bag: New Orleans
+  trad jazz/dixieland (two-beat, Charleston, banjo roll), brass band
+  (second line), and calypso, the one non-jazz genre this band's book
+  actually draws on — no bossa nova or reggae, which don't fit either.
+    - "second-line" is the tresillo (3+3+2 eighth-notes) under nearly every
+      New Orleans brass-band street beat — root+chord on beat 1, a chord
+      stab on the "and" of 2, root again on beat 4, silence elsewhere.
+    - "calypso" leads with a full root+chord downbeat (unlike reggae's own
+      "one drop", which skips beat 1 in the bass entirely) then answers on
+      every off-beat "and" — the classic mento/calypso guitar skank.
+    - "arpeggio" (labelled Banjo Roll below) reuses the same broken-chord
+      "g"/"h"/"i"/"j" letters for the rolled, one-tone-per-pulse texture a
+      trad-jazz tenor banjo plays under a verse.
 */
 export const GCHORD_PATTERNS = [
   { value: "default", label: "Default", pattern: null },
   { value: "jazz", label: "Jazz (root+chord, chord)", pattern: "bzczbzcz" },
-  { value: "two-beat", label: "Two-beat (root, chord)", pattern: "fzczfzcz" },
+  { value: "two-beat", label: "New Orleans Two-beat (root, chord)", pattern: "fzczfzcz" },
   { value: "four-beat", label: "Four-beat (root+chord each beat)", pattern: "bzbzbzbz" },
   { value: "waltz", label: "Waltz (root, chord, chord)", pattern: "fzczcz" },
-  { value: "latin", label: "Latin/Calypso (root, off-beat chords)", pattern: "fczczczc" },
-  { value: "bossa", label: "Bossa Nova (root, syncopated chords)", pattern: "fzczzczc" },
-  { value: "charleston", label: "Charleston (root, chord on the \"and\" of 2)", pattern: "bzzczzzz" },
-  { value: "reggae", label: "Reggae (chords on every off-beat)", pattern: "zczczczc" },
-  { value: "arpeggio", label: "Arpeggio (rolled chord, one tone per beat)", pattern: "gzhzizjz" },
+  { value: "charleston", label: "Charleston (dixieland kick)", pattern: "bzzczzzz" },
+  { value: "second-line", label: "Second Line (brass band tresillo)", pattern: "bzzczzfz" },
+  { value: "calypso", label: "Calypso (downbeat + off-beat chords)", pattern: "bczczczc" },
+  { value: "arpeggio", label: "Banjo Roll (trad jazz, rolled chord)", pattern: "gzhzizjz" },
 ];
 
 export const DEFAULT_GCHORD_PATTERN_VALUE = "jazz";
