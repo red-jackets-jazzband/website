@@ -738,6 +738,32 @@ test("Stop resets the repeat count so the next Play starts a fresh loop", async 
   }
 });
 
+// The race this guards: onFinished's tryRepeat() defers its seek+play a
+// macrotask (see its own doc comment), and Stop pressed in that window
+// resets+reuses the *same* SynthController (via setTune) rather than
+// swapping in a new one — so the restart's own `sc !== state.synthController`
+// guard can't tell a Stop happened, and without state.stopToken the deferred
+// callback would still seek+play right after Stop, resuming audio the user
+// just told to stop.
+test("Stop pressed while a repeat restart is mid-flight doesn't resume playback", async () => {
+  const {
+    audio, abcjs, cleanup, play,
+  } = await setupPlayingTune({ repeatCount: 2 });
+  try {
+    const sc = await play();
+    withAbcjs(abcjs, () => sc._cursorControl.onFinished()); // schedules the deferred restart
+    withAbcjs(abcjs, () => audio.stop()); // ...before that setTimeout(0) has run
+    await flush();
+
+    assert.equal(audio.isPlaying, false);
+    assert.deepEqual(abcjs.calls.seek, [], "the repeat restart's own seek must never have run");
+    assert.equal(sc.isStarted, false, "the repeat restart's sc.play() must not have resumed it");
+    assert.equal(document.getElementById("repeatCountLabel").textContent, "repeats");
+  } finally {
+    cleanup();
+  }
+});
+
 test("updateRepeatLabel shows live progress while playing a multi-repeat loop", async () => {
   const { abcjs, cleanup, play } = await setupPlayingTune({ repeatCount: 3 });
   try {
