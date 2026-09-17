@@ -3724,13 +3724,18 @@ body:has(#rjLibrary) .split-bio {
   left: 0;
   min-width: 12px;
   padding: 0 2px;
-  background-color: #000000;
-  color: #ffffff;
+  background-color: #000000 !important;
+  color: #ffffff !important;
   font-family: "Montserrat", sans-serif;
   font-size: 10px;
   line-height: 14px;
   text-align: center;
   white-space: nowrap;
+  /* Without this, printing drops the black background by default (to save
+     ink) and leaves only white-on-white text — same fix as .text-block /
+     .setlist-titlepage-instrument's own black-box-white-letter badges. */
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
 
 /* Screen-only, same reasoning as .abcjs-current-note above: a chord cell
