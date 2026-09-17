@@ -39,6 +39,16 @@ test("simplifySong leaves a scheme alone if any repeat differs", () => {
   assert.deepEqual(simplifySong(chords, 2), chords);
 });
 
+test("simplifySong keeps a repeat's own part marker instead of collapsing it away", () => {
+  // A Chorus that happens to reuse the Verse's exact progression: text-wise
+  // it's a perfect repeat, but collapsing it would silently drop the
+  // Chorus's own part-marker measure along with the rest of the "repeat".
+  const pattern = [measure(["Bb"]), measure(["F7"])];
+  const chords = pattern.concat(pattern.map((m) => ({ ...m })));
+  chords[2].part = "Chorus";
+  assert.deepEqual(simplifySong(chords, 2), chords);
+});
+
 test("simplifyBlues delegates to simplifySong with count=12", () => {
   const pattern = Array.from({ length: 12 }, (_, i) => measure(["C" + i]));
   const chords = pattern.concat(pattern);
