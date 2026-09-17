@@ -3720,8 +3720,8 @@ body:has(#rjLibrary) .split-bio {
    around it (see renderChordTable's doc comment). */
 .chordPartMarker {
   position: absolute;
-  top: 1px;
-  left: 1px;
+  top: 0;
+  left: 0;
   min-width: 12px;
   padding: 0 2px;
   background-color: #000000;
