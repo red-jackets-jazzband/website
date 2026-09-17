@@ -31,7 +31,9 @@ export function replaceAccidentalWithUtf8Char(note) {
 }
 
 // Reads the chords from an abcjs tune (parsed intermediate format) into a
-// list of measures, each `{ text: [chordStrings...], leftRepeat?, ... }`.
+// list of measures, each `{ text: [chordStrings...], leftRepeat?, part?, ... }`.
+// `part` (an ABC `P:` field's title, e.g. "A") is set on the first measure of
+// that section — the chord table boxes it there — and is otherwise absent.
 //
 // By default, measures inside a second-or-later ("[2", "[3", ...) repeat
 // ending are dropped: the chord table (and its repeat-boundary highlighting)
@@ -117,6 +119,7 @@ class ChordSchemeParser {
 
   handleElement(element) {
     if (element.el_type === "note") this.noteOrRestInMeasure = true;
+    if (element.el_type === "part" && !this.skipEnding) this.currentMeasure.part = element.title;
     if (element.el_type === "bar") this.handleBar(element);
     this.handleChord(element);
   }

@@ -226,6 +226,52 @@ test("parseChordScheme keeps a break and a real chord as separate entries within
   assert.deepEqual(chords[0].text, ["F7", BREAK_CHORD]);
 });
 
+test("parseChordScheme tags the first measure of each ABC `P:` part with its title", () => {
+  const song = {
+    lines: [
+      {
+        staff: [
+          {
+            voices: [
+              [
+                { el_type: "part", title: "A" },
+                { el_type: "note", chord: [{ name: "C" }] },
+                { el_type: "note" },
+                { el_type: "bar", type: "bar_thin" },
+                { el_type: "note", chord: [{ name: "F" }] },
+                { el_type: "note" },
+                { el_type: "bar", type: "bar_thin" },
+                { el_type: "part", title: "B" },
+                { el_type: "note", chord: [{ name: "G" }] },
+                { el_type: "note" },
+                { el_type: "bar", type: "bar_thin" },
+              ],
+            ],
+          },
+        ],
+      },
+    ],
+  };
+  const chords = parseChordScheme(song);
+  assert.equal(chords[0].part, "A");
+  assert.equal(chords[1].part, undefined);
+  assert.equal(chords[2].part, "B");
+});
+
+test("parseChordScheme ignores a part marker inside a dropped second ending", () => {
+  // Inserted right after the ":|2" bar that opens the (dropped) second
+  // ending, before its C2 note — the position a real "P:Outro" would parse
+  // to in that bar's own element stream.
+  const song = voltaSong();
+  // checkJs infers voltaSong()'s voice array from its own literal, which has
+  // no "part" shape in it — widen the splice target rather than duplicating
+  // the whole fixture just to add one element.
+  const voice = /** @type {any[]} */ (song.lines[0].staff[0].voices[0]);
+  voice.splice(8, 0, { el_type: "part", title: "Outro" });
+  const chords = parseChordScheme(song);
+  assert.deepEqual(chords.map((m) => m.part), [undefined, undefined, undefined]);
+});
+
 test("parseChordScheme returns an empty list when no valid chords were found", () => {
   const song = {
     lines: [

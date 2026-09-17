@@ -38,6 +38,17 @@ test("renderChordTable shows a break (\"N.C.\") marker as plain text, alone or a
   });
 });
 
+test("renderChordTable boxes a part's first chord with its letter, top-left corner", () => {
+  inDom((container) => {
+    renderChordTable([bar(["C"], { part: "A" }), bar(["F"]), bar(["G"], { part: "B" })], container);
+    const cells = [...container.querySelectorAll(".chordCell")];
+    assert.deepEqual(
+      cells.map((cell) => cell.querySelector(".chordPartMarker")?.textContent),
+      ["A", undefined, "B"],
+    );
+  });
+});
+
 test("renderChordTable switches to 8 columns past 24 measures", () => {
   inDom((container) => {
     // 42 bars, e.g. The Bare Necessities.

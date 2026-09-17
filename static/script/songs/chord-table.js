@@ -21,6 +21,11 @@ function forceReflow(element) {
   (left-to-right, top-to-bottom), and how many columns they wrap into is a CSS
   variable that can change at narrow widths. The cell order and count must stay
   exactly this sequence — playback highlighting looks cells up by flat index.
+
+  A measure carrying `part` (an ABC `P:` field's title, from parseChordScheme)
+  is the first measure of that section — it gets a small black-square
+  `.chordPartMarker` badge in the cell's top-left corner, the chord-table
+  equivalent of stylePartMarkers' boxed letter above the staff.
 */
 export function renderChordTable(chords, container) {
   if (!container) return;
@@ -37,6 +42,9 @@ export function renderChordTable(chords, container) {
     const chordDiv = el("div", { class: "chordDiv", html: String(measure.text) });
     const cell = el("div", { class: "chordCell" }, chordDiv);
 
+    if (measure.part !== undefined) {
+      cell.append(el("span", { class: "chordPartMarker", text: String(measure.part) }));
+    }
     if (measure.doubeThinBarLeft !== undefined) cell.classList.add("chordCellDoubleThinBarLeft");
     if (measure.doubeThinBarRight !== undefined) cell.classList.add("chordCellDoubleThinBarRight");
 
