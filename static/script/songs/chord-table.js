@@ -25,7 +25,15 @@ function forceReflow(element) {
   A measure carrying `part` (an ABC `P:` field's title, from parseChordScheme)
   is the first measure of that section — it gets a small black-square
   `.chordPartMarker` badge in the cell's top-left corner, the chord-table
-  equivalent of stylePartMarkers' boxed letter above the staff.
+  equivalent of stylePartMarkers' boxed letter above the staff. The CSS (see
+  `.chordCell:has(.chordPartMarker) .chordDiv`) reserves the badge's own
+  height as *extra* top padding on the chord text rather than shrinking any
+  existing dimension — reserving width instead would shrink the centered
+  text's own box and could clip an already-tight two-chord cell (e.g.
+  "F7,N.C." in the narrower 8-column layout) against its sibling
+  `overflow: hidden`. A part title isn't always a single letter (e.g.
+  "Chorus", "Sous Intro"), but the badge's height doesn't grow with its text
+  the way its width would, so a fixed vertical reservation is safe.
 */
 export function renderChordTable(chords, container) {
   if (!container) return;
