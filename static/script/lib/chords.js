@@ -119,7 +119,11 @@ class ChordSchemeParser {
 
   handleElement(element) {
     if (element.el_type === "note") this.noteOrRestInMeasure = true;
-    if (element.el_type === "part" && !this.skipEnding) this.currentMeasure.part = element.title;
+    if (element.el_type === "part" && !this.skipEnding) {
+      // "P: Chorus" (a space after the colon) parses with that leading space
+      // still in the title.
+      this.currentMeasure.part = element.title.trim();
+    }
     if (element.el_type === "bar") this.handleBar(element);
     this.handleChord(element);
   }

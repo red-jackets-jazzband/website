@@ -3714,13 +3714,15 @@ body:has(#rjLibrary) .split-bio {
 /* A small boxed section letter ("A", "B", ...) from the tune's own ABC `P:`
    field, pinned to the top-left corner of the cell holding that section's
    first chord — the chord-table equivalent of stylePartMarkers' boxed letter
-   above the staff (sheet-decorations.js). */
+   above the staff (sheet-decorations.js). Its text is capped at one or two
+   characters (chord-table.js's partBadgeText), so it always stays this
+   small — it's a pure overlay and never reserves space from the chord grid
+   around it (see renderChordTable's doc comment). */
 .chordPartMarker {
   position: absolute;
   top: 1px;
   left: 1px;
   min-width: 12px;
-  max-width: calc(100% - 2px);
   padding: 0 2px;
   background-color: #000000;
   color: #ffffff;
@@ -3729,18 +3731,6 @@ body:has(#rjLibrary) .split-bio {
   line-height: 14px;
   text-align: center;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Reserve the badge's own footprint as *extra* top padding on the chord
-   text, rather than narrowing the cell's existing text box — that would
-   shrink the centered text and risk clipping an already-tight two-chord
-   cell (e.g. "F7,N.C.") against the cell's own overflow:hidden. The badge's
-   height is fixed regardless of how long its title is, so this one value
-   (its ~15px height, plus a little clearance) covers every part title. */
-.chordCell:has(.chordPartMarker) .chordDiv {
-  padding-top: 18px;
 }
 
 /* Screen-only, same reasoning as .abcjs-current-note above: a chord cell

@@ -258,6 +258,28 @@ test("parseChordScheme tags the first measure of each ABC `P:` part with its tit
   assert.equal(chords[2].part, "B");
 });
 
+test("parseChordScheme trims a \"P: Chorus\"-style title's leading space", () => {
+  const song = {
+    lines: [
+      {
+        staff: [
+          {
+            voices: [
+              [
+                { el_type: "part", title: " Chorus" },
+                { el_type: "note", chord: [{ name: "C" }] },
+                { el_type: "note" },
+                { el_type: "bar", type: "bar_thin" },
+              ],
+            ],
+          },
+        ],
+      },
+    ],
+  };
+  assert.equal(parseChordScheme(song)[0].part, "Chorus");
+});
+
 test("parseChordScheme ignores a part marker inside a dropped second ending", () => {
   // Inserted right after the ":|2" bar that opens the (dropped) second
   // ending, before its C2 note — the position a real "P:Outro" would parse
