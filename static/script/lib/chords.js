@@ -173,9 +173,19 @@ export function simplifyBlues(chords) {
 
 // Checks if `chords` is `count` bars repeated N times with identical
 // content each time, and if so collapses it down to just `count` bars.
+//
+// A repeat past the first `count` bars is left alone (chords returned
+// unchanged) if any of its own measures carries a `part` — e.g. a Chorus
+// that happens to reuse the Verse's exact progression. Collapsing it away
+// would silently drop that Chorus's own part-marker measure along with it,
+// which defeats the point of a marker the tune's own ABC explicitly asked
+// for.
 export function simplifySong(chords, count) {
   if (chords.length === 0 || chords.length % count !== 0) {
     return chords;
+  }
+  for (let i = count; i < chords.length; i++) {
+    if (chords[i].part !== undefined) return chords;
   }
 
   const repeats = chords.length / count;
