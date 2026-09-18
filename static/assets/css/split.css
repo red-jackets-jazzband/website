@@ -3793,7 +3793,16 @@ body:has(#rjLibrary) .split-bio {
    around it (see renderChordTable's doc comment). */
 .chordPartMarker {
   position: absolute;
-  top: 0;
+  /* A position:absolute child's containing block is its relative ancestor's
+     *padding* box, not its border box — top:0 therefore lands flush with the
+     inside face of .chordCell's own 1px border-top, one pixel short of the
+     cell's true outer edge. Invisible on an interior row (masked by the
+     border of the row above it, which already occupies that pixel), but a
+     visible gap on a table's first row, where there's no border above to
+     hide it. -1px cancels the border-top the same way
+     --chord-cell-border-left already cancels border-left on the outsideLeft
+     variant below. */
+  top: -1px;
   left: 0;
   min-width: 12px;
   padding: 0 2px;
