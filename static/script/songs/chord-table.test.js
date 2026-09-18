@@ -15,6 +15,7 @@ function inDom(fn) {
 const bar = (text, extra = {}) => ({ text, ...extra });
 
 const CHORD_GRID_SELECTOR = ".chordGrid";
+const PART_MARKER_SELECTOR = ".chordPartMarker";
 
 test("renderChordTable lays cells out in reading order with 4 columns", () => {
   inDom((container) => {
@@ -43,7 +44,7 @@ test("renderChordTable boxes a part's first chord with its letter, top-left corn
     renderChordTable([bar(["C"], { part: "A" }), bar(["F"]), bar(["G"], { part: "B" })], container);
     const cells = [...container.querySelectorAll(".chordCell")];
     assert.deepEqual(
-      cells.map((cell) => cell.querySelector(".chordPartMarker")?.textContent),
+      cells.map((cell) => cell.querySelector(PART_MARKER_SELECTOR)?.textContent),
       ["A", undefined, "B"],
     );
   });
@@ -61,7 +62,7 @@ test("renderChordTable hangs a leftmost-column part marker outside the cell inst
       ],
       container,
     );
-    const markers = [...container.querySelectorAll(".chordPartMarker")];
+    const markers = [...container.querySelectorAll(PART_MARKER_SELECTOR)];
     assert.deepEqual(
       markers.map((m) => m.classList.contains("chordPartMarker--outsideLeft")),
       [true, false, true],
@@ -77,7 +78,7 @@ test("renderChordTable shrinks a word-length part title to its first letter, but
       bar(["C7"], { part: "B" }),
     ], container);
     assert.deepEqual(
-      [...container.querySelectorAll(".chordPartMarker")].map((m) => m.textContent),
+      [...container.querySelectorAll(PART_MARKER_SELECTOR)].map((m) => m.textContent),
       ["C", "A2", "B"],
     );
   });
@@ -164,7 +165,21 @@ test("renderChordTable drops the part marker when a fold collapses different-nam
       verse.map((m) => String(m.text)),
     );
     assert.deepEqual(
-      [...container.querySelectorAll(".chordPartMarker")].map((m) => m.textContent),
+      [...container.querySelectorAll(PART_MARKER_SELECTOR)].map((m) => m.textContent),
+      [],
+    );
+  });
+});
+
+test("renderChordTable suppresses a part marker when it's the only part in the table (e.g. Bill Bailey)", () => {
+  inDom((container) => {
+    // Bill Bailey's chordless intro never makes it into the chords array
+    // (parseChordScheme only starts keeping measures once a chord shows up),
+    // so "verse" ends up as the only part on the whole table — nothing left
+    // for it to distinguish itself from.
+    renderChordTable([bar(["C"], { part: "verse" }), bar(["F"]), bar(["G"])], container);
+    assert.deepEqual(
+      [...container.querySelectorAll(PART_MARKER_SELECTOR)].map((m) => m.textContent),
       [],
     );
   });
