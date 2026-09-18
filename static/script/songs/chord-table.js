@@ -48,6 +48,14 @@ function partBadgeText(title) {
   the table's own outer edge if inset the normal way, so it gets
   `chordPartMarker--outsideLeft` instead, which split.css hangs outside the
   cell to its left rather than inset inside it.
+
+  A part marker exists to distinguish one section of the table from
+  another, so it's suppressed when the table only ever has one (e.g. Bill
+  Bailey's chordless "intro" never reaches this array at all — parseChordScheme
+  only tags/keeps a measure once a chord shows up — leaving "verse" as the
+  only section on the whole table): a lone marker doesn't label anything a
+  reader couldn't already tell from there being nothing else. Same reasoning
+  simplifySong already applies to a marker that survives a repeat collapse.
 */
 export function renderChordTable(chords, container) {
   if (!container) return;
@@ -57,6 +65,7 @@ export function renderChordTable(chords, container) {
   // 16-bar check to match against).
   const measures = simplifySong(simplifySong(simplifyBlues(chords), 8), 16);
   const cols = measures.length >= LONG_SCHEME_BAR_THRESHOLD ? 8 : 4;
+  const hasMultipleParts = measures.filter((measure) => measure.part !== undefined).length > 1;
 
   const grid = el("div", { class: "chordGrid", style: { "--chord-cols": String(cols) } });
 
@@ -64,7 +73,7 @@ export function renderChordTable(chords, container) {
     const chordDiv = el("div", { class: "chordDiv", html: String(measure.text) });
     const cell = el("div", { class: "chordCell" }, chordDiv);
 
-    if (measure.part !== undefined) {
+    if (hasMultipleParts && measure.part !== undefined) {
       // A marker in the grid's leftmost column has no cell to its own left to
       // overlap, so it hangs outside the table instead of inset over the
       // chord text — chordPartMarker--outsideLeft, styled in split.css.
