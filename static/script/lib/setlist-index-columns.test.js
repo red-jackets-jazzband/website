@@ -88,6 +88,22 @@ test("three columns with more sets than columns keeps multiple sets per column",
   assert.equal(columns.flat().filter((g) => g.heading).length, 4);
 });
 
+test("three equal sets distribute one per column across three columns", () => {
+  const items = [
+    song("a"), song("b"),
+    brk("Set 2"), song("c"), song("d"),
+    brk("Set 3"), song("e"), song("f"),
+  ];
+  const { entries, hasDividers } = walkSetlist(items);
+  const columns = splitIndexIntoColumns(entries, hasDividers, 3);
+  assert.equal(columns.length, 3);
+  assert.deepEqual(groupShape(columns), [
+    [["Set 1", ["a", "b"]]],
+    [["Set 2", ["c", "d"]]],
+    [["Set 3", ["e", "f"]]],
+  ]);
+});
+
 test("a leading divider (no implicit 'Set 1') still keeps its set whole", () => {
   const { entries, hasDividers } = walkSetlist([brk("Opener"), song("a"), song("b")]);
   const columns = splitIndexIntoColumns(entries, hasDividers, 2);

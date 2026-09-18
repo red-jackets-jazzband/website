@@ -63,8 +63,7 @@ function packByWeight(chunks, columnCount) {
   let columnWeight = 0;
   let remainingColumns = columnCount;
 
-  chunks.forEach((chunk, i) => {
-    const remainingChunks = chunks.length - i;
+  chunks.forEach((chunk) => {
     const weight = chunkWeight(chunk);
     // Only move on early if doing so leaves this column CLOSER to its fair
     // share than cramming the chunk in would — otherwise a single oversized
@@ -72,7 +71,7 @@ function packByWeight(chunks, columnCount) {
     const overshootIfAdded = columnWeight + weight - target;
     const undershootIfNot = target - columnWeight;
     const shouldStartNewColumn = column.length > 0 && remainingColumns > 1
-      && remainingChunks >= remainingColumns && overshootIfAdded > undershootIfNot;
+      && overshootIfAdded > undershootIfNot;
     if (shouldStartNewColumn) {
       columns.push(column);
       column = [];
