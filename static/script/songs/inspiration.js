@@ -397,8 +397,8 @@ export function createInspiration(ctx) {
     actually passes in.
   */
   function updateLink(sources, title) {
-    const youtubeUrl = sources && sources.youtube;
-    const spotifyUrl = sources && sources.spotify;
+    const youtubeUrl = sources?.youtube;
+    const spotifyUrl = sources?.spotify;
     let btn = byId("inspirationLink");
     if (!youtubeUrl && !spotifyUrl) {
       if (btn) btn.remove();

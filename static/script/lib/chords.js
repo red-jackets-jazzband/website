@@ -205,6 +205,34 @@ export function simplifyBlues(chords) {
 // too (e.g. Just a Closer Walk With Thee's Verse/Chorus, which share
 // identical chords: collapsing them left a lone "V" badge that looked like
 // it labelled only the Verse, when it's really standing in for both).
+// Are two measures' chord texts identical, chord for chord?
+function chordTextsEqual(first, second) {
+  if (first.length !== second.length) {
+    return false;
+  }
+  for (let c = 0; c < first.length; c++) {
+    if (first[c] !== second[c]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+// Is `chords` really just its first `count` measures, repeated `repeats`
+// times with identical content each time?
+function chordsRepeat(chords, count, repeats) {
+  for (let i = 0; i < count; i++) {
+    const first = chords[i].text;
+    for (let r = 1; r < repeats; r++) {
+      const second = chords[i + count * r].text;
+      if (!chordTextsEqual(first, second)) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
 export function simplifySong(chords, count) {
   if (chords.length === 0 || chords.length % count !== 0) {
     return chords;
@@ -213,24 +241,8 @@ export function simplifySong(chords, count) {
   const repeats = chords.length / count;
   if (repeats === 1) return chords;
 
-  // Check each measure in the scheme
-  for (let i = 0; i < count; i++) {
-    const first = chords[i].text;
-
-    for (let r = 1; r < repeats; r++) {
-      const second = chords[i + count * r].text;
-
-      // Are there the same amount of chords in the measure?
-      if (first.length !== second.length) {
-        return chords;
-      }
-
-      for (let c = 0; c < first.length; c++) {
-        if (first[c] !== second[c]) {
-          return chords;
-        }
-      }
-    }
+  if (!chordsRepeat(chords, count, repeats)) {
+    return chords;
   }
 
   // It's a scheme that repeats! Dump any bars, repeats or part markers.
