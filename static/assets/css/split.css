@@ -3858,20 +3858,41 @@ body:has(#rjLibrary) .split-bio {
   overflow: hidden;
 }
 
+/* border-*-radius on these four: Firefox drops a cell's 1px solid border-top
+   (or border-bottom) entirely — across the cell's *whole* width, not just
+   near the corner — wherever it meets a `double`-style side border of a
+   different width at the same corner, e.g. the plain 1px top border of the
+   grid's very first cell (P:A's opening measure) vanishing above the boxed
+   part-marker badge. Confirmed by rendering the real chord grid in Firefox:
+   forcing that side's border-style to solid (or its width to match) makes
+   the top border reappear, so it's this specific style/width mismatch at
+   the corner, not the grid, the badge, or print scaling. A 1px corner
+   radius — imperceptible at this size — makes Firefox miter the corner
+   instead of dropping a whole side, without changing any border's visible
+   width. Only the corners each class's own double border actually touches
+   need it; applied everywhere the class applies (not just the table's
+   first/last row where a vanished border would otherwise show through)
+   since a redundant radius elsewhere is invisible. */
 .chordCellDoubleThinBarRight {
   border-right-style: double;
   border-right-width: medium;
+  border-top-right-radius: 1px;
+  border-bottom-right-radius: 1px;
 }
 
 .chordCellDoubleThinBarLeft {
   border-left-style: double;
   border-left-width: medium;
   --chord-cell-border-left: 3px;
+  border-top-left-radius: 1px;
+  border-bottom-left-radius: 1px;
 }
 
 .chordCellRightRepeat {
   border-right-width: thick;
   border-right-style: double;
+  border-top-right-radius: 1px;
+  border-bottom-right-radius: 1px;
 }
 
 .chordRightRepeatSign {
@@ -3884,6 +3905,8 @@ body:has(#rjLibrary) .split-bio {
   border-left-width: thick;
   border-left-style: double;
   --chord-cell-border-left: 5px;
+  border-top-left-radius: 1px;
+  border-bottom-left-radius: 1px;
 }
 
 .chordLeftRepeatSign {
