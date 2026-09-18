@@ -882,12 +882,15 @@ export function createSetlistView(ctx) {
     on("createSpotifyPlaylistBtn", "click", () => {
       const text = openSetlistSongTitles();
       if (!text) return;
-      // Opened synchronously, before the clipboard write, so browsers still
-      // see it as a direct result of the click rather than a popup to block.
-      window.open(TUNEMYMUSIC_SPOTIFY_URL, "_blank", "noopener");
+      // Copy first, open second: the Clipboard API requires this document to
+      // still have focus, which opening the new tab would immediately break
+      // if it ran first. window.open() is still called synchronously inside
+      // this same click handler either way, so it's just as safe from popup
+      // blocking regardless of which line comes first.
       copyText(text).then((ok) => {
         if (!ok) window.prompt("Copy this song list, then paste it into TuneMyMusic:", text);
       });
+      window.open(TUNEMYMUSIC_SPOTIFY_URL, "_blank", "noopener");
     });
   }
 
