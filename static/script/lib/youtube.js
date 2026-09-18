@@ -1,7 +1,7 @@
 // Hostnames we treat as YouTube. Anything else — including a lookalike like
 // `notyoutube.com` or `youtube.com.evil.example` — is rejected outright so a
 // stray F: field can't point the Inspiration player at an arbitrary site.
-const YOUTUBE_HOSTS = new Set([
+export const YOUTUBE_HOSTS = new Set([
   "youtube.com", "www.youtube.com", "m.youtube.com",
   "youtube-nocookie.com", "www.youtube-nocookie.com",
   "youtu.be", "www.youtu.be",
