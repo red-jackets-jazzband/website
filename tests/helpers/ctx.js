@@ -84,7 +84,13 @@ export function makeCtx(overrides = {}) {
     setlistData: overrides.setlistData,
     setlistHome: overrides.setlistHome,
     setlistModal: overrides.setlistModal,
-    setlistPrint: { buildBooklet: () => {}, print: () => {}, ...overrides.setlistPrint },
+    setlistPrint: {
+      buildBooklet: () => {},
+      print: () => {},
+      setListenChangeHandler: () => {},
+      getListenUrl: () => null,
+      ...overrides.setlistPrint,
+    },
     setlistView: overrides.setlistView,
     library: overrides.library,
   };
