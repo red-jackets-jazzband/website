@@ -3776,6 +3776,12 @@ body:has(#rjLibrary) .split-bio {
   border-color: #000000;
   min-width: 0;
   overflow: hidden;
+  /* chordPartMarker--outsideLeft reads this to hang flush with the cell's
+     true outer edge — see its own comment for why the border matters. Kept
+     in sync with border-left-width below (1px here; medium/thick further
+     down resolve to 3px/5px, the standard CSS keyword-to-px mapping every
+     evergreen browser already uses to paint them). */
+  --chord-cell-border-left: 1px;
 }
 
 /* A small boxed section letter ("A", "B", ...) from the tune's own ABC `P:`
@@ -3805,6 +3811,30 @@ body:has(#rjLibrary) .split-bio {
   print-color-adjust: exact;
 }
 
+/* A marker on a measure in the grid's leftmost column (chord-table.js) would
+   otherwise sit right on the table's own outer edge; hang it outside the
+   cell to the left instead, so it never crowds that column's chord text.
+   .chordCell's own overflow:hidden (which clips oversized chord text) would
+   otherwise clip this badge too, since it's a positioned child of the cell
+   it hangs outside of — :has() lifts that clip on just this cell.
+
+   `right: 100%` alone lines the badge up with the padding edge, i.e. just
+   inside the border — flush for a hairline 1px border, but a repeat/double
+   bar's thicker border-left (chordCellLeftRepeat, chordCellDoubleThinBarLeft
+   below) then leaves the badge sitting on top of that border instead of
+   outside it, so it reads as misaligned against a plain cell's badge one row
+   up (e.g. Basin Street, where Part A/B's first measure is also a left
+   repeat). Adding --chord-cell-border-left pushes it out past whatever that
+   cell's own border-left actually is, so every marker's outer edge lines up
+   regardless of which border style the cell happens to carry. */
+.chordPartMarker--outsideLeft {
+  left: auto;
+  right: calc(100% + var(--chord-cell-border-left));
+}
+.chordCell:has(> .chordPartMarker--outsideLeft) {
+  overflow: visible;
+}
+
 /* Screen-only, same reasoning as .abcjs-current-note above: a chord cell
    shouldn't print gold just because playback happened to be paused on it. */
 @media screen {
@@ -3827,6 +3857,7 @@ body:has(#rjLibrary) .split-bio {
 .chordCellDoubleThinBarLeft {
   border-left-style: double;
   border-left-width: medium;
+  --chord-cell-border-left: 3px;
 }
 
 .chordCellRightRepeat {
@@ -3843,6 +3874,7 @@ body:has(#rjLibrary) .split-bio {
 .chordCellLeftRepeat {
   border-left-width: thick;
   border-left-style: double;
+  --chord-cell-border-left: 5px;
 }
 
 .chordLeftRepeatSign {

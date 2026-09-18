@@ -49,6 +49,26 @@ test("renderChordTable boxes a part's first chord with its letter, top-left corn
   });
 });
 
+test("renderChordTable hangs a leftmost-column part marker outside the cell instead of inset", () => {
+  inDom((container) => {
+    renderChordTable(
+      [
+        bar(["C"], { part: "A" }), // column 1, row 1: outside-left
+        bar(["F"]),
+        bar(["G"]),
+        bar(["C"], { part: "B" }), // column 4, row 1: inset as normal
+        bar(["D"], { part: "C" }), // column 1, row 2: outside-left again
+      ],
+      container,
+    );
+    const markers = [...container.querySelectorAll(".chordPartMarker")];
+    assert.deepEqual(
+      markers.map((m) => m.classList.contains("chordPartMarker--outsideLeft")),
+      [true, false, true],
+    );
+  });
+});
+
 test("renderChordTable shrinks a word-length part title to its first letter, but keeps a short code as-is", () => {
   inDom((container) => {
     renderChordTable([
