@@ -23,13 +23,21 @@ const LINKS = parseInspirationLinks([
 test("updateInspirationExtLinks creates a button per non-YouTube link, in order", () => {
   inDom(() => {
     updateInspirationExtLinks(LINKS);
-    const actions = document.getElementById("sheetActions");
-    const ids = [...actions.querySelectorAll('[id^="inspirationExtLink-"]')].map((n) => n.id);
+    const slot = document.getElementById("inspirationSlot");
+    const ids = [...slot.querySelectorAll('[id^="inspirationExtLink-"]')].map((n) => n.id);
     assert.deepEqual(ids, [
       "inspirationExtLink-spotify",
       "inspirationExtLink-soundcloud",
       "inspirationExtLink-secondhandsongs",
     ]);
+  });
+});
+
+test("updateInspirationExtLinks never puts a link in the #sheetActions export pill", () => {
+  inDom(() => {
+    updateInspirationExtLinks(LINKS);
+    const sheetActions = document.getElementById("sheetActions");
+    assert.equal(sheetActions.querySelectorAll('[id^="inspirationExtLink-"]').length, 0);
   });
 });
 
@@ -54,8 +62,8 @@ test("updateInspirationExtLinks clears stale buttons on re-render for a tune wit
   inDom(() => {
     updateInspirationExtLinks(LINKS);
     updateInspirationExtLinks(parseInspirationLinks("https://open.spotify.com/track/xyz"));
-    const actions = document.getElementById("sheetActions");
-    const ids = [...actions.querySelectorAll('[id^="inspirationExtLink-"]')].map((n) => n.id);
+    const slot = document.getElementById("inspirationSlot");
+    const ids = [...slot.querySelectorAll('[id^="inspirationExtLink-"]')].map((n) => n.id);
     assert.deepEqual(ids, ["inspirationExtLink-spotify"]);
     assert.equal(
       document.getElementById("inspirationExtLink-spotify").getAttribute("href"),
@@ -68,7 +76,7 @@ test("updateInspirationExtLinks removes every button for a tune with no other li
   inDom(() => {
     updateInspirationExtLinks(LINKS);
     updateInspirationExtLinks([]);
-    const actions = document.getElementById("sheetActions");
-    assert.equal(actions.querySelectorAll('[id^="inspirationExtLink-"]').length, 0);
+    const slot = document.getElementById("inspirationSlot");
+    assert.equal(slot.querySelectorAll('[id^="inspirationExtLink-"]').length, 0);
   });
 });
