@@ -43,6 +43,11 @@ function partBadgeText(title) {
   "verse"/"F") once actually rendered — confirmed by rendering several real
   songs' own ABC files, not just guessed. A short code ("A", "B2", ...) is
   already small enough and is kept as-is.
+
+  A marker whose measure falls in the grid's leftmost column sits right on
+  the table's own outer edge if inset the normal way, so it gets
+  `chordPartMarker--outsideLeft` instead, which split.css hangs outside the
+  cell to its left rather than inset inside it.
 */
 export function renderChordTable(chords, container) {
   if (!container) return;
@@ -55,12 +60,21 @@ export function renderChordTable(chords, container) {
 
   const grid = el("div", { class: "chordGrid", style: { "--chord-cols": String(cols) } });
 
-  for (const measure of measures) {
+  measures.forEach((measure, index) => {
     const chordDiv = el("div", { class: "chordDiv", html: String(measure.text) });
     const cell = el("div", { class: "chordCell" }, chordDiv);
 
     if (measure.part !== undefined) {
-      cell.append(el("span", { class: "chordPartMarker", text: partBadgeText(measure.part) }));
+      // A marker in the grid's leftmost column has no cell to its own left to
+      // overlap, so it hangs outside the table instead of inset over the
+      // chord text — chordPartMarker--outsideLeft, styled in split.css.
+      const outsideLeft = index % cols === 0;
+      cell.append(
+        el("span", {
+          class: outsideLeft ? "chordPartMarker chordPartMarker--outsideLeft" : "chordPartMarker",
+          text: partBadgeText(measure.part),
+        }),
+      );
     }
     if (measure.doubeThinBarLeft !== undefined) cell.classList.add("chordCellDoubleThinBarLeft");
     if (measure.doubeThinBarRight !== undefined) cell.classList.add("chordCellDoubleThinBarRight");
@@ -78,7 +92,7 @@ export function renderChordTable(chords, container) {
     }
 
     grid.append(cell);
-  }
+  });
 
   clear(container).append(grid);
 }
