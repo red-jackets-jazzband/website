@@ -1,8 +1,10 @@
 import {
-  byId, el, qsa, clear, on, downloadBlob,
+  byId, el, qsa, clear, on, downloadBlob, copyText,
 } from "../lib/dom.js";
 import { isSetlistDivider } from "../lib/setlist-format.js";
 import { walkSetlist } from "../lib/setlist-walk.js";
+import { TUNEMYMUSIC_SPOTIFY_URL, buildSongListText } from "../lib/setlist-listen.js";
+import { getCachedYoutubeArtist } from "./youtube-artist-lookup.js";
 import { filterSongsByQuery } from "../lib/song-index.js";
 import {
   extractKeyFromAbc, setlistTransposeSteps, formatSetlistKeyLabel,
@@ -347,6 +349,7 @@ export function createSetlistView(ctx) {
     }
 
     ctx.setlistPrint.buildBooklet(name, songs, desc);
+    updateSpotifyPlaylistButton();
     highlightCurrent();
     if (ctx.syncHash) ctx.syncHash();
   }
@@ -847,6 +850,63 @@ export function createSetlistView(ctx) {
     });
   }
 
+  // The song-title list to hand TuneMyMusic — the open setlist's own songs,
+  // in order, skipping set-break dividers. The title itself is read straight
+  // off ctx.state (no per-song .abc fetch needed, since a title is already
+  // known for every song in the library/setlist index); a leading "Artist - "
+  // is prepended whenever the song's own YouTube link (see the Listen group's
+  // YouTube button) already has a cached channel name from
+  // youtube-artist-lookup.js — ctx.setlistPrint.getYoutubeIds() pairs each
+  // song, by its 1-based songCount, with the id that lookup was run on. Both
+  // are best-effort: an id with no cached artist yet (lookup still in flight,
+  // no ctx.youtubeApiKey configured, or no YouTube link at all) just falls
+  // back to the bare title, same as before this existed.
+  function openSetlistSongTitles() {
+    const youtubeIds = ctx.setlistPrint.getYoutubeIds ? ctx.setlistPrint.getYoutubeIds() : [];
+    const titles = walkSetlist(ctx.state.currentOpenSongs || []).entries
+      .filter((entry) => entry.kind === "song")
+      .map((entry) => {
+        const title = ctx.songName(entry.item.file);
+        const artist = getCachedYoutubeArtist(youtubeIds[entry.songCount - 1]);
+        return artist ? `${artist} - ${title}` : title;
+      });
+    return buildSongListText(titles);
+  }
+
+  // "Spotify" button, beside Listen's YouTube one: Spotify has no
+  // unauthenticated equivalent of watch_videos (see lib/setlist-listen.js), so
+  // this copies the setlist's song titles to the clipboard and opens
+  // TuneMyMusic's free-text-to-Spotify importer in a new tab instead — the
+  // user pastes the list and creates the playlist under their own Spotify
+  // account from there.
+  function updateSpotifyPlaylistButton() {
+    const btn = byId("createSpotifyPlaylistBtn");
+    if (!btn) return;
+    const hasSongs = openSetlistSongTitles() !== "";
+    btn.disabled = !hasSongs;
+    btn.title = hasSongs
+      ? "Copy this setlist’s song titles and open TuneMyMusic to build a Spotify playlist"
+      : "No songs in this setlist";
+  }
+
+  function initSpotifyPlaylist() {
+    const btn = byId("createSpotifyPlaylistBtn");
+    if (!btn) return;
+    on("createSpotifyPlaylistBtn", "click", () => {
+      const text = openSetlistSongTitles();
+      if (!text) return;
+      // Copy first, open second: the Clipboard API requires this document to
+      // still have focus, which opening the new tab would immediately break
+      // if it ran first. window.open() is still called synchronously inside
+      // this same click handler either way, so it's just as safe from popup
+      // blocking regardless of which line comes first.
+      copyText(text).then((ok) => {
+        if (!ok) window.prompt("Copy this song list, then paste it into TuneMyMusic:", text);
+      });
+      window.open(TUNEMYMUSIC_SPOTIFY_URL, "_blank", "noopener");
+    });
+  }
+
   function initControls() {
     on("setlistsBackBtn", "click", () => ctx.setlistHome.show());
     ctx.setlistModal.init();
@@ -860,6 +920,7 @@ export function createSetlistView(ctx) {
     ].forEach(([id, mode]) => on(id, "click", () => ctx.setlistPrint.print(mode)));
 
     initListen();
+    initSpotifyPlaylist();
 
     // The booklet is engraved for whichever instrument the sheet is on; rebuild
     // it off-screen when the instrument changes so a later "Print …" is current.

@@ -72,6 +72,15 @@ function createApp() {
     return match ? match.name : humanizeSongFile(file);
   };
 
+  // A browser-restricted (by HTTP referrer, in the Google Cloud console) key
+  // for the YouTube Data API v3, threaded from config.toml's params.youtubeApiKey
+  // via content/songs.md's data attribute. Empty when unconfigured — every
+  // caller (setlist-print.js's lookupYoutubeArtists) treats that as "skip the
+  // lookup", never as an error, since the artist-name feature it drives is a
+  // progressive enhancement, not a hard dependency.
+  const layoutEl = document.querySelector(".rj-songs-layout");
+  ctx.youtubeApiKey = (layoutEl && layoutEl.dataset.youtubeApiKey) || "";
+
   // The tab title as rendered by Hugo, e.g. "Red Jackets Jazzband - Songs" —
   // captured once so the active song/setlist can be appended to it without
   // hardcoding the site/page name here.

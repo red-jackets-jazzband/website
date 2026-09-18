@@ -7,6 +7,7 @@ import {
   updateDividerLabelInPersonalSetlist, getPersonalSetlist, setPersonalSetlistOrder,
 } from "../lib/setlists-store.js";
 import { createSetlistView } from "./setlist-view.js";
+import { lookupYoutubeArtists } from "./youtube-artist-lookup.js";
 
 const DRAG_HANDLE_SELECTOR = ".setlist-song-row .setlist-drag-handle";
 const SONG_TITLE_SELECTOR = ".setlist-song-title";
@@ -665,6 +666,97 @@ test("the Listen button tracks setlistPrint's listen-change callback and opens i
     assert.match(btn.title, /No YouTube links/);
   } finally {
     window.open = originalOpen;
+    page.cleanup();
+  }
+});
+
+// The "Spotify" button, beside Listen's YouTube one: Spotify has no
+// watch_videos equivalent, so a click opens TuneMyMusic's free-text importer
+// in a new tab and copies the open setlist's song titles to the clipboard.
+// It's enabled/disabled off the open setlist's own song list, not an async
+// per-song read like the YouTube button above.
+test("the Spotify button copies the setlist's song titles and opens TuneMyMusic", () => {
+  const opened = [];
+  const copied = [];
+  const page = mountPage();
+  const originalOpen = window.open;
+  try {
+    Object.defineProperty(window.navigator, "clipboard", {
+      value: { writeText: (t) => { copied.push(t); return Promise.resolve(); } },
+      configurable: true,
+    });
+    const ctx = makeCtx({
+      songName: (f) => f.replace(".abc", ""),
+      setlistModal: { init: () => {} },
+      setlistPrint: { buildBooklet: () => {}, print: () => {} },
+    });
+    const view = createSetlistView(ctx);
+    view.initControls();
+
+    const btn = document.getElementById("createSpotifyPlaylistBtn");
+    assert.equal(btn.disabled, true, "disabled with no setlist open yet");
+
+    view.renderOpen("Band Night", [{ file: "basin_street.abc" }, { file: "bourbon_street_parade.abc" }], null, "");
+    assert.equal(btn.disabled, false);
+
+    window.open = (...args) => opened.push(args);
+    btn.click();
+    assert.deepEqual(
+      opened, [["https://www.tunemymusic.com/transfer/freetext-to-spotify", "_blank", "noopener"]],
+    );
+    // navigator.clipboard.writeText above pushes synchronously, before
+    // returning its resolved promise, so this needs no await.
+    assert.deepEqual(copied, ["basin_street\nbourbon_street_parade"]);
+
+    view.renderOpen("Empty Set", [], null, "");
+    assert.equal(btn.disabled, true);
+    assert.match(btn.title, /No songs/);
+  } finally {
+    window.open = originalOpen;
+    page.cleanup();
+  }
+});
+
+// When ctx.setlistPrint.getYoutubeIds() reports a song's YouTube id and
+// youtube-artist-lookup.js already has a cached channel name for it (as it
+// would once setlist-print.js's own lookup has landed), the Spotify button
+// prefixes that song's line with "Artist - " instead of sending a bare title.
+test("the Spotify button prefixes a song's title with its cached YouTube artist", async () => {
+  const copied = [];
+  const page = mountPage();
+  try {
+    Object.defineProperty(window.navigator, "clipboard", {
+      value: { writeText: (t) => { copied.push(t); return Promise.resolve(); } },
+      configurable: true,
+    });
+    await lookupYoutubeArtists(
+      ["yt-svt-basin"], "KEY",
+      () => Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({
+          items: [{ id: "yt-svt-basin", snippet: { channelTitle: "Louis Armstrong - Topic" } }],
+        }),
+      }),
+    );
+    const ctx = makeCtx({
+      songName: (f) => f.replace(".abc", ""),
+      setlistModal: { init: () => {} },
+      setlistPrint: {
+        buildBooklet: () => {},
+        print: () => {},
+        // Parallel to renderOpen's two songs below: the first has a cached
+        // artist, the second's id has never been looked up.
+        getYoutubeIds: () => ["yt-svt-basin", "yt-svt-unlooked"],
+      },
+    });
+    const view = createSetlistView(ctx);
+    view.initControls();
+    view.renderOpen("Band Night", [{ file: "basin_street.abc" }, { file: "bourbon_street_parade.abc" }], null, "");
+
+    window.open = () => {};
+    document.getElementById("createSpotifyPlaylistBtn").click();
+    assert.deepEqual(copied, ["Louis Armstrong - Topic - basin_street\nbourbon_street_parade"]);
+  } finally {
     page.cleanup();
   }
 });

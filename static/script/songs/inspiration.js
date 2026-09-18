@@ -1,4 +1,4 @@
-import { byId, on } from "../lib/dom.js";
+import { byId, on, copyText } from "../lib/dom.js";
 import { youtubeEmbedUrl, extractYouTubeId } from "../lib/youtube.js";
 import { PREF_KEYS, readPref, writePref } from "../lib/preferences.js";
 import {
@@ -29,43 +29,6 @@ const OVERVIEW_KEY_PAN_FRACTION = 0.1;
 // is the viewport minus the edge margin.
 const PANEL_WIDTHS = [320, 420, 540, 680];
 const MIN_PANEL_WIDTH = 240;
-
-// Doesn't touch the panel/ctx state, so it lives at module scope rather than
-// nested inside createInspiration.
-function runExecCopy(url) {
-  const ta = document.createElement("textarea");
-  ta.value = url;
-  ta.setAttribute("readonly", "");
-  ta.style.position = "fixed";
-  ta.style.opacity = "0";
-  document.body.appendChild(ta);
-  // finally, not a trailing statement: a throwing select()/execCommand must
-  // not leave ta stuck in the document.
-  try {
-    ta.select();
-    // execCommand is deprecated in favour of the async Clipboard API, but
-    // that's exactly why this fallback (for browsers that deny or lack it)
-    // still has to call it. NOSONAR: intentional legacy-fallback use.
-    return document.execCommand("copy"); // NOSONAR
-  } finally {
-    ta.remove();
-  }
-}
-
-// Old-style copy via a throwaway textarea + execCommand, for browsers that
-// deny or lack the async Clipboard API. Returns whether it took.
-function execCopy(url) {
-  try {
-    return runExecCopy(url);
-  } catch {
-    return false;
-  }
-}
-
-function fallbackCopy(url, btn) {
-  if (execCopy(url)) flashShareBtn(btn);
-  else window.prompt("Copy this link:", url);
-}
 
 // Echoes a loop point's time inside its own Set A/B button — same
 // gold-letter-over-caption layout as the Speed stepper's value cell — once
@@ -371,14 +334,10 @@ export function createInspiration(ctx) {
     const btn = byId("inspirationShareBtn");
     const url = ctx && ctx.shareUrl ? ctx.shareUrl({ a: loopA, b: loopB }) : "";
     if (!url) return;
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(url).then(
-        () => flashShareBtn(btn),
-        () => fallbackCopy(url, btn),
-      );
-    } else {
-      fallbackCopy(url, btn);
-    }
+    copyText(url).then((ok) => {
+      if (ok) flashShareBtn(btn);
+      else window.prompt("Copy this link:", url);
+    });
   }
 
   // ---- open / close -------------------------------------------------

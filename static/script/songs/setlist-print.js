@@ -7,6 +7,7 @@ import {
 import { clearBookletPrintState, printWithTitle } from "./sheet-controls.js";
 import { buildTitlePage, fitTitlePage } from "./setlist-titlepage.js";
 import { firstYoutubeIdFromAbc, buildYoutubePlaylistUrl } from "../lib/setlist-listen.js";
+import { lookupYoutubeArtists } from "./youtube-artist-lookup.js";
 
 const NOADS_SETLIST_ID = "noads_songbook";
 
@@ -79,6 +80,10 @@ export function createSetlistPrint(ctx) {
   function recomputeListenUrl() {
     listenUrl = buildYoutubePlaylistUrl(youtubeIds);
     onListenChange(listenUrl);
+    // Fire-and-forget: best-effort artist names for the Spotify button (see
+    // setlist-view.js), which reads them back synchronously from the cache
+    // whenever this lookup has landed in time. No-ops without ctx.youtubeApiKey.
+    lookupYoutubeArtists(youtubeIds, ctx.youtubeApiKey);
   }
 
   // While a "Print …" click is held waiting for the booklet's song reads to
@@ -320,5 +325,9 @@ export function createSetlistPrint(ctx) {
 
   return {
     buildBooklet, print, PRINT_MODES, setListenChangeHandler, getListenUrl: () => listenUrl,
+    // A copy, indexed by songCount - 1 (same indexing buildBooklet fills it
+    // with) — read by setlist-view.js's Spotify button to pair each song
+    // with whatever artist name lookupYoutubeArtists has cached for its id.
+    getYoutubeIds: () => youtubeIds.slice(),
   };
 }

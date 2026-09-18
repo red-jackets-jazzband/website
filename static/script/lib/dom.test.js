@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mountPage } from "../../../tests/helpers/dom.js";
 import {
-  byId, qs, qsa, clear, setHidden, on, el, mount, downloadBlob,
+  byId, qs, qsa, clear, setHidden, on, el, mount, downloadBlob, copyText,
 } from "./dom.js";
 
 function inDom(fn) {
@@ -124,4 +124,46 @@ test("downloadBlob clicks a throwaway object-URL anchor, then cleans it up", () 
       HTMLAnchorElement.prototype.click = originalClick;
     }
   });
+});
+
+test("copyText resolves true via the async Clipboard API", async () => {
+  const page = mountPage({ html: "<div id='root'></div>" });
+  try {
+    const copied = [];
+    Object.defineProperty(page.window.navigator, "clipboard", {
+      value: { writeText: (t) => { copied.push(t); return Promise.resolve(); } },
+      configurable: true,
+    });
+    assert.equal(await copyText("hello"), true);
+    assert.deepEqual(copied, ["hello"]);
+  } finally {
+    page.cleanup();
+  }
+});
+
+test("copyText falls back to the legacy path when the Clipboard API rejects", async () => {
+  const page = mountPage({ html: "<div id='root'></div>" });
+  try {
+    Object.defineProperty(page.window.navigator, "clipboard", {
+      value: { writeText: () => Promise.reject(new Error("denied")) },
+      configurable: true,
+    });
+    // jsdom has no real execCommand, so this resolves false — the same
+    // "neither mechanism worked" outcome a locked-down real browser would
+    // produce, which is exactly what callers need to detect to fall back
+    // further (e.g. a prompt() the user can copy out of by hand).
+    assert.equal(await copyText("hello"), false);
+  } finally {
+    page.cleanup();
+  }
+});
+
+test("copyText falls back to the legacy path when there's no Clipboard API at all", async () => {
+  const page = mountPage({ html: "<div id='root'></div>" });
+  try {
+    Object.defineProperty(page.window.navigator, "clipboard", { value: undefined, configurable: true });
+    assert.equal(await copyText("hello"), false);
+  } finally {
+    page.cleanup();
+  }
 });

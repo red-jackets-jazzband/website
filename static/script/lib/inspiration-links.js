@@ -1,3 +1,5 @@
+import { YOUTUBE_HOSTS } from "./youtube.js";
+
 // Classifies the URL(s) from a tune's ABC F: field(s) into a known
 // inspiration source by hostname. abcjs concatenates every repeated F: line
 // into tune.metaText.url, one URL per line in source order (confirmed
@@ -7,12 +9,12 @@
 // at once — each rendered as its own link (see songs/inspiration.js for the
 // docked YouTube player, songs/inspiration-links.js for the rest, both fed
 // from songs/sheet.js's engrave()).
+//
+// The youtube host list is shared with lib/youtube.js's own extractYouTubeId
+// (imported, not copied) so a link classified "youtube" here is always one
+// extractYouTubeId can also parse — the two never drift apart.
 const TYPE_HOSTS = {
-  youtube: [
-    "youtube.com", "www.youtube.com", "m.youtube.com",
-    "youtube-nocookie.com", "www.youtube-nocookie.com",
-    "youtu.be", "www.youtu.be",
-  ],
+  youtube: [...YOUTUBE_HOSTS],
   spotify: ["open.spotify.com", "spotify.com", "www.spotify.com", "play.spotify.com"],
   soundcloud: ["soundcloud.com", "www.soundcloud.com", "m.soundcloud.com", "on.soundcloud.com"],
   secondhandsongs: ["secondhandsongs.com", "www.secondhandsongs.com"],

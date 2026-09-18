@@ -34,6 +34,17 @@ copyright = "&copy;2019 Red Jackets Jazzband"
   # Favicon
   favicon = "favicon.ico"
 
+  # YouTube Data API v3 key for the /songs/ page's Setlists tab (looks up a
+  # linked video's channel name for the Spotify/TuneMyMusic export — see
+  # static/script/songs/youtube-artist-lookup.js). Get one free at
+  # https://console.cloud.google.com/apis/credentials: enable "YouTube Data
+  # API v3", create an API key, then restrict it (Application restrictions ->
+  # Websites) to this site's own domain(s) so it can't be used elsewhere.
+  # Safe to commit: it's a browser key with no secret half, meant to be
+  # public and restricted by referrer rather than kept private. Left empty,
+  # the export just sends bare song titles, same as before this existed.
+  youtubeApiKey = ""
+
   # Section - Visual
   [params.visual]
 
