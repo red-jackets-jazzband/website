@@ -1435,6 +1435,37 @@ video.video {
   background: var(--rj-gold);
   color: #222222 !important;
 }
+/* Source switcher (YouTube/Spotify), only shown when a tune has both — see
+   songs/inspiration.js's updateTabsUI. Same icon-button footprint as the
+   header's other icon buttons, but the "active" one (whichever tab is
+   currently showing) stays gold at rest rather than just on hover. */
+.inspiration-panel-tabs {
+  flex: none;
+  display: flex;
+  gap: 4px;
+}
+.inspiration-panel-tab {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  background: #262626;
+  color: rgba(236,234,230,.5);
+  font-size: 12px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.inspiration-panel-tab.active {
+  background: var(--rj-gold);
+  color: #222222;
+}
+@media (hover: hover) {
+  .inspiration-panel-tab:not(.active):hover {
+    color: rgba(236,234,230,.85);
+  }
+}
 .inspiration-panel-video {
   position: relative;
   width: 100%;
@@ -1448,6 +1479,19 @@ video.video {
   height: 100%;
   border: 0;
   display: block;
+}
+/* Spotify's own embed widget draws its own play/pause/seek bar at a fixed
+   height (see lib/spotify.js's spotifyEmbedHeight) rather than a 16:9 video
+   frame, so this sits beside .inspiration-panel-video as a plain,
+   width-driven box instead of sharing its aspect-ratio layout. */
+.inspiration-panel-spotify {
+  width: 100%;
+  background: #000000;
+}
+.inspiration-panel-spotify iframe {
+  display: block;
+  width: 100%;
+  border: 0;
 }
 
 /* LoopTube toolbar (A/B loop + slowdown), docked under the video */
