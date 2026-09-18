@@ -4,6 +4,7 @@ import {
 import { isSetlistDivider } from "../lib/setlist-format.js";
 import { walkSetlist } from "../lib/setlist-walk.js";
 import { TUNEMYMUSIC_SPOTIFY_URL, buildSongListText } from "../lib/setlist-listen.js";
+import { getCachedYoutubeArtist } from "./youtube-artist-lookup.js";
 import { filterSongsByQuery } from "../lib/song-index.js";
 import {
   extractKeyFromAbc, setlistTransposeSteps, formatSetlistKeyLabel,
@@ -850,13 +851,25 @@ export function createSetlistView(ctx) {
   }
 
   // The song-title list to hand TuneMyMusic — the open setlist's own songs,
-  // in order, skipping set-break dividers. Read straight off ctx.state (no
-  // per-song .abc fetch needed, unlike the YouTube ids above, since a title
-  // is already known for every song in the library/setlist index).
+  // in order, skipping set-break dividers. The title itself is read straight
+  // off ctx.state (no per-song .abc fetch needed, since a title is already
+  // known for every song in the library/setlist index); a leading "Artist - "
+  // is prepended whenever the song's own YouTube link (see the Listen group's
+  // YouTube button) already has a cached channel name from
+  // youtube-artist-lookup.js — ctx.setlistPrint.getYoutubeIds() pairs each
+  // song, by its 1-based songCount, with the id that lookup was run on. Both
+  // are best-effort: an id with no cached artist yet (lookup still in flight,
+  // no ctx.youtubeApiKey configured, or no YouTube link at all) just falls
+  // back to the bare title, same as before this existed.
   function openSetlistSongTitles() {
+    const youtubeIds = ctx.setlistPrint.getYoutubeIds ? ctx.setlistPrint.getYoutubeIds() : [];
     const titles = walkSetlist(ctx.state.currentOpenSongs || []).entries
       .filter((entry) => entry.kind === "song")
-      .map((entry) => ctx.songName(entry.item.file));
+      .map((entry) => {
+        const title = ctx.songName(entry.item.file);
+        const artist = getCachedYoutubeArtist(youtubeIds[entry.songCount - 1]);
+        return artist ? `${artist} - ${title}` : title;
+      });
     return buildSongListText(titles);
   }
 

@@ -1,6 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { extractYouTubeId, youtubeEmbedUrl } from "./youtube.js";
+import {
+  extractYouTubeId, youtubeEmbedUrl, youtubeVideosApiUrl, parseChannelTitles,
+} from "./youtube.js";
 
 const SHORT_URL = "https://youtu.be/AqL60Xv_Sbc";
 
@@ -78,4 +80,38 @@ test("youtubeEmbedUrl hides native controls only in jsApi mode", () => {
     youtubeEmbedUrl(SHORT_URL, { autoplay: true }),
     "https://www.youtube-nocookie.com/embed/AqL60Xv_Sbc?rel=0&autoplay=1",
   );
+});
+
+test("youtubeVideosApiUrl builds a batched videos.list url", () => {
+  assert.equal(
+    youtubeVideosApiUrl(["aaaaaaaaaaa", "bbbbbbbbbbb"], "KEY123"),
+    "https://www.googleapis.com/youtube/v3/videos?part=snippet&id=aaaaaaaaaaa%2Cbbbbbbbbbbb&key=KEY123",
+  );
+});
+
+test("youtubeVideosApiUrl returns null without an apiKey or without ids", () => {
+  assert.equal(youtubeVideosApiUrl(["aaaaaaaaaaa"], ""), null);
+  assert.equal(youtubeVideosApiUrl(["aaaaaaaaaaa"], null), null);
+  assert.equal(youtubeVideosApiUrl([], "KEY123"), null);
+  assert.equal(youtubeVideosApiUrl(null, "KEY123"), null);
+});
+
+test("parseChannelTitles maps each returned item's id to its channelTitle", () => {
+  const json = {
+    items: [
+      { id: "aaaaaaaaaaa", snippet: { channelTitle: "Louis Armstrong - Topic", title: "Basin Street Blues" } },
+      { id: "bbbbbbbbbbb", snippet: { channelTitle: "Some Channel" } },
+    ],
+  };
+  assert.deepEqual(parseChannelTitles(json), {
+    aaaaaaaaaaa: "Louis Armstrong - Topic",
+    bbbbbbbbbbb: "Some Channel",
+  });
+});
+
+test("parseChannelTitles skips items with no channelTitle and tolerates missing/empty input", () => {
+  assert.deepEqual(parseChannelTitles({ items: [{ id: "aaaaaaaaaaa", snippet: {} }] }), {});
+  assert.deepEqual(parseChannelTitles({ items: [] }), {});
+  assert.deepEqual(parseChannelTitles({}), {});
+  assert.deepEqual(parseChannelTitles(null), {});
 });

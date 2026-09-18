@@ -275,6 +275,20 @@ test("buildBooklet reports no listen URL once a setlist with no YouTube links ha
   }
 });
 
+test("getYoutubeIds mirrors each song's own F: id, in setlist order, for setlist-view.js's Spotify button", async () => {
+  const { print, settle, cleanup } = setup();
+  try {
+    withAbcjs(createAbcjsStub(), () => print.buildBooklet("Gig", SONGS, ""));
+    await settle();
+    // SONGS is a.abc (has a YouTube F:), b.abc (none), a divider (no entry),
+    // a.abc again — getYoutubeIds() indexes by songCount, so the divider
+    // contributes no slot.
+    assert.deepEqual(print.getYoutubeIds(), ["aaaaaaaaaaa", null, "aaaaaaaaaaa"]);
+  } finally {
+    cleanup();
+  }
+});
+
 test("buildBooklet adds a generic-branded title page for a non-N.O.A.D.S. setlist", async () => {
   const { ctx, print, settle, cleanup } = setup();
   try {

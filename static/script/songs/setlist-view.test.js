@@ -7,6 +7,7 @@ import {
   updateDividerLabelInPersonalSetlist, getPersonalSetlist, setPersonalSetlistOrder,
 } from "../lib/setlists-store.js";
 import { createSetlistView } from "./setlist-view.js";
+import { lookupYoutubeArtists } from "./youtube-artist-lookup.js";
 
 const DRAG_HANDLE_SELECTOR = ".setlist-song-row .setlist-drag-handle";
 const SONG_TITLE_SELECTOR = ".setlist-song-title";
@@ -712,6 +713,50 @@ test("the Spotify button copies the setlist's song titles and opens TuneMyMusic"
     assert.match(btn.title, /No songs/);
   } finally {
     window.open = originalOpen;
+    page.cleanup();
+  }
+});
+
+// When ctx.setlistPrint.getYoutubeIds() reports a song's YouTube id and
+// youtube-artist-lookup.js already has a cached channel name for it (as it
+// would once setlist-print.js's own lookup has landed), the Spotify button
+// prefixes that song's line with "Artist - " instead of sending a bare title.
+test("the Spotify button prefixes a song's title with its cached YouTube artist", async () => {
+  const copied = [];
+  const page = mountPage();
+  try {
+    Object.defineProperty(window.navigator, "clipboard", {
+      value: { writeText: (t) => { copied.push(t); return Promise.resolve(); } },
+      configurable: true,
+    });
+    await lookupYoutubeArtists(
+      ["yt-svt-basin"], "KEY",
+      () => Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({
+          items: [{ id: "yt-svt-basin", snippet: { channelTitle: "Louis Armstrong - Topic" } }],
+        }),
+      }),
+    );
+    const ctx = makeCtx({
+      songName: (f) => f.replace(".abc", ""),
+      setlistModal: { init: () => {} },
+      setlistPrint: {
+        buildBooklet: () => {},
+        print: () => {},
+        // Parallel to renderOpen's two songs below: the first has a cached
+        // artist, the second's id has never been looked up.
+        getYoutubeIds: () => ["yt-svt-basin", "yt-svt-unlooked"],
+      },
+    });
+    const view = createSetlistView(ctx);
+    view.initControls();
+    view.renderOpen("Band Night", [{ file: "basin_street.abc" }, { file: "bourbon_street_parade.abc" }], null, "");
+
+    window.open = () => {};
+    document.getElementById("createSpotifyPlaylistBtn").click();
+    assert.deepEqual(copied, ["Louis Armstrong - Topic - basin_street\nbourbon_street_parade"]);
+  } finally {
     page.cleanup();
   }
 });

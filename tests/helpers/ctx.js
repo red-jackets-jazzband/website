@@ -89,8 +89,10 @@ export function makeCtx(overrides = {}) {
       print: () => {},
       setListenChangeHandler: () => {},
       getListenUrl: () => null,
+      getYoutubeIds: () => [],
       ...overrides.setlistPrint,
     },
+    youtubeApiKey: overrides.youtubeApiKey || "",
     setlistView: overrides.setlistView,
     library: overrides.library,
   };

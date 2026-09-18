@@ -10,7 +10,7 @@ aliases: ["/setlists/", "/songbook/"]
 <script src="/script/lamejs-1.2.1-min.js" type="text/javascript"></script>
 <script type="module" src="/script/songs-page.js"></script>
 
-<div class="rj-songs-layout" data-default-tab="library">
+<div class="rj-songs-layout" data-default-tab="library" data-youtube-api-key="{{< youtube-api-key >}}">
 
 <div id="rjLibrary" class="rj-library hideOnprint">
   <div class="rj-library-tabs" id="libraryTabs">

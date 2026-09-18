@@ -55,3 +55,33 @@ export function youtubeEmbedUrl(url, options) {
   }
   return "https://www.youtube-nocookie.com/embed/" + id + "?" + params.join("&");
 }
+
+const VIDEOS_API_BASE = "https://www.googleapis.com/youtube/v3/videos";
+
+// Builds a batched YouTube Data API v3 videos.list URL for up to 50 ids at
+// once (the API's own per-request cap) — used by
+// songs/youtube-artist-lookup.js to look up each linked video's channel name
+// for the Setlists tab's Spotify export (see setlist-view.js). Unlike the
+// plain oembed endpoint, the Data API supports CORS, so this can be called
+// straight from the browser with a referrer-restricted API key — but it
+// still needs that key, so this returns null without one: the feature is a
+// progressive enhancement, never a hard dependency.
+export function youtubeVideosApiUrl(ids, apiKey) {
+  if (!apiKey || !ids || ids.length === 0) return null;
+  const params = new URLSearchParams({ part: "snippet", id: ids.join(","), key: apiKey });
+  return `${VIDEOS_API_BASE}?${params.toString()}`;
+}
+
+// Extracts { [videoId]: channelTitle } from a videos.list response. A video
+// id absent from `items` (deleted, private, or simply not returned) just
+// doesn't get an entry — callers treat a missing key as "no artist found".
+export function parseChannelTitles(json) {
+  const result = {};
+  const items = (json && Array.isArray(json.items)) ? json.items : [];
+  for (const item of items) {
+    if (item && item.id && item.snippet && item.snippet.channelTitle) {
+      result[item.id] = item.snippet.channelTitle;
+    }
+  }
+  return result;
+}
