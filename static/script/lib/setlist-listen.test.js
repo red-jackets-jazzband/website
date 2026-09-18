@@ -1,6 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { firstYoutubeIdFromAbc, buildYoutubePlaylistUrl } from "./setlist-listen.js";
+import {
+  firstYoutubeIdFromAbc, buildYoutubePlaylistUrl, buildSongListText, TUNEMYMUSIC_SPOTIFY_URL,
+} from "./setlist-listen.js";
 
 test("firstYoutubeIdFromAbc reads the id off a watch?v= F: line", () => {
   const abc = "X:1\nT:Song\nF:https://www.youtube.com/watch?v=Skl3M9sPGyc\nK:Bb\nB2|";
@@ -48,4 +50,20 @@ test("buildYoutubePlaylistUrl dedupes repeats and drops falsy entries", () => {
 test("buildYoutubePlaylistUrl returns null with no usable ids", () => {
   assert.equal(buildYoutubePlaylistUrl([]), null);
   assert.equal(buildYoutubePlaylistUrl([null, undefined]), null);
+});
+
+test("buildSongListText joins titles one per line, in order", () => {
+  assert.equal(buildSongListText(["Basin Street Blues", "Bourbon Street Parade"]),
+    "Basin Street Blues\nBourbon Street Parade");
+});
+
+test("buildSongListText drops falsy titles and returns an empty string with none left", () => {
+  assert.equal(buildSongListText(["Basin Street Blues", "", null, undefined]),
+    "Basin Street Blues");
+  assert.equal(buildSongListText([]), "");
+  assert.equal(buildSongListText([null, ""]), "");
+});
+
+test("TUNEMYMUSIC_SPOTIFY_URL points at TuneMyMusic's free-text-to-Spotify importer", () => {
+  assert.equal(TUNEMYMUSIC_SPOTIFY_URL, "https://www.tunemymusic.com/transfer/freetext-to-spotify");
 });

@@ -668,3 +668,50 @@ test("the Listen button tracks setlistPrint's listen-change callback and opens i
     page.cleanup();
   }
 });
+
+// The "Spotify" button, beside Listen's YouTube one: Spotify has no
+// watch_videos equivalent, so a click opens TuneMyMusic's free-text importer
+// in a new tab and copies the open setlist's song titles to the clipboard.
+// It's enabled/disabled off the open setlist's own song list, not an async
+// per-song read like the YouTube button above.
+test("the Spotify button copies the setlist's song titles and opens TuneMyMusic", () => {
+  const opened = [];
+  const copied = [];
+  const page = mountPage();
+  const originalOpen = window.open;
+  try {
+    Object.defineProperty(window.navigator, "clipboard", {
+      value: { writeText: (t) => { copied.push(t); return Promise.resolve(); } },
+      configurable: true,
+    });
+    const ctx = makeCtx({
+      songName: (f) => f.replace(".abc", ""),
+      setlistModal: { init: () => {} },
+      setlistPrint: { buildBooklet: () => {}, print: () => {} },
+    });
+    const view = createSetlistView(ctx);
+    view.initControls();
+
+    const btn = document.getElementById("createSpotifyPlaylistBtn");
+    assert.equal(btn.disabled, true, "disabled with no setlist open yet");
+
+    view.renderOpen("Band Night", [{ file: "basin_street.abc" }, { file: "bourbon_street_parade.abc" }], null, "");
+    assert.equal(btn.disabled, false);
+
+    window.open = (...args) => opened.push(args);
+    btn.click();
+    assert.deepEqual(
+      opened, [["https://www.tunemymusic.com/transfer/freetext-to-spotify", "_blank", "noopener"]],
+    );
+    // navigator.clipboard.writeText above pushes synchronously, before
+    // returning its resolved promise, so this needs no await.
+    assert.deepEqual(copied, ["basin_street\nbourbon_street_parade"]);
+
+    view.renderOpen("Empty Set", [], null, "");
+    assert.equal(btn.disabled, true);
+    assert.match(btn.title, /No songs/);
+  } finally {
+    window.open = originalOpen;
+    page.cleanup();
+  }
+});

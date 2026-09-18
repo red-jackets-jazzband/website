@@ -1,7 +1,9 @@
 // Setlist-wide "Listen" support: collects the YouTube reference already on
 // each song's own ABC (its F: field(s), same source inspiration-links.js
 // reads for the single-song Inspiration button) into one ad-hoc YouTube
-// playlist for the whole setlist.
+// playlist for the whole setlist. Also builds the plain-text song list for
+// the Spotify button, which has no YouTube-watch_videos equivalent of its own
+// (see buildSongListText below).
 import { parseInspirationLinks, firstYoutubeUrl } from "./inspiration-links.js";
 import { extractYouTubeId } from "./youtube.js";
 
@@ -31,4 +33,19 @@ export function buildYoutubePlaylistUrl(ids) {
   return unique.length
     ? `https://www.youtube.com/watch_videos?video_ids=${unique.join(",")}`
     : null;
+}
+
+// Spotify has no unauthenticated equivalent of watch_videos — there's no
+// public URL that hands it several tracks and opens them as one playlist.
+// TuneMyMusic's free-text importer is the closest third-party stand-in: a
+// user pastes a plain list of titles and it matches + creates the playlist
+// under their own, already-logged-in-there Spotify account, so this site
+// never has to register its own Spotify app or hold an access token.
+export const TUNEMYMUSIC_SPOTIFY_URL = "https://www.tunemymusic.com/transfer/freetext-to-spotify";
+
+// Builds the newline-joined song-title list to copy to the clipboard for
+// pasting into TuneMyMusic's free-text box, in setlist order. Falsy/blank
+// titles are dropped so they never leave a stray empty line.
+export function buildSongListText(titles) {
+  return titles.filter(Boolean).join("\n");
 }

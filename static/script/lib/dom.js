@@ -114,3 +114,47 @@ export function downloadBlob(filename, blob) {
   link.remove();
   URL.revokeObjectURL(url);
 }
+
+// Doesn't touch any enclosing state, so it lives at module scope.
+function runLegacyCopy(text) {
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.setAttribute("readonly", "");
+  ta.style.position = "fixed";
+  ta.style.opacity = "0";
+  document.body.appendChild(ta);
+  // finally, not a trailing statement: a throwing select()/execCommand must
+  // not leave ta stuck in the document.
+  try {
+    ta.select();
+    // execCommand is deprecated in favour of the async Clipboard API, but
+    // that's exactly why this fallback (for browsers that deny or lack it)
+    // still has to call it. NOSONAR: intentional legacy-fallback use.
+    return document.execCommand("copy"); // NOSONAR
+  } finally {
+    ta.remove();
+  }
+}
+
+// Old-style copy via a throwaway textarea + execCommand, for browsers that
+// deny or lack the async Clipboard API. Returns whether it took.
+function legacyCopy(text) {
+  try {
+    return runLegacyCopy(text);
+  } catch {
+    return false;
+  }
+}
+
+// Copies `text` to the clipboard, preferring the async Clipboard API and
+// falling back to the legacy execCommand path when it's denied or missing.
+// Resolves to whether the copy actually took (never rejects), so callers can
+// drive their own success/failure UI (a flashed button, a prompt(), ...) off
+// the result — the shared mechanism behind the Inspiration panel's share-link
+// copy and the Setlists tab's "copy song list for TuneMyMusic" button.
+export function copyText(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(text).then(() => true, () => legacyCopy(text));
+  }
+  return Promise.resolve(legacyCopy(text));
+}

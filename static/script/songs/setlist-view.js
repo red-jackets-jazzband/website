@@ -1,8 +1,9 @@
 import {
-  byId, el, qsa, clear, on, downloadBlob,
+  byId, el, qsa, clear, on, downloadBlob, copyText,
 } from "../lib/dom.js";
 import { isSetlistDivider } from "../lib/setlist-format.js";
 import { walkSetlist } from "../lib/setlist-walk.js";
+import { TUNEMYMUSIC_SPOTIFY_URL, buildSongListText } from "../lib/setlist-listen.js";
 import { filterSongsByQuery } from "../lib/song-index.js";
 import {
   extractKeyFromAbc, setlistTransposeSteps, formatSetlistKeyLabel,
@@ -347,6 +348,7 @@ export function createSetlistView(ctx) {
     }
 
     ctx.setlistPrint.buildBooklet(name, songs, desc);
+    updateSpotifyPlaylistButton();
     highlightCurrent();
     if (ctx.syncHash) ctx.syncHash();
   }
@@ -847,6 +849,48 @@ export function createSetlistView(ctx) {
     });
   }
 
+  // The song-title list to hand TuneMyMusic — the open setlist's own songs,
+  // in order, skipping set-break dividers. Read straight off ctx.state (no
+  // per-song .abc fetch needed, unlike the YouTube ids above, since a title
+  // is already known for every song in the library/setlist index).
+  function openSetlistSongTitles() {
+    const titles = walkSetlist(ctx.state.currentOpenSongs || []).entries
+      .filter((entry) => entry.kind === "song")
+      .map((entry) => ctx.songName(entry.item.file));
+    return buildSongListText(titles);
+  }
+
+  // "Spotify" button, beside Listen's YouTube one: Spotify has no
+  // unauthenticated equivalent of watch_videos (see lib/setlist-listen.js), so
+  // this copies the setlist's song titles to the clipboard and opens
+  // TuneMyMusic's free-text-to-Spotify importer in a new tab instead — the
+  // user pastes the list and creates the playlist under their own Spotify
+  // account from there.
+  function updateSpotifyPlaylistButton() {
+    const btn = byId("createSpotifyPlaylistBtn");
+    if (!btn) return;
+    const hasSongs = openSetlistSongTitles() !== "";
+    btn.disabled = !hasSongs;
+    btn.title = hasSongs
+      ? "Copy this setlist’s song titles and open TuneMyMusic to build a Spotify playlist"
+      : "No songs in this setlist";
+  }
+
+  function initSpotifyPlaylist() {
+    const btn = byId("createSpotifyPlaylistBtn");
+    if (!btn) return;
+    on("createSpotifyPlaylistBtn", "click", () => {
+      const text = openSetlistSongTitles();
+      if (!text) return;
+      // Opened synchronously, before the clipboard write, so browsers still
+      // see it as a direct result of the click rather than a popup to block.
+      window.open(TUNEMYMUSIC_SPOTIFY_URL, "_blank", "noopener");
+      copyText(text).then((ok) => {
+        if (!ok) window.prompt("Copy this song list, then paste it into TuneMyMusic:", text);
+      });
+    });
+  }
+
   function initControls() {
     on("setlistsBackBtn", "click", () => ctx.setlistHome.show());
     ctx.setlistModal.init();
@@ -860,6 +904,7 @@ export function createSetlistView(ctx) {
     ].forEach(([id, mode]) => on(id, "click", () => ctx.setlistPrint.print(mode)));
 
     initListen();
+    initSpotifyPlaylist();
 
     // The booklet is engraved for whichever instrument the sheet is on; rebuild
     // it off-screen when the instrument changes so a later "Print …" is current.
