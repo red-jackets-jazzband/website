@@ -150,6 +150,26 @@ test("renderChordTable collapses an exactly-repeating 16-bar scheme", () => {
   });
 });
 
+test("renderChordTable drops the part marker when a fold collapses different-named parts together", () => {
+  inDom((container) => {
+    // Just a Closer Walk With Thee: Verse and Chorus have identical chords,
+    // so the 16-bar scheme collapses to 8 — but the surviving "Verse"
+    // marker shouldn't be shown, since it no longer just labels the Verse.
+    const verse = Array.from({ length: 8 }, (_, i) => bar([`C${i}`]));
+    verse[0] = bar(verse[0].text, { part: "Verse" });
+    const chorus = verse.map((m) => bar(m.text.slice(), m.part ? { part: "Chorus" } : {}));
+    renderChordTable(verse.concat(chorus), container);
+    assert.deepEqual(
+      [...container.querySelectorAll(".chordDiv")].map((d) => d.textContent),
+      verse.map((m) => String(m.text)),
+    );
+    assert.deepEqual(
+      [...container.querySelectorAll(".chordPartMarker")].map((m) => m.textContent),
+      [],
+    );
+  });
+});
+
 test("scanRepeatBoundaries reads the first/last repeat cell indices", () => {
   inDom((container) => {
     renderChordTable([
