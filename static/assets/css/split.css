@@ -1982,37 +1982,75 @@ video.video {
     font: 400 15px/1.45 "MuseJazzText", "Georgia", serif;
     color: #444;
   }
+  /* Two layouts share this DOM — "wide" (2 columns, for the songbook/setlist
+     forms) and "chordbook" (3, for the wider landscape sheet) — each column
+     split already decided in JS (setlist-print.js's indexColumnsEl, backed
+     by lib/setlist-index-columns.js) rather than via a CSS `columns` layout:
+     a flex row of plain block columns can't misalign its columns' top edges
+     the way Chromium's own column-balancing was found to (see that module's
+     doc comment). Only the active layout for the current export mode is
+     shown; the other stays in the DOM but display:none. */
   .setlist-booklet-index {
+    display: flex;
     max-width: 640px;
     margin: 0 auto;
-    columns: 2;
-    column-gap: 44px;
+    gap: 44px;
     font-family: "MuseJazzText", "Georgia", serif;
+  }
+  .setlist-booklet-index-col {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .setlist-booklet-index--chordbook {
+    display: none;
   }
   .setlist-booklet-index-heading {
     font: 400 15px "MuseJazzText", "Georgia", serif;
     letter-spacing: .08em;
     margin: 0 0 4px;
-    break-after: avoid;
+    padding-bottom: 2px;
+    border-bottom: 1px solid #000;
+  }
+  .setlist-booklet-index-col > .setlist-booklet-index-heading:not(:first-child) {
+    margin-top: 14px;
   }
   .setlist-booklet-index ol {
-    margin: 0 0 12px;
+    margin: 0;
     padding-left: 2em;
     font: 400 15px/1.5 "MuseJazzText", "Georgia", serif;
     list-style: decimal;
   }
   .setlist-booklet-index li {
     list-style: decimal;
-    break-inside: avoid;
+  }
+  /* Name flush left, key flush right, joined by a dotted leader — the classic
+     table-of-contents line, so a page of keys reads as one clean right-hand
+     column instead of trailing each title by an inconsistent amount. */
+  .setlist-booklet-index-row {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
   }
   .setlist-booklet-index-name {
     padding-left: 4px;
+    flex: 0 1 auto;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .setlist-booklet-index-leader {
+    flex: 1 1 auto;
+    min-width: 8px;
+    margin-bottom: 4px;
+    border-bottom: 1px dotted #999;
+  }
+  .setlist-booklet-index-row:has(.setlist-booklet-index-key:empty) .setlist-booklet-index-leader {
+    visibility: hidden;
   }
   .setlist-booklet-index-key {
+    flex: 0 0 auto;
     white-space: nowrap;
-  }
-  .setlist-booklet-index-key:not(:empty)::before {
-    content: " — ";
+    text-align: right;
   }
 
   /* The cover blurb is a <p>, which the sitewide `p { color: gold }` catches. */
@@ -2092,10 +2130,13 @@ video.video {
   body.export-mode-chordbook #setlistPrintBooklet .setlist-booklet-fm-meta {
     margin: 6px 0 12px;
   }
-  body.export-mode-chordbook #setlistPrintBooklet .setlist-booklet-index {
+  body.export-mode-chordbook #setlistPrintBooklet .setlist-booklet-index--wide {
+    display: none;
+  }
+  body.export-mode-chordbook #setlistPrintBooklet .setlist-booklet-index--chordbook {
+    display: flex;
     max-width: none;
-    columns: 3;
-    column-gap: 48px;
+    gap: 48px;
   }
   body.export-mode-chordbook #setlistPrintBooklet .notation {
     display: none !important;
