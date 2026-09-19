@@ -39,6 +39,18 @@ VP=tools/OMR/.venv/bin/python3            # venv Python — run every script wit
 SK=.claude/skills/transcribe-song/scripts
 ```
 
+Scripts that save you doing it by hand (use them — hand-transposing and eyeballing every
+bar is where the tokens go):
+
+| Script | Does |
+|---|---|
+| `omr_to_abc.py` | homr MusicXML -> **draft ABC**, already transposed, key-signature-aware accidentals, lengths, barlines; warns on bars that don't sum to the meter and lists possible ties |
+| `omr_staves.py` | homr's **per-staff log** -> draft ABC per staff, with per-staff `--keysig` / `--clef` fixes, confidence, bar-count and near-duplicate-staff warnings. Use it instead of `omr_to_abc.py` whenever the sheet has a key change, endings or a staff homr may have misread (see step 2) |
+| `notehead.py` | ASCII close-up of a notehead in the original scan pixels: filled (quarter) vs hollow (half) when the rhythm is ambiguous |
+| `crop_systems.py` | scan -> `head.png` (title + chord grid) + one 3x crop per staff system; Read only what you need. `--scale 6 --xrange 0.5-0.8` gives a big close-up of one horizontal slice |
+| `check_abc.py` | diffs your finished ABC against the OMR **as text** (pitch/onset/duration per bar, ties resolved) and checks `w:` syllable counts vs notes |
+| `abc_notes.mjs` | (used by `check_abc.py`) the ABC's real note stream via the repo's abcjs |
+
 Do all scratch work in the session scratchpad dir, never in the repo tree.
 
 ## Procedure
@@ -49,6 +61,18 @@ Identify what was given: lead-sheet image(s), lead-sheet PDF, MIDI, or a mix.
 - PDF -> PNG: `pdftoppm -png -r 300 in.pdf page` (or `$VP $SK/pdf_to_png.py in.pdf`). One PNG per page.
 - Multi-page lead sheet: process each page, concatenate the measures in order.
 - If **only** a MIDI is given, you still need the key — infer it from the MIDI or ask.
+- A pasted image lives at `~/.claude/uploads/<session>/*.gif|png`; copy it to the scratchpad
+  and convert with PIL (`Image.open(p).convert("RGB").save("scan.png")`) — homr wants PNG/JPG.
+- Screen-grab scans are often ~600px wide. **Upscale 3x (LANCZOS) before homr** — it read
+  a 596px sheet fine that way, with every note right except the items listed below.
+  Keep the un-upscaled `scan.png` too: crops and `notehead.py` work on it, and its
+  pixel coordinates are the ones to quote.
+- **Read the layout before any OMR** (Read the whole scan once, `head.png` after
+  `crop_systems.py`). Write down, per staff system: the key signature (a **natural sign
+  cancelling a sharp/flat at the start of a system is a key change** — homr misses these),
+  repeat signs `|:` `:|`, 1st/2nd endings, rehearsal words ("Intro"), a pickup bar, and
+  systems that are written-out copies of each other. Also expand the boxed chord grid into
+  one chord per bar (step 4). Most of the trouble below shows up here first, for free.
 
 ### 2. OMR the lead sheet  (if any image/PDF)
 
@@ -61,6 +85,79 @@ homr gives you: clef, key signature, bar count, and a per-measure note list.
 homr does **not** give you: chord symbols, rehearsal marks, repeats/endings.
 homr's typical mistakes: octave-off on ascending quarter-note runs, invented
 chromatic passing tones, missed ties. Treat its output as a strong first draft.
+More specific misses seen: **every tie is dropped** (the musicxml has none — read them
+off the crops); a later same-pitch note in the bar is written without the accidental
+that persists from earlier in the bar (`B♭ B` should be `B♭ B♭`); the note after a
+tied-over accidental gets it or loses it inconsistently. Its pitches and rhythms were
+otherwise right on a clean ~600px sheet, including a mid-bar flat on a lead-in eighth.
+Ignore `Found title: G7` etc. — it OCRs chord text as a title.
+
+**Where the merged MusicXML goes wrong** (all seen on the Bugle Boy March sheet; check
+these against your layout notes and switch to the per-staff path below if any apply):
+- **One key signature for the whole sheet.** It uses the first staff's; a mid-sheet key change
+  (G major, then a natural sign, then C major) leaves every later note in the wrong key.
+- **A treble staff read as bass clef** (`F4/0` in the log). The pitches come out two octaves
+  and a sixth off, *and* the staff loses bars (it dropped two of eight).
+- **Endings and repeats**: a 2nd-ending bar is treated as an extra bar, often garbled into a
+  4-note chord `[E5 C5 G4 F#4]`; bar counts then no longer line up with the sheet.
+- **Rests can be missing** from a staff's notes, and `homr`'s own per-staff line has none at all.
+
+**Per-staff path** — `omr_staves.py` reads homr's log (one `Staff(G2/1 4/4 ...)` line per
+staff: clef, key signature in sharps, bars) instead of the merged MusicXML:
+
+```
+$VP $SK/omr_staves.py scan3.png --interval M-2 --key F > staves.abc   # runs homr, saves scan3.homr.log
+$VP $SK/omr_staves.py scan3.homr.log --interval M-2 --key F \
+      --keysig 6:0,7:0,8:0,9:0 --clef 8:treble                        # re-run with per-staff fixes
+```
+
+Each staff comes out as its own commented line of bars, already in the target key. Read
+its stderr: `distance > 0.5` means homr fell back to a poorer attempt for that staff; a staff
+with fewer bars than its neighbours dropped one; "guessed leading rest" bars are short
+because the log has no rests (move the `z` to where the scan puts it — it was trailing, not
+leading, in the `c4 z4` first-ending bar); and **"staves N and M are 86% alike"** is the
+written-out-repeat detector — where two copies differ, one is misread, so compare both to
+the scan. When a bass-clef misread dropped bars, don't repair it: copy the identical twin
+staff (or read that staff by eye). `--keysig` takes the *sheet's own* sharps count for that
+staff (0 = none, -2 = two flats), i.e. before the `--interval` transposition.
+
+**Draft the ABC straight from the OMR** instead of transcribing by hand (single-key sheets
+with nothing from the list above; otherwise use `omr_staves.py`):
+
+```
+$VP $SK/omr_to_abc.py scan3.musicxml --interval M-2 --key Bb --title "Name" > draft.abc
+$VP $SK/crop_systems.py scan.png --out crops     # head.png (grid) + sys1.png ...
+```
+
+`--interval` is the music21 interval that turns the sheet's written pitch into the
+repo's concert key (see the transposing-instrument note in step 4; omit for a concert
+sheet). The draft has pitches, octaves, accidentals, lengths and barlines; stderr
+lists bars that don't sum to the meter (a misread rhythm — e.g. an eighth read as a
+quarter made one bar 4.5 beats) and *possible ties*. The draft has no chords, ties or
+lyrics yet.
+
+**Then verify by eye, once** — the diff in step 6 only shows where your ABC departs
+from the OMR, so it cannot tell you the OMR was right. Read `head.png` (chord grid) and
+each `sysN.png` (3x, with chord labels above and lyrics below), comparing against the
+draft's bars. You're looking for: ties (add `-`), chords, lyrics, any pitch/accidental
+homr got wrong, and whatever the bar-sum warnings pointed at. Fix the draft as you go;
+zoom 8x on any bar whose accidental or note height is unclear — e.g. two beamed notes
+at the same height where only the first has a sharp are *both* sharp. When a bar is
+wrong, also check whether a trailing eighth is a pickup into the next system or the
+last beat of its bar (it was the latter throughout on the jelly-roll sheet: one
+lead-in pickup, every later bar full).
+
+**Rhythm you can't settle by eye** (three heads in a 4/4 bar, a half or a quarter?):
+engraving software doesn't space notes in proportion to their length, so gaps between
+heads prove nothing. Look at the head itself in the *original* pixels — `notehead.py scan.png
+270,581 289,581 307,586` prints each head as ASCII (hollow = light hole in the middle,
+`fill` ~65 vs ~96 for filled). Calibrate on a head you know from the same sheet, then
+trust it over the eyeballed spacing. Musical sense breaks the remaining ties: the bar must
+sum to the meter, and a phrase usually mirrors its twin phrase.
+
+**Accidentals in a passage the scan shows plainly but the OMR rendered wrong** (bare F natural
+after a G-major staff, F♯ restored later in the bar): the printed signs are the truth, not the
+key signature — an F♮ then F♯ in a one-sharp staff gets a natural sign, then a sharp sign.
 
 ### 3. The MIDI  (if any)
 
@@ -102,10 +199,29 @@ Staff geometry for a treble render: bottom staff line = E4, each half-line-
 spacing = one diatonic step. `zoom.py` draws and labels the pitch guide lines;
 if they miss the real staff, pass `--grey`/`--fill`/`--spacing`.
 
+**A boxed chord grid on the sheet (bars with `%`/ditto cells) beats the labels over the
+staff.** One cell = one bar, `%` = same chord as the cell before, a diagonally split cell
+= two chords, half a bar each. Crop and Read the grid, expand it to one chord per bar,
+and use that. The labels above the staff are placed loosely (often over beat 3-4, not at
+the bar line), so use them only to cross-check which bar a chord belongs to.
+
+**Transposing-instrument sheets.** If the melody's chord labels don't match the grid /
+the house key (e.g. staff labelled C, D7, G7 while the grid says Bb, C7, F7), the staff is
+written for a B♭ instrument, a whole step up. Concert = written down a major 2nd, and
+the repo's files are concert. In `K:Bbmaj` the mapping is: written C→`B`, D→`c`, E→`d`,
+F→`e`, G→`f`, A→`G`, B→`A` (a natural, no sign needed); written accidentals:
+C♯→`=B`, D♯→`^c`, G♯→`^F`, E♭→`_d`, B♭→`_A`, A♭→`_G`. Octaves shift down with the
+letter (written C5 = concert B♭4). Do the whole conversion bar by bar with beats
+summed, and keep a written-key note of each bar handy for the final compare.
+A diminished 7th chord is symmetric (Cdim ≡ Adim ≡ E♭dim ≡ G♭dim), so a grid's `Gdim`
+and the staff's `Cdim` can both be correct — keep the grid's spelling.
+
 ### 5. Write the ABC — house style
 
-Study 2-3 existing files first (`static/songs/when_youre_smiling.abc`,
-`fly_me_to_the_moon.abc`, `bare_necessities.abc`).
+Start from `draft.abc` (step 2) when there is one: fill in `C:`, add chords, ties,
+lyrics and the fixes from your eyeball pass. Otherwise write it fresh. Either way, look
+at 2-3 existing files first (`static/songs/when_youre_smiling.abc`,
+`fly_me_to_the_moon.abc`, `bare_necessities.abc`) for house style.
 
 - Header, in order: `X:1`, `T:Title`, `C:Composer(s) (year)`, then any of
   `F:youtube-url`, `R:style`, `N:performance note`, then `M:4/4`, `L:1/4`
@@ -114,13 +230,37 @@ Study 2-3 existing files first (`static/songs/when_youre_smiling.abc`,
   `"C7#5"`, `"N.C."`.
 - Accidentals: `^`=sharp `_`=flat `=`=natural. In `K:Bbmaj`, bare `B` is B♭;
   write B natural as `=B`.
+- Accidentals **persist to the end of the bar** in ABC for the same pitch, exactly as
+  in print — so `^c c` is two C♯s. Write a natural explicitly (`^c =c`) if the second
+  note really is natural. A note tied across a barline keeps its accidental, but the
+  next same-letter note in the new bar does not (so `_d- | _d2 ... d` needs no `=`
+  on the later `d` in bar 2 unless the key signature makes it flat).
 - Ties `-` only between equal pitches; a note held over a barline is `F2- | F ...`.
-- `P:A` / `P:B` part markers if the sheet has rehearsal letters and it helps.
+- `P:A` / `P:B` part markers if the sheet has rehearsal letters and it helps (`P:Intro` for
+  a labelled intro). Chords go at each *change*, not every bar — a `%` cell in the grid is
+  just no chord written; do repeat the chord at the top of a part if the previous part ended
+  on a different one.
+- **Repeats and endings.** `|:` … `:|` for repeat signs, and for 1st/2nd endings
+  `… |[1 c4 z4 :|[2 c2 c2 c2 c2 ||` (see `basin_street.abc`, `all_the_girls.abc` for the
+  older `|1 … :|2` spelling — both parse). A repeat that is **written out** on the sheet
+  (two systems that are the same, as in Bugle Boy March's C section) is written out in the ABC
+  too, not folded into a `|:` `:|`, unless the sheet itself marks it. A whole note tied into the
+  first ending (`F8- |[1 F2 …`) can only tie once in ABC; if the sheet also ties it into the
+  2nd ending, the tie is drawn only into the first — say so in the report.
+- **Key changes mid-tune.** No song here uses an inline `[K:…]` (the Key stepper, chord
+  analysis and comping all read the first `K:` only), so keep **one `K:`** — the key of the
+  opening — and write the new key's accidentals out explicitly (`_E` for every E♭ in a
+  B♭-major section of a `K:Fmaj` tune; remember the bar-persistence rule and put `=E` where
+  the natural returns). Mention the key change in the report.
 - Pickup bar: match the sheet — a real anacrusis is `F G A ||` before bar 1; a
   written-out "rest + pickup" full bar is `z F G A |`.
 - One source line per ~4 bars; last bar ends `|]`.
 - Optional `w:` lyric line under a tune line (many files have them; add only if
-  you have reliable lyrics).
+  you have reliable lyrics). **Alignment:** one syllable per *note slot*; rests are
+  skipped, but the **second note of a tie consumes a slot**, so put `_` there
+  (`smi-ling, _` for `B2 B2- | B2`; confirmed against `when_youre_smiling.abc`).
+  Count slots vs syllables per line before rendering — a miscount silently shifts
+  every later word. Use `-` inside a word, `_` to hold, no `|` needed.
 - Filename: lowercase, `_`-joined, short — `washington_and_lee.abc`.
 
 ### 6. Validate — do not skip
@@ -128,7 +268,31 @@ Study 2-3 existing files first (`static/songs/when_youre_smiling.abc`,
 ```
 abc2midi out.abc -o /dev/null      # must be silent: no errors, no warnings
 $VP $SK/render.py out.abc proof   # -> proof_1.png, proof_2.png ... (stitched, Read-sized)
+npm run lint:abc                   # CI gate: abcjs parser warnings + every bar's length vs M:
+$VP $SK/check_abc.py static/songs/<name>.abc --musicxml scan3.musicxml --interval M-2
 ```
+
+`check_abc.py` compares your ABC's real note stream (abcjs flattener: accidentals, ties,
+key and octave already resolved) against the OMR, bar by bar, and checks lyric syllable
+counts against note slots. **Every line it reports should be something you changed on
+purpose** — a tie you added shows as "absorbed into ties" (fine), a corrected pitch shows
+as `PITCH` (confirm it was homr that was wrong, then move on), anything else is a slip.
+Two known homr artefacts show up as noise: a misread bar length cascades within that
+bar only, and a note tied across a barline loses its flat in the second bar
+(`MISSING`/`PITCH` at the bar after the tie). Skip `--musicxml` for a MIDI-only or
+from-scratch transcription — the lyrics check still runs.
+
+**It only compares as far as the bar grids agree.** It aligns bars by number, so once a
+sheet has 1st/2nd endings (the OMR counts the 2nd-ending bar as an extra bar) or a key
+change the merged MusicXML mangles, every later bar is reported as a mismatch. Trust it up
+to the first ending — on Bugle Boy March bars 1–20 came back clean — then, for the rest,
+compare your ABC to `omr_staves.py`'s per-staff text by eye/diff and to the sheet via the
+`proof_*.png` render. A wall of `MISSING`/`EXTRA` starting at one bar is this, not fifty slips.
+
+`lint:abc` runs on every `static/songs/*.abc` in CI and fails on an overfull or
+mid-tune underfull bar, so run it after saving into `static/songs/` (a bar-sum slip
+you skipped in step 2 shows up here). It checks length, not pitch — the visual compare
+below is still the only pitch check.
 
 Read the `proof_*.png` and compare bar by bar with the source scan: pitches,
 accidentals, rhythm, chord placement. Fix every mismatch and re-render. Iterate
@@ -154,3 +318,10 @@ source.
   PNG output can be huge (10k px) — downscale with PIL before Read.
 - If homr misses the time signature, pass the meter through when parsing / when
   you rebar the flat note list.
+- Invoking the venv Python by a relative `../../..` path prints a harmless
+  `Unexpected value in sys.prefix` warning; run from the repo root with
+  `VP=tools/OMR/.venv/bin/python3` as at the top to avoid it.
+- **In the report, list the guesses you actually made**: ambiguous rhythms (and how you
+  settled them), accidentals the scan didn't show (e.g. a natural 6th over a minor chord),
+  ties ABC can't draw, a key change written out as accidentals, and chord cells taken from the
+  grid rather than the labels above the staff.
