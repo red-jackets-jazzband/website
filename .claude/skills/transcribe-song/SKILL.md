@@ -48,6 +48,7 @@ bar is where the tokens go):
 | `omr_staves.py` | homr's **per-staff log** -> draft ABC per staff, with per-staff `--keysig` / `--clef` fixes, confidence, bar-count and near-duplicate-staff warnings. Use it instead of `omr_to_abc.py` whenever the sheet has a key change, endings or a staff homr may have misread (see step 2) |
 | `notehead.py` | ASCII close-up of a notehead in the original scan pixels: filled (quarter) vs hollow (half) when the rhythm is ambiguous |
 | `crop_systems.py` | scan -> `head.png` (title + chord grid) + one 3x crop per staff system; Read only what you need. `--scale 6 --xrange 0.5-0.8` gives a big close-up of one horizontal slice |
+| `render_site.mjs` | renders the ABC **exactly as the /songs/ sheet does** (same abcjs, `staffwidth: 1000` + responsive resize, MuseJazzText, one line per source line) to a PNG — the only faithful check of line density/readability; `--lyrics-off` drops `w:` lines. Uses `node`, not `$VP` |
 | `check_abc.py` | diffs your finished ABC against the OMR **as text** (pitch/onset/duration per bar, ties resolved) and checks `w:` syllable counts vs notes |
 | `abc_notes.mjs` | (used by `check_abc.py`) the ABC's real note stream via the repo's abcjs |
 
@@ -238,8 +239,10 @@ at 2-3 existing files first (`static/songs/when_youre_smiling.abc`,
 - Ties `-` only between equal pitches; a note held over a barline is `F2- | F ...`.
 - `P:A` / `P:B` part markers if the sheet has rehearsal letters and it helps (`P:Intro` for
   a labelled intro). Chords go at each *change*, not every bar — a `%` cell in the grid is
-  just no chord written; do repeat the chord at the top of a part if the previous part ended
-  on a different one.
+  just no chord written. **The first bar of every part always gets a chord** (`P:A`, `P:Intro`,
+  a `|:` section start, ...), even when it is the same chord the previous part ended on — a
+  part must be readable/playable on its own. For an intro with a pickup, that is the first
+  *full* bar (the pickup itself needs none).
 - **Repeats and endings.** `|:` … `:|` for repeat signs, and for 1st/2nd endings
   `… |[1 c4 z4 :|[2 c2 c2 c2 c2 ||` (see `basin_street.abc`, `all_the_girls.abc` for the
   older `|1 … :|2` spelling — both parse). A repeat that is **written out** on the sheet
@@ -254,7 +257,27 @@ at 2-3 existing files first (`static/songs/when_youre_smiling.abc`,
   the natural returns). Mention the key change in the report.
 - Pickup bar: match the sheet — a real anacrusis is `F G A ||` before bar 1; a
   written-out "rest + pickup" full bar is `z F G A |`.
-- One source line per ~4 bars; last bar ends `|]`.
+- **Fit as many bars per line as stay readable — aim for 8.** Each source line is one staff
+  line on the site (the sheet engraves at a fixed 1000-wide staff and scales it; nothing is
+  auto-wrapped), so 4-bar lines waste space and double the page length. Rules of thumb:
+  - Lyric-free tunes: **8 bars per line**, even with 1/8-note runs (8 bars of eighths still
+    reads fine). Only go lower when a bar is genuinely crammed (lots of 16ths, many chord
+    symbols in one bar) or to keep a line break on a phrase boundary.
+  - Tunes with `w:` lyrics: try 8 too — but look at the render: if syllables collide
+    ("giveno-", "pieceof") fall back to 6, or to 4 if that is the natural phrase. Lyrics are
+    the reason to go lower, not the notes.
+  - Break lines at **part boundaries** (`P:` goes on its own line between two music lines, so
+    a part never shares a line with the previous one) and otherwise **pair whole phrases**:
+    group bars in 8s counted from the start of the part, so a line ends where a phrase ends.
+    A part whose length is not a multiple of 8 ends on a shorter last line (a 36-bar part is
+    four 8s + a 4) — do not squeeze the remainder onto the previous line.
+  - A pickup/intro line, and lines with `[1 … :|[2 …` endings, may be short/long as the sheet
+    dictates; the repeat sign stays at the bar where the sheet puts it.
+  - **After the ABC is correct, do this pass explicitly**: join lines to reach the fewest
+    lines that still render legibly, then re-render with `render_site.mjs` and Read it.
+  - Join the `w:` lines of merged music lines into ONE `w:` line (a second `w:` line means a
+    second verse, not a continuation).
+- Last bar ends `|]`.
 - Optional `w:` lyric line under a tune line (many files have them; add only if
   you have reliable lyrics). **Alignment:** one syllable per *note slot*; rests are
   skipped, but the **second note of a tie consumes a slot**, so put `_` there
@@ -293,6 +316,11 @@ compare your ABC to `omr_staves.py`'s per-staff text by eye/diff and to the shee
 mid-tune underfull bar, so run it after saving into `static/songs/` (a bar-sum slip
 you skipped in step 2 shows up here). It checks length, not pitch — the visual compare
 below is still the only pitch check.
+
+`render_site.mjs` is the layout check (`node $SK/render_site.mjs out.abc site.png --width 1100`,
+then Read `site.png`): confirm the bars-per-line choice from step 5 — 8 bars across, chords
+not colliding, lyrics legible, every part's first bar carrying a chord. It uses the same abcjs
+options as the live sheet, so what you see is the on-site line count.
 
 Read the `proof_*.png` and compare bar by bar with the source scan: pitches,
 accidentals, rhythm, chord placement. Fix every mismatch and re-render. Iterate
