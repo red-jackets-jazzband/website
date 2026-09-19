@@ -4928,8 +4928,7 @@ body.rj-sheet-fullscreen #sheetmenu {
      tighten the page gutters, so the sheet opens straight at the top;
    - pack the toolbar into two lines instead of three (instrument picker
      shares a line with Key/Tempo rather than owning a full-width row);
-   - in full screen, let the toolbar scroll away with the chart instead of
-     staying pinned, and give the whole width to the sheet (the sidebar
+   - in full screen, give the whole width to the sheet (the sidebar
      returns with a portrait/tall landscape screen — swipe still steps
      songs, and leaving full screen restores the list).
 */
@@ -4950,6 +4949,16 @@ body.rj-sheet-fullscreen #sheetmenu {
   body.rj-sheet-fullscreen #rjLibrary.rj-library {
     display: none;
   }
+}
+
+/*
+  Mobile full screen: the sticky toolbar (see above) would sit over the chart
+  the whole time, on a screen with no height to spare. Let it scroll away with
+  the sheet instead — scroll back up to reach Key/Tempo/Play, scroll down for
+  the full-screen chart. Covers portrait phones/tablets (<=1024px wide) and
+  short landscape ones alike.
+*/
+@media (max-width: 1024px), (max-height: 500px) and (orientation: landscape) {
   body.rj-sheet-fullscreen #sheetmenu {
     position: relative;
   }
