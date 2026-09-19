@@ -1020,7 +1020,7 @@ export function createInspiration(ctx) {
   // pauseYoutube() above works around) — getPlayerState() asks the player
   // directly instead of waiting for that event.
   function currentlyPlaying() {
-    if (player && player.getPlayerState && window.YT && window.YT.PlayerState) {
+    if (player?.getPlayerState && window.YT?.PlayerState) {
       return player.getPlayerState() === window.YT.PlayerState.PLAYING;
     }
     return isPlaying;

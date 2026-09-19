@@ -12,6 +12,10 @@ import { byId, on } from "../lib/dom.js";
   reading a dense chart up close on a phone. See split.css's own doc comment
   for the portrait/landscape layout split.
 */
+const FULLSCREEN_CLASS = "rj-sheet-fullscreen";
+
+const isActive = () => document.body.classList.contains(FULLSCREEN_CLASS);
+
 export function createFullscreen() {
   let wakeLock = null;
 
@@ -21,8 +25,16 @@ export function createFullscreen() {
   async function requestWakeLock() {
     if (!("wakeLock" in navigator)) return;
     try {
-      wakeLock = await navigator.wakeLock.request("screen");
-      wakeLock.addEventListener("release", () => { wakeLock = null; });
+      const lock = await navigator.wakeLock.request("screen");
+      // Full screen may have been exited while the request was in flight —
+      // releaseWakeLock() had nothing to release yet, so drop the late lock
+      // here instead of leaving the screen held awake.
+      if (!isActive()) {
+        lock.release().catch(() => {});
+        return;
+      }
+      wakeLock = lock;
+      lock.addEventListener("release", () => { if (wakeLock === lock) wakeLock = null; });
     } catch {
       // Denied (backgrounded tab, battery saver, unsupported) — harmless.
       wakeLock = null;
@@ -36,7 +48,7 @@ export function createFullscreen() {
   }
 
   function apply(active) {
-    document.body.classList.toggle("rj-sheet-fullscreen", active);
+    document.body.classList.toggle(FULLSCREEN_CLASS, active);
     const btn = byId("sheetFullscreenBtn");
     if (btn) {
       const label = active ? "Exit full screen" : "Full screen";
@@ -52,14 +64,14 @@ export function createFullscreen() {
   }
 
   function toggle() {
-    apply(!document.body.classList.contains("rj-sheet-fullscreen"));
+    apply(!isActive());
   }
 
   function init() {
     on("sheetFullscreenBtn", "click", toggle);
     document.addEventListener("keydown", (e) => {
       if (e.key !== "Escape") return;
-      if (document.body.classList.contains("rj-sheet-fullscreen")) apply(false);
+      if (isActive()) apply(false);
     });
     // The Wake Lock spec releases the lock automatically the moment the tab
     // is backgrounded (or the device screen locks); re-request it once the
@@ -67,7 +79,7 @@ export function createFullscreen() {
     // lock/unlock still keeps the screen on afterwards.
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "visible"
-        && document.body.classList.contains("rj-sheet-fullscreen")) {
+        && isActive()) {
         requestWakeLock();
       }
     });

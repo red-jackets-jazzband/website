@@ -4841,7 +4841,7 @@ body:has(#rjLibrary) .split-bio {
   border: none;
   border-radius: 9px;
   box-shadow: 0 1px 4px rgba(0,0,0,.1);
-  color: #aaaaaa;
+  color: #666666;
   font-size: 13px;
   cursor: pointer;
   transition: background-color 0.15s, box-shadow 0.15s, color 0.15s;
@@ -4849,7 +4849,7 @@ body:has(#rjLibrary) .split-bio {
 @media (hover: hover) {
   .rj-sheet-fullscreen-btn:hover {
     background: #ffffff;
-    color: #777777;
+    color: #333333;
     box-shadow: 0 2px 6px rgba(0,0,0,.14);
   }
 }
