@@ -526,6 +526,7 @@ video.video {
   one continuous white surface.
 */
 .rj-sheet-paper {
+  position: relative;
   background-color: #ffffff;
   color: #000000;
   overflow: hidden;
@@ -4796,4 +4797,116 @@ body:has(#rjLibrary) .split-bio {
 #notation svg g[class*="abcjs-note"]:hover path,
 #notation svg g[class*="abcjs-note"]:hover ellipse {
   fill: #c88800 !important;
+}
+
+/* ============================================================
+   Sheet "full screen" mode (songs/fullscreen.js)
+
+   #sheetFullscreenBtn lives inside .rj-sheet-paper itself (not the dark
+   #sheetmenu toolbar) as a small white pill hovering over the paper's own
+   top-right corner — subtle against the white sheet rather than another
+   dark toolbar icon, and out of the way of the notation/chord grid below
+   it. .hideOnprint keeps it off a printed chart the same way #sheetmenu
+   already is. It toggles body.rj-sheet-fullscreen. Deliberately CSS-only —
+   pinning .rj-songs-layout over the whole viewport — rather than the real
+   Fullscreen API (Element.requestFullscreen()): mobile browsers suspend
+   pinch-zoom for as long as a genuine fullscreen element is active, which
+   would defeat the point of a mode built for reading a dense chart up
+   close on a phone. With no requestFullscreen() call, the page's own
+   native pinch-zoom (nothing here sets user-scalable=no or
+   touch-action:none on the sheet) keeps working right through it.
+
+   Portrait has no room to spare for the library/setlist sidebar alongside
+   a lead sheet, so the sheet alone fills the screen there, same as the
+   narrow-viewport stacked layout elsewhere on this page. Landscape has
+   the width of the old side-by-side desktop layout to spare, so the
+   sidebar stays visible on the left — letting you keep browsing/switching
+   songs without ever leaving full screen.
+
+   z-index 10 is deliberately below the Mixer panel/backdrop (19/20), the
+   Inspiration panel (15) and any modal (40, the highest on this page) —
+   those should still be able to open and sit on top of a full-screen sheet,
+   not be trapped behind it.
+   ============================================================ */
+.rj-sheet-fullscreen-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  background: rgba(255,255,255,.8);
+  border: none;
+  border-radius: 9px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.1);
+  color: #aaaaaa;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.15s, box-shadow 0.15s, color 0.15s;
+}
+@media (hover: hover) {
+  .rj-sheet-fullscreen-btn:hover {
+    background: #ffffff;
+    color: #777777;
+    box-shadow: 0 2px 6px rgba(0,0,0,.14);
+  }
+}
+body.rj-sheet-fullscreen .split-image,
+body.rj-sheet-fullscreen .split-intro {
+  display: none;
+}
+body.rj-sheet-fullscreen #sheetBackBtn.rj-sheet-back {
+  display: none;
+}
+body.rj-sheet-fullscreen .rj-songs-layout {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  width: 100vw;
+  height: 100dvh;
+  margin: 0;
+  padding: 0;
+  background: var(--rj-ground);
+  border-radius: 0;
+}
+body.rj-sheet-fullscreen #rjLibrary.rj-library {
+  display: none;
+}
+body.rj-sheet-fullscreen #rjSheet.rj-sheet {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  border: none;
+  border-radius: 0;
+}
+/* #sheetmenu is already position:relative — sticking it to the top of
+   #rjSheet's own scroll box keeps Key/Tempo/Play/etc. in reach while a
+   long chart scrolls underneath, satisfying "the sheet menu controls
+   should still be available" without a second, floating toolbar. */
+body.rj-sheet-fullscreen #sheetmenu {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+@media (orientation: landscape) {
+  body.rj-sheet-fullscreen .rj-songs-layout {
+    display: flex;
+    flex-direction: row;
+    gap: 0;
+  }
+  body.rj-sheet-fullscreen #rjLibrary.rj-library {
+    display: flex;
+    width: 300px;
+    flex: none;
+    height: 100%;
+    border-radius: 0;
+    border-width: 0 1px 0 0;
+  }
+  body.rj-sheet-fullscreen #rjSheet.rj-sheet {
+    flex: 1;
+    min-width: 0;
+  }
 }
