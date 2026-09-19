@@ -16,6 +16,7 @@ Bill Bailey,bill_bailey.abc
 Blue Heaven,my_blue_heaven.abc
 Bourbon Street Parade,bourbon_street_parade.abc
 Bucket's gotta hole,buckets_got_a_hole.abc
+Bugle Boy March,bugle_boy_march.abc
 By and By,by_and_by.abc
 Canal Street Blues,canal_street_blues.abc
 Caravan,caravan.abc
