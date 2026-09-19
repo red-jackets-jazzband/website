@@ -31,6 +31,7 @@ def find_systems(path, grey=200, fill=0.55):
         cur.append(y)
     if cur:
         systems.append(cur)
-    # keep only plausible 5-line systems; if a system has !=5 lines, still return
-    # what we have (caller can eyeball) but note it
-    return systems, (W, H)
+    # Drop stray rules (a boxed chord grid, table borders, underlines): they show up
+    # as groups of 1-3 lines. Fall back to everything if nothing looks like a staff.
+    staves = [s for s in systems if len(s) >= 4]
+    return (staves or systems), (W, H)
