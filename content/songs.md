@@ -92,7 +92,6 @@ aliases: ["/setlists/", "/songbook/"]
     <a id="printLink" class="sheet-icon-btn" href="#" title="Print this page" aria-label="Print this page"><span class="fa-solid fa-print" aria-hidden="true"></span></a>
     <button id="exportMp3Btn" class="sheet-icon-btn" type="button" disabled title="Export as MP3" aria-label="Export as MP3"><span class="fa-solid fa-file-audio" aria-hidden="true"></span></button>
   </div>
-
   <div id="inspirationSlot"></div>
   <!-- Keep the next two on the same HTML block (no blank lines): a lone
        element on its own line gets wrapped in a <p> by Goldmark, and that
@@ -173,6 +172,7 @@ aliases: ["/setlists/", "/songbook/"]
 <div id="abc-player-container" style="display:none;"></div>
 
 <div class="rj-sheet-paper">
+<button id="sheetFullscreenBtn" class="rj-sheet-fullscreen-btn hideOnprint" type="button" title="Full screen" aria-label="Full screen" aria-pressed="false"><span class="fa-solid fa-expand" aria-hidden="true"></span></button>
 <div id="songtitle" class="songtitle"></div>
 <div id="chordtable" class="chordtable"></div>
 <div id="notation" class="notation"></div>
