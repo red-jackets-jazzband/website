@@ -269,6 +269,65 @@ test("switching to the Spotify tab pauses YouTube and hides the LoopTube toolbar
   }
 });
 
+// The autoplaying embed can genuinely be playing before the IFrame API's
+// onStateChange callback ever reports PLAYING back to us — switching tabs in
+// that window must still pause it rather than relying on our own (still
+// stale) isPlaying bookkeeping.
+test("switching to the Spotify tab pauses YouTube even before a PLAYING state event has arrived", async () => {
+  const page = mountPage();
+  const { window } = page;
+  try {
+    const paused = [];
+    const events = mockYouTubePlayer(window, {
+      pauseVideo: () => paused.push(true),
+    });
+    const insp = createInspiration();
+    insp.init();
+    insp.updateLink({ youtube: SAMPLE_URL, spotify: SPOTIFY_URL }, "X");
+    document.getElementById("inspirationLink").dispatchEvent(new window.Event("click"));
+    await new Promise((resolve) => { setTimeout(resolve, 0); });
+    events.ready(); // player ready, but no onStateChange(PLAYING) yet
+
+    document.getElementById("inspirationTabSpotify").dispatchEvent(new window.Event("click"));
+
+    assert.deepEqual(paused, [true]);
+  } finally {
+    delete window.YT;
+    page.cleanup();
+  }
+});
+
+// Same race as above, but for the panel's own Play/Pause button: it decides
+// play vs. pause from getPlayerState() (when the mock supplies one), not the
+// possibly-stale isPlaying flag — clicking it while a just-autoplayed video
+// is already PLAYING, but before onStateChange has said so, must pause
+// rather than issue a no-op playVideo() that leaves it running.
+test("the play/pause button pauses a video that's already playing before its PLAYING state event has arrived", async () => {
+  const page = mountPage();
+  const { window } = page;
+  try {
+    const calls = [];
+    const events = mockYouTubePlayer(window, {
+      playVideo: () => calls.push("play"),
+      pauseVideo: () => calls.push("pause"),
+      getPlayerState: () => 1, // already PLAYING, even though onStateChange hasn't fired
+    });
+    const insp = createInspiration();
+    insp.init();
+    insp.updateLink({ youtube: SAMPLE_URL }, "X");
+    document.getElementById("inspirationLink").dispatchEvent(new window.Event("click"));
+    await new Promise((resolve) => { setTimeout(resolve, 0); });
+    events.ready(); // player ready, but no onStateChange(PLAYING) yet
+
+    document.getElementById("inspirationPlayToggle").dispatchEvent(new window.Event("click"));
+
+    assert.deepEqual(calls, ["pause"]);
+  } finally {
+    delete window.YT;
+    page.cleanup();
+  }
+});
+
 test("closing the panel stops both a playing YouTube video and a loaded Spotify embed", async () => {
   const page = mountPage();
   const { window } = page;

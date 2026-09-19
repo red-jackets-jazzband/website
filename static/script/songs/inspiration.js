@@ -596,8 +596,14 @@ export function createInspiration(ctx) {
   // Pauses (rather than stops) the YouTube player when switching away from
   // its tab, so switching back resumes where it left off instead of
   // restarting — the frame/player themselves are left alone, only playback.
+  // Always calls pauseVideo() when the player exists, rather than gating on
+  // the `isPlaying` flag: that flag only flips once the IFrame API's
+  // onStateChange callback fires, so a video that autoplayed just before the
+  // tab switch (already playing, but not yet reflected in `isPlaying`) would
+  // otherwise keep playing out of sight. pauseVideo() is a no-op on an
+  // already-paused player, so calling it unconditionally is safe.
   function pauseYoutube() {
-    if (player && playerReady && isPlaying && player.pauseVideo) player.pauseVideo();
+    if (player && playerReady && player.pauseVideo) player.pauseVideo();
   }
 
   function closePanel() {
@@ -894,9 +900,23 @@ export function createInspiration(ctx) {
     btn.classList.toggle("playing", isPlaying);
   }
 
+  // Whether the player is actually playing right now. Prefers the IFrame
+  // API's own getPlayerState() over the cached `isPlaying` flag when it's
+  // available: `isPlaying` only updates once onStateChange fires, so right
+  // after an autoplaying load there's a window where the video is already
+  // playing but `isPlaying` still says otherwise (the same staleness
+  // pauseYoutube() above works around) — getPlayerState() asks the player
+  // directly instead of waiting for that event.
+  function currentlyPlaying() {
+    if (player && player.getPlayerState && window.YT && window.YT.PlayerState) {
+      return player.getPlayerState() === window.YT.PlayerState.PLAYING;
+    }
+    return isPlaying;
+  }
+
   function togglePlayPause() {
     if (!player || !playerReady) return;
-    if (isPlaying) player.pauseVideo();
+    if (currentlyPlaying()) player.pauseVideo();
     else player.playVideo();
   }
 
