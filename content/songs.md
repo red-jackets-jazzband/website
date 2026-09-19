@@ -223,6 +223,7 @@ Retrieved from www.redjackets.nl - <span id="instrumentText"></span>
     <div class="inspiration-panel-tabs" id="inspirationTabs" hidden>
       <button type="button" id="inspirationTabYoutube" class="inspiration-panel-tab" title="YouTube" aria-label="Show YouTube" aria-pressed="true"><span class="fa-brands fa-youtube" aria-hidden="true"></span></button>
       <button type="button" id="inspirationTabSpotify" class="inspiration-panel-tab" title="Spotify" aria-label="Show Spotify" aria-pressed="false"><span class="fa-brands fa-spotify" aria-hidden="true"></span></button>
+      <button type="button" id="inspirationTabSoundcloud" class="inspiration-panel-tab" title="SoundCloud" aria-label="Show SoundCloud" aria-pressed="false"><span class="fa-brands fa-soundcloud" aria-hidden="true"></span></button>
     </div>
     <button type="button" id="inspirationShareBtn" class="inspiration-panel-icon-btn" title="Copy a link to this song and loop" aria-label="Copy a link to this song and loop"><span class="fa-solid fa-link" aria-hidden="true"></span></button>
     <a id="inspirationExpandBtn" class="inspiration-panel-icon-btn" href="#" target="_blank" rel="noopener" title="Open on YouTube" aria-label="Open on YouTube"><span class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></span></a>
@@ -232,8 +233,11 @@ Retrieved from www.redjackets.nl - <span id="instrumentText"></span>
   <div class="inspiration-panel-video" id="inspirationVideoBox">
     <iframe id="inspirationVideoFrame" src="" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen title="Inspiration video" loading="lazy"></iframe>
   </div>
-  <div class="inspiration-panel-spotify" id="inspirationSpotifyBox" hidden>
+  <div class="inspiration-panel-embed" id="inspirationSpotifyBox" hidden>
     <iframe id="inspirationSpotifyFrame" src="" height="152" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" title="Inspiration Spotify player"></iframe>
+  </div>
+  <div class="inspiration-panel-embed" id="inspirationSoundcloudBox" hidden>
+    <iframe id="inspirationSoundcloudFrame" src="" height="166" allow="autoplay; encrypted-media; picture-in-picture" loading="lazy" title="Inspiration SoundCloud player"></iframe>
   </div>
   <div class="inspiration-loop" id="inspirationLoopBar" hidden>
     <div class="inspiration-loop-overview-row">

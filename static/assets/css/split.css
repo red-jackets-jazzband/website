@@ -1435,10 +1435,11 @@ video.video {
   background: var(--rj-gold);
   color: #222222 !important;
 }
-/* Source switcher (YouTube/Spotify), only shown when a tune has both — see
-   songs/inspiration.js's updateTabsUI. Same icon-button footprint as the
-   header's other icon buttons, but the "active" one (whichever tab is
-   currently showing) stays gold at rest rather than just on hover. */
+/* Source switcher (YouTube/Spotify/SoundCloud), only shown when a tune has
+   more than one — see songs/inspiration.js's updateTabsUI. Same icon-button
+   footprint as the header's other icon buttons, but the "active" one
+   (whichever tab is currently showing) stays gold at rest rather than just
+   on hover. */
 .inspiration-panel-tabs {
   flex: none;
   display: flex;
@@ -1461,6 +1462,13 @@ video.video {
   background: var(--rj-gold);
   color: #222222;
 }
+/* The button's own `display: grid` above beats the browser's built-in
+   `[hidden] { display: none }` UA rule (author styles always win over UA
+   styles, regardless of specificity), so a tab the JS hides for a source
+   this tune doesn't have would otherwise still render. */
+.inspiration-panel-tab[hidden] {
+  display: none;
+}
 @media (hover: hover) {
   .inspiration-panel-tab:not(.active):hover {
     color: rgba(236,234,230,.85);
@@ -1480,15 +1488,17 @@ video.video {
   border: 0;
   display: block;
 }
-/* Spotify's own embed widget draws its own play/pause/seek bar at a fixed
-   height (see lib/spotify.js's spotifyEmbedHeight) rather than a 16:9 video
-   frame, so this sits beside .inspiration-panel-video as a plain,
-   width-driven box instead of sharing its aspect-ratio layout. */
-.inspiration-panel-spotify {
+/* Spotify's and SoundCloud's own embed widgets each draw their own
+   play/pause/seek bar at a fixed height (see lib/spotify.js's
+   spotifyEmbedHeight and lib/soundcloud.js's SOUNDCLOUD_EMBED_HEIGHT) rather
+   than a 16:9 video frame, so this sits beside .inspiration-panel-video as a
+   plain, width-driven box instead of sharing its aspect-ratio layout —
+   shared by #inspirationSpotifyBox and #inspirationSoundcloudBox alike. */
+.inspiration-panel-embed {
   width: 100%;
   background: #000000;
 }
-.inspiration-panel-spotify iframe {
+.inspiration-panel-embed iframe {
   display: block;
   width: 100%;
   border: 0;

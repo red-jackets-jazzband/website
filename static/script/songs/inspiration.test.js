@@ -5,6 +5,7 @@ import { createInspiration } from "./inspiration.js";
 
 const SAMPLE_URL = "https://youtu.be/abcdefghijk";
 const SPOTIFY_URL = "https://open.spotify.com/track/2EYjaK8Koe0q7PcK1MlB4S";
+const SOUNDCLOUD_URL = "https://soundcloud.com/someone/a-track";
 const ARIA_PRESSED = "aria-pressed";
 
 function inDom(fn) {
@@ -172,6 +173,89 @@ test("updateLink(undefined) removes the button even for a Spotify-only tune", ()
   });
 });
 
+test("updateLink with only a SoundCloud source creates the button and opens straight to the SoundCloud tab, switcher hidden", () => {
+  inDom(() => {
+    const insp = createInspiration();
+    insp.init();
+    insp.updateLink({ soundcloud: SOUNDCLOUD_URL }, "X");
+    const btn = document.getElementById("inspirationLink");
+    assert.ok(btn);
+    assert.equal(btn.dataset.soundcloudUrl, SOUNDCLOUD_URL);
+    assert.equal(btn.dataset.url, "");
+
+    btn.dispatchEvent(new window.Event("click"));
+    assert.equal(document.getElementById("inspirationPanel").hidden, false);
+    // A single-source tune has nothing to switch between.
+    assert.equal(document.getElementById("inspirationTabs").hidden, true);
+    assert.equal(document.getElementById("inspirationSoundcloudBox").hidden, false);
+    assert.equal(document.getElementById("inspirationVideoBox").hidden, true);
+    assert.equal(
+      document.getElementById("inspirationSoundcloudFrame").getAttribute("src"),
+      "https://w.soundcloud.com/player/?url=https%3A%2F%2Fsoundcloud.com%2Fsomeone%2Fa-track&color=%23e29d0f&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false",
+    );
+    assert.equal(document.getElementById("inspirationExpandBtn").getAttribute("href"), SOUNDCLOUD_URL);
+  });
+});
+
+test("updateLink(undefined) removes the button even for a SoundCloud-only tune", () => {
+  inDom(() => {
+    const insp = createInspiration();
+    insp.updateLink({ soundcloud: SOUNDCLOUD_URL }, "X");
+    insp.updateLink(undefined);
+    assert.equal(document.getElementById("inspirationLink"), null);
+  });
+});
+
+test("a tune with all three sources shows the tab switcher and can cycle through YouTube, Spotify and SoundCloud", async () => {
+  const page = mountPage();
+  const { window } = page;
+  try {
+    const events = mockYouTubePlayer(window);
+    const insp = createInspiration();
+    insp.init();
+    insp.updateLink({ youtube: SAMPLE_URL, spotify: SPOTIFY_URL, soundcloud: SOUNDCLOUD_URL }, "X");
+    document.getElementById("inspirationLink").dispatchEvent(new window.Event("click"));
+    await new Promise((resolve) => { setTimeout(resolve, 0); });
+    events.ready();
+
+    assert.equal(document.getElementById("inspirationTabs").hidden, false);
+    assert.equal(document.getElementById("inspirationTabYoutube").getAttribute(ARIA_PRESSED), "true");
+
+    document.getElementById("inspirationTabSoundcloud").dispatchEvent(new window.Event("click"));
+    assert.equal(document.getElementById("inspirationTabSoundcloud").getAttribute(ARIA_PRESSED), "true");
+    assert.equal(document.getElementById("inspirationSoundcloudBox").hidden, false);
+    assert.equal(document.getElementById("inspirationSpotifyBox").hidden, true);
+    assert.equal(document.getElementById("inspirationVideoBox").hidden, true);
+    assert.equal(document.getElementById("inspirationLoopBar").hidden, true);
+
+    document.getElementById("inspirationTabSpotify").dispatchEvent(new window.Event("click"));
+    assert.equal(document.getElementById("inspirationTabSpotify").getAttribute(ARIA_PRESSED), "true");
+    assert.equal(document.getElementById("inspirationSpotifyBox").hidden, false);
+    assert.equal(document.getElementById("inspirationSoundcloudBox").hidden, true);
+  } finally {
+    delete window.YT;
+    page.cleanup();
+  }
+});
+
+test("closing the panel stops a loaded SoundCloud embed too", async () => {
+  const page = mountPage();
+  const { window } = page;
+  try {
+    const insp = createInspiration();
+    insp.init();
+    insp.updateLink({ soundcloud: SOUNDCLOUD_URL }, "X");
+    document.getElementById("inspirationLink").dispatchEvent(new window.Event("click"));
+
+    document.getElementById("inspirationCloseBtn").dispatchEvent(new window.Event("click"));
+
+    assert.equal(document.getElementById("inspirationSoundcloudFrame").dataset.loadedUrl, undefined);
+    assert.equal(document.getElementById("inspirationSoundcloudFrame").getAttribute("src"), "");
+  } finally {
+    page.cleanup();
+  }
+});
+
 test("a tune with both YouTube and Spotify shows the tab switcher, defaulting to the YouTube tab", async () => {
   const page = mountPage();
   const { window } = page;
@@ -190,6 +274,13 @@ test("a tune with both YouTube and Spotify shows the tab switcher, defaulting to
     assert.equal(document.getElementById("inspirationVideoBox").hidden, false);
     assert.equal(document.getElementById("inspirationSpotifyBox").hidden, true);
     assert.equal(document.getElementById("inspirationLoopBar").hidden, false);
+    assert.equal(document.getElementById("inspirationTabYoutube").hidden, false);
+    assert.equal(document.getElementById("inspirationTabSpotify").hidden, false);
+    assert.equal(
+      document.getElementById("inspirationTabSoundcloud").hidden,
+      true,
+      "no SoundCloud source on this tune, so its tab button shouldn't show alongside YouTube/Spotify",
+    );
   } finally {
     delete window.YT;
     page.cleanup();
