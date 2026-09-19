@@ -284,20 +284,20 @@ function sourcesKey(sources) {
   return TAB_KEYS.map((key) => sources[key] || "").join("|");
 }
 
-// Reflects which tab is current on the tab buttons themselves (pressed
+// Reflects which tab is current on the tab buttons themselves (selected
 // state + the gold .active look) — doesn't touch the panel/ctx state, so it
 // lives at module scope rather than nested inside createInspiration.
 function updateTabButtonsUi(tab) {
   const ytTab = byId("inspirationTabYoutube");
   if (ytTab) {
     ytTab.classList.toggle("active", tab === "youtube");
-    ytTab.setAttribute("aria-pressed", tab === "youtube" ? "true" : "false");
+    ytTab.setAttribute("aria-selected", tab === "youtube" ? "true" : "false");
   }
   for (const key of PLAIN_EMBED_KEYS) {
     const el = byId(PLAIN_EMBED_SOURCES[key].tabId);
     if (!el) continue;
     el.classList.toggle("active", tab === key);
-    el.setAttribute("aria-pressed", tab === key ? "true" : "false");
+    el.setAttribute("aria-selected", tab === key ? "true" : "false");
   }
 }
 
@@ -366,8 +366,11 @@ function stopPlainEmbed(key) {
   When a tune has more than one, a small tab switcher in the header picks
   which is visible; only one plays at a time (switching tabs pauses/stops
   whichever else was active, see selectTab). When it only has one, the
-  switcher stays hidden and the panel behaves exactly like a single-source
-  player.
+  switcher is normally hidden and the panel behaves exactly like a
+  single-source player — except a lone YouTube or SoundCloud source still
+  shows the (single, inert) tab, since neither embed otherwise carries any
+  visible indication of which service it's playing from, unlike Spotify's
+  own branded widget (see updateTabsUI).
 */
 export function createInspiration(ctx) {
   // The sources the currently *open* panel is showing (not necessarily the
@@ -600,17 +603,21 @@ export function createInspiration(ctx) {
     selectTab(defaultTab(currentSources));
   }
 
-  // Which panel tabs are currently shown/usable — the switcher as a whole is
-  // hidden entirely (and pointless to show) unless the open panel's tune
-  // actually has more than one source, and within it, each individual
-  // button is hidden unless this tune actually has that source (e.g. a
-  // YouTube + Spotify tune shows only those two, never a dead SoundCloud
-  // button).
+  // Which panel tabs are currently shown/usable — each individual button is
+  // hidden unless this tune actually has that source (e.g. a YouTube +
+  // Spotify tune shows only those two, never a dead SoundCloud button). The
+  // switcher as a whole normally only earns its place once there's more than
+  // one source to switch between, but a lone YouTube or SoundCloud source
+  // still shows it (as a single, unclickable-elsewhere tab) so the source is
+  // never ambiguous — a bare video/waveform embed carries no branding of its
+  // own the way Spotify's widget already does, so without the tab label
+  // there'd be nothing on screen saying which service it came from.
   function updateTabsUI() {
     const tabs = byId("inspirationTabs");
     if (!tabs) return;
     const sourceCount = TAB_KEYS.filter((key) => currentSources[key]).length;
-    tabs.hidden = sourceCount < 2;
+    const soleSource = sourceCount === 1 ? TAB_KEYS.find((key) => currentSources[key]) : null;
+    tabs.hidden = sourceCount === 0 || (sourceCount === 1 && soleSource !== "youtube" && soleSource !== "soundcloud");
     for (const key of TAB_KEYS) {
       const btn = byId(TAB_IDS[key]);
       if (btn) btn.hidden = !currentSources[key];

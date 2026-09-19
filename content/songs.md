@@ -220,15 +220,17 @@ Retrieved from www.redjackets.nl - <span id="instrumentText"></span>
   <div class="inspiration-panel-header" id="inspirationPanelHeader">
     <span class="fa-solid fa-grip-lines inspiration-panel-grip" aria-hidden="true"></span>
     <span class="inspiration-panel-title" id="inspirationPanelTitle">Inspiration</span>
-    <div class="inspiration-panel-tabs" id="inspirationTabs" hidden>
-      <button type="button" id="inspirationTabYoutube" class="inspiration-panel-tab" title="YouTube" aria-label="Show YouTube" aria-pressed="true"><span class="fa-brands fa-youtube" aria-hidden="true"></span></button>
-      <button type="button" id="inspirationTabSpotify" class="inspiration-panel-tab" title="Spotify" aria-label="Show Spotify" aria-pressed="false"><span class="fa-brands fa-spotify" aria-hidden="true"></span></button>
-      <button type="button" id="inspirationTabSoundcloud" class="inspiration-panel-tab" title="SoundCloud" aria-label="Show SoundCloud" aria-pressed="false"><span class="fa-brands fa-soundcloud" aria-hidden="true"></span></button>
-    </div>
     <button type="button" id="inspirationShareBtn" class="inspiration-panel-icon-btn" title="Copy a link to this song and loop" aria-label="Copy a link to this song and loop"><span class="fa-solid fa-link" aria-hidden="true"></span></button>
-    <a id="inspirationExpandBtn" class="inspiration-panel-icon-btn" href="#" target="_blank" rel="noopener" title="Open on YouTube" aria-label="Open on YouTube"><span class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></span></a>
     <button type="button" id="inspirationSizeBtn" class="inspiration-panel-icon-btn" title="Resize panel" aria-label="Resize panel"><span class="fa-solid fa-up-right-and-down-left-from-center" aria-hidden="true"></span></button>
     <button type="button" id="inspirationCloseBtn" class="inspiration-panel-icon-btn" aria-label="Close">&times;</button>
+  </div>
+  <div class="inspiration-panel-toolbar" id="inspirationToolbar">
+    <div class="inspiration-panel-tabs" id="inspirationTabs" role="tablist" hidden>
+      <button type="button" id="inspirationTabYoutube" class="inspiration-panel-tab" title="YouTube" aria-label="Show YouTube" role="tab" aria-selected="true"><span class="fa-brands fa-youtube" aria-hidden="true"></span></button>
+      <button type="button" id="inspirationTabSpotify" class="inspiration-panel-tab" title="Spotify" aria-label="Show Spotify" role="tab" aria-selected="false"><span class="fa-brands fa-spotify" aria-hidden="true"></span></button>
+      <button type="button" id="inspirationTabSoundcloud" class="inspiration-panel-tab" title="SoundCloud" aria-label="Show SoundCloud" role="tab" aria-selected="false"><span class="fa-brands fa-soundcloud" aria-hidden="true"></span></button>
+    </div>
+    <a id="inspirationExpandBtn" class="inspiration-panel-icon-btn inspiration-panel-expand-btn" href="#" target="_blank" rel="noopener" title="Open on YouTube" aria-label="Open on YouTube"><span class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></span></a>
   </div>
   <div class="inspiration-panel-video" id="inspirationVideoBox">
     <iframe id="inspirationVideoFrame" src="" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen title="Inspiration video" loading="lazy"></iframe>
