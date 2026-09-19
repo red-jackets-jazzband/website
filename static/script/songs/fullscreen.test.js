@@ -97,6 +97,37 @@ test("entering full screen requests a screen wake lock, exiting releases it", as
   }
 });
 
+test("a wake lock that resolves after full screen was exited is released straight away", async () => {
+  const { cleanup } = setup();
+  try {
+    const calls = { released: 0 };
+    const sentinel = {
+      release() {
+        calls.released += 1;
+        return Promise.resolve();
+      },
+      addEventListener() {},
+    };
+    let resolveRequest;
+    window.navigator.wakeLock = {
+      request: () => new Promise((resolve) => { resolveRequest = resolve; }),
+    };
+    const btn = document.getElementById("sheetFullscreenBtn");
+
+    btn.dispatchEvent(new window.Event("click"));
+    btn.dispatchEvent(new window.Event("click"));
+    assert.equal(isFullscreen(), false);
+    assert.equal(calls.released, 0);
+
+    resolveRequest(sentinel);
+    await Promise.resolve();
+    await Promise.resolve();
+    assert.equal(calls.released, 1);
+  } finally {
+    cleanup();
+  }
+});
+
 test("a denied wake lock request is swallowed rather than thrown", async () => {
   const { cleanup } = setup();
   try {
