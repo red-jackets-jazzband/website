@@ -336,6 +336,22 @@ at 2-3 existing files first (`static/songs/when_youre_smiling.abc`,
   next same-letter note in the new bar does not (so `_d- | _d2 ... d` needs no `=`
   on the later `d` in bar 2 unless the key signature makes it flat).
 - Ties `-` only between equal pitches; a note held over a barline is `F2- | F ...`.
+- **Beam grouping for eighth notes (and shorter).** ABC beams a run of notes together only
+  when they're written with **no whitespace** between them — `DCDF` renders as one beamed
+  group of 4, `D C D F` renders as four separate flagged notes, even though the pitches and
+  durations are identical. A rest or a note of a quarter or longer always breaks a beam
+  (`z BAB` — the rest is its own token, `BAB` glues into one group of 3), and a tie (`F-`)
+  never breaks one — glue straight through it (`DCDF-FD` if the beam is meant to keep going
+  past the tied note). Default to matching the source's own engraved beam groups (zoom in on
+  the beam bars themselves, not just the noteheads), which in practice almost always follow
+  standard engraving conventions: **max 4 eighths per beamed group, a group of exactly 4 only
+  at the very start or very end of the bar, and a beam never spans across the bar's halfway
+  point** (beat 2 into beat 3, in 4/4) — a bar's eighth notes typically split into two halves
+  (each up to a 4-group, or smaller groups down to the beat) rather than one continuous run
+  covering the whole bar. Getting this wrong doesn't fail `lint:abc` or `abc2midi` (durations
+  and pitches are unaffected — only the visual grouping is), so it's easy to miss without
+  actually rendering and eyeballing the beams; verify with `render_site.mjs` (or `render.py`),
+  not just `check_abc.py`, which doesn't check beaming at all.
 - `P:A` / `P:B` part markers if the sheet has rehearsal letters and it helps (`P:Intro` for
   a labelled intro). Chords go at each *change*, not every bar — a `%` cell in the grid is
   just no chord written. **The first bar of every part always gets a chord** (`P:A`, `P:Intro`,
