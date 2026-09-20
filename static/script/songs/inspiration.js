@@ -1366,5 +1366,19 @@ export function createInspiration(ctx) {
     if (resizeHandle) initResize(panel, resizeHandle);
   }
 
-  return { updateLink, applyShareState, init };
+  // Programmatic open/close, for the guided tour (songs/tour.js). Opening does
+  // exactly what a click on the song's own Inspiration button does (a no-op when
+  // the tune has no reference, so there's no button); closing is the header's ×.
+  function setOpen(next) {
+    const panel = byId("inspirationPanel");
+    if (!panel || next === !panel.hidden) return;
+    if (!next) {
+      closePanel();
+      return;
+    }
+    const btn = byId("inspirationLink");
+    if (btn) btn.click();
+  }
+
+  return { updateLink, applyShareState, init, setOpen };
 }
