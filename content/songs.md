@@ -16,6 +16,7 @@ aliases: ["/setlists/", "/songbook/"]
   <div class="rj-library-tabs" id="libraryTabs">
     <button type="button" class="rj-library-tab" data-tab="library">Songs</button>
     <button type="button" class="rj-library-tab" data-tab="setlists">Setlists</button>
+    <button type="button" id="tourBtn" class="rj-library-help-btn" hidden><span class="fa-solid fa-circle-question" aria-hidden="true"></span></button>
   </div>
 
   <div class="rj-library-search" id="librarySearchRow">
