@@ -34,4 +34,23 @@ def find_systems(path, grey=200, fill=0.55):
     # Drop stray rules (a boxed chord grid, table borders, underlines): they show up
     # as groups of 1-3 lines. Fall back to everything if nothing looks like a staff.
     staves = [s for s in systems if len(s) >= 4]
-    return (staves or systems), (W, H)
+    staves = staves or systems
+    # A table border sitting within 20px of a real staff (common right below a boxed
+    # chord grid) merges into that staff's group instead of forming its own group of
+    # 1-3, e.g. [207, 226, 231, 236, 242, 248] for a grid border + 5 real lines. Within
+    # any group of >5, keep the 5 consecutive lines with the most uniform spacing
+    # (a real staff's 4 gaps are all ~equal; a stray border makes one gap much bigger).
+    trimmed = []
+    for s in staves:
+        if len(s) <= 5:
+            trimmed.append(s)
+            continue
+        best, best_score = None, None
+        for i in range(len(s) - 4):
+            window = s[i:i + 5]
+            gaps = [window[j + 1] - window[j] for j in range(4)]
+            score = max(gaps) - min(gaps)
+            if best_score is None or score < best_score:
+                best, best_score = window, score
+        trimmed.append(best)
+    return trimmed, (W, H)

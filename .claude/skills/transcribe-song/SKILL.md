@@ -21,7 +21,7 @@ The lead sheet is always the primary source of truth. A MIDI is a **cross-check 
 fallback**, never copied verbatim — it is usually a multi-part arrangement in a
 different octave/key with improvised fills.
 
-## Tools (all already installed — do not pip install)
+## Tools (usually already installed — check before you pip install)
 
 | Tool | Where | Use |
 |---|---|---|
@@ -38,6 +38,25 @@ Helper scripts live in `.claude/skills/transcribe-song/scripts/`. Set up shell v
 VP=tools/OMR/.venv/bin/python3            # venv Python — run every script with this
 SK=.claude/skills/transcribe-song/scripts
 ```
+
+**If `tools/OMR/.venv` doesn't exist** (seen on a fresh Claude Code on the web / remote
+container — this table describes the common case, not a guarantee): the `_staff.py`/
+`zoom.py`/`crop_systems.py`/`chord_map.py`/`notehead.py` family needs only `pip install
+pillow numpy` (or a plain `python3` if those are already present) — run them with that,
+not `$VP`, and skip the `VP=` var entirely for this half of the toolkit. For real OMR,
+`pip install homr music21` works from a scratch venv (`python3 -m venv /tmp/omrvenv &&
+/tmp/omrvenv/bin/pip install --upgrade pip setuptools wheel` **before** `pip install
+homr` — an old setuptools fails building `antlr4-python3-runtime` with a cryptic
+`install_layout` AttributeError), then `/tmp/omrvenv/bin/homr --init` once to download
+its three models (~130MB total, one-time). Use that venv's `python3`/`homr` in place of
+`$VP`/`homr` throughout. `render_site.mjs` needs Playwright too, and it specifically
+looks in `~/.npm/_npx/*/node_modules/playwright` — if that's empty, `npm install
+playwright --no-save` into any scratch dir and pass `executablePath` explicitly to
+`chromium.launch()` pointing at the environment's pre-installed browser (commonly
+`$PLAYWRIGHT_BROWSERS_PATH/chromium-<rev>/chrome-linux/chrome` — `find
+"$PLAYWRIGHT_BROWSERS_PATH" -iname chrome` to get the exact path; never `playwright
+install`, the browser is already there). None of this touches the repo's own
+`node_modules` or `package.json`.
 
 Scripts that save you doing it by hand (use them — hand-transposing and eyeballing every
 bar is where the tokens go):
@@ -74,6 +93,13 @@ Identify what was given: lead-sheet image(s), lead-sheet PDF, MIDI, or a mix.
   repeat signs `|:` `:|`, 1st/2nd endings, rehearsal words ("Intro"), a pickup bar, and
   systems that are written-out copies of each other. Also expand the boxed chord grid into
   one chord per bar (step 4). Most of the trouble below shows up here first, for free.
+- **If there's both a boxed chord grid and chord labels over the staff, compare them now**,
+  before transcribing a single note: read 3-4 grid cells and the labels for the same bars.
+  Same chords → normal. A consistent transposition (e.g. grid says `Gm D7`, staff labels say
+  `Am E7`, every pair a major 2nd apart) → the melody staff is written for a Bb instrument
+  (see the transposing-instrument note in step 4) and you should transpose *while* transcribing,
+  not discover it bar 30 in and redo everything. This 30-second check is cheap; finding out
+  late is not.
 
 ### 2. OMR the lead sheet  (if any image/PDF)
 
@@ -155,6 +181,33 @@ heads prove nothing. Look at the head itself in the *original* pixels — `noteh
 `fill` ~65 vs ~96 for filled). Calibrate on a head you know from the same sheet, then
 trust it over the eyeballed spacing. Musical sense breaks the remaining ties: the bar must
 sum to the meter, and a phrase usually mirrors its twin phrase.
+
+**If a phrase repeats elsewhere in the same piece, use the repeat as a second opinion.**
+homr runs each staff system independently, so two systems that print the *identical* music
+(a repeated A section, a bridge that echoes the intro) routinely come back with different
+rhythm mistakes even though the pitches agree — one instance may read a bar overfull, another
+underfull, a third clean. Dump the measures for all the repeated instances side by side
+(`music21`: list each measure's `.notesAndRests` with `.duration.quarterLength`) rather than
+puzzling over one occurrence in isolation. Where they disagree, the reading that (a) sums to
+the meter and (b) matches what the *other* instances agree on for that position is almost
+always right — three garbled OMR passes rarely agree on the same wrong answer, but they
+frequently agree on the right one once you strip out each instance's own one-off slip. This
+also catches the common "long tied note + short turn figure" duration error: a whole note
+tied into a run that homr reads a beat too long/short in one occurrence often reads correctly
+(or with a *different*, complementary slip) in another, and combining the correct fragments
+from each gives a bar that actually sums right — cross-check the result against the chord
+tones before trusting it.
+
+**A resolved pitch is a chord tone (or an obvious step/chromatic neighbor to one) far more
+often than not.** Once you know the bar's chord (from the grid/labels, step 4), check
+whether homr's pitch is the root/3rd/5th/7th of it — a `G#` under an `E7`, an `F` under a
+`Gm`, an `A` and `C#` outlining an `A7` on the way up. This is a real, cheap sanity check,
+not just theory-flavored reassurance: it independently confirmed both pitches *and* the
+overall transposition on a Bb-instrument sheet (every resolved note landed on a chord tone
+only after transposing down a major 2nd; a handful were off by a 4th before that). When a
+pixel-level reading and homr's reading disagree and you can't re-measure cleanly (a ~600px
+scan gives only ~5px per staff step — genuinely too coarse to resolve line-vs-space by eye
+some of the time), the one that lands on a chord tone is the one to trust.
 
 **Accidentals in a passage the scan shows plainly but the OMR rendered wrong** (bare F natural
 after a G-major staff, F♯ restored later in the bar): the printed signs are the truth, not the
@@ -349,6 +402,21 @@ source.
 - Invoking the venv Python by a relative `../../..` path prints a harmless
   `Unexpected value in sys.prefix` warning; run from the repo root with
   `VP=tools/OMR/.venv/bin/python3` as at the top to avoid it.
+- `zoom.py`/`crop_systems.py`/`chord_map.py` auto-detect staff systems by finding rows of
+  near-full-width dark pixels (`_staff.py`). A boxed chord grid's own table borders are the
+  same kind of row, and if the grid sits within 20px of the first real staff (common — there's
+  often little gap between the grid and the melody underneath it), one border line merges into
+  that staff's group and becomes its (wrong) top line, throwing every guide-line/pitch label on
+  that system off by however far the border sits from the real staff. `_staff.py` now picks the
+  5-line window with the most uniform spacing out of any oversized group to filter this out; if
+  a guide overlay still looks shifted relative to the printed staff lines near the top of a
+  scan, suspect this before suspecting your own pitch reading.
+- `render_site.mjs` looks for Playwright specifically in `~/.npm/_npx/*/node_modules` and
+  browsers in `~/.cache/ms-playwright`; a fresh/remote environment can have Playwright's
+  browser pre-installed elsewhere (e.g. `$PLAYWRIGHT_BROWSERS_PATH`) with nothing in either
+  of those paths, which throws `playwright not found`. Don't `playwright install` (redundant
+  download, can fail/be slow); `npm install playwright --no-save` somewhere scratch and pass
+  `executablePath` to `chromium.launch()` instead — see the Tools section above.
 - **In the report, list the guesses you actually made**: ambiguous rhythms (and how you
   settled them), accidentals the scan didn't show (e.g. a natural 6th over a minor chord),
   ties ABC can't draw, a key change written out as accidentals, and chord cells taken from the
