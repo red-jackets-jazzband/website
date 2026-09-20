@@ -157,6 +157,61 @@ the scan. When a bass-clef misread dropped bars, don't repair it: copy the ident
 staff (or read that staff by eye). `--keysig` takes the *sheet's own* sharps count for that
 staff (0 = none, -2 = two flats), i.e. before the `--interval` transposition.
 
+**When the scan is ~600px or smaller, expect OMR to fail on most staves — go straight to
+reading by eye.** On Original Dixieland One-Step (a 596x842 grab, 7 staff systems) `omr_staves.py`
+flagged rhythm errors on most staves (bars 3-3.5 beats long, one staff at homr distance 0.48,
+syncopated bars read as `z5 e2 c`), and its per-staff bar counts were off (9 bars for an 8-bar
+staff). The fast path that worked, twice now (Original Dixieland One-Step; When You Wore a
+Tulip, where OMR wasn't even attempted — a clean 4-bars-per-system quarter/half melody
+read faster and more reliably by eye): skip `omr_staves.py` (at most one look at its
+stderr), and cut every system into
+left/right halves at 5x with `crop_systems.py` (it auto-finds every staff system; it needs
+numpy, so run it with `$VP` — the system `python3` may not have it):
+
+```
+$VP $SK/crop_systems.py scan.png --out L --scale 5 --xrange 0-0.55   # left halves  L/sys1.png ...
+$VP $SK/crop_systems.py scan.png --out R --scale 5 --xrange 0.45-1   # right halves R/sys1.png ...
+```
+
+The 10% overlap means no bar is split; Read `L/sysN.png` then `R/sysN.png` per system (a
+note that shows up at the right edge of L and the left edge of R is the same note — don't
+count it twice). Per bar, in this order: (1) the bar's *stems* (up/down), *flags* and
+*beams* — not the notehead fill, which is unreliable at this resolution (every head looks
+hollow, though on a clean 5x crop filled vs hollow is usually readable too); (2) the total
+has to be 4 beats; (3) chord-tone check against the grid chord.
+**Read pitch by pixel position, not by impression:** in each crop, note the y of the five
+lines (bottom = E4 in treble), then a head at y sits `(y_bottom - y) / (line_gap / 2)`
+steps above E4 — a head between two lines is a space note, on a line is a line note. The
+crops are numbered/scaled the same, so you can do this from the pixel coordinates in what
+you see rather than guessing "second space or third line".
+**Use the lyrics to count notes per bar** when the sheet has them: syllables sit directly
+under their notes, so "You made life" over a bar means 3 heads, "big ___ red" means a held
+syllable across 3 heads (the underscore extender under a following note is a `_` slot in
+`w:`, and so is the second note of a tie). It catches a dropped/duplicated head faster than
+re-reading the staff, and doubles as the `w:` alignment check.
+For a mixed "eighth + quarter + eighth + tied half" or "half + eighth rest + quarter + eighth"
+bar, the note with the visible flag hook on its stem is the short one; the two candidate
+readings both sum to the meter, so only the flag tells them apart (zoom ~14x on just that
+bar).
+
+**Third time this by-eye path was used (Shine, 32 bars, 8 systems): the whole job was 16 crop
+Reads + one write, no OMR at all.** What made it right first time, so repeat it:
+- Read L+R for one system, write its 4 bars immediately in *written* pitches, sum each to 4,
+  and convert to concert straight away using the table in step 4 — don't batch all systems first.
+- **Spot twin systems first.** Systems 1, 2 and 5 were the same music apart from the last bar
+  (`c2 c c` vs `c c =B _B`). Once one is read, only the *differences* need a look, but still
+  Read every twin's last bar — that is exactly where they diverge.
+- Ties seen in this style: whole → quarter across the bar line (`B4- | B B c d`), dotted half →
+  half (`B3- | B2 B B`), whole → dotted half + quarter rest at the very end (`e4- | e3 z |]`).
+  Each shows as a slur arc crossing the bar line.
+- A beamed **dotted eighth + sixteenth** is `d3/4c/4` (with `L:1/4`), glued with no space so it
+  beams as one group. A flagged eighth with no partner beam is a single eighth
+  (`d/ c A F3/2`) — don't pair it with its neighbour.
+- Every bar summed to 4 on the first read and `lint:abc` had nothing to say — the real risk
+  was pitch and accidentals (see the cross-bar gotcha in step 4), not length.
+- Register in `index_of_songs.txt` just before any longer title with the same prefix
+  (`Shine,shine.abc` goes above `Shine on me,...`).
+
 **Draft the ABC straight from the OMR** instead of transcribing by hand (single-key sheets
 with nothing from the list above; otherwise use `omr_staves.py`):
 
@@ -305,14 +360,54 @@ staff.** One cell = one bar, `%` = same chord as the cell before, a diagonally s
 and use that. The labels above the staff are placed loosely (often over beat 3-4, not at
 the bar line), so use them only to cross-check which bar a chord belongs to.
 
+**Lead sheets with a boxed chord grid on top are a
+common source here, and the three 596x842 GIF grabs so far (Original Dixieland One-Step, When
+You Wore a Tulip, Shine) shared this shape** — expect it and skip the discovery: title + "Words by … music by … in YYYY" credit line (that's the `C:` line:
+`C:Composer and Lyricist (year)`); an 8-cell-per-row chord grid in the **concert** key (Bb);
+the melody staff written for a **B♭ instrument in C** (so it needs the M2-down conversion
+below), with the on-staff chord labels the same chords a major 2nd higher; 4 bars per staff
+system (so N grid rows = 2N systems), a first system that may start with a pickup and a
+double bar (`F||`) or none at all (Shine opens on a full-bar whole note); lyrics under the staff
+*sometimes* (Shine has none — then no `w:` lines, don't go looking for them); no `Q:`/tempo/style
+marking (leave `R:`/`Q:` out rather than invent one); no rehearsal letters either, so no `P:`
+lines (Shine is a plain 32-bar tune, 8 bars/line = 4 lines). The concert key isn't always Bb:
+Shine's grid is Eb (`Eb Bb7 G7 Cm F7 Ab Abm ...`) over a written-F, one-flat staff. Check the count once: grid cells = staff bars (32 = 8 systems
+of 4), and the chord under each staff bar's label equals the grid cell at the same index.
+
 **Transposing-instrument sheets.** If the melody's chord labels don't match the grid /
 the house key (e.g. staff labelled C, D7, G7 while the grid says Bb, C7, F7), the staff is
 written for a B♭ instrument, a whole step up. Concert = written down a major 2nd, and
-the repo's files are concert. In `K:Bbmaj` the mapping is: written C→`B`, D→`c`, E→`d`,
-F→`e`, G→`f`, A→`G`, B→`A` (a natural, no sign needed); written accidentals:
-C♯→`=B`, D♯→`^c`, G♯→`^F`, E♭→`_d`, B♭→`_A`, A♭→`_G`. Octaves shift down with the
-letter (written C5 = concert B♭4). Do the whole conversion bar by bar with beats
+the repo's files are concert. For a written-C staff into `K:Bbmaj`, the mapping (written
+note, treble staff → ABC) is:
+
+| written | D4 | E4 | F4 | G4 | A4 | B4 | C5 | D5 | E5 | F5 | G5 | A5 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| concert ABC | `C` | `D` | `E` | `F` | `G` | `A` | `B` | `c` | `d` | `e` | `f` | `g` |
+
+(bare `B`/`E` are B♭/E♭ from the key signature — no sign needed; the octave shifts down with
+the letter, so written C5 = concert B♭4). Written accidentals: C♯→`=B`, **F♯→`=E`**,
+D♯→`^c`, G♯→`^F`, E♭→`_d`, B♭→`_A`, A♭→`_G`. Common chromatic figures on a lead sheet:
+a written A♭ next to a G (over the tonic 4 chord) becomes concert `_G`, a written E♭
+(`e2 _e` over C) becomes `d2 _d`, a written F♯ leading into G is concert `=E` — all of
+them are the same ♭/♮ shift, and abcjs shows the natural sign for `=E`/`=B` on the site. Do the whole conversion bar by bar with beats
 summed, and keep a written-key note of each bar handy for the final compare.
+
+**Other concert keys: derive the table, don't copy it.** For a written-F (one flat) staff into
+`K:Ebmaj` (Shine) the same M2-down shift gives: written D4 `C`, E4 `D`, F4 `E`, G4 `F`, A4 `G`,
+**B♭4 `A`** (bare — A♭ is in the signature), B♮4 `=A`, C5 `B`, D5 `c`, E5 `d`, F5 `e`, G5 `f`,
+A5 `g`. Written accidentals: C♯→`=B`, F♯→`=E`, G♯→`^F`, B♮→`=A`. General rule: convert the
+letter (down a 2nd), then compare against the *concert* key signature to see whether a sign is
+needed — never carry the written sign across.
+
+**Cross-bar gotcha when transposing chromatic passes:** a written natural/sharp and the
+written plain note that follows it in the same bar turn into *two different concert
+spellings of the same letter*, so the second needs its own explicit sign or abcjs (and
+`abc2midi`) will keep the first one's accidental. Shine bar 22: written `C♯ A B♮ C` →
+`=B G =A/ _B3/2` (the closing `_B` restores B♭ after `=B`); bar 4 of the repeat: written
+`B♮ B♭` → `=A _A`. `lint:abc`/`abc2midi` can't catch this (bar length is unaffected, and it
+parses cleanly) — the only checks are the chord-tone test (a stray `=B` under a Cm) and
+eyeballing the render for a missing/unexpected natural sign. Do this pass explicitly on every
+bar that has a sign in the source.
 A diminished 7th chord is symmetric (Cdim ≡ Adim ≡ E♭dim ≡ G♭dim), so a grid's `Gdim`
 and the staff's `Cdim` can both be correct — keep the grid's spelling.
 
@@ -365,11 +460,30 @@ at 2-3 existing files first (`static/songs/when_youre_smiling.abc`,
   too, not folded into a `|:` `:|`, unless the sheet itself marks it. A whole note tied into the
   first ending (`F8- |[1 F2 …`) can only tie once in ABC; if the sheet also ties it into the
   2nd ending, the tie is drawn only into the first — say so in the report.
-- **Key changes mid-tune.** No song here uses an inline `[K:…]` (the Key stepper, chord
-  analysis and comping all read the first `K:` only), so keep **one `K:`** — the key of the
-  opening — and write the new key's accidentals out explicitly (`_E` for every E♭ in a
-  B♭-major section of a `K:Fmaj` tune; remember the bar-persistence rule and put `=E` where
-  the natural returns). Mention the key change in the report.
+- **Key changes mid-tune.** Inline `K:` fields **are supported** now (the Key stepper and
+  instrument transposition shift every key signature uniformly, and chord analysis /
+  Roman numerals track the `K:` in force per measure -- see `bugle_boy_march.abc`, which
+  gives Part C its own `K:Bb`). So put the new key on its own `K:` line at the start of the
+  section, right after that section's `P:` line (`P:B` then `K:Eb`), and write that section
+  in the new key's signature -- **no** hand-spelled accidentals for the new key. Keep the
+  header `K:` as the key of the opening. Don't write an inline `[K:...]` mid-bar. Notes:
+  abcjs engraves the new key signature at the *end of the previous staff line* (the line
+  break before the `K:`), which is normal. When the modulation happens across a sheet
+  written for a transposing instrument, **each section can have its own written key too**
+  (written C / F / Bb for concert Bb / Eb / Ab): convert every section with the same
+  M2 offset, but against *its own* signature -- a written accidental is always relative to *that section's* written signature, and the
+  concert accidental relative to the new concert signature (written C♯ over a no-flat staff is
+  `=B` in `K:Bb`; the same written C♯ over a two-flat staff is also `=B` in `K:Ab`, because
+  B♭ is in that signature) -- re-derive each one per section, never copy spelling across. Where a tune re-uses a note across a bar-persistence boundary
+  (a natural earlier in the bar, then the note's normal flatted form later), the restore
+  must be written explicitly (`B=ABc B_AGF`). Mention the key changes in the report.
+- **Breaks / stop-time marks.** A dashed line under a stretch of staff (and under the
+  matching cells of a chord grid) marks *breaks*. Put `"^Break"` (an annotation, not a
+  chord -- house precedent in `all_the_girls.abc`, `when_youre_smiling.abc`) beside the
+  chord on the first bar of each dashed span, and list the spans in an `N:` line. Count the
+  dashes' extent against the barlines to get exactly which bars they cover (the dashes
+  under a staff are evenly spaced, several per bar -- match the span's start/end x to the
+  barline x's, don't count dashes).
 - Pickup bar: match the sheet — a real anacrusis is `F G A ||` before bar 1; a
   written-out "rest + pickup" full bar is `z F G A |`.
 - **Fit as many bars per line as stay readable — aim for 8.** Each source line is one staff
@@ -398,7 +512,15 @@ at 2-3 existing files first (`static/songs/when_youre_smiling.abc`,
   skipped, but the **second note of a tie consumes a slot**, so put `_` there
   (`smi-ling, _` for `B2 B2- | B2`; confirmed against `when_youre_smiling.abc`).
   Count slots vs syllables per line before rendering — a miscount silently shifts
-  every later word. Use `-` inside a word, `_` to hold, no `|` needed.
+  every later word. Use `-` inside a word, `_` to hold, no `|` needed. A sheet's underscore
+  **extender line** under a run of notes ("big ___ red", "rose, ______") is exactly the `_`
+  slot: one `_` per extra note the syllable is held across (a tied note counts as one).
+  **Test the 8-bars-per-line choice on the render, not on the arithmetic** — on When You Wore
+  a Tulip (quarter/half-note melody, ~3 syllables a bar) 8 bars fit but ran syllables into
+  each other on the dense lines ("thenheav-en blessedme") even though nothing overlapped
+  numerically; 4 bars/line (the source sheet's own layout, one line per phrase) had none. Try
+  8 first, and if the lyrics fuse anywhere fall straight back to 4 rather than a 6 that
+  cuts across phrases.
 - Filename: lowercase, `_`-joined, short — `washington_and_lee.abc`.
 
 ### 6. Validate — do not skip
