@@ -20,7 +20,14 @@ work = prefix + "_work"
 
 if src.lower().endswith(".abc"):
     xml = work + ".musicxml"
-    m21.converter.parse(src).write("musicxml", xml)
+    parsed = m21.converter.parse(src)
+    # Lead sheets on this site are always treble clef; music21's ABC importer
+    # can auto-pick bass clef for a low-tessitura tune (its bestClef heuristic),
+    # which doesn't match how abcjs renders the same ABC on the live site.
+    for p in parsed.parts:
+        for c in list(p.recurse().getElementsByClass("Clef")):
+            c.activeSite.replace(c, m21.clef.TrebleClef())
+    parsed.write("musicxml", xml)
 else:
     xml = src
 
@@ -32,9 +39,14 @@ pages = sorted(glob.glob(work + "*.png"),
                key=lambda p: int("".join(filter(str.isdigit, os.path.basename(p))) or 0))
 imgs = []
 for p in pages:
-    im = Image.open(p).convert("RGB")
+    im = Image.open(p)
     bg = Image.new("RGB", im.size, (255, 255, 255))
-    diff = ImageOps.invert(Image.blend(bg, im, 1.0).convert("L"))
+    if im.mode == "RGBA":
+        bg.paste(im, mask=im.split()[3])
+    else:
+        bg.paste(im.convert("RGB"))
+    im = bg
+    diff = ImageOps.invert(im.convert("L"))
     bbox = diff.getbbox()
     if bbox:
         im = im.crop((0, max(0, bbox[1] - 20), im.size[0], min(im.size[1], bbox[3] + 20)))
