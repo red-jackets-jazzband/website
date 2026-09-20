@@ -180,6 +180,7 @@ function createApp() {
   ctx.swipeNav = createSwipeNav(ctx);
   ctx.fullscreen = createFullscreen();
   ctx.tour = createTour(ctx);
+  ctx.openSetlistById = openSetlistById;
 
   // A `sl=` band setlist can be deep-linked before its index has loaded; the
   // bootstrap parks the "open it" step here for the index fetch to run.

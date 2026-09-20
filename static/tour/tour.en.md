@@ -15,7 +15,7 @@ helpLabel: Take the tour
 ## welcome: Welcome to the songs page
 setup: showLibrary
 target: #libraryTabs
-Every lead sheet the band plays lives here. This short tour walks through picking a song, playing and printing it, transposing, practising along with a recording, the mixer, setlists and comping.
+This library holds the lead sheets of songs the band has played, currently plays, or may play in the future. This short tour walks through picking a song, playing and printing it, transposing, practising along with a recording, the mixer, setlists and comping.
 
 Use **Next** and **Back** or the **←** and **→** keys. **Esc** leaves the tour, and the **?** button brings it back any time.
 
@@ -27,12 +27,12 @@ Type part of a title to filter the list. Press **/** anywhere to jump to this bo
 ## open: Your lead sheet
 setup: openDemoSong
 target: .rj-sheet-paper
-Picking a song opens it here. We've opened *Bourbon Street Parade* for the tour. The chord table, with a **Roman numeral** analysis, comes first, then the notation. On a phone the sheet takes over the whole screen and a **back** button returns you to the list.
+Picking a song opens it here. We've opened *Bourbon Street Parade* for the tour. The chord table comes first, then the notation. On a phone the sheet takes over the whole screen and a **back** button returns you to the list.
 
 ## instrument: Choose your instrument
 setup: openDemoSong
 target: #instrument
-Pick your instrument and the sheet is transposed to fit it: concert pitch, alto sax, B♭ clarinet or trumpet, tenor sax, trombone (bass clef) or sousaphone (bass clef). The page remembers your choice for next time. Playback always sounds at concert pitch, whatever instrument's part is on screen.
+Pick your instrument and the sheet is transposed to fit it: concert pitch, **Concert + Roman** (concert pitch with a Roman numeral analysis added to the chord table), alto sax, B♭ clarinet or trumpet, tenor sax, trombone (bass clef) or sousaphone (bass clef). The page remembers your choice for next time. Playback always sounds at concert pitch, whatever instrument's part is on screen.
 
 ## play: Play it
 setup: openDemoSong

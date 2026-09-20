@@ -13,7 +13,7 @@ helpLabel: Tour starten
 # basics: Die Grundlagen
 
 ## welcome: Willkommen auf der Songs-Seite
-Hier findest du jedes Leadsheet, das die Band spielt. Diese kurze Tour zeigt dir, wie du einen Song auswählst, abspielst und druckst, wie du transponierst, zu einer Aufnahme mitspielst, wie der Mixer funktioniert und wie du mit Setlists und Comping arbeitest.
+Diese Bibliothek enthält die Leadsheets von Songs, die die Band gespielt hat, aktuell spielt oder in Zukunft vielleicht spielen wird. Diese kurze Tour zeigt dir, wie du einen Song auswählst, abspielst und druckst, wie du transponierst, zu einer Aufnahme mitspielst, wie der Mixer funktioniert und wie du mit Setlists und Comping arbeitest.
 
 Nutze **Weiter** und **Zurück** oder die Tasten **←** und **→**. Mit **Esc** beendest du die Tour, und mit dem **?**-Knopf startest du sie jederzeit neu.
 
@@ -21,10 +21,10 @@ Nutze **Weiter** und **Zurück** oder die Tasten **←** und **→**. Mit **Esc*
 Tippe einen Teil des Titels ein, um die Liste zu filtern. Drücke überall **/**, um in dieses Feld zu springen, und öffne dann mit **↑** **↓** und **Enter** einen Song. Die **A–Z**-Leiste neben der Liste springt direkt zu einem Buchstaben.
 
 ## open: Dein Leadsheet
-Wenn du einen Song auswählst, öffnet er sich hier. Für die Tour haben wir *Bourbon Street Parade* für dich geöffnet. Zuerst kommt die Akkordtabelle mit einer Analyse in **römischen Ziffern**, danach die Notation. Auf einem Handy füllt das Leadsheet den ganzen Bildschirm, und ein **Zurück**-Knopf bringt dich zur Liste.
+Wenn du einen Song auswählst, öffnet er sich hier. Für die Tour haben wir *Bourbon Street Parade* für dich geöffnet. Zuerst kommt die Akkordtabelle, danach die Notation. Auf einem Handy füllt das Leadsheet den ganzen Bildschirm, und ein **Zurück**-Knopf bringt dich zur Liste.
 
 ## instrument: Wähle dein Instrument
-Wähle dein Instrument, und das Leadsheet wird dafür transponiert: Konzerttonhöhe, Altsaxofon, B-Klarinette oder -Trompete, Tenorsaxofon, Posaune (Bassschlüssel) oder Sousaphon (Bassschlüssel). Die Seite merkt sich deine Wahl für das nächste Mal. Die Wiedergabe klingt immer in Konzerttonhöhe, egal welches Instrument gerade angezeigt wird.
+Wähle dein Instrument, und das Leadsheet wird dafür transponiert: Konzerttonhöhe, **Concert + Roman** (Konzerttonhöhe mit einer Analyse in römischen Ziffern in der Akkordtabelle), Altsaxofon, B-Klarinette oder -Trompete, Tenorsaxofon, Posaune (Bassschlüssel) oder Sousaphon (Bassschlüssel). Die Seite merkt sich deine Wahl für das nächste Mal. Die Wiedergabe klingt immer in Konzerttonhöhe, egal welches Instrument gerade angezeigt wird.
 
 ## play: Abspielen
 Mit **Play** spielst du den Song ab, und die Noten leuchten im Leadsheet auf, während sie erklingen. **Stop** beendet die Wiedergabe. Drücke die **Leertaste**, um abzuspielen oder zu pausieren, sobald ein Leadsheet geöffnet ist.

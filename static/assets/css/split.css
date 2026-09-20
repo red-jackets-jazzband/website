@@ -5058,6 +5058,8 @@ body.rj-sheet-fullscreen #sheetmenu {
   position: absolute;
   width: 360px;
   max-width: calc(100vw - 16px);
+  max-height: calc(100dvh - 16px);
+  overflow-y: auto;
   box-sizing: border-box;
   padding: 14px 18px 14px;
   background: #1b1b1b;
