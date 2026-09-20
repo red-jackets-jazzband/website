@@ -39,7 +39,7 @@ const POLL_MS = 50;
 // Not hidden by `hidden`, `display:none` (including a closed <dialog>) or a
 // display:none ancestor — what a user would call "on screen", minus layout.
 export function isShown(node) {
-  for (let current = node; current && current.nodeType === 1; current = current.parentElement) {
+  for (let current = node; current?.nodeType === 1; current = current.parentElement) {
     if (current.hidden) return false;
     if (window.getComputedStyle(current).display === "none") return false;
   }
@@ -169,7 +169,7 @@ export function createTourActions(ctx) {
   // that uses this must also `setup: openDrawer`.)
   async function compingOn() {
     const select = byId("comping");
-    if (select && select.value === "off" && chooseComping(COMPING_DEMO_PATTERN)) {
+    if (select?.value === "off" && chooseComping(COMPING_DEMO_PATTERN)) {
       await waitUntil(() => ctx.state.compingActive, { timeout: 2000 });
     }
   }
@@ -199,32 +199,87 @@ export function createTourActions(ctx) {
   // Remember what the visitor had before the tour touches anything.
   function begin() {
     const select = byId("comping");
+    const { state } = ctx;
     snapshot = {
-      tab: ctx.state.activeTab,
-      songFile: ctx.state.currentSongFile,
+      tab: state.activeTab,
+      songFile: state.currentSongFile,
+      setlistOpen: state.activeTab === "setlists" && state.setlistsView === "open",
+      setlistId: state.currentSetlistId,
+      setlistSongIndex: state.currentSetlistSongIndex,
       sheetActive: document.body.classList.contains(SHEET_ACTIVE_CLASS),
       drawerOpen: isDrawerOpen(),
       compingValue: select ? select.value : null,
+      fullscreen: document.body.classList.contains(FULLSCREEN_CLASS),
+      mixerOpen: Boolean(ctx.mixer.isOpen?.()),
+      inspirationOpen: Boolean(ctx.inspiration.isOpen?.()),
     };
-    demoShown = ctx.state.currentSongFile === DEMO_SONG_FILE;
+    demoShown = state.currentSongFile === DEMO_SONG_FILE;
     loopBarGaveUp = false;
     ctx.audio.stop();
     exitFullscreen();
   }
 
+  // Wait for the sheet to swap to a different tune than `before`.
+  const waitForSheet = (before) => waitUntil(
+    () => ctx.state.currentSongText && ctx.state.currentSongText !== before,
+    { timeout: SONG_WAIT_MS },
+  );
+
+  // The tour started inside an open setlist: reopen it (by id, band or
+  // personal) and put the sheet back on the song, at the same row.
+  async function restoreSetlist(snap) {
+    const { state } = ctx;
+    const stillOpen = state.activeTab === "setlists" && state.setlistsView === "open"
+      && state.currentSetlistId === snap.setlistId;
+    if (!stillOpen) {
+      if (state.activeTab !== "setlists") ctx.switchTab("setlists");
+      const opened = await withTimeout(
+        new Promise((resolve) => {
+          ctx.openSetlistById(snap.setlistId, () => resolve(true), () => resolve(false));
+        }),
+        SETLIST_WAIT_MS,
+      );
+      if (!opened) return false; // e.g. a personal setlist deleted mid-tour
+    }
+    const idx = snap.setlistSongIndex;
+    if (idx == null || state.currentSetlistSongIndex === idx) return false;
+    return ctx.setlistView.openSongAtIndex(idx);
+  }
+
   // The tour started on a song of their own: put it back (the demo replaced
   // it), and return to the tab they were on. With no song of their own the
   // demo stays open on desktop, which beats an empty sheet; on a phone the
-  // sheet is a separate screen, so that goes back to the list.
-  function restoreLocation(snap) {
-    if (snap.songFile && demoShown && snap.songFile !== DEMO_SONG_FILE) {
-      ctx.openLibrarySong({ file: snap.songFile });
+  // sheet is a separate screen, so that goes back to the list. Resolves once
+  // any re-opened song has rendered.
+  async function restoreLocation(snap) {
+    const before = ctx.state.currentSongText;
+    const sameSong = ctx.state.currentSongFile === snap.songFile;
+    let reopened = false;
+    if (snap.setlistOpen && snap.setlistId) {
+      reopened = await restoreSetlist(snap);
+    } else {
+      if (snap.songFile && demoShown && snap.songFile !== DEMO_SONG_FILE) {
+        ctx.openLibrarySong({ file: snap.songFile });
+        reopened = true;
+      }
+      if (ctx.state.activeTab !== snap.tab) ctx.switchTab(snap.tab);
     }
-    if (ctx.state.activeTab !== snap.tab) ctx.switchTab(snap.tab);
     if (!snap.sheetActive) leaveSheetIfStacked();
+    if (reopened && !sameSong) await waitForSheet(before);
   }
 
-  function end() {
+  // Panels that were open before the tour come back last, once the sheet they
+  // belong to is on screen again (the mixer's voices and the Inspiration
+  // button are both built per rendered song).
+  function restorePanels(snap) {
+    if (snap.fullscreen && !document.body.classList.contains(FULLSCREEN_CLASS)) {
+      byId("sheetFullscreenBtn")?.click();
+    }
+    if (snap.mixerOpen) ctx.mixer.setOpen(true);
+    if (snap.inspirationOpen) ctx.inspiration.setOpen(true);
+  }
+
+  async function end() {
     if (!snapshot) return;
     const snap = snapshot;
     snapshot = null;
@@ -232,7 +287,8 @@ export function createTourActions(ctx) {
     ctx.inspiration.setOpen(false);
     setDrawer(snap.drawerOpen);
     if (snap.compingValue !== null) chooseComping(snap.compingValue);
-    restoreLocation(snap);
+    await restoreLocation(snap);
+    restorePanels(snap);
   }
 
   return { actions, apply, begin, end };

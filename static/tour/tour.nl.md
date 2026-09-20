@@ -13,7 +13,7 @@ helpLabel: Volg de rondleiding
 # basics: De basis
 
 ## welcome: Welkom op de songs-pagina
-Hier staat elk leadsheet dat de band speelt. Deze korte rondleiding laat zien hoe je een nummer kiest, afspeelt en afdrukt, hoe je transponeert, meespeelt met een opname, hoe de mixer werkt, en hoe je met setlists en comping aan de slag gaat.
+Deze bibliotheek bevat de leadsheets van nummers die de band heeft gespeeld, nu speelt, of in de toekomst misschien gaat spelen. Deze korte rondleiding laat zien hoe je een nummer kiest, afspeelt en afdrukt, hoe je transponeert, meespeelt met een opname, hoe de mixer werkt, en hoe je met setlists en comping aan de slag gaat.
 
 Gebruik **Volgende** en **Terug**, of de toetsen **←** en **→**. Met **Esc** stop je de rondleiding, en met de **?**-knop start je hem op elk moment opnieuw.
 
@@ -21,10 +21,10 @@ Gebruik **Volgende** en **Terug**, of de toetsen **←** en **→**. Met **Esc**
 Typ een deel van een titel om de lijst te filteren. Druk overal op **/** om naar dit vak te springen, en gebruik dan **↑** **↓** en **Enter** om een nummer te openen. De **A–Z**-balk naast de lijst springt direct naar een letter.
 
 ## open: Je leadsheet
-Als je een nummer kiest, opent het hier. Voor de rondleiding hebben we *Bourbon Street Parade* voor je geopend. Eerst komt de akkoordentabel, met een analyse in **Romeinse cijfers**, daarna de notatie. Op een telefoon vult het leadsheet het hele scherm en brengt een **terug**-knop je terug naar de lijst.
+Als je een nummer kiest, opent het hier. Voor de rondleiding hebben we *Bourbon Street Parade* voor je geopend. Eerst komt de akkoordentabel, daarna de notatie. Op een telefoon vult het leadsheet het hele scherm en brengt een **terug**-knop je terug naar de lijst.
 
 ## instrument: Kies je instrument
-Kies je instrument en het leadsheet wordt daarop getransponeerd: concert (C), altsax, Bb-klarinet of -trompet, tenorsax, trombone (bassleutel) of sousafoon (bassleutel). De pagina onthoudt je keuze voor de volgende keer. Het geluid klinkt altijd in concertstemming, welk instrument er ook op het scherm staat.
+Kies je instrument en het leadsheet wordt daarop getransponeerd: concert (C), **Concert + Roman** (concertstemming met een analyse in Romeinse cijfers in de akkoordentabel), altsax, Bb-klarinet of -trompet, tenorsax, trombone (bassleutel) of sousafoon (bassleutel). De pagina onthoudt je keuze voor de volgende keer. Het geluid klinkt altijd in concertstemming, welk instrument er ook op het scherm staat.
 
 ## play: Speel het af
 Met **Play** speel je het nummer af, en de noten lichten op in het leadsheet terwijl ze klinken. **Stop** stopt het afspelen. Druk op de **spatiebalk** om te spelen of te pauzeren zodra er een leadsheet open staat.

@@ -221,7 +221,7 @@ function startChapterHeading(state, headingText) {
 // A line under a chapter heading but before its first step: only `setup:` means anything.
 function addChapterMeta(chapter, line) {
   const meta = parseMeta(line);
-  if (meta && meta.name === "setup") chapter.setup = splitList(meta.value);
+  if (meta?.name === "setup") chapter.setup = splitList(meta.value);
 }
 
 function consumeLine(state, line) {

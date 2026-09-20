@@ -251,6 +251,27 @@ test("while open, Space / arrows / slash never reach the page — except on a 't
   }
 });
 
+test("swallowed scroll keys are preventDefault-ed, except a card button's own Space/Enter", async () => {
+  const { cleanup } = await setup();
+  try {
+    byId("tourBtn").click();
+    await settle();
+    const press = (key, target) => {
+      const event = new window.KeyboardEvent("keydown", { key, bubbles: true, cancelable: true });
+      target.dispatchEvent(event);
+      return event.defaultPrevented;
+    };
+    for (const key of [" ", "ArrowDown", "ArrowUp", "/"]) {
+      assert.equal(press(key, document.body), true, `${JSON.stringify(key)} on the page must not scroll it`);
+    }
+    assert.equal(press(" ", primaryBtn()), false, "Space still presses a focused card button");
+    assert.equal(press("Enter", primaryBtn()), false, "Enter still presses a focused card button");
+    assert.equal(press("ArrowDown", primaryBtn()), true, "arrows on a card button don't scroll the page");
+  } finally {
+    cleanup();
+  }
+});
+
 test("clicks inside the tour don't reach page-level click listeners", async () => {
   const { cleanup } = await setup();
   try {

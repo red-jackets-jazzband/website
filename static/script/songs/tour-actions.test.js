@@ -12,10 +12,14 @@ const DRAWER_CLASS = "show-advanced";
 function setup({ state = {}, sheetLoadMs = 10 } = {}) {
   const page = mountPage();
   const calls = [];
+  const panelOpen = { mixer: false, inspiration: false }; // panel visibility the stubs report back
   const ctx = makeCtx({
     state,
-    mixer: { setOpen: (open) => calls.push(`mixer:${open}`) },
-    inspiration: { setOpen: (open) => calls.push(`inspiration:${open}`) },
+    mixer: { setOpen: (open) => { panelOpen.mixer = open; calls.push(`mixer:${open}`); }, isOpen: () => panelOpen.mixer },
+    inspiration: {
+      setOpen: (open) => { panelOpen.inspiration = open; calls.push(`inspiration:${open}`); },
+      isOpen: () => panelOpen.inspiration,
+    },
     audio: { stop: () => calls.push("audio.stop") },
     switchTab: (tab) => {
       calls.push(`tab:${tab}`);
@@ -36,6 +40,23 @@ function setup({ state = {}, sheetLoadMs = 10 } = {}) {
       ctx.state.currentSongFile = null;
       done();
     },
+    openSongAtIndex: (idx) => {
+      calls.push(`setlistSong:${idx}`);
+      ctx.state.currentSongFile = "in_setlist.abc";
+      ctx.state.currentSetlistSongIndex = idx;
+      setTimeout(() => { ctx.state.currentSongText = `X:1 setlist ${idx}`; }, sheetLoadMs);
+      return true;
+    },
+  };
+  // Mirrors app.js's openSetlistById: reopening a setlist by id, then `then`.
+  ctx.openSetlistById = (id, then, onMissing) => {
+    calls.push(`openById:${id}`);
+    if (id === "gone") { onMissing(); return; }
+    ctx.state.setlistsView = "open";
+    ctx.state.currentSetlistId = id;
+    ctx.state.currentSongFile = null;
+    ctx.state.currentSetlistSongIndex = null;
+    then();
   };
   // The drawer button flips .show-advanced the way sheet-controls.js does.
   const sheetmenu = document.getElementById("sheetmenu");
@@ -247,6 +268,58 @@ test("end() leaves the demo open when the visitor had no song of their own", asy
     actions.end();
     assert.equal(ctx.state.currentSongFile, DEMO_SONG_FILE);
     assert.equal(calls.some((c) => c.startsWith("song:")), false);
+  } finally {
+    cleanup();
+  }
+});
+
+test("end() reopens the setlist, its song row, full screen, the mixer and Inspiration the visitor had", async () => {
+  const { actions, calls, ctx, cleanup } = setup({
+    state: {
+      activeTab: "setlists", setlistsView: "open", currentSetlistId: "my_gig",
+      currentSongFile: "all_of_me.abc", currentSetlistSongIndex: 3, currentSongText: "X:1 mine",
+    },
+  });
+  try {
+    ctx.mixer.setOpen(true);
+    ctx.inspiration.setOpen(true);
+    document.body.classList.add("rj-sheet-fullscreen");
+    document.getElementById("sheetFullscreenBtn").addEventListener("click", () => {
+      document.body.classList.toggle("rj-sheet-fullscreen");
+      calls.push("fullscreen:toggle");
+    });
+    actions.begin();
+    assert.equal(document.body.classList.contains("rj-sheet-fullscreen"), false, "begin() leaves full screen");
+
+    await actions.apply(["showSetlists", "openDemoSong"]);
+    ctx.mixer.setOpen(false);
+    ctx.inspiration.setOpen(false);
+    calls.length = 0;
+
+    await actions.end();
+    assert.equal(ctx.state.activeTab, "setlists");
+    assert.equal(ctx.state.setlistsView, "open");
+    assert.equal(ctx.state.currentSetlistId, "my_gig");
+    assert.equal(ctx.state.currentSetlistSongIndex, 3);
+    assert.equal(calls.some((c) => c.startsWith("song:")), false, "not reopened as a Library song");
+    assert.equal(document.body.classList.contains("rj-sheet-fullscreen"), true);
+    assert.ok(calls.indexOf("setlistSong:3") < calls.lastIndexOf("mixer:true"), "panels come back after the song");
+    assert.ok(calls.includes("mixer:true") && calls.includes("inspiration:true"));
+  } finally {
+    cleanup();
+  }
+});
+
+test("end() with a setlist that has vanished settles on the Setlists home instead of hanging", async () => {
+  const { actions, ctx, cleanup } = setup({
+    state: { activeTab: "setlists", setlistsView: "open", currentSetlistId: "gone", currentSetlistSongIndex: 1 },
+  });
+  try {
+    actions.begin();
+    await actions.apply(["openDemoSong"]);
+    await actions.end();
+    assert.equal(ctx.state.activeTab, "setlists");
+    assert.equal(ctx.state.setlistsView, "home");
   } finally {
     cleanup();
   }

@@ -53,6 +53,15 @@ function swallow(event) {
   event.stopPropagation();
 }
 
+// Space / Enter on one of the card's own buttons must keep their native
+// "press the button" behaviour, so those are the one case not preventDefault-ed.
+function activatesCardButton(event, card) {
+  if (event.key === "Enter" || event.key === " " || event.key === "Spacebar") {
+    return card.contains(event.target?.closest?.(BUTTON));
+  }
+  return false;
+}
+
 function nextFrame() {
   return new Promise((resolve) => {
     requestAnimationFrame(() => resolve());
@@ -106,7 +115,7 @@ function trapTab(event, card) {
   const focusable = qsa("button:not([disabled])", card);
   if (!focusable.length) return;
   const first = focusable[0];
-  const last = focusable[focusable.length - 1];
+  const last = focusable.at(-1);
   const current = document.activeElement;
   let to = null;
   if (!card.contains(current) || (!event.shiftKey && current === last)) to = first;
@@ -262,7 +271,7 @@ export function createTour(ctx) {
     const step = flat[index];
     let box = target ? toBox(target.getBoundingClientRect()) : null;
     // Measure the card in its neutral (undocked, unplaced) shape.
-    refs.card.removeAttribute("data-placement");
+    delete refs.card.dataset.placement;
     refs.card.style.left = "";
     refs.card.style.top = "";
     const cardRect = refs.card.getBoundingClientRect();
@@ -384,7 +393,10 @@ export function createTour(ctx) {
     } else if (event.key === "Tab" && !step.interactive) {
       trapTab(event, refs.card);
     } else if (SWALLOWED_KEYS.has(event.key)) {
+      // Kept from the page's own shortcuts, and from scrolling it (Space,
+      // Up/Down) — except a card button's own Space/Enter activation.
       event.stopPropagation();
+      if (!activatesCardButton(event, refs.card)) event.preventDefault();
     }
   }
 
@@ -404,7 +416,7 @@ export function createTour(ctx) {
     refs.root.classList.remove("is-busy");
     currentTarget = null;
     actions.end();
-    if (returnFocus && returnFocus.focus) returnFocus.focus({ preventScroll: true });
+    if (returnFocus?.focus) returnFocus.focus({ preventScroll: true });
   }
 
   function start() {

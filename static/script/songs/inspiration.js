@@ -372,6 +372,12 @@ function stopPlainEmbed(key) {
   visible indication of which service it's playing from, unlike Spotify's
   own branded widget (see updateTabsUI).
 */
+// Whether the docked panel is on screen (for the guided tour's snapshot).
+const isOpen = () => {
+  const panel = byId("inspirationPanel");
+  return Boolean(panel) && !panel.hidden;
+};
+
 export function createInspiration(ctx) {
   // The sources the currently *open* panel is showing (not necessarily the
   // sidebar's current song — see updateLink's own doc comment: browsing
@@ -1380,5 +1386,5 @@ export function createInspiration(ctx) {
     if (btn) btn.click();
   }
 
-  return { updateLink, applyShareState, init, setOpen };
+  return { updateLink, applyShareState, init, setOpen, isOpen };
 }
