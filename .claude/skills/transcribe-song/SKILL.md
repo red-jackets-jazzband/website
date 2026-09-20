@@ -32,6 +32,13 @@ different octave/key with improvised fills.
 | `pdftoppm`, PyMuPDF (`fitz`) | `/usr/bin`, venv | PDF -> PNG |
 | Python + PIL + numpy (+ scipy) | venv | crop / zoom / annotate the scan, find barlines & chords |
 
+If any of `abc2midi`/`midi2abc`, `pdftoppm`, or `mscore` are missing (`which` them first — a
+from-scratch remote environment can have none of the three): `sudo apt-get install -y abcmidi
+poppler-utils musescore3` installs all of them; then `sudo ln -sf /usr/bin/mscore3 /usr/bin/mscore`
+since that package ships the binary as `mscore3`. See the gotchas below for two `render.py` bugs
+(transparent PNG background, auto-picked bass clef) that only surface once `mscore` is actually
+installed and running for the first time.
+
 Helper scripts live in `.claude/skills/transcribe-song/scripts/`. Set up shell vars:
 
 ```
@@ -214,6 +221,28 @@ strong hint the honest fix is putting a real `(3` triplet back, not redistributi
 values until the arithmetic works; (2) look for the triplet bracket itself in the source —
 a small `3` over a slur/bracket above 3 notes — before finalizing any bar you had to
 reconstruct this way, the same way you'd check for a tie mark rather than just infer one.
+
+**An underfull bar isn't always a triplet — check what note is actually missing duration.**
+On Bogalusa Strut, `omr_to_abc.py` flagged 9 bars all short by exactly 3.5 vs 4 beats, and
+homr's log listed the same bar numbers under "Removing tuplets" — the same signature as the
+Petit Fleur triplet case above. Here it was a different, simpler bug: every flagged bar ends
+in an unbeamed note with a plain stem and no flag (a quarter note) that homr's flattener had
+read as another eighth in the beamed run before it. Zooming on just the bar's *last* notehead
+(does its stem carry a flag / is it under the beam, or does the beam stop one note earlier?)
+settled it in every case, and adding one beat back to that one note — no triplet, no pitch
+change — fixed all 9 bars at once; `check_abc.py --musicxml ... ` then reported exactly those
+9 bars as the only duration diffs from the raw OMR, confirming nothing else moved. The lesson
+generalizes from Petit Fleur's: "sums to the meter" tells you a fix is *plausible*, not which
+fix is *right* — triplet and misread-last-note both produce a 0.5-beat shortfall, and the scan
+(a beam ending, a flag, a bracketed `3`) is what tells them apart, not the arithmetic.
+
+**A tie can be missing from `omr_to_abc.py`'s own "possible ties" list.** That heuristic only
+flags a same-pitch pair that lands adjacent in its *own* bar-sum reading; once a bar's last
+note has been corrected (per above), a real tie between two notes that are no longer where the
+heuristic expected them won't be (re-)flagged. On this tune, two of the four confirmed ties
+(bar 10 and bar 18's tied repeated eighth mid-run) turned up only by re-zooming each corrected
+bar's source image directly, not from the tool's own tie-candidate list — treat that list as a
+floor, not a ceiling, especially on any bar you've already hand-corrected.
 
 **A resolved pitch is a chord tone (or an obvious step/chromatic neighbor to one) far more
 often than not.** Once you know the bar's chord (from the grid/labels, step 4), check
@@ -416,6 +445,21 @@ source.
   accidentals — always eyeball bar 1 and any bar whose accidental looks wrong.
 - `mscore` needs `QT_QPA_PLATFORM=offscreen` in this headless environment; its
   PNG output can be huge (10k px) — downscale with PIL before Read.
+- **A fresh/remote environment can be missing `abc2midi`/`midi2abc`, `pdftoppm`, and `mscore`
+  entirely** (all absent on a Bogalusa Strut transcription run), not just the `tools/OMR/.venv`
+  case already covered above. `apt-get install -y abcmidi poppler-utils musescore3` (sudo works
+  in this sandbox) gets all three; MuseScore 3's binary is `mscore3`, not `mscore` — `ln -sf
+  /usr/bin/mscore3 /usr/bin/mscore` once so `render.py` and this doc's own table need no edits.
+- `render.py`'s mscore-PNG step needs two fixes on a from-scratch environment, both already
+  applied in the script: (1) this MuseScore build exports **transparent-background PNGs**, so
+  `Image.open(p).convert("RGB")` silently drops the alpha channel and keeps whatever's under
+  it — black — turning the whole proof image solid black with no error; composite onto a white
+  background first (`bg.paste(im, mask=im.split()[3])` when `im.mode == "RGBA"`). (2) music21's
+  ABC→MusicXML conversion picks a clef automatically (its `bestClef` tessitura heuristic) when
+  the ABC doesn't set one — which is always, since this repo's ABC files never specify a clef —
+  and a low-tessitura tune like Bogalusa Strut can come out in **bass clef**, wildly displaced
+  on ledger lines even though abcjs always renders these lead sheets in treble on the live site.
+  Force `m21.clef.TrebleClef()` on every part before writing the MusicXML.
 - If homr misses the time signature, pass the meter through when parsing / when
   you rebar the flat note list.
 - Invoking the venv Python by a relative `../../..` path prints a harmless
