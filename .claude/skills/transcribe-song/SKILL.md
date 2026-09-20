@@ -49,13 +49,15 @@ not `$VP`, and skip the `VP=` var entirely for this half of the toolkit. For rea
 homr` — an old setuptools fails building `antlr4-python3-runtime` with a cryptic
 `install_layout` AttributeError), then `/tmp/omrvenv/bin/homr --init` once to download
 its three models (~130MB total, one-time). Use that venv's `python3`/`homr` in place of
-`$VP`/`homr` throughout. `render_site.mjs` needs Playwright too, and it specifically
-looks in `~/.npm/_npx/*/node_modules/playwright` — if that's empty, `npm install
-playwright --no-save` into any scratch dir and pass `executablePath` explicitly to
-`chromium.launch()` pointing at the environment's pre-installed browser (commonly
-`$PLAYWRIGHT_BROWSERS_PATH/chromium-<rev>/chrome-linux/chrome` — `find
+`$VP`/`homr` throughout. `render_site.mjs` needs Playwright too, and it resolves the package from the current
+working directory first, then falls back to `~/.npm/_npx/*/node_modules/playwright` —
+if neither has it, `cd` into a scratch dir, `npm install playwright --no-save` there,
+and run `node <repo-path>/render_site.mjs ...` **from that scratch dir** so the cwd
+lookup finds it. Pass `--browser` pointing at the environment's pre-installed browser
+(commonly `$PLAYWRIGHT_BROWSERS_PATH/chromium-<rev>/chrome-linux/chrome` — `find
 "$PLAYWRIGHT_BROWSERS_PATH" -iname chrome` to get the exact path; never `playwright
-install`, the browser is already there). None of this touches the repo's own
+install`, the browser is already there) — the script forwards it straight to
+`chromium.launch({ executablePath })`. None of this touches the repo's own
 `node_modules` or `package.json`.
 
 Scripts that save you doing it by hand (use them — hand-transposing and eyeballing every
@@ -373,7 +375,9 @@ below is still the only pitch check.
 `render_site.mjs` is the layout check (`node $SK/render_site.mjs out.abc site.png --width 1100`,
 then Read `site.png`): confirm the bars-per-line choice from step 5 — 8 bars across, chords
 not colliding, lyrics legible, every part's first bar carrying a chord. It uses the same abcjs
-options as the live sheet, so what you see is the on-site line count.
+options as the live sheet, so what you see is the on-site line count. Add `--browser
+/path/to/chrome` if Playwright can't find a bundled browser on its own (see the Tools section
+and the Playwright gotcha below).
 
 Read the `proof_*.png` and compare bar by bar with the source scan: pitches,
 accidentals, rhythm, chord placement. Fix every mismatch and re-render. Iterate
@@ -411,12 +415,16 @@ source.
   5-line window with the most uniform spacing out of any oversized group to filter this out; if
   a guide overlay still looks shifted relative to the printed staff lines near the top of a
   scan, suspect this before suspecting your own pitch reading.
-- `render_site.mjs` looks for Playwright specifically in `~/.npm/_npx/*/node_modules` and
-  browsers in `~/.cache/ms-playwright`; a fresh/remote environment can have Playwright's
-  browser pre-installed elsewhere (e.g. `$PLAYWRIGHT_BROWSERS_PATH`) with nothing in either
-  of those paths, which throws `playwright not found`. Don't `playwright install` (redundant
-  download, can fail/be slow); `npm install playwright --no-save` somewhere scratch and pass
-  `executablePath` to `chromium.launch()` instead — see the Tools section above.
+- `render_site.mjs` resolves the Playwright package from the current working directory
+  first, then `~/.npm/_npx/*/node_modules`, and looks for a browser under
+  `~/.cache/ms-playwright` by default; a fresh/remote environment can have neither the
+  package nor a browser there, which throws `playwright not found`. Don't `playwright
+  install` (redundant download, can fail/be slow); instead `cd` into a scratch dir,
+  `npm install playwright --no-save`, and invoke the script from that same scratch dir
+  (so the cwd lookup finds the package) with `--browser /path/to/chrome` pointing at
+  the environment's pre-installed browser — see the Tools section above. The script
+  forwards `--browser` straight to `chromium.launch({ executablePath })`; no source
+  edit is needed.
 - **In the report, list the guesses you actually made**: ambiguous rhythms (and how you
   settled them), accidentals the scan didn't show (e.g. a natural 6th over a minor chord),
   ties ABC can't draw, a key change written out as accidentals, and chord cells taken from the
