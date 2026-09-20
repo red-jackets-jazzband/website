@@ -200,6 +200,21 @@ tied into a run that homr reads a beat too long/short in one occurrence often re
 from each gives a bar that actually sums right — cross-check the result against the chord
 tones before trusting it.
 
+**"Sums to the meter" is necessary, not sufficient — don't stop there.** On Petit Fleur, the
+fix above (patched together from 3 readings of the same recurring cell) produced a bar that
+summed to 4/4 and passed `lint:abc`, but was still wrong: the real printed rhythm was a tied
+note + 2 straight eighths + an explicit **quarter-note triplet** (`(3`, 3-in-the-time-of-2),
+not 4 plain eighths + a closing quarter — two different rhythms that happen to have the same
+total length and, in this case, even the same note count. `npm run lint:abc` only checks
+duration sums; it cannot tell these apart, and neither can cross-instance agreement on a
+wrong-but-consistent reading. Two things would have caught it sooner: (1) homr's own stderr/
+log lines "Removing tuplets from measure N" name the *specific* bars it detected a tuplet in
+before flattening it — a bar on that list that's still over/underfull after your fix is a
+strong hint the honest fix is putting a real `(3` triplet back, not redistributing note
+values until the arithmetic works; (2) look for the triplet bracket itself in the source —
+a small `3` over a slur/bracket above 3 notes — before finalizing any bar you had to
+reconstruct this way, the same way you'd check for a tie mark rather than just infer one.
+
 **A resolved pitch is a chord tone (or an obvious step/chromatic neighbor to one) far more
 often than not.** Once you know the bar's chord (from the grid/labels, step 4), check
 whether homr's pitch is the root/3rd/5th/7th of it — a `G#` under an `E7`, an `F` under a
