@@ -544,7 +544,7 @@ video.video {
   padding: 72px 24px 80px;
   text-align: center;
   color: #444;
-  font-family: 'MuseJazzText', serif;
+  font-family: MuseJazzText, serif;
   /* Faint five-line staff behind the text, like blank manuscript paper. */
   background-image: repeating-linear-gradient(to bottom,
     transparent 0 14px, rgba(0,0,0,.09) 14px 15px);
