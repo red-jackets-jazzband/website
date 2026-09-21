@@ -15,12 +15,11 @@ Vêtus des fameuses vestes rouges, le groupe et ses membres ont fait leurs preuv
 # Membres
 * **Trompette** - Jelle Mens
 * **Trompette** - Carlo van Elsakker
-* **Trombone** - Han Huve
 * **Trombone** - Pieter Geers
-* **Clarinette** - Peter Poppelaars
 * **Soubassophone** - Ben Spoor
 * **Banjo** - Wilfried Vanwesenbeeck
+* **Banjo** - Martijn Verbiest
 * **Planche à laver** - Peter Maas
-* **Caisse claire** - Wouter Suykerbuyk
+* **Caisse claire** - Pim Huijgens
 * **Grosse caisse** - Niels Vos
 * **Grand Marshall** - Christ van Steen
