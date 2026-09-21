@@ -20,6 +20,8 @@ copyright = "&copy;2019 Red Jackets Jazzband"
     weight = 2
   [languages.de]
     weight = 3
+  [languages.fr]
+    weight = 4
 
 [params]
 
