@@ -84,31 +84,35 @@ copyright = "&copy;2019 Red Jackets Jazzband"
         text = "Youtube"
         url = "https://www.youtube.com/channel/UCH9Ci0xgnyhUaZ8gXQdaiLQ"
 
-  # Links List #3
-  [[params.links]]
-    [params.links.list3]
-      heading = "Pages"
-
-      [[params.links.list3.link]]
-        text = "Agenda"
-        url = "/agenda"
-
-      [[params.links.list3.link]]
-        text = "Band"
-        url = "/band"
-
-      [[params.links.list3.link]]
-        text = "In Action"
-        url = "/in-action"
-
-      [[params.links.list3.link]]
-        text = "Songs"
-        url = "/songs"
-
   # The original template is released under the Creative Commons Attribution 3.0 License.
   # Please keep the original attribution link when using for your own project.
   # If you'd like to use the template without the attribution, you can check out
   # the license option via the template author's website: https://onepagelove.com/split
+
+# Footer "Pages" list. `pageRef` resolves to the current language's version of
+# the page, and the label is that page's own `tagline`. /songs is English-only,
+# so it is a plain url. Identifiers are explicit because every page shares the
+# same title, which would otherwise make them collide.
+[[menus.main]]
+  identifier = "agenda"
+  pageRef = "/agenda"
+  weight = 10
+
+[[menus.main]]
+  identifier = "band"
+  pageRef = "/band"
+  weight = 20
+
+[[menus.main]]
+  identifier = "in-action"
+  pageRef = "/in-action"
+  weight = 30
+
+[[menus.main]]
+  identifier = "songs"
+  name = "Songs"
+  url = "/songs"
+  weight = 40
 
 # Below settings should fix any GDPR concerns according to Hugo docs
 [privacy]
