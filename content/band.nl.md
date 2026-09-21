@@ -15,12 +15,13 @@ Gekleed in de naamgevende rode jasjes heeft de band en zijn leden hun sporen ver
 # Leden
 * **Trompet** - Jelle Mens
 * **Trompet** - Carlo van Elsakker
-* **Trombone** - Han Huve
 * **Trombone** - Pieter Geers
-* **Klarinet** - Peter Poppelaars
 * **Sousafoon** - Ben Spoor
 * **Banjo** - Wilfried Vanwesenbeeck
+* **Banjo** - Martijn Verbiest
 * **Wasbord** - Peter Maas
-* **Snaredrum** - Wouter Suykerbuyk
+* **Snaredrum** - Pim Huijgens
 * **Bass Drum** - Niels Vos
 * **Grand Marshall** - Christ van Steen
+
+<a class="rj-badge" href="https://www.muzikantenbank.net/advertenties/muzikanten/saxofonist/gezocht/noord-brabant/bergen-op-zoom/muzikanten-gezocht-voor-de-red-jackets-109771" target="_blank" rel="noopener">Kom jij ons versterken?</a>
