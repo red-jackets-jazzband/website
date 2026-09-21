@@ -24,4 +24,4 @@ Gekleed in de naamgevende rode jasjes heeft de band en zijn leden hun sporen ver
 * **Bass Drum** - Niels Vos
 * **Grand Marshall** - Christ van Steen
 
-<a class="rj-badge" href="https://www.muzikantenbank.net/advertenties/muzikanten/saxofonist/gezocht/noord-brabant/bergen-op-zoom/muzikanten-gezocht-voor-de-red-jackets-109771" target="_blank" rel="noopener">Kom jij ons versterken?</a>
+<a class="rj-badge" href="https://www.muzikantenbank.net/advertenties/muzikanten/saxofonist/gezocht/noord-brabant/bergen-op-zoom/muzikanten-gezocht-voor-de-red-jackets-109771" target="_blank" rel="noopener">Kom jij ons versterken op riet of trombone?</a>
