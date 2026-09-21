@@ -15,12 +15,11 @@ Gekleidet in den namensgebenden roten Jacken hat die Band und ihre Mitglieder au
 # Mitglieder
 * **Trompete** - Jelle Mens
 * **Trompete** - Carlo van Elsakker
-* **Posaune** - Han Huve
 * **Posaune** - Pieter Geers
-* **Klarinette** - Peter Poppelaars
 * **Sousaphon** - Ben Spoor
 * **Banjo** - Wilfried Vanwesenbeeck
+* **Banjo** - Martijn Verbiest
 * **Waschbrett** - Peter Maas
-* **Snare Drum** - Wouter Suykerbuyk
+* **Snare Drum** - Pim Huijgens
 * **Bass Drum** - Niels Vos
 * **Grand Marshall** - Christ van Steen

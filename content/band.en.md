@@ -15,12 +15,13 @@ Dressed in the well known red jackets, the band and its members have earned thei
 # Members
 * **Trumpet** - Jelle Mens
 * **Trumpet** - Carlo van Elsakker
-* **Trombone** - Han Huve
 * **Trombone** - Pieter Geers
-* **Clarinet** - Peter Poppelaars
 * **Sousaphone** - Ben Spoor
 * **Banjo** - Wilfried Vanwesenbeeck
+* **Banjo** - Martijn Verbiest
 * **Washboard** - Peter Maas
-* **Snare Drum** - Wouter Suykerbuyk
+* **Snare Drum** - Pim Huijgens
 * **Bass Drum** - Niels Vos
 * **Grand Marshall** - Christ van Steen
+
+<a class="rj-badge" href="https://www.muzikantenbank.net/advertenties/muzikanten/saxofonist/gezocht/noord-brabant/bergen-op-zoom/muzikanten-gezocht-voor-de-red-jackets-109771" target="_blank" rel="noopener">Want to join us?</a>
