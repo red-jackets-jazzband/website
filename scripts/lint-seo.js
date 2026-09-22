@@ -15,7 +15,7 @@ import { join, sep } from "node:path";
 
 const ROOT = join(import.meta.dirname, "..");
 const PUBLIC_DIR = join(ROOT, "public");
-const LANG_CODES = ["en", "nl", "de", "fr"];
+const LANG_CODES = new Set(["en", "nl", "de", "fr"]);
 const DEFAULT_LANG = "en";
 const DESCRIPTION_MIN = 50;
 const DESCRIPTION_MAX = 160;
@@ -31,6 +31,12 @@ function readBaseUrl(configText) {
   return configText.slice(quoteStart + 1, quoteEnd);
 }
 
+function comparePaths(a, b) {
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
+}
+
 function listHtmlFiles(dir, base = dir) {
   const files = [];
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -41,7 +47,7 @@ function listHtmlFiles(dir, base = dir) {
       files.push(full.slice(base.length + 1));
     }
   }
-  return files.sort();
+  return files.sort(comparePaths);
 }
 
 // Finds every `<tagName ...>` tag (start tag only) and returns its raw text.
@@ -111,7 +117,7 @@ function pagePathInfo(relPath, baseUrl) {
   const dirSegments = segments.slice(0, -1);
   let lang = DEFAULT_LANG;
   let slugSegments = dirSegments;
-  if (dirSegments.length > 0 && LANG_CODES.includes(dirSegments[0]) && dirSegments[0] !== DEFAULT_LANG) {
+  if (dirSegments.length > 0 && LANG_CODES.has(dirSegments[0]) && dirSegments[0] !== DEFAULT_LANG) {
     [lang] = dirSegments;
     slugSegments = dirSegments.slice(1);
   }
@@ -190,7 +196,7 @@ function checkOpenGraphBasics(html, issues) {
 
 function checkRobotsMeta(html, issues) {
   const [robots] = metaContent(html, "name", "robots");
-  if (robots && robots.toLowerCase().includes("noindex")) {
+  if (robots?.toLowerCase().includes("noindex")) {
     issues.push(`meta robots unexpectedly says "${robots}"`);
   }
 }
