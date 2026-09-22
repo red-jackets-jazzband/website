@@ -284,7 +284,7 @@ function collectContentPages(baseUrl, perPageIssues) {
   const contentPages = [];
   for (const relPath of listHtmlFiles(PUBLIC_DIR)) {
     const html = readFileSync(join(PUBLIC_DIR, relPath), "utf8");
-    if (isRedirectStub(html)) continue;
+    if (isRedirectStub(html) || relPath === "404.html") continue;
     const { issues, description } = lintContentPage(relPath, html, baseUrl);
     if (issues.length > 0) perPageIssues.set(relPath, issues);
     const { lang, slug } = pagePathInfo(relPath, baseUrl);
