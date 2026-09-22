@@ -26,8 +26,8 @@
 {{ with $description }}<meta property="og:description" content="{{ . }}" />{{ end }}
 <meta property="og:url" content="{{ .Permalink }}" />
 <meta property="og:type" content="website" />
-{{ with .Site.Language.Locale }}<meta property="og:locale" content="{{ . }}" />{{ end }}
-{{ range .Translations }}<meta property="og:locale:alternate" content="{{ .Language.Locale }}" />
+{{ with .Site.Language.Locale }}<meta property="og:locale" content="{{ replace . "-" "_" }}" />{{ end }}
+{{ range .Translations }}<meta property="og:locale:alternate" content="{{ replace .Language.Locale "-" "_" }}" />
 {{ end }}
 {{ with .Site.Params.shareImage }}
 <meta property="og:image" content="{{ . | absURL }}" />
