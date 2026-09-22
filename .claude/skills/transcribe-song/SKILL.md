@@ -212,6 +212,52 @@ Reads + one write, no OMR at all.** What made it right first time, so repeat it:
 - Register in `index_of_songs.txt` just before any longer title with the same prefix
   (`Shine,shine.abc` goes above `Shine on me,...`).
 
+**Fourth time this by-eye path was used (I'm Blue and Lonesome, 24 bars, 6 systems, another
+~600px GIF, boxed grid + Bb-instrument staff): naked-eye line-vs-space judgment on a plain
+high-scale crop is *not* reliable, even at scale 16-20, and the whole piece had to be redone
+after the user caught a wrong starting note.** The first pass read a beamed note as sitting on
+a staff line by eye, unaided; it actually sat in the space one step above. That single misread
+propagated, because later notes were judged by "looks the same height as the bar 1 note" rather
+than against the staff itself — a whole song's worth of notes inherited one bad reference point.
+Worse, re-checking by eye a second time (still unaided) produced a *third* different answer for
+the same note before the real fix was found. Three different guesses from the same eyeballing
+method is the tell that eyeballing itself is the problem here, not the specific crop.
+**What actually settled it, and should be step zero for every pitch from now on, not a fallback:**
+draw the guide lines *onto* the crop instead of holding them in your head — `zoom.py` already
+does exactly this (red = staff lines, blue = spaces, labelled), but its output was part of the
+problem: it drew the guide lines on the image *before* cropping/scaling, then resized with
+LANCZOS, so both the guide lines and the notation got smoothed together and a note's edge
+against a line was genuinely blurry at the exact boundary that decides line-vs-space. **This was
+a real bug, now fixed** — `zoom.py` resizes with `Image.NEAREST` instead, so lines and noteheads
+stay crisp at any scale and a note's centre unambiguously sits on a line or between two. Use
+`zoom.py scan.png --system N --xfrac lo-hi` narrowed to a handful of notes (not a whole system)
+as the actual step zero for every pitch, not a fallback after eyeballing — re-run it on any
+note you're about to commit without having looked at it through guide lines. Treat a plain
+`crop_systems.py` crop with no drawn guide lines as insufficient evidence for a note whose
+line-vs-space reading matters (i.e. every note that isn't unambiguously on the bottom line or in
+ledger-line territory).
+- Numpy row-scanning to find a notehead's y-centroid (average the dark-pixel rows in a narrow
+  x-window) is a *useful cross-check once the x-window is right*, not a first resort and not
+  a substitute for the guide-line crop. It's easy to mistarget the x-range entirely (a
+  coordinate slip silently scanned the wrong note, or scanned a stem/ledger line with no
+  notehead in the window at all and printed nothing, which looks like "no data" rather than an
+  error) — always sanity-check the found blob's row-span against a *visual* crop of the same
+  x,y box before trusting the computed centre.
+- A small glyph before a note can be a flat sign or an eighth rest — they look near-identical at
+  crop scale ~12 (both a small hooked stroke). One was mis-read as a flat at scale 12 and turned
+  out to be a rest at scale 20. Don't commit an accidental from a crop scaled below ~16; re-crop
+  tighter on that one glyph first.
+- The chord-tone check (does the note match the chord printed above it?) is a good *consistency*
+  check after a guide-line reading, and a strong tie-breaker between two close candidates, but
+  don't let a plausible chord-tone story substitute for actually drawing the guide lines — a
+  wrong note a step away from the right one is very often *also* a plausible chord tone (a 6th
+  reads as fine as a 5th), so this check alone did not catch the original error here.
+- Systems 1, 2 and 6 were melodically identical (same lyric-line rhythm) apart from one chord
+  label in the final bar — worth spotting before transcribing note-by-note, the same way step 5's
+  "spot twin systems" already recommends. But once one instance turns out to need a correction,
+  re-verify *every* twin instance too, don't just propagate the fix by assumption — that's exactly
+  the kind of unverified propagation that let the original error spread through this whole piece.
+
 **Draft the ABC straight from the OMR** instead of transcribing by hand (single-key sheets
 with nothing from the list above; otherwise use `omr_staves.py`):
 
