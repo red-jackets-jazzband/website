@@ -58,7 +58,11 @@
 {{ end }}
 
 <!-- Styles -->
-<link rel="stylesheet" href="{{ "assets/css/split.css" | absURL }}" type="text/css" media="screen,print" />
+{{ with resources.Get "css/split.css" }}
+  {{ $css := . | minify | fingerprint }}
+  <link rel="stylesheet" href="{{ $css.RelPermalink }}" type="text/css" media="screen,print" integrity="{{ $css.Data.Integrity }}" />
+{{ end }}
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 

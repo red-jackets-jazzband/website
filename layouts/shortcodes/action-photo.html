@@ -1,0 +1,10 @@
+{{- $src := .Get "src" -}}
+{{- $full := .Get "full" | default $src -}}
+{{- $alt := .Get "alt" -}}
+{{- $caption := .Get "caption" -}}
+{{- $lead := eq (.Get "lead") "true" -}}
+{{- $lazy := eq (.Get "lazy") "true" -}}
+<figure class="rj-action-photo{{ if $lead }} rj-action-photo--lead{{ end }}">
+<a class="rj-action-photo-link" href="{{ $full }}" target="_blank" rel="noopener" aria-label="Open full-resolution photo"><img src="{{ $src }}"{{ if $lazy }} loading="lazy" decoding="async"{{ end }} alt="{{ $alt }}"></a>
+<figcaption>{{ $caption }}</figcaption>
+</figure>

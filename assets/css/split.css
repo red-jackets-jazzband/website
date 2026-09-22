@@ -4381,11 +4381,22 @@ body:has(#rjLibrary) .split-bio {
   overflow: hidden;
   border-radius: 10px;
 }
+.rj-action-photo-link {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: zoom-in;
+}
 .rj-action-photo img {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: filter 0.15s ease;
+}
+.rj-action-photo-link:hover img,
+.rj-action-photo-link:focus-visible img {
+  filter: brightness(0.85);
 }
 .rj-action-mosaic--hero .rj-action-photo {
   min-height: 174px;

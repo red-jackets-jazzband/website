@@ -6,9 +6,9 @@ description: "Browse and play traditional jazz lead sheets and setlists from the
 aliases: ["/setlists/", "/songbook/"]
 ---
 
-<script src="/script/abcjs_midi_6.7.0-min.js" type="text/javascript"></script>
-<script src="/script/tonal.4.6.9-min.js" type="text/javascript"></script>
-<script src="/script/lamejs-1.2.1-min.js" type="text/javascript"></script>
+<script src="/script/abcjs_midi_6.7.0-min.js" type="text/javascript" defer></script>
+<script src="/script/tonal.4.6.9-min.js" type="text/javascript" defer></script>
+<script src="/script/lamejs-1.2.1-min.js" type="text/javascript" defer></script>
 <script type="module" src="/script/songs-page.js"></script>
 
 <div class="rj-songs-layout" data-default-tab="library">
