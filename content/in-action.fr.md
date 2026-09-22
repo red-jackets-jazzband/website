@@ -30,8 +30,8 @@ description: "Photos, vidéos et enregistrements du Red Jackets Jazzband en conc
 </div>
 
 <div class="rj-action-mosaic rj-action-mosaic--tail">
-{{< action-photo src="/images/brussel2025/040A2326.jpg" full="/images/full/brussel2025/040A2326.jpg" alt="Brussels Jazz Weekend 2025" caption="Brussels Jazz Weekend 2025" lazy="true" >}}
-{{< action-photo src="/images/brussel2025/040A2342.jpg" full="/images/full/brussel2025/040A2342.jpg" alt="Brussels Jazz Weekend 2025" caption="Brussels Jazz Weekend 2025" lazy="true" >}}
+{{< action-photo src="/images/brussel2025/040A2326.jpg" full="/images/full/brussel2025/040A2326.jpg" alt="Les chanteurs des Red Jackets se produisent devant les maisons de corporations de la Grand-Place de Bruxelles" caption="Brussels Jazz Weekend 2025" lazy="true" >}}
+{{< action-photo src="/images/brussel2025/040A2342.jpg" full="/images/full/brussel2025/040A2342.jpg" alt="Les Red Jackets font la fête sous la tour de l'hôtel de ville de Bruxelles, un musicien porté sur les épaules" caption="Brussels Jazz Weekend 2025" lazy="true" >}}
 {{< action-photo src="/images/redjackets_jazzdienst.jpg" alt="Jazzdienst 2024" caption="Jazzdienst 2024" lazy="true" >}}
 {{< action-photo src="/images/red_jackets_middelburg.jpg" alt="ZeelandJazz, Middelburg" caption="ZeelandJazz · Middelburg" lazy="true" >}}
 {{< action-photo src="/images/jazzboz2017_kinderen.jpg" alt="JazzBoZ 2017" caption="JazzBoZ 2017" lazy="true" >}}
