@@ -2,6 +2,7 @@
 title: "Jazz for the streets"
 tagline: "Red Jackets Jazzband"
 date: 2019-03-16T08:20:22+01:00
+description: "Red Jackets Jazzband: een streetparade-jazzband uit Bergen op Zoom die traditionele New Orleans jazz speelt op straat en op festivals."
 ---
 
 De **Red Jackets Jazzband** is een echt streetparade-jazzband uit Bergen op Zoom, Nederland. We maken jazzmuziek waar het hoort, op straat, tussen de mensen. We spelen graag op jazzfestivals waar we alle generaties kennis laten maken met de tijdloze energie van traditionele jazzmuziek.
