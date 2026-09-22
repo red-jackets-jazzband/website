@@ -1,5 +1,5 @@
 {
-  "path": ["static/script", "static/assets/css", "tests"],
+  "path": ["static/script", "assets/css", "tests"],
   "ignore": [
     "**/*min.js",
     "**/abcjs*.js",

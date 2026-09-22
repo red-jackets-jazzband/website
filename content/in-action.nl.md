@@ -10,18 +10,9 @@ description: "Foto's, video's en opnames van de Red Jackets Jazzband tijdens liv
 <p class="rj-action-lead">Op straat, tussen de mensen. Foto's, film en onze playlist op SoundCloud.</p>
 
 <div class="rj-action-mosaic rj-action-mosaic--hero">
-<figure class="rj-action-photo rj-action-photo--lead">
-<img src="/images/domburg2025.jpg" alt="Jazz by the Sea, Domburg 2025">
-<figcaption>Jazz by the Sea · Domburg 2025</figcaption>
-</figure>
-<figure class="rj-action-photo">
-<img src="/images/enkhuizen2024.jpg" alt="Jazzfestival Enkhuizen 2024">
-<figcaption>Jazzfestival Enkhuizen 2024</figcaption>
-</figure>
-<figure class="rj-action-photo">
-<img src="/images/red_jackets_breda.jpg" alt="Breda Jazz Festival">
-<figcaption>Breda Jazz Festival</figcaption>
-</figure>
+{{< action-photo src="/images/domburg2025.jpg" full="/images/full/domburg2025.jpg" alt="Jazz by the Sea, Domburg 2025" caption="Jazz by the Sea · Domburg 2025" lead="true" >}}
+{{< action-photo src="/images/enkhuizen2024.jpg" alt="Jazzfestival Enkhuizen 2024" caption="Jazzfestival Enkhuizen 2024" >}}
+{{< action-photo src="/images/red_jackets_breda.jpg" alt="Breda Jazz Festival" caption="Breda Jazz Festival" >}}
 </div>
 
 <div class="rj-action-head">Op film</div>
@@ -39,26 +30,11 @@ description: "Foto's, video's en opnames van de Red Jackets Jazzband tijdens liv
 </div>
 
 <div class="rj-action-mosaic rj-action-mosaic--tail">
-<figure class="rj-action-photo">
-<img src="/images/brussel2025/040A2326.jpg" alt="Brussels Jazz Weekend 2025">
-<figcaption>Brussels Jazz Weekend 2025</figcaption>
-</figure>
-<figure class="rj-action-photo">
-<img src="/images/brussel2025/040A2342.jpg" alt="Brussels Jazz Weekend 2025">
-<figcaption>Brussels Jazz Weekend 2025</figcaption>
-</figure>
-<figure class="rj-action-photo">
-<img src="/images/redjackets_jazzdienst.jpg" alt="Jazzdienst 2024">
-<figcaption>Jazzdienst 2024</figcaption>
-</figure>
-<figure class="rj-action-photo">
-<img src="/images/red_jackets_middelburg.jpg" alt="ZeelandJazz, Middelburg">
-<figcaption>ZeelandJazz · Middelburg</figcaption>
-</figure>
-<figure class="rj-action-photo">
-<img src="/images/jazzboz2017_kinderen.jpg" alt="JazzBoZ 2017">
-<figcaption>JazzBoZ 2017</figcaption>
-</figure>
+{{< action-photo src="/images/brussel2025/040A2326.jpg" full="/images/full/brussel2025/040A2326.jpg" alt="Brussels Jazz Weekend 2025" caption="Brussels Jazz Weekend 2025" lazy="true" >}}
+{{< action-photo src="/images/brussel2025/040A2342.jpg" full="/images/full/brussel2025/040A2342.jpg" alt="Brussels Jazz Weekend 2025" caption="Brussels Jazz Weekend 2025" lazy="true" >}}
+{{< action-photo src="/images/redjackets_jazzdienst.jpg" alt="Jazzdienst 2024" caption="Jazzdienst 2024" lazy="true" >}}
+{{< action-photo src="/images/red_jackets_middelburg.jpg" alt="ZeelandJazz, Middelburg" caption="ZeelandJazz · Middelburg" lazy="true" >}}
+{{< action-photo src="/images/jazzboz2017_kinderen.jpg" alt="JazzBoZ 2017" caption="JazzBoZ 2017" lazy="true" >}}
 </div>
 
 </div>
