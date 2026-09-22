@@ -45,6 +45,13 @@ jobs:
           pip install linkchecker
           linkchecker public/index.html
 
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Check SEO
+        run: node scripts/lint-seo.js
+
       - uses: actions/upload-artifact@v7.0.1
         with:
           name: website

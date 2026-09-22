@@ -2,6 +2,7 @@
 title: "Red Jackets Jazzband"
 tagline: "Agenda"
 date: 2019-03-16T08:20:22+01:00
+description: "Aankomende optredens, festivals en streetparades van de Red Jackets Jazzband — bekijk waar de band binnenkort speelt."
 ---
 <script type="module" src="/script/agenda-page.js"></script>
 

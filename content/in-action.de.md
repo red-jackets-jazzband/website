@@ -2,6 +2,7 @@
 title: "Red Jackets Jazzband"
 tagline: "In Aktion"
 date: 2019-03-16T10:25:31+01:00
+description: "Fotos, Videos und Aufnahmen der Red Jackets Jazzband bei Live-Auftritten auf der Straße und bei Festivals."
 ---
 
 <div class="rj-action">

@@ -5,7 +5,7 @@
 
     {{ if $list.link }}
       <div class="split-list">
-        <h3>{{ $list.heading }}</h3>
+        <h2>{{ $list.heading }}</h2>
         <ul>
           {{ range $list.link }}
             <li><a href="{{ .url }}">{{ .text }}</a></li>
@@ -19,7 +19,7 @@
 
   {{ with .Site.Menus.main }}
     <div class="split-list">
-      <h3>Pages</h3>
+      <h2>Pages</h2>
       <ul>
         {{ range . }}
           <li><a href="{{ .URL }}">{{ with .Page }}{{ .Params.tagline | default .Title }}{{ else }}{{ .Name }}{{ end }}</a></li>

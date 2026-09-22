@@ -10,6 +10,7 @@
     "lint:dup": "jscpd --config jscpd.config.json",
     "lint:types": "tsc -p tsconfig.lib.json",
     "lint:abc": "node scripts/lint-abc.js",
+    "lint:seo": "node scripts/lint-seo.js",
     "audit": "npm audit --audit-level=high",
     "test": "node --test \"static/script/lib/*.test.js\" \"static/script/songs/*.test.js\" \"tests/**/*.test.js\""
   },

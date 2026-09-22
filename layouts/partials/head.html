@@ -3,24 +3,59 @@
 
 <!-- SEO -->
 {{ $pageLabel := .Params.tagline | default .Title }}
-<title>{{ .Site.Title }}{{ if .IsPage }} - {{ $pageLabel }}{{ end }}</title>
+{{ $title := .Site.Title }}
+{{ if .IsPage }}{{ $title = printf "%s - %s" $pageLabel .Site.Title }}{{ end }}
+{{ $description := .Params.description | default .Site.Params.description }}
+<title>{{ $title }}</title>
 {{ with .Site.Params.author }}<meta name="author" content="{{ . }}" />{{ end }}
-{{ with .Site.Params.description }}<meta name="description" content="{{ . }}" />{{ end }}
+{{ with $description }}<meta name="description" content="{{ . }}" />{{ end }}
 <meta name="robots" content="index, follow" />
 <meta name="referrer" content="always" />
+<link rel="canonical" href="{{ .Permalink }}" />
+
+<!-- Language alternates -->
+{{ if .IsTranslated }}
+  {{ range .AllTranslations }}
+  <link rel="alternate" hreflang="{{ default "en-US" .Language.Locale }}" href="{{ .Permalink }}" />
+  {{ if eq .Language.Lang "en" }}<link rel="alternate" hreflang="x-default" href="{{ .Permalink }}" />{{ end }}
+  {{ end }}
+{{ end }}
 
 <!-- Social & Open Graph -->
-<meta property="og:title" content="{{ .Site.Title }}{{ if .IsPage }} - {{ $pageLabel }}{{ end }}" />
-{{ with .Site.Params.description }}<meta property="og:description" content="{{ . }}" />{{ end }}
-<meta property="og:url" content="{{ .Site.BaseURL }}" />
+<meta property="og:title" content="{{ $title }}" />
+{{ with $description }}<meta property="og:description" content="{{ . }}" />{{ end }}
+<meta property="og:url" content="{{ .Permalink }}" />
+<meta property="og:type" content="website" />
+{{ with .Site.Language.Locale }}<meta property="og:locale" content="{{ . }}" />{{ end }}
+{{ range .Translations }}<meta property="og:locale:alternate" content="{{ .Language.Locale }}" />
+{{ end }}
 {{ with .Site.Params.shareImage }}
 <meta property="og:image" content="{{ . | absURL }}" />
 <meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:image" content="{{ . | absURL }}" />
 {{ end }}
+<meta name="twitter:title" content="{{ $title }}" />
+{{ with $description }}<meta name="twitter:description" content="{{ . }}" />{{ end }}
 {{ with .Site.Params.twitterHandle }}<meta name="twitter:site" content="@{{ . }}" />{{ end }}
 
 <!-- Favicon -->
 {{ with .Site.Params.favicon }}<link rel="icon" href="{{ . | absURL }}" />{{ end }}
+
+<!-- Structured data -->
+{{ if .IsHome }}
+  {{ $ld := dict
+    "@context" "https://schema.org"
+    "@type" "MusicGroup"
+    "name" .Site.Params.author
+    "url" .Site.BaseURL
+    "image" (.Site.Params.shareImage | absURL)
+    "genre" "Jazz"
+    "foundingDate" "2009"
+    "foundingLocation" "Bergen op Zoom, Netherlands"
+    "sameAs" .Site.Params.sameAs
+  }}
+<script type="application/ld+json">{{ $ld | jsonify | safeJS }}</script>
+{{ end }}
 
 <!-- Styles -->
 <link rel="stylesheet" href="{{ "assets/css/split.css" | absURL }}" type="text/css" media="screen,print" />

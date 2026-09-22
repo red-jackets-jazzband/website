@@ -4,6 +4,7 @@ title = "Red Jackets Jazzband"
 theme = "split"
 disableKinds = ["section", "taxonomy", "RSS"]
 timeout = 60000
+enableRobotsTXT = true
 
 DefaultContentLanguage = "en"
 
@@ -16,12 +17,20 @@ copyright = "&copy;2019 Red Jackets Jazzband"
 [languages]
   [languages.en]
     weight = 1
+    label = "English"
+    locale = "en-US"
   [languages.nl]
     weight = 2
+    label = "Nederlands"
+    locale = "nl-NL"
   [languages.de]
     weight = 3
+    label = "Deutsch"
+    locale = "de-DE"
   [languages.fr]
     weight = 4
+    label = "Français"
+    locale = "fr-FR"
 
 [params]
 
@@ -35,6 +44,14 @@ copyright = "&copy;2019 Red Jackets Jazzband"
 
   # Favicon
   favicon = "favicon.ico"
+
+  # Social profile URLs, used for structured data (schema.org sameAs)
+  sameAs = [
+    "https://twitter.com/RedJacketsJazz",
+    "https://www.instagram.com/redjacketsjazz/",
+    "https://www.facebook.com/RedJacketsJazzband",
+    "https://www.youtube.com/channel/UCH9Ci0xgnyhUaZ8gXQdaiLQ",
+  ]
 
   # Section - Visual
   [params.visual]
