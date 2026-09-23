@@ -63,11 +63,11 @@ Le lecteur continue de jouer pendant que vous consultez d'autres morceaux. Faite
 ## tabs: YouTube, Spotify et plus
 Ce morceau a plusieurs enregistrements : passez de l'un à l'autre avec les onglets. Un seul joue à la fois.
 
-## zoom: Zoomer sur la timeline
-La bande représente tout l'enregistrement. Utilisez les boutons **+** et **−**, ou faites glisser la fenêtre en surbrillance ou ses bords, pour zoomer sur la timeline en dessous. Vos repères seront bien plus précis.
-
 ## loop: Répéter une phrase
 Lancez la vidéo, appuyez sur **A** où une phrase commence et sur **B** où elle se termine, et elle se répète sans fin. Vous pouvez aussi faire glisser les poignées **A** et **B** sur la timeline, et **✕** les efface.
+
+## zoom: Zoomer sur la timeline
+La bande représente tout l'enregistrement. Utilisez les boutons **+** et **−**, ou faites glisser la fenêtre en surbrillance ou ses bords, pour zoomer sur la timeline en dessous. Vous placerez ainsi vos repères **A** et **B** bien plus précisément.
 
 ## speed: Ralentir
 Baissez (ou augmentez) la **speed** pour apprendre une ligne rapide à votre propre allure, puis jouez avec.
@@ -81,7 +81,7 @@ Copie un lien vers ce morceau **et** votre boucle A–B. Celui qui l'ouvre arriv
 Le **Mixer** est la console de tout ce que vous entendez. Il s'ouvre sous forme de petit panneau sous son bouton, et sur téléphone comme un volet en bas de l'écran.
 
 ## accompaniment: Basse et accords
-L'**accompagnement automatique** joue une ligne de basse et des accords construits à partir des symboles d'accords. Ils sont **coupés** par défaut : rien ne change tant que vous ne les activez pas. Chacun a un bouton **muet**, un **curseur de volume** et un **choix de voix**, et le sélecteur de motif détermine le style.
+L'**accompagnement automatique** joue une ligne de basse et des accords construits à partir des symboles d'accords. Ils sont **coupés** par défaut : rien ne change tant que vous ne les activez pas. Chacun a un bouton **muet**, un **curseur de volume** et un **choix de voix**, et le sélecteur de **motif d'accompagnement** détermine le style.
 
 ## voices: Chaque voix du morceau
 Chaque ligne mélodique du morceau reçoit son propre bouton muet, son volume et son instrument. Un morceau avec trompette et soubassophone montre les deux. Vos réglages s'appliquent aussi à tout autre morceau ayant une voix du même nom.
@@ -120,8 +120,8 @@ Quand vous ouvrez une setlist, ses morceaux s'affichent dans l'ordre dans la bar
 - **Chordbook** : le titre et le tableau d'accords de chaque morceau.
 - **Songbook** : chaque morceau avec ses accords et sa partition complète.
 
-## exports: Toutes les façons d'exporter
-En plus des trois impressions de setlist, vous pouvez **imprimer** un seul morceau ou l'enregistrer en PDF, l'exporter en **MP3** ou l'envoyer vers **iReal Pro**. Vous pouvez aussi exporter une setlist personnelle en fichier **.txt** et la réimporter sur un autre appareil.
+## exports: Exporter une setlist
+Vous pouvez aussi exporter une setlist personnelle en fichier **.txt** et la réimporter sur un autre appareil — l'équivalent, pour une setlist, des exports Print, MP3 et iReal Pro que vous connaissez déjà pour un seul morceau.
 
 # comping: Comping
 

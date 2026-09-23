@@ -99,17 +99,17 @@ target: #inspirationTabs
 interactive: true
 This song has more than one recording, so try switching between the tabs. Only one plays at a time.
 
-## zoom: Zoom in on the timeline
-setup: openInspiration
-target: .inspiration-loop-overview-row
-interactive: true
-The strip is the whole recording. Try it: use the **+** and **−** buttons, or drag the highlighted window or its edges, to zoom the timeline below it, which makes it far easier to place markers precisely.
-
 ## loop: Loop a phrase
 setup: openInspiration
 target: #inspirationLoopBar
 interactive: true
 Play the video, try pressing **A** where a phrase starts and **B** where it ends, and it repeats endlessly. You can also drag the **A** and **B** handles on the timeline, and **✕** clears them.
+
+## zoom: Zoom in on the timeline
+setup: openInspiration
+target: .inspiration-loop-overview-row
+interactive: true
+The strip is the whole recording. Try it: use the **+** and **−** buttons, or drag the highlighted window or its edges, to zoom the timeline below it, which makes it far easier to place your **A** and **B** markers precisely.
 
 ## speed: Slow it down
 setup: openInspiration
@@ -135,7 +135,7 @@ The **Mixer** is the mixing desk for everything you hear. It opens as a small pa
 setup: openMixer
 target: #mixerSectionAccompaniment
 interactive: true
-The **auto-accompaniment** plays a bass line and chords built from the chord symbols. They start **muted**, so nothing changes until you turn them on. Try it: each has a **mute** button, a **volume** fader and a **voice** picker, and the pattern picker sets the style.
+The **auto-accompaniment** plays a bass line and chords built from the chord symbols. They start **muted**, so nothing changes until you turn them on. Try it: each has a **mute** button, a **volume** fader and a **voice** picker, and the **accompaniment pattern** picker sets the style.
 
 ## voices: Every voice of the tune
 setup: openMixer
@@ -203,10 +203,10 @@ interactive: true
 - **Chordbook**: every song's title and chord grid.
 - **Songbook**: every song with its chords and full notation.
 
-## exports: Every way to export
-setup: openDemoSong
-target: #sheetActions
-Beyond the three setlist prints, a single song can be **printed** or saved as a PDF, exported as an **MP3**, or sent to **iReal Pro**. A personal setlist can also be exported as a **.txt** file and imported again on another device.
+## exports: Export a setlist
+setup: createDemoSetlist, addDemoSong1, addDemoSong2
+target: #setlistExportBtn
+A personal setlist can also be exported as a **.txt** file, and imported again on another device — the setlist equivalent of the Print, MP3 and iReal Pro exports you already know from a single song.
 
 # comping: Comping
 setup: openDemoSong

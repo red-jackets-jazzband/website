@@ -63,11 +63,11 @@ Der Player spielt weiter, während du andere Songs ansiehst. Ziehe die **Kopfzei
 ## tabs: YouTube, Spotify und mehr
 Dieser Song hat mehr als eine Aufnahme, daher wechselst du mit den Tabs zwischen ihnen. Es spielt immer nur eine gleichzeitig.
 
-## zoom: In die Zeitleiste zoomen
-Der Streifen ist die ganze Aufnahme. Nutze die Knöpfe **+** und **−** oder ziehe das markierte Fenster oder seine Ränder, um die Zeitleiste darunter zu zoomen. So setzt du Markierungen viel genauer.
-
 ## loop: Eine Phrase wiederholen
 Spiele das Video ab, drücke **A**, wo eine Phrase beginnt, und **B**, wo sie endet, und sie wiederholt sich endlos. Du kannst auch die **A**- und **B**-Griffe auf der Zeitleiste ziehen, und mit **✕** löschst du sie.
+
+## zoom: In die Zeitleiste zoomen
+Der Streifen ist die ganze Aufnahme. Nutze die Knöpfe **+** und **−** oder ziehe das markierte Fenster oder seine Ränder, um die Zeitleiste darunter zu zoomen. So platzierst du deine **A**- und **B**-Markierungen viel genauer.
 
 ## speed: Langsamer machen
 Stelle die **speed** niedriger (oder höher), um eine schnelle Linie in deinem eigenen Tempo zu lernen, und spiele dann mit.
@@ -81,7 +81,7 @@ Kopiert einen Link zu diesem Song **und** deiner A–B-Schleife. Wer ihn öffnet
 Der **Mixer** ist das Mischpult für alles, was du hörst. Er öffnet sich als kleines Feld unter seinem Knopf, auf einem Handy als Blatt am unteren Bildschirmrand.
 
 ## accompaniment: Bass und Akkorde
-Die **automatische Begleitung** spielt eine Basslinie und Akkorde, die aus den Akkordsymbolen aufgebaut werden. Sie sind standardmäßig **stummgeschaltet**, es ändert sich also nichts, bis du sie einschaltest. Jede hat einen **Stumm-Knopf**, einen **Lautstärkeregler** und eine **Stimmenauswahl**, und mit der Musterauswahl bestimmst du den Stil.
+Die **automatische Begleitung** spielt eine Basslinie und Akkorde, die aus den Akkordsymbolen aufgebaut werden. Sie sind standardmäßig **stummgeschaltet**, es ändert sich also nichts, bis du sie einschaltest. Jede hat einen **Stumm-Knopf**, einen **Lautstärkeregler** und eine **Stimmenauswahl**, und mit der Auswahl für das **Begleitmuster** bestimmst du den Stil.
 
 ## voices: Jede Stimme des Songs
 Jede Melodielinie im Song bekommt eigene Stummschaltung, Lautstärke und ein eigenes Instrument. Ein Song mit Trompete und Sousaphon zeigt beide. Deine Einstellungen gelten auch für jeden anderen Song mit einer Stimme gleichen Namens.
@@ -120,8 +120,8 @@ Wenn du eine Setlist öffnest, stehen ihre Songs der Reihe nach in der Seitenlei
 - **Chordbook**: von jedem Song der Titel und die Akkordtabelle.
 - **Songbook**: jeder Song mit Akkorden und vollständiger Notation.
 
-## exports: Alle Wege zum Exportieren
-Zusätzlich zu den drei Setlist-Drucken kannst du einen einzelnen Song **drucken** oder als PDF speichern, als **MP3** exportieren oder an **iReal Pro** senden. Eine eigene Setlist kannst du außerdem als **.txt**-Datei exportieren und auf einem anderen Gerät wieder importieren.
+## exports: Eine Setlist exportieren
+Eine eigene Setlist kannst du außerdem als **.txt**-Datei exportieren und auf einem anderen Gerät wieder importieren — das Setlist-Gegenstück zu den Print-, MP3- und iReal-Pro-Exporten, die du schon von einem einzelnen Song kennst.
 
 # comping: Comping
 
