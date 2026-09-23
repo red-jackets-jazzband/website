@@ -15,6 +15,7 @@ import {
   nextStepIndex,
   placeTooltip,
   spotlightClipPath,
+  tightenBox,
 } from "../lib/tour-layout.js";
 import { createTourActions, isShown, waitUntil } from "./tour-actions.js";
 
@@ -47,6 +48,19 @@ const stepKey = (step) => `${step.chapterId}/${step.id}`;
 const toBox = (rect) => ({
   left: rect.left, top: rect.top, width: rect.width, height: rect.height,
 });
+
+// The box to spotlight for `target`: its own box, tightened to its visible
+// children's — a target that's a flex-stretched container (e.g. the library
+// list, `flex: 1` over whatever height the sidebar leaves, even with only a
+// couple of rows in it) spotlights just its content instead of the empty
+// space filling out the rest of its own height.
+function targetBox(target) {
+  const own = toBox(target.getBoundingClientRect());
+  const children = [...target.children]
+    .filter((child) => isShown(child))
+    .map((child) => toBox(child.getBoundingClientRect()));
+  return tightenBox(own, children);
+}
 
 // Stops a key from reaching the page's own shortcuts.
 function swallow(event) {
@@ -270,7 +284,7 @@ export function createTour(ctx) {
 
   function layout(target) {
     const step = flat[index];
-    let box = target ? toBox(target.getBoundingClientRect()) : null;
+    let box = target ? targetBox(target) : null;
     // Measure the card in its neutral (undocked, unplaced) shape.
     delete refs.card.dataset.placement;
     refs.card.style.left = "";
@@ -282,7 +296,7 @@ export function createTour(ctx) {
       // Nudge the page so the spotlighted control clears the docked card.
       const dy = dockScrollDelta(spot.placement, box, cardRect.height, viewport.height);
       if (dy) window.scrollBy(0, dy);
-      box = toBox(target.getBoundingClientRect());
+      box = targetBox(target);
     }
     refs.veil.style.clipPath = spotlightClipPath(box, SPOTLIGHT_PAD);
     // A hole in the shield lets clicks through to the real control — only
