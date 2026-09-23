@@ -95,7 +95,22 @@ De **swing**-schuif maakt rechte achtsten losser. De **drum** zet de metronoom a
 Het tabblad **Setlists** toont de setlists van de band zelf, die alleen-lezen zijn, en daaronder **Yours**. Jouw setlists worden alleen in deze browser opgeslagen.
 
 ## new: Maak je eigen setlist
-Met **New setlist** begin je met een lege lijst, met een kopie van een bestaande setlist (een **remix**), of met een **.txt**-bestand dat je uploadt. Daarna voeg je nummers toe door te zoeken, sleep je ze in volgorde, voeg je setpauzes toe en stel je per nummer een andere toonsoort in.
+Met **New setlist** begin je met een lege lijst, met een kopie van een bestaande setlist (een **remix**), of met een **.txt**-bestand dat je uploadt. Laten we er stap voor stap eentje vanaf nul bouwen.
+
+## create: Een verse, lege setlist
+Als je met *Empty* begint, opent meteen een lege setlist, klaar voor nummers — deze hebben we *Tour setlist* genoemd. Dubbelklik op een naam (of het potloodje ernaast) om je eigen setlist een naam te geven.
+
+## addsong: Voeg een nummer toe
+Probeer het: zoek een titel in het vak onderaan de lijst en druk op **Enter** — of klik op een resultaat — om het toe te voegen.
+
+## addsong2: Voeg er nog een toe
+Probeer het: voeg op dezelfde manier een tweede nummer toe. De lijst groeit naar beneden, één regel per nummer, klaar om te ordenen.
+
+## reorder: Sleep om te herschikken
+Probeer het: sleep het **⋮⋮**-handvat van een nummer omhoog of omlaag om het te verplaatsen. Met een regel geselecteerd verschuift **Alt** + **↑** **↓** hem juist één plek per keer via het toetsenbord.
+
+## break: Voeg een sectie toe
+Probeer het: **Add a set break** begint een nieuwe set — handig om een optreden op te delen in Set 1, Set 2, enzovoort. Typ een label, of laat het leeg voor een automatisch “Set 2”.
 
 ## open: Open een setlist
 Als je een setlist opent, staan de nummers op volgorde in de zijbalk, verdeeld in **sets**. Klik op een nummer om het in hetzelfde interactieve leadsheet te zien, of gebruik **↑** **↓** (of veeg op een telefoon) om door de lijst te bladeren. **Listen** opent de nummers van de setlist op YouTube.

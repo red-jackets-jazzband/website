@@ -95,7 +95,22 @@ Le curseur **Swing** assouplit les croches droites. Le **tambour** active le mé
 L'onglet **Setlists** montre les setlists du groupe, en lecture seule, puis **Yours** en dessous. Vos setlists ne sont enregistrées que dans ce navigateur.
 
 ## new: Créer votre propre setlist
-**New setlist** vous permet de partir d'une liste vide, d'une copie d'une setlist existante (un **remix**) ou d'un fichier **.txt** importé. Ensuite, vous ajoutez des morceaux par la recherche, les faites glisser dans l'ordre voulu, ajoutez des pauses entre les sets et réglez une tonalité différente pour chaque morceau.
+**New setlist** vous permet de partir d'une liste vide, d'une copie d'une setlist existante (un **remix**) ou d'un fichier **.txt** importé. Construisons-en une à partir de zéro, étape par étape.
+
+## create: Une setlist toute neuve, vide
+Partir de *Empty* ouvre aussitôt une setlist vide, prête à recevoir des morceaux — celle-ci s'appelle *Tour setlist*. Double-cliquez sur un nom (ou son crayon) à tout moment pour renommer la vôtre.
+
+## addsong: Ajouter un morceau
+Essayez : cherchez un titre dans le champ au bas de la liste, puis appuyez sur **Entrée** — ou cliquez sur un résultat — pour l'ajouter.
+
+## addsong2: En ajouter un autre
+Essayez : ajoutez un second morceau de la même façon. La liste s'allonge vers le bas, une ligne par morceau, prête à être mise en ordre.
+
+## reorder: Réorganiser par glisser-déposer
+Essayez : faites glisser la poignée **⋮⋮** d'un morceau vers le haut ou le bas pour le déplacer. Avec une ligne sélectionnée, **Alt** + **↑** **↓** la déplace plutôt d'une place à la fois au clavier.
+
+## break: Ajouter une section
+Essayez : **Add a set break** démarre un nouveau set — pratique pour découper un concert en Set 1, Set 2, etc. Tapez un intitulé, ou laissez-le vide pour un « Set 2 » automatique.
 
 ## open: Ouvrir une setlist
 Quand vous ouvrez une setlist, ses morceaux s'affichent dans l'ordre dans la barre latérale, répartis en **sets**. Cliquez sur un morceau pour le voir dans la même grille interactive, ou parcourez la liste avec **↑** **↓** (en balayant sur téléphone). **Listen** ouvre les morceaux de la setlist sur YouTube.

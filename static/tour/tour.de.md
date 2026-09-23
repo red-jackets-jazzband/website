@@ -95,7 +95,22 @@ Der **Swing**-Regler lockert gerade Achtel. Die **Trommel** schaltet das Metrono
 Der Tab **Setlists** zeigt die Setlists der Band selbst, die schreibgeschützt sind, und darunter **Yours**. Deine Setlists werden nur in diesem Browser gespeichert.
 
 ## new: Eine eigene Setlist erstellen
-Mit **New setlist** startest du mit einer leeren Liste, mit einer Kopie einer bestehenden Setlist (ein **Remix**) oder mit einer hochgeladenen **.txt**-Datei. Danach fügst du Songs per Suche hinzu, ziehst sie in die richtige Reihenfolge, fügst Set-Pausen hinzu und legst für jeden Song eine andere Tonart fest.
+Mit **New setlist** startest du mit einer leeren Liste, mit einer Kopie einer bestehenden Setlist (ein **Remix**) oder mit einer hochgeladenen **.txt**-Datei. Bauen wir eine Schritt für Schritt von Grund auf.
+
+## create: Eine frische, leere Setlist
+Mit *Empty* öffnet sich sofort eine leere Setlist, bereit für Songs — diese hier haben wir *Tour setlist* genannt. Doppelklicke auf einen Namen (oder sein Stift-Symbol), um deiner eigenen einen Namen zu geben.
+
+## addsong: Einen Song hinzufügen
+Probier's aus: Suche unten in der Liste nach einem Titel und drücke **Enter** — oder klicke auf einen Treffer —, um ihn hinzuzufügen.
+
+## addsong2: Noch einen hinzufügen
+Probier's aus: Füge auf die gleiche Weise einen zweiten Song hinzu. Die Liste wächst nach unten, eine Zeile pro Song, bereit für die richtige Reihenfolge.
+
+## reorder: Per Ziehen neu anordnen
+Probier's aus: Ziehe den **⋮⋮**-Griff eines Songs nach oben oder unten, um ihn zu verschieben. Bei einer fokussierten Zeile verschiebt **Alt** + **↑** **↓** sie stattdessen Schritt für Schritt über die Tastatur.
+
+## break: Einen Abschnitt hinzufügen
+Probier's aus: **Add a set break** beginnt ein neues Set — praktisch, um einen Gig in Set 1, Set 2 und so weiter zu unterteilen. Tippe eine Bezeichnung ein oder lass sie leer für ein automatisches „Set 2“.
 
 ## open: Eine Setlist öffnen
 Wenn du eine Setlist öffnest, stehen ihre Songs der Reihe nach in der Seitenleiste, unterteilt in **Sets**. Klicke auf einen Song, um ihn im selben interaktiven Leadsheet zu sehen, oder blättere mit **↑** **↓** (auf dem Handy per Wischen) durch die Liste. **Listen** öffnet die Songs der Setlist auf YouTube.
