@@ -26,6 +26,7 @@ const RUNTIME_TARGETS = {
   ".rj-library-new-setlist-btn": ["static/script/songs/setlist-home.js", 'class: "rj-library-new-setlist-btn"'],
   ".rj-library-add-song-field": ["static/script/songs/setlist-view.js", 'class: "rj-library-add-song-field"'],
   ".rj-library-add-break": ["static/script/songs/setlist-view.js", 'class: "rj-library-add-break"'],
+  ".setlist-divider-input": ["static/script/songs/setlist-view.js", 'class: "setlist-divider-input"'],
 };
 
 const allSteps = english.chapters.flatMap((chapter) => chapter.steps.map((step) => ({ chapter, step })));
