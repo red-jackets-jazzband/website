@@ -13,107 +13,107 @@ helpLabel: Tour starten
 # basics: Die Grundlagen
 
 ## welcome: Willkommen auf der Songs-Seite
-Diese Bibliothek enthält die Leadsheets von Songs, die die Band gespielt hat, aktuell spielt oder in Zukunft vielleicht spielen wird. Diese kurze Tour zeigt dir, wie du einen Song findest, abspielst und druckst, wie du transponierst, zu einer Aufnahme mitspielst, deinen eigenen Sound mischst und mit Setlists und Comping arbeitest.
+Jeder Song, den die Red Jackets je gespielt haben, noch spielen oder vielleicht bald spielen, steht hier — such ihn dir raus, druck ihn aus, transponier ihn, mach ihn dir zu eigen. Diese kurze Tour zeigt dir, wie du einen Song findest, abspielst und druckst, transponierst, zu einer Aufnahme mitspielst, deinen eigenen Sound mischst und mit Setlists und Comping arbeitest.
 
-Nutze **Weiter** und **Zurück** oder die Tasten **←** und **→**. Mit **Esc** beendest du die Tour, und mit dem **?**-Knopf startest du sie jederzeit neu.
+Nutze **Weiter** und **Zurück** oder die Tasten **←** und **→**. Mit **Esc** kommst du jederzeit raus, und mit dem **?**-Knopf ist die Tour wieder da, wann immer du willst.
 
 ## search: Einen Song finden
-Tippe einen Teil des Titels ein, um die Liste zu filtern. Drücke überall **/**, um in dieses Feld zu springen, und öffne dann mit **↑** **↓** und **Enter** einen Song. Die **A–Z**-Leiste neben der Liste springt direkt zu einem Buchstaben.
+Tippe einen Teil des Titels ein, und die Liste wird von selbst kürzer. Drücke überall **/**, um sofort in dieses Feld zu springen, und öffne dann mit **↑** **↓** und **Enter** einen Song. Es eilt? Die **A–Z**-Leiste neben der Liste springt direkt zu einem Buchstaben.
 
 ## open: Dein Leadsheet
-Wenn du einen Song auswählst, öffnet er sich hier. Für die Tour haben wir *Bourbon Street Parade* für dich geöffnet. Zuerst kommt die Akkordtabelle, danach die Notation. Auf einem Handy füllt das Leadsheet den ganzen Bildschirm, und ein **Zurück**-Knopf bringt dich zur Liste.
+Wähl einen Song, und er öffnet sich direkt hier — für die Tour haben wir schon mal *Bourbon Street Parade* aufgeschlagen. Zuerst die Akkordtabelle, danach die vollständige Notation. Auf einem Handy füllt das Leadsheet den ganzen Bildschirm; ein **Zurück**-Knopf bringt dich wieder zur Liste.
 
 ## instrument: Lies deine eigene Stimme
-Transponieren im Kopf ist nicht nötig. Probier es aus: Wähle dein Instrument, und das Leadsheet wird dafür transponiert: Konzerttonhöhe, Concert + Roman (Konzerttonhöhe mit einer Analyse in römischen Ziffern in der Akkordtabelle), Altsaxofon, B-Klarinette oder -Trompete, Tenorsaxofon, Posaune (Bassschlüssel) oder Sousaphon (Bassschlüssel). Die Seite merkt sich deine Wahl für das nächste Mal. Die Wiedergabe klingt immer in Konzerttonhöhe, egal welches Instrument gerade angezeigt wird.
+Transponieren im Kopf brauchst du nicht mehr. Wähl dein Instrument, und sieh zu, wie sich das ganze Leadsheet darauf einstellt: Konzerttonhöhe, Concert + Roman (Konzerttonhöhe mit einer Analyse in römischen Ziffern in der Akkordtabelle), Altsaxofon, B-Klarinette oder -Trompete, Tenorsaxofon, Posaune (Bassschlüssel) oder Sousaphon (Bassschlüssel). Die Seite merkt sich deine Wahl für das nächste Mal, und die Wiedergabe klingt immer in Konzerttonhöhe, egal welche Stimme gerade angezeigt wird.
 
 ## play: Hör es dir an
-Den Song erst zu hören hilft, bevor du selbst einsteigst. Probier es aus: Mit **Play** spielst du den Song ab, und die Noten leuchten im Leadsheet auf, während sie erklingen. **Stop** beendet die Wiedergabe. Drücke die **Leertaste**, um abzuspielen oder zu pausieren, sobald ein Leadsheet geöffnet ist.
+Den Song erst zu hören, bevor du selbst einsteigst, hilft immer. Drück auf **Play**, und die Noten leuchten im Leadsheet auf, während sie erklingen; **Stop** beendet die Wiedergabe. Oder einfach die **Leertaste**, sobald ein Leadsheet offen ist — abspielen, pausieren, fertig.
 
 ## print: Nimm es mit zum Gig
-Für den Notenständer oder die Mappe: bring das Leadsheet aufs Papier. Probier es aus: Mit **Print** wird daraus eine saubere Seite. Für eine digitale Kopie wähle stattdessen im Druckdialog *Als PDF speichern*. Setlists haben eigene Druckknöpfe, dazu kommen wir später.
+Für den Notenständer oder die Mappe: bring es aufs Papier. **Print** macht eine saubere Seite daraus — oder wähl im Druckdialog *Als PDF speichern* für eine digitale Kopie. Setlists bekommen eigene Druckknöpfe; dazu kommen wir später.
 
 # adjust: Spiel es auf deine Art
 
 ## key: Finde deine Tonart
-Nicht jeder Song sitzt in der gedruckten Tonart. Probier es aus: Mit **−** und **+** verschiebst du die Tonart in **Halbtonschritten**. Das transponiert Notation und Klang gemeinsam, sodass das, was du spielst, und das, was du hörst, zusammenpassen. In einer eigenen Setlist wird die neue Tonart beim jeweiligen Song gespeichert.
+Nicht jeder Song sitzt in der gedruckten Tonart. Mit **−** und **+** schiebst du die Tonart in **Halbtonschritten** — Notation und Klang bewegen sich gemeinsam, sodass das, was du spielst, und das, was du hörst, immer zusammenpassen. Speicher es in einer eigenen Setlist, und die neue Tonart reist mit diesem Song mit.
 
 ## tempo: Übe in deinem eigenen Tempo
-Probier es aus: Das Tempo wird in echten **Schlägen pro Minute** angegeben und startet bei der eigenen Tempoangabe des Songs. Spiele eine knifflige Stelle langsamer, um sie zu lernen, und dreh das Tempo danach wieder hoch.
+Das Tempo wird in echten **Schlägen pro Minute** angegeben und startet bei der eigenen Tempoangabe des Songs. Spiel eine knifflige Stelle deutlich langsamer, um sie zu lernen, und dreh das Tempo danach wieder hoch.
 
 ## more: Übe eine schwierige Stelle in der Schleife
-Eine Stelle von Hand immer wieder neu zu starten bringt dich aus dem Fluss. Probier es aus: Der kleine Pfeil am unteren Rand der Leiste öffnet **More controls**, wo der **Repeat**-Zähler den Song bis zu 20 Mal hintereinander spielt und nach dem ersten Durchgang den Auftakt überspringt, damit die Schleife sauber bleibt. Auch die Auswahl für das Comping findest du hier.
+Eine Stelle von Hand immer wieder neu zu starten bringt dich aus dem Fluss. Der kleine Pfeil am unteren Rand der Leiste öffnet **More controls**, wo der **Repeat**-Zähler den Song bis zu 20 Mal hintereinander spielt — und nach dem ersten Durchgang den Auftakt überspringt, damit die Schleife sauber bleibt. Auch die Auswahl für das Comping findest du hier.
 
 ## irealpro: Hol dir eine Begleitband
 Bei jedem Song mit Akkorden übergibt dieser Knopf das Leadsheet an die **iReal Pro**-App auf deinem Handy, damit du eine Begleitband in der Hosentasche hast.
 
 ## mp3: Erstelle eine Übungsaufnahme
-Wandelt genau das, was du gerade hörst, in eine **.mp3**-Datei um: Instrument, Tonart, Tempo, Comping, Mixer-Einstellungen und Anzahl der Wiederholungen sind alle enthalten. Praktisch als Übungstrack für unterwegs.
+Wandelt genau das, was du gerade hörst, in eine **.mp3**-Datei um — Instrument, Tonart, Tempo, Comping, Mixer-Einstellungen und Anzahl der Wiederholungen, alles mit drin. Ein Übungstrack zum Mitnehmen.
 
 ## fullscreen: Lies es aus der Nähe
-Gibt den ganzen Bildschirm dem Leadsheet und hält, sofern dein Browser es erlaubt, den Bildschirm beim Lesen an. Auf einem Handy kannst du bei einem vollen Leadsheet weiterhin **mit zwei Fingern zoomen**.
+Gibt dem Leadsheet den ganzen Bildschirm und hält — sofern dein Browser es erlaubt — den Bildschirm beim Lesen an. Leadsheet dicht bedruckt? **Mit zwei Fingern zoomen** funktioniert auf dem Handy trotzdem.
 
 # inspiration: Zuhören und üben
 
 ## button: Hör andere Versionen
-Möchtest du hören, wie andere Bands diesen Song gespielt haben? Hat ein Song Referenzaufnahmen, erscheint ein **Inspiration**-Knopf. Probier es aus: Er öffnet einen schwebenden Player neben deinem Leadsheet.
+Möchtest du hören, wie andere Bands diesen Song gespielt haben? Hat ein Song Referenzaufnahmen, erscheint ein **Inspiration**-Knopf — öffne ihn für einen schwebenden Player direkt neben deinem Leadsheet.
 
 ## panel: Hör weiter, während du stöberst
-Der Player spielt weiter, während du andere Songs ansiehst. Probier es aus: Ziehe die **Kopfzeile**, um ihn zu verschieben, und den **linken Rand**, um die Größe zu ändern, oder springe mit dem Größen-Knopf zwischen festen Größen. Er schließt sich erst, wenn du ihn schließt.
+Der Player spielt weiter, während du andere Songs ansiehst — er schließt sich erst, wenn du ihn schließt. Zieh die **Kopfzeile**, um ihn zu verschieben, den **linken Rand**, um die Größe zu ändern, oder spring mit dem Größen-Knopf zwischen festen Größen.
 
 ## tabs: Vergleiche Aufnahmen
-Dieser Song hat mehr als eine Aufnahme — probier, mit den Tabs zwischen ihnen zu wechseln und sie zu vergleichen. Es spielt immer nur eine gleichzeitig.
+Dieser Song hat mehr als eine Aufnahme — wechsle mit den Tabs zwischen ihnen, um sie zu vergleichen. Es spielt immer nur eine gleichzeitig.
 
 ## loop: Eine Phrase wiederholen
-Lass eine kniffelige Phrase von selbst wiederholen, statt sie jedes Mal von Hand zurückzuspulen. Spiele das Video ab, drücke **A**, wo die Phrase beginnt, und **B**, wo sie endet, und sie wiederholt sich endlos. Du kannst auch die **A**- und **B**-Griffe auf der Zeitleiste ziehen, und mit **✕** löschst du sie.
+Lass eine kniffelige Phrase von selbst in einer Schleife laufen, statt sie jedes Mal von Hand zurückzuspulen. Spiel das Video ab, drück **A**, wo die Phrase beginnt, und **B**, wo sie endet, und sie wiederholt sich endlos. Zieh die **A**- und **B**-Griffe auf der Zeitleiste für die Feinabstimmung, und mit **✕** löschst du sie.
 
 ## zoom: Platziere deine Schleife genau
-Der Streifen ist die ganze Aufnahme. Nutze die Knöpfe **+** und **−** oder ziehe das markierte Fenster oder seine Ränder, um die Zeitleiste darunter zu zoomen. So platzierst du deine **A**- und **B**-Markierungen viel genauer.
+Der Streifen oben ist die ganze Aufnahme. Nutze die Knöpfe **+** und **−**, oder zieh das markierte Fenster oder seine Ränder, um die Zeitleiste darunter zu zoomen — so platzierst du deine **A**- und **B**-Markierungen viel genauer.
 
 ## speed: Langsamer machen
-Stelle die **speed** niedriger (oder höher), um eine schnelle Linie in deinem eigenen Tempo zu lernen, und spiele dann mit.
+Stell die **speed** niedriger — oder höher —, um eine schnelle Linie in deinem eigenen Tempo zu lernen, und spiel dann mit.
 
 ## share: Deine Schleife teilen
-Kopiert einen Link zu diesem Song **und** deiner A–B-Schleife. Wer ihn öffnet, landet auf demselben Leadsheet, mit dem Video schon auf deine Phrase eingestellt.
+Kopiert einen Link zu diesem Song **und** deiner A–B-Schleife. Schick ihn einem Bandkollegen, und er landet auf demselben Leadsheet, das Video schon auf deine Phrase eingestellt.
 
 # mixer: Bring deinen Sound in Balance
 
 ## open: Gestalte deinen eigenen Mix
-Der **Mixer** ist das Mischpult für alles, was du hörst. Er öffnet sich als kleines Feld unter seinem Knopf, auf einem Handy als Blatt am unteren Bildschirmrand.
+Der **Mixer** ist dein Mischpult für alles, was du hörst — ein kleines Feld unter seinem Knopf am Desktop, ein Blatt, das auf dem Handy von unten hochfährt.
 
 ## accompaniment: Hol Bass und Akkorde dazu
-Gib dem Song eine eigene Begleitband. Probier es aus: Die **automatische Begleitung** spielt eine Basslinie und Akkorde, die aus den Akkordsymbolen aufgebaut werden. Sie sind standardmäßig **stummgeschaltet**, es ändert sich also nichts, bis du sie einschaltest — jede hat einen **Stumm-Knopf**, einen **Lautstärkeregler** und eine **Stimmenauswahl**, und mit der Auswahl für das **Begleitmuster** bestimmst du den Stil.
+Gib dem Song eine eigene Begleitband: Die **automatische Begleitung** spielt eine Basslinie und Akkorde, direkt aus den Akkordsymbolen aufgebaut. Beide sind standardmäßig **stummgeschaltet**, es ändert sich also nichts, bis du sie einschaltest — jede bekommt einen **Stumm-Knopf**, einen **Lautstärkeregler** und eine **Stimmenauswahl**, und die Auswahl für das **Begleitmuster** bestimmt den Stil.
 
 ## voices: Mische jede Stimme einzeln
-Jede Melodielinie im Song bekommt eigene Stummschaltung, Lautstärke und ein eigenes Instrument. Probier es aus: Ein Song mit Trompete und Sousaphon zeigt beide. Deine Einstellungen gelten auch für jeden anderen Song mit einer Stimme gleichen Namens.
+Jede Melodielinie im Song bekommt eigene Stummschaltung, Lautstärke und ein eigenes Instrument — ein Song mit Trompete und Sousaphon zeigt beide, direkt nebeneinander. Stell sie einmal ein, und deine Wahl gilt für jeden anderen Song mit einer Stimme gleichen Namens.
 
 ## extras: Stell den Groove genau ein
-Probier es aus: Lockere gerade Achtel mit dem **Swing**-Regler, schalte einen Klick mit dem **Trommel**-Metronom ein, oder aktiviere die Wiedergabe in höherer Qualität mit dem **Wellen**-Knopf.
+Lockere gerade Achtel mit dem **Swing**-Regler, schalte einen Klick mit dem **Trommel**-Metronom ein, oder hol dir bessere Klangqualität mit dem **Wellen**-Knopf.
 
 # setlists: Setlists und Drucken
 
 ## shelf: Setlists durchstöbern
-Der Tab **Setlists** zeigt die Setlists der Band selbst, die schreibgeschützt sind, und darunter **Yours**. Deine Setlists werden nur in diesem Browser gespeichert.
+Der Tab **Setlists** zeigt die Setlists der Band selbst — schreibgeschützt — und darunter **Yours**. Deine eigenen leben nur in diesem Browser, bereit, wann immer du sie brauchst.
 
 ## new: Eine eigene Setlist erstellen
 Mit **New setlist** startest du mit einer leeren Liste, mit einer Kopie einer bestehenden Setlist (ein **Remix**) oder mit einer hochgeladenen **.txt**-Datei. Bauen wir eine Schritt für Schritt von Grund auf.
 
 ## create: Fang bei null an
-Mit *Empty* öffnet sich sofort eine leere Setlist, bereit für Songs — diese hier haben wir *Tour setlist* genannt. Doppelklicke auf einen Namen (oder sein Stift-Symbol), um deiner eigenen einen Namen zu geben.
+Mit *Empty* öffnet sich sofort eine leere Setlist, bereit für Songs — diese hier haben wir *Tour setlist* getauft. Doppelklicke auf einen Namen (oder sein Stift-Symbol), um deiner eigenen einen Namen zu geben.
 
 ## addsong: Einen Song hinzufügen
-Probier's aus: Suche unten in der Liste nach einem Titel und drücke **Enter** — oder klicke auf einen Treffer —, um ihn hinzuzufügen.
+Suche unten in der Liste nach einem Titel und drücke **Enter** — oder klicke auf einen Treffer —, um ihn hinzuzufügen.
 
 ## addsong2: Noch einen hinzufügen
-Probier's aus: Füge auf die gleiche Weise einen zweiten Song hinzu. Die Liste wächst nach unten, eine Zeile pro Song, bereit für die richtige Reihenfolge.
+Füge auf die gleiche Weise einen zweiten Song hinzu. Die Liste wächst nach unten, eine Zeile pro Song, bereit für die richtige Reihenfolge.
 
 ## reorder: Leg die Reihenfolge fest
-Probier's aus: Ziehe den **⋮⋮**-Griff eines Songs nach oben oder unten, um ihn zu verschieben. Bei einer fokussierten Zeile verschiebt **Alt** + **↑** **↓** sie stattdessen Schritt für Schritt über die Tastatur.
+Ziehe den **⋮⋮**-Griff eines Songs nach oben oder unten, um ihn zu verschieben. Bei einer fokussierten Zeile verschiebt **Alt** + **↑** **↓** sie stattdessen Schritt für Schritt über die Tastatur.
 
 ## break: Teile in Sets auf
-Probier's aus: **Add a set break** beginnt ein neues Set — praktisch, um einen Gig in Set 1, Set 2 und so weiter zu unterteilen. Tippe eine Bezeichnung ein oder lass sie leer für ein automatisches „Set 2“.
+**Add a set break** beginnt ein neues Set — praktisch, um einen Gig in Set 1, Set 2 und so weiter zu unterteilen. Tippe eine Bezeichnung ein oder lass sie leer für ein automatisches „Set 2“.
 
 ## open: Spiel das Set durch
-Wenn du eine Setlist öffnest, stehen ihre Songs der Reihe nach in der Seitenleiste, unterteilt in **Sets**. Klicke auf einen Song, um ihn im selben interaktiven Leadsheet zu sehen, oder blättere mit **↑** **↓** (auf dem Handy per Wischen) durch die Liste. **Listen** öffnet die Songs der Setlist auf YouTube.
+Öffnest du eine Setlist, stehen ihre Songs sofort der Reihe nach in der Seitenleiste, unterteilt in **Sets**. Klick auf einen Song, um ihn im selben interaktiven Leadsheet zu öffnen, oder blättere mit **↑** **↓** (auf dem Handy per Wischen) durch die ganze Liste. **Listen** öffnet die Songs der Setlist auf YouTube.
 
 ## print: Druck es für den Gig
 - **Setlist**: eine große nummerierte Titelliste für die Bühne.
@@ -126,13 +126,13 @@ Eine eigene Setlist kannst du auch als **.txt**-Datei exportieren und auf einem 
 # comping: Comping
 
 ## pick: Füg deine eigene Begleitung hinzu
-Comping ist eine Akkordbegleitung, die als zweites Notensystem unter der Melodie ausgeschrieben ist. Wähle doch einmal ein **Muster** aus dieser Liste: Charleston, Clave, gehende Schritte und mehr.
+Comping ist eine Akkordbegleitung, komplett als zweites Notensystem unter der Melodie ausgeschrieben. Wähl ein **Muster** aus der Liste — Charleston, Clave, gehende Schritte und mehr — und hör, wie es lebendig wird.
 
 ## notation: Die Farben lesen
-Jeder Schlag ist ein Akkord aus drei Noten, und die Farbe verrät die Rolle jeder Note: **Schwarz** ist der Grundton, **Gold** die Terz und **Magenta** die Quinte. Die drei Linien bewegen sich weich von Akkord zu Akkord und sind deshalb leicht zu verfolgen.
+Jeder Schlag ist ein Akkord aus drei Noten, und die Farbe verrät die Rolle jeder Note: **Schwarz** ist der Grundton, **Gold** die Terz und **Magenta** die Quinte. Die drei Linien bewegen sich weich von Akkord zu Akkord, sodass dein Blick nie den Faden verliert.
 
 ## mixer: Misch das Comping mit ein
-Ist das Comping an, erscheint es im Mixer als eigene **Comping**-Stimme, sodass du es stummschalten, lauter drehen oder mit einem anderen Instrument besetzen kannst.
+Ist das Comping an, erscheint es im Mixer als eigene **Comping**-Stimme — stummschalten, lauter drehen, oder ein anderes Instrument geben, alles drin.
 
 ## done: Das war die Tour
-Das war alles. Starte die Tour jederzeit neu mit diesem **?**-Knopf, und wähle in der Ecke der Tour eine andere Sprache.
+Das war die Tour! Starte sie jederzeit neu mit diesem **?**-Knopf, und wähle in der Ecke der Tour eine andere Sprache, wann immer du willst.
