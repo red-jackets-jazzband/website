@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import { mountPage } from "../../../tests/helpers/dom.js";
 import { makeCtx, memoryStorage } from "../../../tests/helpers/ctx.js";
 import {
-  addSongToPersonalSetlist, createPersonalSetlist, getPersonalSetlist, renamePersonalSetlist,
+  addSongToPersonalSetlist, createPersonalSetlist, exportPersonalSetlistText, getPersonalSetlist,
+  importPersonalSetlistText, renamePersonalSetlist,
 } from "../lib/setlists-store.js";
 import {
   DEMO_SETLIST_FILE, DEMO_SETLIST_NAME, DEMO_SETLIST_SONG_1, DEMO_SETLIST_SONG_2, DEMO_SONG_FILE,
@@ -529,6 +530,38 @@ test("begin() keeps a demo setlist a visitor customized before an interrupted to
     assert.ok(entry, "kept, not swept away");
     assert.equal(entry.name, "My real gig");
     assert.equal(entry.desc, "", "the marker is dropped so it's never swept again");
+  } finally {
+    next.cleanup();
+  }
+});
+
+test("exporting and reimporting a demo setlist never carries the marker back in", async () => {
+  const storage = memoryStorage();
+
+  const first = setup({ storage });
+  let exportedText;
+  try {
+    first.actions.begin();
+    await first.actions.apply([CREATE_DEMO_SETLIST, ADD_DEMO_SONG_1]);
+    const id = first.ctx.state.currentPersonalId;
+    // The "exports" step is a real, ordinary download of the demo's own
+    // entry — same path a visitor's own setlist export takes.
+    exportedText = exportPersonalSetlistText(storage, id);
+    await first.actions.end(); // the untouched original demo is deleted here
+  } finally {
+    first.cleanup();
+  }
+
+  // Some time later, on this device or another, the visitor imports their
+  // own download back in as a setlist of their own — nothing to do with the
+  // tour any more.
+  const imported = importPersonalSetlistText(storage, exportedText, "My import");
+  assert.equal(imported.desc, "", "the marker never made it into the exported file");
+
+  const next = setup({ storage });
+  try {
+    next.actions.begin();
+    assert.ok(getPersonalSetlist(storage, imported.id), "a tour sweep never touches it");
   } finally {
     next.cleanup();
   }
