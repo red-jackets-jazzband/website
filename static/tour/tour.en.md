@@ -22,7 +22,8 @@ Use **Next** and **Back** or the **←** and **→** keys. **Esc** leaves the to
 ## search: Find a song
 setup: showLibrary
 target: #songSearch
-Type part of a title to filter the list. Press **/** anywhere to jump to this box, then use **↑** **↓** and **Enter** to open a song. The **A–Z** strip beside the list jumps straight to a letter.
+interactive: true
+Try it: type part of a title to filter the list. Press **/** anywhere to jump to this box, then use **↑** **↓** and **Enter** to open a song. The **A–Z** strip beside the list jumps straight to a letter.
 
 ## open: Your lead sheet
 setup: openDemoSong
@@ -32,17 +33,20 @@ Picking a song opens it here. We've opened *Bourbon Street Parade* for the tour.
 ## instrument: Choose your instrument
 setup: openDemoSong
 target: #instrument
-Pick your instrument and the sheet is transposed to fit it: concert pitch, Concert + Roman (concert pitch with a Roman numeral analysis added to the chord table), alto sax, B♭ clarinet or trumpet, tenor sax, trombone (bass clef) or sousaphone (bass clef). The page remembers your choice for next time. Playback always sounds at concert pitch, whatever instrument's part is on screen.
+interactive: true
+Try it: pick your instrument and the sheet is transposed to fit it: concert pitch, Concert + Roman (concert pitch with a Roman numeral analysis added to the chord table), alto sax, B♭ clarinet or trumpet, tenor sax, trombone (bass clef) or sousaphone (bass clef). The page remembers your choice for next time. Playback always sounds at concert pitch, whatever instrument's part is on screen.
 
 ## play: Play it
 setup: openDemoSong
-target: #playPauseBtn
-**Play** plays the tune, and the notes light up on the sheet as they sound. **Stop** ends playback. Press the **Spacebar** any time a sheet is open to play or pause.
+target: .sheet-transport
+interactive: true
+Try it: **Play** plays the tune, and the notes light up on the sheet as they sound. **Stop** ends playback. Press the **Spacebar** any time a sheet is open to play or pause.
 
 ## print: Print or save as PDF
 setup: openDemoSong
 target: #printLink
-**Print** turns the chart into a clean page. To keep a digital copy, choose *Save as PDF* in the print dialog. Setlists have their own print buttons, which we'll get to later.
+interactive: true
+Try it: **Print** turns the chart into a clean page. To keep a digital copy, choose *Save as PDF* in the print dialog. Setlists have their own print buttons, which we'll get to later.
 
 # adjust: Transpose and export
 setup: openDemoSong
@@ -55,12 +59,13 @@ Try it: the **−** and **+** buttons move the key by **semitones**. It transpos
 ## tempo: Change the tempo
 target: #tempoStepper
 interactive: true
-The tempo is in real **beats per minute**, starting from the tune's own marking. Slow it down to learn a tricky passage, then bring it back up.
+Try it: the tempo is in real **beats per minute**, starting from the tune's own marking. Slow it down to learn a tricky passage, then bring it back up.
 
 ## more: More controls
 setup: openDrawer
 target: #repeatStepper
-The small arrow at the bottom of the toolbar opens **More controls**. The **Repeat** stepper plays the tune up to 20 times in a row, for practising on a loop, and skips the lead-in bar after the first pass so the loop stays tidy. The comping picker lives here too.
+interactive: true
+The small arrow at the bottom of the toolbar opens **More controls**. Try it: the **Repeat** stepper plays the tune up to 20 times in a row, for practising on a loop, and skips the lead-in bar after the first pass so the loop stays tidy. The comping picker lives here too.
 
 ## irealpro: Open it in iReal Pro
 target: #iRealPro
@@ -79,37 +84,44 @@ setup: openDemoSong
 
 ## button: Inspiration
 target: #inspirationLink
-When a song has reference recordings, an **Inspiration** button appears. It opens a floating player, so you can hear how other bands play the tune.
+interactive: true
+When a song has reference recordings, an **Inspiration** button appears. Try it: it opens a floating player, so you can hear how other bands play the tune.
 
 ## panel: The floating player
 setup: openInspiration
 target: #inspirationPanel
-The player keeps going while you browse other songs. Drag its **header** to move it and its **left edge** to resize it, or use the resize button to jump between sizes. It closes only when you close it.
+interactive: true
+The player keeps going while you browse other songs. Try it: drag its **header** to move it and its **left edge** to resize it, or use the resize button to jump between sizes. It closes only when you close it.
 
 ## tabs: YouTube, Spotify and more
 setup: openInspiration
 target: #inspirationTabs
-This song has more than one recording, so the tabs switch between them. Only one plays at a time.
+interactive: true
+This song has more than one recording, so try switching between the tabs. Only one plays at a time.
 
 ## zoom: Zoom in on the timeline
 setup: openInspiration
-target: #inspirationLoopOverview
-The strip is the whole recording. Use the **+** and **−** buttons, or drag the highlighted window or its edges, to zoom the timeline below it, which makes it far easier to place markers precisely.
+target: .inspiration-loop-overview-row
+interactive: true
+The strip is the whole recording. Try it: use the **+** and **−** buttons, or drag the highlighted window or its edges, to zoom the timeline below it, which makes it far easier to place markers precisely.
 
 ## loop: Loop a phrase
 setup: openInspiration
-target: #inspirationLoopTrack, #inspirationLoopBar
-Play the video, press **A** where a phrase starts and **B** where it ends, and it repeats endlessly. You can also drag the **A** and **B** handles on the timeline, and **✕** clears them.
+target: #inspirationLoopBar
+interactive: true
+Play the video, try pressing **A** where a phrase starts and **B** where it ends, and it repeats endlessly. You can also drag the **A** and **B** handles on the timeline, and **✕** clears them.
 
 ## speed: Slow it down
 setup: openInspiration
 target: #inspirationLoopSpeed
-Step the **speed** down (or up) to learn a fast line at your own pace, then play along.
+interactive: true
+Try it: step the **speed** down (or up) to learn a fast line at your own pace, then play along.
 
 ## share: Share your loop
 setup: openInspiration
 target: #inspirationShareBtn
-Copies a link to this song **and** your A–B loop. Whoever opens it lands on the same sheet with the video already set to your phrase.
+interactive: true
+Try it: copies a link to this song **and** your A–B loop. Whoever opens it lands on the same sheet with the video already set to your phrase.
 
 # mixer: The mixer
 setup: openDemoSong
@@ -122,17 +134,20 @@ The **Mixer** is the mixing desk for everything you hear. It opens as a small pa
 ## accompaniment: Bass and chords
 setup: openMixer
 target: #mixerSectionAccompaniment
-The **auto-accompaniment** plays a bass line and chords built from the chord symbols. They start **muted**, so nothing changes until you turn them on. Each has a **mute** button, a **volume** fader and a **voice** picker, and the pattern picker sets the style.
+interactive: true
+The **auto-accompaniment** plays a bass line and chords built from the chord symbols. They start **muted**, so nothing changes until you turn them on. Try it: each has a **mute** button, a **volume** fader and a **voice** picker, and the pattern picker sets the style.
 
 ## voices: Every voice of the tune
 setup: openMixer
 target: #mixerVoicesSection
-Each melody line in the song gets its own mute, volume and instrument. A tune with a trumpet and a sousaphone shows both. Your choices carry over to every other song with a voice of the same name.
+interactive: true
+Each melody line in the song gets its own mute, volume and instrument. Try it: a tune with a trumpet and a sousaphone shows both. Your choices carry over to every other song with a voice of the same name.
 
 ## extras: Swing, metronome and quality
 setup: openMixer
 target: #mixerStripSwing
-The **swing** fader loosens straight eighth notes. The **drum** switches the metronome on, and the **wave** button enables higher-quality playback.
+interactive: true
+Try it: the **swing** fader loosens straight eighth notes. The **drum** switches the metronome on, and the **wave** button enables higher-quality playback.
 
 # setlists: Setlists and printing
 
@@ -154,6 +169,7 @@ Opening a setlist puts its songs in order in the sidebar, split into **sets**. C
 ## print: Three ways to print
 setup: openDemoSetlist
 target: .rj-library-print-group
+interactive: true
 - **Setlist**: a big numbered list of titles to put on stage.
 - **Chordbook**: every song's title and chord grid.
 - **Songbook**: every song with its chords and full notation.
@@ -180,7 +196,8 @@ Each hit is a three-note chord, and the colour tells you the role of each note: 
 ## mixer: Comping in the mixer
 setup: openDrawer, compingOn, openMixer
 target: #mixerVoicesSection
-With comping on, it joins the mixer as its own **Comping** voice, so you can mute it, turn it up or give it another instrument.
+interactive: true
+With comping on, it joins the mixer as its own **Comping** voice, so try it: mute it, turn it up or give it another instrument.
 
 ## done: That's the tour
 setup: showLibrary
