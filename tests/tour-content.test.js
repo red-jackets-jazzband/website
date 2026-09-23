@@ -24,6 +24,8 @@ const RUNTIME_TARGETS = {
   "#iRealPro": ["static/script/songs/irealpro-link.js", 'id: "iRealPro"'],
   "#inspirationLink": ["static/script/songs/inspiration.js", 'btn.id = "inspirationLink"'],
   ".rj-library-new-setlist-btn": ["static/script/songs/setlist-home.js", 'class: "rj-library-new-setlist-btn"'],
+  ".rj-library-add-song-field": ["static/script/songs/setlist-view.js", 'class: "rj-library-add-song-field"'],
+  ".rj-library-add-break": ["static/script/songs/setlist-view.js", 'class: "rj-library-add-break"'],
 };
 
 const allSteps = english.chapters.flatMap((chapter) => chapter.steps.map((step) => ({ chapter, step })));

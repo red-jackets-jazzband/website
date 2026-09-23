@@ -159,7 +159,36 @@ The **Setlists** tab lists the band's own setlists, which are read-only, and **Y
 ## new: Make your own setlist
 setup: showSetlists
 target: .rj-library-new-setlist-btn
-**New setlist** starts from scratch, from a copy of any existing setlist (a **remix**), or from a **.txt** file you upload. Then you add songs by searching, drag them into order, add set breaks and set a different key for each song.
+**New setlist** starts from scratch, from a copy of any existing setlist (a **remix**), or from a **.txt** file you upload. Let's build one from scratch, step by step.
+
+## create: A fresh, empty setlist
+setup: createDemoSetlist
+target: #setlistTitleRow
+Starting from *Empty* opens a blank setlist right away, ready for songs — we've named this one *Tour setlist*. Double-click a name (or its pencil) any time to rename your own.
+
+## addsong: Add a song
+setup: createDemoSetlist
+target: .rj-library-add-song-field
+interactive: true
+Try it: search a title in the box at the foot of the list, then press **Enter** — or click a match — to add it.
+
+## addsong2: Add another
+setup: createDemoSetlist, addDemoSong1
+target: .rj-library-add-song-field
+interactive: true
+Try it: add a second song the same way. The list grows downward, one row per song, ready to put in order.
+
+## reorder: Reorder by dragging
+setup: createDemoSetlist, addDemoSong1, addDemoSong2
+target: #songList
+interactive: true
+Try it: drag a song's **⋮⋮** handle up or down to move it. With a row focused, **Alt** + **↑** **↓** nudges it one slot at a time from the keyboard instead.
+
+## break: Add a section
+setup: createDemoSetlist, addDemoSong1, addDemoSong2
+target: .rj-library-add-break
+interactive: true
+Try it: **Add a set break** starts a new set — handy for splitting a gig into Set 1, Set 2 and so on. Type a label, or leave it blank for an automatic "Set 2".
 
 ## open: Open a setlist
 setup: openDemoSetlist
