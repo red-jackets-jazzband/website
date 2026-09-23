@@ -63,11 +63,11 @@ De speler blijft doorspelen terwijl je andere nummers bekijkt. Sleep de **kop** 
 ## tabs: YouTube, Spotify en meer
 Dit nummer heeft meer dan één opname, dus met de tabs wissel je ertussen. Er speelt steeds maar één tegelijk.
 
-## zoom: Zoom in op de tijdlijn
-De strook is de hele opname. Gebruik de knoppen **+** en **−**, of sleep het gemarkeerde venster of de randen ervan, om de tijdlijn eronder in te zoomen. Zo zet je markeringen veel nauwkeuriger.
-
 ## loop: Herhaal een frase
 Speel de video af, druk op **A** waar een frase begint en op **B** waar hij eindigt, en hij herhaalt eindeloos. Je kunt ook de **A**- en **B**-handvatten op de tijdlijn slepen, en met **✕** wis je ze.
+
+## zoom: Zoom in op de tijdlijn
+De strook is de hele opname. Gebruik de knoppen **+** en **−**, of sleep het gemarkeerde venster of de randen ervan, om de tijdlijn eronder in te zoomen. Zo plaats je je **A**- en **B**-markeringen veel nauwkeuriger.
 
 ## speed: Maak het langzamer
 Zet de **speed** lager (of hoger) om een snelle lijn in je eigen tempo te leren, en speel dan mee.
@@ -81,7 +81,7 @@ Kopieert een link naar dit nummer **én** je A–B-lus. Wie hem opent, komt op h
 De **Mixer** is de mengtafel voor alles wat je hoort. Hij opent als een klein paneel onder de knop, en op een telefoon als een blad onderaan het scherm.
 
 ## accompaniment: Bas en akkoorden
-De **automatische begeleiding** speelt een baslijn en akkoorden die uit de akkoordsymbolen worden opgebouwd. Ze staan standaard **gedempt**, dus er verandert niets tot je ze aanzet. Elk heeft een **dempknop**, een **volumeschuif** en een **stemkeuze**, en met de patroonkeuze bepaal je de stijl.
+De **automatische begeleiding** speelt een baslijn en akkoorden die uit de akkoordsymbolen worden opgebouwd. Ze staan standaard **gedempt**, dus er verandert niets tot je ze aanzet. Elk heeft een **dempknop**, een **volumeschuif** en een **stemkeuze**, en de keuze voor het **begeleidingspatroon** bepaalt de stijl.
 
 ## voices: Elke stem van het nummer
 Elke melodielijn in het nummer krijgt een eigen demping, volume en instrument. Een nummer met trompet en sousafoon laat beide zien. Je keuzes gelden ook voor elk ander nummer met een stem met dezelfde naam.
@@ -120,8 +120,8 @@ Als je een setlist opent, staan de nummers op volgorde in de zijbalk, verdeeld i
 - **Chordbook**: van elk nummer de titel en de akkoordentabel.
 - **Songbook**: elk nummer met akkoorden en volledige notatie.
 
-## exports: Alle manieren om te exporteren
-Naast de drie setlist-afdrukken kun je een los nummer **afdrukken** of als pdf opslaan, als **mp3** exporteren, of naar **iReal Pro** sturen. Een eigen setlist kun je ook als **.txt**-bestand exporteren en op een ander apparaat weer importeren.
+## exports: Een setlist exporteren
+Een eigen setlist kun je ook als **.txt**-bestand exporteren en op een ander apparaat weer importeren — het setlist-equivalent van de Print-, mp3- en iReal Pro-exports die je al kent van een los nummer.
 
 # comping: Comping
 
