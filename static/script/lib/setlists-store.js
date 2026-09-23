@@ -85,6 +85,16 @@ export function renamePersonalSetlist(storage, id, name) {
   writeStorage(storage, list);
 }
 
+// Blanks an entry's desc — used to drop a hidden marker (see the guided
+// tour's demo-setlist marker) once whatever set it no longer applies,
+// without touching anything a visitor can see or set themselves.
+export function clearPersonalSetlistMarker(storage, id) {
+  const list = readStorage(storage);
+  const entry = findEntry(list, id);
+  if (entry) entry.desc = "";
+  writeStorage(storage, list);
+}
+
 export function addSongToPersonalSetlist(storage, id, song) {
   const list = readStorage(storage);
   const entry = findEntry(list, id);

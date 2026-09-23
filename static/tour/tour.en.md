@@ -164,6 +164,7 @@ target: .rj-library-new-setlist-btn
 ## create: Start from scratch
 setup: createDemoSetlist
 target: #setlistTitleRow
+interactive: true
 Starting from *Empty* opens a blank setlist right away, ready for songs — we've called this one *Tour setlist*. Double-click a name (or its pencil) any time to rename yours.
 
 ## addsong: Add a song
@@ -186,7 +187,7 @@ Drag a song's **⋮⋮** handle up or down to move it. With a row focused, **Alt
 
 ## break: Split into sets
 setup: createDemoSetlist, addDemoSong1, addDemoSong2
-target: .rj-library-add-break
+target: .setlist-divider-input, .rj-library-add-break
 interactive: true
 **Add a set break** starts a new set — handy for splitting a gig into Set 1, Set 2 and so on. Type a label, or leave it blank for an automatic "Set 2".
 

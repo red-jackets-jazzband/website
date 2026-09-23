@@ -2,7 +2,9 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mountPage } from "../../../tests/helpers/dom.js";
 import { makeCtx, memoryStorage } from "../../../tests/helpers/ctx.js";
-import { addSongToPersonalSetlist, createPersonalSetlist, getPersonalSetlist } from "../lib/setlists-store.js";
+import {
+  addSongToPersonalSetlist, createPersonalSetlist, getPersonalSetlist, renamePersonalSetlist,
+} from "../lib/setlists-store.js";
 import {
   DEMO_SETLIST_FILE, DEMO_SETLIST_NAME, DEMO_SETLIST_SONG_1, DEMO_SETLIST_SONG_2, DEMO_SONG_FILE,
   TOUR_ACTION_NAMES, createTourActions, isShown, waitUntil,
@@ -444,6 +446,40 @@ test("end() deletes the demo setlist quietly when the visitor had already moved 
   }
 });
 
+test("end() keeps a demo setlist the visitor built on for real, instead of deleting it", async () => {
+  const { actions, ctx, storage, cleanup } = setup();
+  try {
+    actions.begin();
+    await actions.apply([CREATE_DEMO_SETLIST, ADD_DEMO_SONG_1]);
+    const id = ctx.state.currentPersonalId;
+    // The add-song step is interactive: true — a visitor can really search
+    // and add any song, not just the one the script itself added.
+    addSongToPersonalSetlist(storage, id, { file: OWN_SONG_FILE, key: "" });
+
+    await actions.end();
+    const entry = getPersonalSetlist(storage, id);
+    assert.ok(entry, "kept, not deleted");
+    assert.deepEqual(entry.songs.map((s) => s.file), [DEMO_SETLIST_SONG_1, OWN_SONG_FILE]);
+    assert.equal(entry.desc, "", "the marker is dropped so a later tour never sweeps it");
+  } finally {
+    cleanup();
+  }
+});
+
+test("end() still deletes an untouched demo setlist even after a reorder step visits it", async () => {
+  const { actions, ctx, storage, cleanup } = setup();
+  try {
+    actions.begin();
+    await actions.apply([CREATE_DEMO_SETLIST, ADD_DEMO_SONG_1, ADD_DEMO_SONG_2]);
+    const id = ctx.state.currentPersonalId;
+
+    await actions.end();
+    assert.equal(getPersonalSetlist(storage, id), null, "still just tour scaffolding — safe to delete");
+  } finally {
+    cleanup();
+  }
+});
+
 test("begin() sweeps a demo setlist abandoned by a tour that never finished, but leaves a same-named real one alone", async () => {
   const storage = memoryStorage();
   const real = createPersonalSetlist(storage, DEMO_SETLIST_NAME);
@@ -465,6 +501,34 @@ test("begin() sweeps a demo setlist abandoned by a tour that never finished, but
     next.actions.begin();
     assert.equal(getPersonalSetlist(storage, leftoverId), null, "the abandoned demo is swept away");
     assert.ok(getPersonalSetlist(storage, real.id), "a real setlist with the same name survives");
+  } finally {
+    next.cleanup();
+  }
+});
+
+test("begin() keeps a demo setlist a visitor customized before an interrupted tour ever reached end()", async () => {
+  const storage = memoryStorage();
+
+  const abandoned = setup({ storage });
+  let leftoverId;
+  try {
+    abandoned.actions.begin();
+    await abandoned.actions.apply([CREATE_DEMO_SETLIST, ADD_DEMO_SONG_1]);
+    leftoverId = abandoned.ctx.state.currentPersonalId;
+    // The visitor renamed their own copy — reachable for real from the
+    // "create" step — before the tab "closed" mid-tour.
+    renamePersonalSetlist(storage, leftoverId, "My real gig");
+  } finally {
+    abandoned.cleanup();
+  }
+
+  const next = setup({ storage });
+  try {
+    next.actions.begin();
+    const entry = getPersonalSetlist(storage, leftoverId);
+    assert.ok(entry, "kept, not swept away");
+    assert.equal(entry.name, "My real gig");
+    assert.equal(entry.desc, "", "the marker is dropped so it's never swept again");
   } finally {
     next.cleanup();
   }
