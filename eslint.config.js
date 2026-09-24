@@ -254,6 +254,31 @@ export default [
     },
   },
   {
+    // The /songs/ service worker (see CLAUDE.md's "Offline / PWA" section):
+    // a real module worker, so it gets sourceType: "module" like the rest of
+    // the site's JS, but its globals are the ServiceWorkerGlobalScope ones
+    // (self/caches/clients/fetch as event-driven APIs, not window/document —
+    // there's no DOM in a worker), not globals.browser.
+    files: ["static/sw.js"],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: "module",
+      globals: { ...globals.serviceworker },
+    },
+    plugins: {
+      "@stylistic": stylistic,
+      sonarjs: sonarjs.configs.recommended.plugins.sonarjs,
+      regexp: regexpPlugin,
+      unicorn: unicornPlugin,
+    },
+    rules: {
+      ...sonarjs.configs.recommended.rules,
+      ...STRICT_RULES,
+      ...STYLISTIC_RULES,
+      "sonarjs/no-unused-vars": "off",
+    },
+  },
+  {
     // CI/dev-tooling scripts (e.g. the ABC notation linter) run in Node,
     // not the browser.
     files: ["scripts/**/*.js"],

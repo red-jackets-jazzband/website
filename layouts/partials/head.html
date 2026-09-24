@@ -41,6 +41,19 @@
 <!-- Favicon -->
 {{ with .Site.Params.favicon }}<link rel="icon" href="{{ . | absURL }}" />{{ end }}
 
+<!-- PWA: only /songs/ itself is installable/offline-capable — the manifest's
+     own start_url/scope are both "/songs/", so linking it from every page
+     would be misleading. See CLAUDE.md's "Offline / PWA" section. -->
+{{ if eq .RelPermalink "/songs/" }}
+<link rel="manifest" href="/manifest.webmanifest" />
+<link rel="apple-touch-icon" href="/images/icons/apple-touch-icon.png" />
+<meta name="theme-color" content="#1b1b1b" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="RJ Songs" />
+{{ end }}
+
 <!-- Structured data -->
 {{ if .IsHome }}
   {{ $ld := dict
