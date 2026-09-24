@@ -4,42 +4,66 @@ import { mountPage } from "../../../tests/helpers/dom.js";
 import { makeCtx } from "../../../tests/helpers/ctx.js";
 import { createAbcjsStub } from "../../../tests/helpers/stubs.js";
 import { GM_VOICES } from "../lib/gm-voices.js";
-import { createOffline } from "./offline.js";
+import { createOffline, WIDE_RANGE_ABC } from "./offline.js";
 
 const SONG_INDEX = "Bourbon Street Parade,bourbon_street_parade.abc\nFive Foot Two,five_foot_two.abc\n";
 const SETLIST_INDEX = "Setlist 2026,setlist_2026.txt\n";
 const TOUR_MD = "# ui\n";
 
-function fakeFetch(calls, { failOn = [] } = {}) {
+// `status` lets a test simulate an HTTP error response (fetch() resolves,
+// doesn't reject, for those) alongside `failOn`'s network-error case.
+function fakeFetch(calls, { failOn = [], status = {} } = {}) {
   return (path) => {
     calls.push(path);
     if (failOn.includes(path)) return Promise.reject(new Error("network error"));
+    const statusCode = status[path] || 200;
     let body = "";
     if (path === "/songs/index_of_songs.txt") body = SONG_INDEX;
     else if (path === "/setlists/index_of_setlists.txt") body = SETLIST_INDEX;
     else if (path.startsWith("/tour/")) body = TOUR_MD;
-    return Promise.resolve({ text: () => Promise.resolve(body) });
+    return Promise.resolve({
+      ok: statusCode >= 200 && statusCode < 300,
+      status: statusCode,
+      text: () => Promise.resolve(body),
+    });
   };
 }
 
-function setup({ serviceWorkerSupported = true } = {}) {
+// A minimal navigator.serviceWorker stub with a real listener list, so tests
+// can simulate the "not controlling this page yet" race (waitForController
+// in offline.js) by firing "controllerchange" themselves.
+function makeServiceWorkerStub({ controller = {}, registerCalls = [] } = {}) {
+  const listeners = new Set();
+  return {
+    register: (url, options) => {
+      registerCalls.push({ url, options });
+      return Promise.resolve({});
+    },
+    ready: Promise.resolve(),
+    controller,
+    addEventListener: (type, listener) => { if (type === "controllerchange") listeners.add(listener); },
+    removeEventListener: (type, listener) => listeners.delete(listener),
+    fireControllerChange(newController) {
+      this.controller = newController;
+      listeners.forEach((listener) => listener());
+    },
+  };
+}
+
+function setup({ serviceWorkerSupported = true, controller = {} } = {}) {
   const page = mountPage();
   const registerCalls = [];
+  let swStub = null;
   if (serviceWorkerSupported) {
-    navigator.serviceWorker = {
-      register: (url, options) => {
-        registerCalls.push({ url, options });
-        return Promise.resolve({});
-      },
-      ready: Promise.resolve(),
-    };
+    swStub = makeServiceWorkerStub({ controller, registerCalls });
+    navigator.serviceWorker = swStub;
   } else {
     delete navigator.serviceWorker;
   }
   const ctx = makeCtx();
   const offline = createOffline(ctx);
   return {
-    page, ctx, offline, registerCalls, cleanup: page.cleanup,
+    page, ctx, offline, registerCalls, swStub, cleanup: page.cleanup,
   };
 }
 
@@ -142,12 +166,60 @@ test("downloadForOffline warms the high-quality soundfont set when that's the cu
   }
 });
 
-test("a failed fetch is skipped, not fatal — the run still completes", async () => {
+test("a failed fetch is skipped, not fatal, but the final status is honest about it", async () => {
   const { offline, cleanup } = setup();
   globalThis.fetch = fakeFetch([], { failOn: ["/songs/five_foot_two.abc"] });
   try {
     await runWithAbcjs(createAbcjsStub(), () => offline.downloadForOffline());
-    assert.equal(document.getElementById("offlineStatus").textContent, "Available offline.");
+    const status = document.getElementById("offlineStatus").textContent;
+    assert.notEqual(status, "Available offline.");
+    assert.match(status, /1 item couldn't be downloaded/);
+  } finally {
+    delete globalThis.fetch;
+    cleanup();
+  }
+});
+
+test("an HTTP error response on a library file counts as a failure too, not just a network error", async () => {
+  const { offline, cleanup } = setup();
+  globalThis.fetch = fakeFetch([], { status: { "/songs/five_foot_two.abc": 404 } });
+  try {
+    await runWithAbcjs(createAbcjsStub(), () => offline.downloadForOffline());
+    assert.match(document.getElementById("offlineStatus").textContent, /1 item couldn't be downloaded/);
+  } finally {
+    delete globalThis.fetch;
+    cleanup();
+  }
+});
+
+test("a 500 on the song index is treated as a failure, not parsed as an empty/garbage index", async () => {
+  const { offline, cleanup } = setup();
+  globalThis.fetch = fakeFetch([], { status: { "/songs/index_of_songs.txt": 500 } });
+  try {
+    await runWithAbcjs(createAbcjsStub(), () => offline.downloadForOffline());
+    assert.equal(
+      document.getElementById("offlineStatus").textContent,
+      "Couldn't reach the song library — try again when you're back online.",
+    );
+  } finally {
+    delete globalThis.fetch;
+    cleanup();
+  }
+});
+
+test("waits for the page to become controlled before fetching, so early requests aren't bypassing the worker", async () => {
+  const { offline, swStub, cleanup } = setup({ controller: null });
+  const fetchCalls = [];
+  globalThis.fetch = fakeFetch(fetchCalls);
+  try {
+    const run = runWithAbcjs(createAbcjsStub(), () => offline.downloadForOffline());
+    await Promise.resolve();
+    await Promise.resolve();
+    assert.equal(fetchCalls.length, 0, "no fetches should start before the page is controlled");
+
+    swStub.fireControllerChange({});
+    await run;
+    assert.ok(fetchCalls.includes("/songs/index_of_songs.txt"));
   } finally {
     delete globalThis.fetch;
     cleanup();
@@ -166,4 +238,15 @@ test("a second concurrent call is a no-op while a download is already running", 
     delete globalThis.fetch;
     cleanup();
   }
+});
+
+test("WIDE_RANGE_ABC covers every chromatic semitone, not just the seven naturals", () => {
+  assert.ok(WIDE_RANGE_ABC.includes("^C"), "should include a sharped natural (accidental coverage)");
+  assert.ok(WIDE_RANGE_ABC.includes("^f"), "should include a sharped natural in the upper octaves too");
+  // The first 5 lines are the ABC header (X:/T:/M:/L:/K:) — "K:C" itself
+  // ends in a bare note-letter-shaped "C", so only the note-body lines
+  // below it are counted here.
+  const noteLines = WIDE_RANGE_ABC.split("\n").slice(5);
+  const noteCount = (noteLines.join(" ").match(/\^?[A-Ga-g][,']*/g) || []).length;
+  assert.equal(noteCount, 12 * 6, "six full chromatic octaves, twelve semitones each");
 });

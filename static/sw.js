@@ -12,15 +12,23 @@
 // Safari) — on a browser that can't load this file at all, /songs/ simply
 // works the same as it always did, online-only, same as before this existed.
 import { classifyRequest } from "./script/lib/sw-routing.js";
-import { findStylesheetHrefs, findCssUrls } from "./script/lib/css-assets.js";
+import {
+  findStylesheetHrefs, findCssUrls, findScriptSrcs, findModuleImports,
+} from "./script/lib/precache-scan.js";
 
 // Bump on any change to this file or to what it should cache, so activate()
 // clears out whatever the previous version left behind instead of it
 // lingering forever.
 const CACHE_VERSION = "v1";
-const SHELL_CACHE = `rj-songs-shell-${CACHE_VERSION}`;
-const SOUNDFONT_CACHE = `rj-songs-soundfont-${CACHE_VERSION}`;
-const FONT_AWESOME_CACHE = `rj-songs-font-awesome-${CACHE_VERSION}`;
+// Every cache this worker owns is named under this prefix, and activate()'s
+// cleanup only ever deletes caches under it — CacheStorage is shared across
+// the whole origin, not partitioned per script/scope, so an unprefixed
+// "delete anything not in CURRENT_CACHES" would also delete a cache some
+// other, unrelated feature on this origin created.
+const CACHE_PREFIX = "rj-songs-";
+const SHELL_CACHE = `${CACHE_PREFIX}shell-${CACHE_VERSION}`;
+const SOUNDFONT_CACHE = `${CACHE_PREFIX}soundfont-${CACHE_VERSION}`;
+const FONT_AWESOME_CACHE = `${CACHE_PREFIX}font-awesome-${CACHE_VERSION}`;
 const CURRENT_CACHES = new Set([SHELL_CACHE, SOUNDFONT_CACHE, FONT_AWESOME_CACHE]);
 
 // A deliberately small precache — just enough that a fresh install has an
@@ -34,22 +42,28 @@ const CURRENT_CACHES = new Set([SHELL_CACHE, SOUNDFONT_CACHE, FONT_AWESOME_CACHE
 // discover the URLs for — see that file's own doc comment).
 const PRECACHE_URLS = ["/songs/", "/manifest.webmanifest"];
 
-// A page's own <head> — its stylesheet(s) and the webfonts they declare via
-// @font-face — is requested once, during that page's *own* initial load,
-// before any service worker can ever be controlling it (a worker never
-// controls the very page load that installs it — that's the standard SW
-// lifecycle, not a bug here). So unlike everything else "shell"-classified,
-// those requests are never passively caught by the fetch handler below on a
-// first visit; they have to be fetched here, explicitly, at install time.
-// The stylesheet itself is skipped in the ordinary case: split.css is served
-// from a build-time-fingerprinted URL (head.html's
-// `resources.Get | minify | fingerprint`), so its exact filename can't be
-// hardcoded here — it's discovered by scanning the already-precached
-// /songs/ page's own markup instead (findStylesheetHrefs), same for the
-// cross-origin Font Awesome stylesheet. Each stylesheet found is then
-// scanned in turn (findCssUrls) for the webfont files its own @font-face
-// rules point at, so this stays in sync with split.css automatically rather
-// than needing its own separate hardcoded font-file list.
+// A page's own <head>/<body> — its stylesheet(s), the webfonts they declare
+// via @font-face, and its own <script> tags (including, for the type="module"
+// entry point, everything it statically imports) — is requested once, during
+// that page's *own* initial load, before any service worker can ever be
+// controlling it (a worker never controls the very page load that installs
+// it — that's the standard SW lifecycle, not a bug here). So unlike
+// everything else "shell"-classified, those requests are never passively
+// caught by the fetch handler below on a first visit; they have to be
+// fetched here, explicitly, at install time — otherwise a first-ever visit
+// that goes offline before a second navigation would have a cached /songs/
+// page with no stylesheet, no fonts and no JavaScript to run it. None of
+// this can be a static list: split.css is served from a build-time-
+// fingerprinted URL (head.html's `resources.Get | minify | fingerprint`), so
+// its exact filename can't be hardcoded here, and the module entry point's
+// own dependency graph shifts as the app's modules change — both are
+// discovered by scanning the already-precached /songs/ page's own markup
+// instead (findStylesheetHrefs/findScriptSrcs), same for the cross-origin
+// Font Awesome stylesheet. Each stylesheet found is then scanned in turn
+// (findCssUrls) for the webfont files its own @font-face rules point at, and
+// each module script is scanned (findModuleImports) for the modules it
+// imports, recursively — so this all stays in sync with the app's actual
+// source automatically rather than needing separate hardcoded file lists.
 function targetCacheFor(url) {
   const kind = classifyRequest({
     pathname: url.pathname,
@@ -79,11 +93,36 @@ function precacheStylesheetAndFonts(href) {
   });
 }
 
+// A same-origin <script>'s own src, plus — for a type="module" entry point —
+// every module it statically imports, recursively (findModuleImports scans
+// the fetched source text the same way findCssUrls scans a stylesheet's).
+// `seen` de-dupes across the whole recursive walk (many modules share
+// imports like lib/dom.js) so each file is fetched once. A classic,
+// non-module script (ABCJS/Tonal/lamejs) has no import statements to find,
+// so this is a one-step fetch for those.
+function precacheScriptAndImports(src, seen) {
+  const absoluteSrc = new URL(src, self.location.origin).href;
+  if (seen.has(absoluteSrc)) return Promise.resolve(null);
+  seen.add(absoluteSrc);
+  return precacheUrl(absoluteSrc).then((response) => {
+    if (!response) return null;
+    return response.clone().text().then((js) => Promise.all(
+      findModuleImports(js).map((spec) => precacheScriptAndImports(new URL(spec, absoluteSrc).href, seen)),
+    ));
+  });
+}
+
 function precacheShell() {
   return caches.open(SHELL_CACHE)
     .then((cache) => cache.addAll(PRECACHE_URLS).then(() => cache.match("/songs/")))
     .then((shellPage) => shellPage.text())
-    .then((html) => Promise.all(findStylesheetHrefs(html).map(precacheStylesheetAndFonts)));
+    .then((html) => {
+      const seenScripts = new Set();
+      return Promise.all([
+        ...findStylesheetHrefs(html).map(precacheStylesheetAndFonts),
+        ...findScriptSrcs(html).map((src) => precacheScriptAndImports(src, seenScripts)),
+      ]);
+    });
 }
 
 self.addEventListener("install", (event) => {
@@ -94,7 +133,9 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys()
       .then((names) => Promise.all(
-        names.filter((name) => !CURRENT_CACHES.has(name)).map((name) => caches.delete(name)),
+        names
+          .filter((name) => name.startsWith(CACHE_PREFIX) && !CURRENT_CACHES.has(name))
+          .map((name) => caches.delete(name)),
       ))
       .then(() => self.clients.claim()),
   );
@@ -103,14 +144,23 @@ self.addEventListener("activate", (event) => {
 // Cache-first, but always also refetches in the background and updates the
 // cache — an offline visit is instant even off a stale copy, and the next
 // visit (online) picks up whatever changed (a new/edited song, a setlist
-// update, a code fix) without needing a whole new CACHE_VERSION.
-function cacheFirstRevalidate(request, cacheName) {
+// update, a code fix) without needing a whole new CACHE_VERSION. The
+// revalidation fetch/cache-write is handed to event.waitUntil() even on a
+// cache hit (where it isn't part of the value returned to the page) — the
+// worker is otherwise free to be killed the instant this promise resolves,
+// which could abort that background fetch or its cache.put before either
+// finishes and silently drop the update.
+function cacheFirstRevalidate(request, cacheName, event) {
   return caches.open(cacheName).then((cache) => cache.match(request).then((cached) => {
     const revalidate = fetch(request).then((response) => {
       if (response.ok) cache.put(request, response.clone());
       return response;
     }).catch(() => cached);
-    return cached || revalidate;
+    if (cached) {
+      event.waitUntil(revalidate);
+      return cached;
+    }
+    return revalidate;
   }));
 }
 
@@ -130,17 +180,24 @@ function cacheFirstOnly(request, cacheName) {
 // A page load: prefer a live network response (so a content/code update is
 // seen immediately when online), falling back to whatever's cached for that
 // exact URL, and finally to the precached /songs/ shell — so a reload while
-// offline never just shows the browser's own "no internet" page.
-function navigate(request) {
+// offline never just shows the browser's own "no internet" page. Only a
+// genuinely successful response is cached: an HTTP error response would
+// otherwise overwrite a previously-cached, working page with a 404/500, and
+// the next offline reload would serve that broken response as if it were
+// the real fallback. The cache write itself goes through event.waitUntil()
+// for the same early-termination reason cacheFirstRevalidate's does above.
+function navigate(request, event) {
   return fetch(request).then((response) => {
-    caches.open(SHELL_CACHE).then((cache) => cache.put(request, response.clone()));
+    if (response.ok) {
+      event.waitUntil(caches.open(SHELL_CACHE).then((cache) => cache.put(request, response.clone())));
+    }
     return response;
   }).catch(() => caches.match(request).then((cached) => cached || caches.match("/songs/")));
 }
 
 const STRATEGIES = {
   navigate,
-  shell: (request) => cacheFirstRevalidate(request, SHELL_CACHE),
+  shell: (request, event) => cacheFirstRevalidate(request, SHELL_CACHE, event),
   soundfont: (request) => cacheFirstOnly(request, SOUNDFONT_CACHE),
   "font-awesome": (request) => cacheFirstOnly(request, FONT_AWESOME_CACHE),
 };
@@ -157,5 +214,5 @@ self.addEventListener("fetch", (event) => {
     mode: request.mode,
   });
   const strategy = STRATEGIES[kind];
-  if (strategy) event.respondWith(strategy(request));
+  if (strategy) event.respondWith(strategy(request, event));
 });
