@@ -4,7 +4,8 @@ import { mountPage } from "../../../tests/helpers/dom.js";
 import { makeCtx, memoryStorage } from "../../../tests/helpers/ctx.js";
 import {
   createPersonalSetlist, addSongToPersonalSetlist, addDividerToPersonalSetlist,
-  updateDividerLabelInPersonalSetlist, getPersonalSetlist, setPersonalSetlistOrder,
+  updateDividerLabelInPersonalSetlist, updateSongNoteInPersonalSetlist,
+  getPersonalSetlist, setPersonalSetlistOrder,
 } from "../lib/setlists-store.js";
 import { createSetlistView } from "./setlist-view.js";
 
@@ -279,6 +280,81 @@ test("the per-song semitone field rejects fractional and out-of-range input", ()
     document.querySelector(".setlist-song-semitones").value = "40";
     document.querySelector(".setlist-song-semitones").dispatchEvent(new window.Event("change"));
     assert.equal(getPersonalSetlist(storage, entry.id).songs[0].key, "");
+  } finally {
+    cleanup();
+  }
+});
+
+test("clicking the '+ note' button reveals an editable field; blur saves the trimmed text", () => {
+  const { view, entry, storage, cleanup } = setup({ songs: [{ file: "a.abc" }] });
+  try {
+    view.renderOpen(entry.name, entry.songs, entry, "");
+    document.querySelector(".setlist-song-note-add").dispatchEvent(new window.Event("click"));
+    const input = document.querySelector(".setlist-song-note-input");
+    assert.equal(input.hidden, false);
+    input.value = "  Ben solos 2nd chorus.  ";
+    input.dispatchEvent(new window.Event("blur"));
+    assert.equal(getPersonalSetlist(storage, entry.id).songs[0].note, "Ben solos 2nd chorus.");
+  } finally {
+    cleanup();
+  }
+});
+
+test("clicking an existing note reveals it prefilled, and Escape cancels without saving", () => {
+  const { view, entry, storage, cleanup } = setup({ songs: [{ file: "a.abc" }] });
+  try {
+    updateSongNoteInPersonalSetlist(storage, entry.id, 0, "Original note.");
+    const seeded = getPersonalSetlist(storage, entry.id);
+    view.renderOpen(seeded.name, seeded.songs, seeded, "");
+
+    const textEl = document.querySelector(".setlist-song-note-text");
+    assert.equal(textEl.hidden, false);
+    assert.equal(textEl.textContent, "Original note.");
+    textEl.dispatchEvent(new window.Event("click"));
+
+    const input = document.querySelector(".setlist-song-note-input");
+    assert.equal(input.hidden, false);
+    assert.equal(input.value, "Original note.");
+    input.value = "Changed but cancelled.";
+    input.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    input.dispatchEvent(new window.Event("blur"));
+
+    assert.equal(getPersonalSetlist(storage, entry.id).songs[0].note, "Original note.");
+  } finally {
+    cleanup();
+  }
+});
+
+test("blurring a note field with an unchanged value doesn't write back or lose the escape hatch", () => {
+  const { view, entry, storage, cleanup } = setup({ songs: [{ file: "a.abc" }] });
+  try {
+    view.renderOpen(entry.name, entry.songs, entry, "");
+    document.querySelector(".setlist-song-note-add").dispatchEvent(new window.Event("click"));
+    document.querySelector(".setlist-song-note-input").dispatchEvent(new window.Event("blur"));
+    assert.equal(getPersonalSetlist(storage, entry.id).songs[0].note, undefined);
+  } finally {
+    cleanup();
+  }
+});
+
+test("a band setlist shows a read-only note with no edit controls", () => {
+  const { view, cleanup } = setup({ personal: false });
+  try {
+    view.renderOpen("Band Night", [{ file: "a.abc", key: "", note: "Ben solos." }], null, "");
+    const textEl = document.querySelector(".setlist-song-note-text");
+    assert.equal(textEl.textContent, "Ben solos.");
+    assert.equal(document.querySelector(".setlist-song-note-input"), null);
+    assert.equal(document.querySelector(".setlist-song-note-add"), null);
+  } finally {
+    cleanup();
+  }
+});
+
+test("a band setlist song with no note renders no note row", () => {
+  const { view, cleanup } = setup({ personal: false });
+  try {
+    view.renderOpen("Band Night", [{ file: "a.abc", key: "" }], null, "");
+    assert.equal(document.querySelector(".setlist-song-note-row"), null);
   } finally {
     cleanup();
   }

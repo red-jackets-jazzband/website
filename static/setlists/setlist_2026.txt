@@ -1,5 +1,6 @@
-# name,Setlist 2026
-# break,Set 1
+# Setlist 2026
+
+## Set 1
 bourbon_street_parade.abc,
 five_foot_two.abc,
 second_line.abc,
@@ -8,7 +9,8 @@ you_are_my_sunshine.abc,
 im_walking.abc,
 oh_when_the_saints.abc,
 walking_on_a_thin_line.abc,
-# break,Set 2
+
+## Set 2
 lilly_of_the_valley.abc,
 just_a_little_while.abc,
 didnt_he_ramble.abc,
@@ -16,7 +18,8 @@ bellamina.abc,
 when_youre_smiling.abc,
 whoopin_blues.abc,
 bill_bailey.abc,
-# break,Set 3
+
+## Set 3
 see_see_rider.abc,
 happy_feet_blues.abc,
 go_down_to_new_orleans.abc,
@@ -25,7 +28,8 @@ closer_walk.abc,
 isle_of_capri.abc,
 dippermouth_blues.abc,
 milenburg_joys.abc,
-# break,Set 4
+
+## Set 4
 lil_liza_jane.abc,
 honky_tonk_town.abc,
 gatemouth.abc,
