@@ -3342,9 +3342,58 @@ select.rj-modal-input {
 }
 .song-list-item.setlist-song-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   padding: 8px 4px;
+}
+/* Per-song note (e.g. "who solos") — a full-width line that wraps onto its
+   own row under the song's title/controls (flex-basis: 100% forces the
+   wrap), edited in place like the setlist title's own rename. Read-only,
+   shown only when present, for a band setlist. */
+.setlist-song-note-row {
+  flex: 1 0 100%;
+  padding-left: 24px;
+}
+.setlist-song-note-text {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 2px 0;
+  color: rgba(236,234,230,.55);
+  font: 400 12px/1.4 "Montserrat", sans-serif;
+  font-style: italic;
+  white-space: pre-line;
+  cursor: pointer;
+}
+.setlist-song-note-text:hover {
+  color: var(--rj-gold);
+}
+.setlist-song-note-add {
+  background: none;
+  border: none;
+  padding: 2px 0;
+  color: rgba(236,234,230,.3);
+  font: 400 11px "Montserrat", sans-serif;
+  cursor: pointer;
+}
+.setlist-song-note-add:hover {
+  color: var(--rj-gold);
+}
+.setlist-song-note-input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 2px 0;
+  padding: 6px 8px;
+  background: #1f1f1f;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 6px;
+  color: #dedcd8;
+  font: 400 12px/1.4 "Montserrat", sans-serif;
+  resize: vertical;
 }
 .setlist-song-number {
   flex: none;
@@ -3576,6 +3625,14 @@ body.setlist-dragging {
 }
 .setlist-stage-table td.stage-c-tempo {
   color: #555;
+}
+/* A song's per-setlist note (e.g. "Ben solos 2nd chorus") — printed-setlist
+   output only, never on the song's own chart. */
+.setlist-stage-note {
+  font: 400 13px/1.3 "MuseJazzText", "Georgia", serif;
+  color: #666;
+  white-space: pre-line;
+  margin-top: 2px;
 }
 .setlist-stage-table .setlist-stage-set-row th {
   text-align: left;
@@ -4626,6 +4683,13 @@ body:has(#rjLibrary) .split-bio {
 .bookContent > h1 {
   font-size: xx-large;
   padding: 40px;
+}
+
+/* The setlist cover page's free-text desc: real "\n"s in the stored text
+   (multi-line/multi-paragraph, see setlist-format.js) render as actual line
+   breaks instead of collapsing into one run of text. */
+.setlist-cover-desc {
+  white-space: pre-line;
 }
 
 .bookIndexList {
