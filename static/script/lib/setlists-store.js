@@ -213,10 +213,16 @@ function sanitizeSongs(songs) {
   });
 }
 
-export function exportPersonalSetlistText(storage, id) {
+// `songName(file)`, when given, resolves each song's real current title for
+// the exported file's link text (see serializeSetlistFile) — the caller's
+// own live song index, not something this storage module has access to.
+export function exportPersonalSetlistText(storage, id, songName) {
   const entry = getPersonalSetlist(storage, id);
   return entry
-    ? serializeSetlistFile({ ...entry, desc: sanitizeDesc(entry.desc), songs: sanitizeSongs(entry.songs) })
+    ? serializeSetlistFile(
+      { ...entry, desc: sanitizeDesc(entry.desc), songs: sanitizeSongs(entry.songs) },
+      { songName },
+    )
     : null;
 }
 

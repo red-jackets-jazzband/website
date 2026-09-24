@@ -148,7 +148,7 @@ test("a multi-line note survives export/import across two devices", () => {
   updateSongNoteInPersonalSetlist(deviceA, entry.id, 0, "Ben solos.\nWatch the turnaround.");
 
   const text = exportPersonalSetlistText(deviceA, entry.id);
-  assert.match(text, /\n> Ben solos\.\n> Watch the turnaround\.\n/);
+  assert.match(text, /\n {2}> Ben solos\.\n {2}> Watch the turnaround\.\n/);
 
   const deviceB = makeStorage();
   const imported = importPersonalSetlistText(deviceB, text, "fallback");
@@ -190,12 +190,21 @@ test("exportPersonalSetlistText / importPersonalSetlistText round-trip across tw
 
   const text = exportPersonalSetlistText(deviceA, entry.id);
   assert.match(text, /^# Export Me/);
-  assert.match(text, /basin_street\.abc,Bb/);
+  assert.match(text, /\/songs\/basin_street\.abc\?key=Bb/);
 
   const deviceB = makeStorage(); // a different browser/device
   const imported = importPersonalSetlistText(deviceB, text, "fallback");
   assert.equal(imported.name, "Export Me");
   assert.deepEqual(imported.songs, [{ file: BASIN_STREET, key: "Bb" }]);
+});
+
+test("exportPersonalSetlistText uses the given songName resolver for each link's text", () => {
+  const storage = makeStorage();
+  const entry = createPersonalSetlist(storage, "My List");
+  addSongToPersonalSetlist(storage, entry.id, { file: BASIN_STREET, key: "" });
+
+  const text = exportPersonalSetlistText(storage, entry.id, () => "Basin Street Blues");
+  assert.match(text, /- \[Basin Street Blues\]\(\/songs\/basin_street\.abc\)/);
 });
 
 test("importPersonalSetlistText falls back to a given name when the file has none", () => {
