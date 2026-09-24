@@ -906,7 +906,7 @@ export function createSetlistView(ctx) {
     on("setlistExportBtn", "click", () => {
       if (!ctx.state.currentPersonalId) return;
       const entry = getPersonalSetlist(ctx.storage(), ctx.state.currentPersonalId);
-      const text = exportPersonalSetlistText(ctx.storage(), ctx.state.currentPersonalId);
+      const text = exportPersonalSetlistText(ctx.storage(), ctx.state.currentPersonalId, ctx.songName);
       if (!text) return;
       const filename = `${(entry.name || "setlist").toLowerCase().replace(/[^a-z0-9]+/g, "_")}.txt`;
       downloadText(filename, text);
