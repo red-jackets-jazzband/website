@@ -5331,7 +5331,8 @@ body.rj-sheet-fullscreen #sheetmenu {
   cursor: pointer;
   transition: color 0.15s, border-color 0.15s;
 }
-#tourBtn[hidden] {
+#tourBtn[hidden],
+#offlineBtn[hidden] {
   display: none;
 }
 @media (hover: hover) {
@@ -5339,6 +5340,13 @@ body.rj-sheet-fullscreen #sheetmenu {
     color: var(--rj-gold);
     border-color: rgba(226,157,15,.5);
   }
+}
+/* "Download for offline" (songs/offline.js) — its progress line, right under
+   the tab row, same treatment as the setlist print status line. */
+.rj-offline-status {
+  margin: -4px 0 8px;
+  color: var(--rj-gold);
+  font: 600 11px "Montserrat", sans-serif;
 }
 
 .rj-tour {
