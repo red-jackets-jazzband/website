@@ -4,12 +4,13 @@
   "type": "module",
   "description": "Dev tooling (lint + unit tests) for the Red Jackets Jazzband Hugo site's vanilla JS. Not part of the Hugo build or the GitHub Pages deploy.",
   "scripts": {
-    "lint": "npm run lint:js && npm run lint:css && npm run lint:dup && npm run lint:types && npm run lint:abc",
+    "lint": "npm run lint:js && npm run lint:css && npm run lint:dup && npm run lint:types && npm run lint:abc && npm run lint:setlists",
     "lint:js": "eslint --max-warnings 0 static/script scripts tests eslint.config.js",
     "lint:css": "stylelint \"assets/css/**/*.css\"",
     "lint:dup": "jscpd --config jscpd.config.json",
     "lint:types": "tsc -p tsconfig.lib.json",
     "lint:abc": "node scripts/lint-abc.js",
+    "lint:setlists": "node scripts/lint-setlists.js",
     "lint:seo": "node scripts/lint-seo.js",
     "audit": "npm audit --audit-level=high",
     "test": "node --test \"static/script/lib/*.test.js\" \"static/script/songs/*.test.js\" \"tests/**/*.test.js\""

@@ -5,6 +5,53 @@ import { parseSetlistFile, serializeSetlistFile } from "./setlist-format.js";
 const BASIN_STREET = "basin_street.abc";
 const TIGER_RAG = "tiger_rag.abc";
 
+// Regression: a desc paragraph that happens to start with a literal markdown
+// bullet ("- Bring your own stand.", entirely natural to type in a format
+// sold as "just markdown") must NOT be treated as a song and must NOT flip
+// the parser into list mode — doing so used to also swallow every line after
+// it into a silent "Unrecognized line" attempt, since the header/list-phase
+// transition used to be a bare "starts with '- '" shape sniff rather than
+// checking the line actually parses as a link.
+test("a desc paragraph starting with a markdown bullet stays in desc, not a song", () => {
+  const text = [
+    "# Summer Gig",
+    "",
+    "Meet at 18:00.",
+    "- Bring your own stand.",
+    "See you there!",
+    "",
+    "- [Bourbon Street Parade](/songs/bourbon_street_parade.abc)",
+  ].join("\n");
+
+  const setlist = parseSetlistFile(text);
+  assert.equal(setlist.desc, "Meet at 18:00.\n- Bring your own stand.\nSee you there!");
+  assert.deepEqual(setlist.songs, [{ file: "bourbon_street_parade.abc", key: "" }]);
+  assert.deepEqual(setlist.warnings, []);
+});
+
+// Regression: once inside the song list, a line that doesn't parse as a song
+// must be dropped, not silently turned into a bogus song entry via the old
+// bare-CSV fallback (which accepted any non-empty string as a "file") — and
+// it's reported in `warnings` so a lint step (scripts/lint-setlists.js) can
+// catch it instead of it only surfacing as a broken row on the live site.
+test("an unparseable line inside the song list is dropped and reported, not faked into a song", () => {
+  const text = [
+    "# Gig",
+    `- [Bourbon Street Parade](/songs/${BASIN_STREET})`,
+    "oops a typo not a link",
+    "## Set 2",
+    `- [Tiger Rag](/songs/${TIGER_RAG})`,
+  ].join("\n");
+
+  const setlist = parseSetlistFile(text);
+  assert.deepEqual(setlist.songs, [
+    { file: BASIN_STREET, key: "" },
+    { divider: "Set 2" },
+    { file: TIGER_RAG, key: "" },
+  ]);
+  assert.deepEqual(setlist.warnings, ['Unrecognized line: "oops a typo not a link"']);
+});
+
 test("parseSetlistFile reads a '# title', free-text desc, and song links with optional ?key=", () => {
   const text = [
     "# Zeeland Jazz 2026",
@@ -138,6 +185,20 @@ test("serializeSetlistFile writes songs as markdown links, set dividers as '##' 
   assert.match(text, /^- \[B\]\(\/songs\/b\.abc\?key=Bb\)$/m);
   assert.match(text, /\n\n##\n/);
   assert.match(text, /\n\n## Last set\n/);
+  assert.deepEqual(parseSetlistFile(text).songs, original.songs);
+});
+
+// Regression: encodeURIComponent leaves "(" and ")" unescaped (they're in
+// its own "unreserved" set), but parseMarkdownLink finds a link's target by
+// scanning for the first ")" — an unescaped one inside the key value would
+// be read as the link's own closing paren and truncate the value.
+test("serializeSetlistFile escapes parens in a key override so it round-trips through the link", () => {
+  const original = { name: "", desc: "", songs: [{ file: "a.abc", key: "Bb (capo 2)" }] };
+  const text = serializeSetlistFile(original);
+  // The query value's own parens are percent-escaped, not literal — only the
+  // link syntax's own structural "(" / ")" (wrapping the whole target)
+  // survive as real characters.
+  assert.match(text, /\?key=[^()\n]*%28[^()\n]*%29[^()\n]*\)/);
   assert.deepEqual(parseSetlistFile(text).songs, original.songs);
 });
 

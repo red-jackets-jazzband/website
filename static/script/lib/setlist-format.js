@@ -103,12 +103,23 @@ function isSongListItem(line) {
   return line.slice(0, 2) === "- ";
 }
 
+// The one place a line is decided to actually BE a song (new-style link or
+// the old bare CSV line) — content-validated both ways, not just a shape
+// sniff, and reused everywhere a line needs classifying (the header/list
+// phase transition below, and actually pushing the song), so those two
+// questions can never disagree with each other. A "- " line that fails to
+// parse as a real link (e.g. ordinary desc prose that happens to start with
+// a markdown bullet, like "- Bring your own stand.") returns null here
+// rather than being treated as a malformed song — the caller decides what to
+// do with that (desc text in the header, a warning in the list body — see
+// parseSetlistFile), but it's never silently promoted into a fake song entry
+// the way an unvalidated fallback to songFromOldLine would.
 function songFromLine(line) {
   if (isSongListItem(line)) {
     const link = parseMarkdownLink(line.slice(2).trim());
     return link ? songFromLinkTarget(link.target) : null;
   }
-  return songFromOldLine(line);
+  return SONG_LINE_RE.test(line) ? songFromOldLine(line) : null;
 }
 
 // One line of a "># text" note continuation: drop the leading "># " marker
@@ -122,15 +133,12 @@ function isDividerLine(line) {
   return line.slice(0, 2) === "##";
 }
 
-function isSongLine(line) {
-  return isSongListItem(line) || SONG_LINE_RE.test(line);
-}
-
 export function parseSetlistFile(text) {
   let name = null;
   let legacyDesc = null;
   const descLines = [];
   const songs = [];
+  const warnings = [];
   let inHeader = true;
   let lastSongItem = null;
 
@@ -139,12 +147,16 @@ export function parseSetlistFile(text) {
     lastSongItem = null;
   }
 
-  function pushSong(line) {
+  // Tries to read `line` as a song; returns whether it succeeded, so a
+  // caller can tell "this line is a song" apart from "this line is
+  // something else" (desc prose in the header, an unrecognized line once
+  // the list has started — see handleHeaderLine/handleListLine).
+  function tryPushSong(line) {
     const item = songFromLine(line);
-    if (item) {
-      songs.push(item);
-      lastSongItem = item;
-    }
+    if (!item) return false;
+    songs.push(item);
+    lastSongItem = item;
+    return true;
   }
 
   function attachNote(line) {
@@ -191,12 +203,16 @@ export function parseSetlistFile(text) {
       return;
     }
     if (line.charAt(0) === ">") return; // nothing to attach to yet
-    if (!isSongLine(line)) {
+    // A line only ends the header/starts the song list once it actually
+    // parses as a song — never on a shape sniff alone (a desc paragraph
+    // starting with a literal "- ", e.g. "- Bring your own stand.", stays
+    // desc text instead of derailing everything after it into the list
+    // phase — see tryPushSong's own doc comment / songFromLine's).
+    if (!tryPushSong(line)) {
       descLines.push(line);
       return;
     }
     inHeader = false;
-    pushSong(line);
   }
 
   function handleListLine(line) {
@@ -213,7 +229,12 @@ export function parseSetlistFile(text) {
       attachNote(line);
       return;
     }
-    pushSong(line);
+    // Once inside the song list, a line that doesn't parse as a song is
+    // dropped rather than silently turned into a bogus one (the old
+    // behavior here — an unconditional fallback to the bare-CSV reader,
+    // which accepts any non-empty string as a "file" — is exactly how a
+    // stray line of prose became a fake, 404-ing song entry).
+    if (!tryPushSong(line)) warnings.push(`Unrecognized line: "${line}"`);
   }
 
   text.split("\n").forEach((rawLine) => {
@@ -226,11 +247,24 @@ export function parseSetlistFile(text) {
   let desc = descLines.length ? descLines.join("\n") : null;
   if (legacyDesc !== null) desc = legacyDesc;
 
-  return { name, desc, songs };
+  return { name, desc, songs, warnings };
+}
+
+// encodeURIComponent leaves "(" and ")" unescaped — they're in its own
+// "unreserved" set — but parseMarkdownLink reads a link's target back with a
+// plain indexOf scan for the closing ")", so an unescaped one inside the
+// value (e.g. a hand-typed key override like "Bb (capo 2)") would be read as
+// the link's OWN closing paren and truncate everything after it. Escaping
+// them by hand on top of encodeURIComponent keeps the value's own parens out
+// of that scan entirely; URLSearchParams#get decodes "%28"/"%29" back to
+// "("/")" on the way in, same as any other percent-escape, so nothing needs
+// to change on the reading side.
+function encodeQueryValue(value) {
+  return encodeURIComponent(value).replace(/[()]/g, (c) => `%${c.charCodeAt(0).toString(16)}`);
 }
 
 function linkTarget(file, key) {
-  const query = key ? `?key=${encodeURIComponent(key)}` : "";
+  const query = key ? `?key=${encodeQueryValue(key)}` : "";
   return `${SONGS_PATH_PREFIX}${file}${query}`;
 }
 

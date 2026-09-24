@@ -3368,6 +3368,14 @@ select.rj-modal-input {
   white-space: pre-line;
   cursor: pointer;
 }
+/* The `display: block` above beats the browser's built-in
+   `[hidden] { display: none }` UA rule (author styles always win over UA
+   styles, regardless of specificity — same gotcha as .inspiration-panel-tab
+   elsewhere in this file), so toggling `.hidden = true` on this element from
+   noteBlock() in setlist-view.js would otherwise leave it visibly rendered. */
+.setlist-song-note-text[hidden] {
+  display: none;
+}
 .setlist-song-note-text:hover {
   color: var(--rj-gold);
 }
@@ -3394,6 +3402,10 @@ select.rj-modal-input {
   color: #dedcd8;
   font: 400 12px/1.4 "Montserrat", sans-serif;
   resize: vertical;
+}
+/* Same `[hidden]` override as .setlist-song-note-text just above. */
+.setlist-song-note-input[hidden] {
+  display: none;
 }
 .setlist-song-number {
   flex: none;
