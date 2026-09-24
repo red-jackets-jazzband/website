@@ -147,16 +147,61 @@ export default [
       // function that never touches its enclosing function's own
       // parameters/closure variables belongs at module scope instead.
       "unicorn/consistent-function-scoping": "error",
-      // Two more cherry-picks, added after PR #121's SonarCloud scan flagged
-      // both on brand-new code: `arr[arr.length - 1]` -> `arr.at(-1)`
-      // (`unicorn/prefer-at`) and `str.charCodeAt(i)` -> `str.codePointAt(i)`
-      // (`unicorn/prefer-code-point`, only relevant once `i` could land on a
+      // Cherry-picked from PR #121's SonarCloud scan the same way as
+      // consistent-function-scoping above: `str.charCodeAt(i)` ->
+      // `str.codePointAt(i)`, only relevant once `i` could land on a
       // surrogate half — charCodeAt silently reads half of an astral
-      // codepoint there, codePointAt doesn't). Same reasoning as
-      // consistent-function-scoping above: real SonarCloud findings, not
-      // speculative style opinions from unicorn's own "recommended" set.
-      "unicorn/prefer-at": "error",
+      // codepoint there, codePointAt doesn't. (SonarCloud's matching
+      // `arr[arr.length - 1]` -> `arr.at(-1)` finding, `unicorn/prefer-at`,
+      // is deliberately NOT enabled here — see the OLD_SAFARI_RULES block
+      // below, which bans `.at()` outright.)
       "unicorn/prefer-code-point": "error",
+    },
+  },
+  {
+    // Browser-shipped code only (never the Node test suite, which runs on
+    // whatever Node this machine has, not in a browser at all): this project
+    // supports back to Safari 12 (see CLAUDE.md's browser-support note,
+    // added after a real visitor's iPad — permanently capped at iOS 12.5.8,
+    // the last update Apple ever shipped for that hardware — turned out
+    // unable to run the songs page at all). Safari 12 predates optional
+    // chaining and nullish coalescing entirely: either one is a SyntaxError
+    // at *parse* time, which — since everything here loads as one ES module
+    // graph — aborts the whole graph before a single line runs, with nothing
+    // in the page to say why. `.at()`, `String#matchAll` and
+    // `String#replaceAll` don't throw until called, but still don't exist on
+    // Safari 12 either way. `logical-assignment-operators` above is flipped
+    // to "never" for the same reason: `&&=`/`||=`/`??=` are Safari 14+.
+    files: ["static/script/lib/**/*.js", "static/script/songs/**/*.js", "static/script/*.js"],
+    ignores: ["**/*.test.js"],
+    rules: {
+      "logical-assignment-operators": ["error", "never"],
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "ChainExpression",
+          message: "Optional chaining (?.) is a SyntaxError on Safari 12 — use an explicit `a && a.b` guard instead.",
+        },
+        {
+          selector: "LogicalExpression[operator='??']",
+          message: "Nullish coalescing (??) is a SyntaxError on Safari 12 — use `x === undefined ? fallback : x` "
+            + "(or also check `=== null` when the value can genuinely be either).",
+        },
+        {
+          selector: "CallExpression[callee.property.name='at']",
+          message: "Array/String#at is Safari 15.4+ — index from the end manually instead: arr[arr.length - N] "
+            + "(route a NodeList through qsa()/spread first — see CLAUDE.md's Browser support section).",
+        },
+        {
+          selector: "CallExpression[callee.property.name='matchAll']",
+          message: "String#matchAll is Safari 13+ — use lib/regex-exec-all.js's execAll(regex, str) instead.",
+        },
+        {
+          selector: "CallExpression[callee.property.name='replaceAll']",
+          message: "String#replaceAll is Safari 13.1+ — use .replace() with a /g-flagged regex instead "
+            + "(identical result to replaceAll for a global regex).",
+        },
+      ],
     },
   },
   {

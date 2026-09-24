@@ -75,12 +75,14 @@ export function makeCtx(overrides = {}) {
       stop: () => {},
     },
     mixer: overrides.mixer || {
-      init: () => {}, toggle: () => {}, refresh: () => {}, syncVoices: () => {},
+      init: () => {}, toggle: () => {}, refresh: () => {}, syncVoices: () => {}, isOpen: () => false,
     },
     metronome: overrides.metronome || {
       init: () => {}, refresh: () => {}, onPlaybackChange: () => {}, onBarStart: () => {},
     },
-    inspiration: { updateLink: () => {}, init: () => {}, ...overrides.inspiration },
+    inspiration: {
+      updateLink: () => {}, init: () => {}, isOpen: () => false, ...overrides.inspiration,
+    },
     setlistData: overrides.setlistData,
     setlistHome: overrides.setlistHome,
     setlistModal: overrides.setlistModal,
