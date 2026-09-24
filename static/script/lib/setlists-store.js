@@ -137,8 +137,8 @@ export function updateSongKeyInPersonalSetlist(storage, id, index, key) {
 // from the UI, so every read of it is already clean.
 export function updateSongNoteInPersonalSetlist(storage, id, index, note) {
   const list = readStorage(storage);
-  const entry = findEntry(list, id);
-  if (entry && entry.songs[index]) entry.songs[index].note = sanitizeNote(note);
+  const song = findEntry(list, id)?.songs[index];
+  if (song) song.note = sanitizeNote(note);
   writeStorage(storage, list);
 }
 

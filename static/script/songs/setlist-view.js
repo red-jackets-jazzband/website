@@ -527,7 +527,7 @@ export function createSetlistView(ctx) {
         break;
       }
     }
-    const anchor = before || others[others.length - 1].nextSibling;
+    const anchor = before || others.at(-1).nextSibling;
     if (anchor !== dragged && dragged.nextSibling !== anchor) {
       dragged.parentNode.insertBefore(dragged, anchor);
       rowDrag.moved = true;
@@ -610,7 +610,7 @@ export function createSetlistView(ctx) {
     const pos = songIndexes.indexOf(ctx.state.currentSetlistSongIndex);
     let next;
     if (pos === -1) {
-      next = dir > 0 ? songIndexes[0] : songIndexes[songIndexes.length - 1];
+      next = dir > 0 ? songIndexes[0] : songIndexes.at(-1);
     } else {
       const np = pos + dir;
       if (np < 0 || np >= songIndexes.length) return false;
@@ -729,10 +729,8 @@ export function createSetlistView(ctx) {
         breakBtn.focus();
         return;
       }
-      const rows = byId("songList")
-        ? byId("songList").querySelectorAll(".setlist-song-title, .setlist-divider-input")
-        : [];
-      const last = rows[rows.length - 1];
+      const rows = qsa(".setlist-song-title, .setlist-divider-input", byId("songList"));
+      const last = rows.at(-1);
       if (last) last.focus();
     }
 

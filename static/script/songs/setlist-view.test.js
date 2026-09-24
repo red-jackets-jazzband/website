@@ -178,8 +178,8 @@ test("ArrowUp from no selection highlights the last add-song result and wraps", 
   try {
     search.dispatchEvent(new window.KeyboardEvent("keydown", { key: "ArrowUp", bubbles: true }));
 
-    const results = document.querySelectorAll(".rj-library-add-song-result");
-    assert.equal(results[results.length - 1].classList.contains("is-active"), true);
+    const results = [...document.querySelectorAll(".rj-library-add-song-result")];
+    assert.equal(results.at(-1).classList.contains("is-active"), true);
 
     search.dispatchEvent(new window.KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }));
     assert.equal(results[0].classList.contains("is-active"), true);
@@ -196,8 +196,8 @@ test("with the add-song field empty, ArrowUp jumps to the setlist and ArrowDown 
     const search = addSongSearch();
 
     search.dispatchEvent(new window.KeyboardEvent("keydown", { key: "ArrowUp", bubbles: true }));
-    const titles = document.querySelectorAll(SONG_TITLE_SELECTOR);
-    assert.equal(document.activeElement, titles[titles.length - 1], "lands on the row, not its drag handle");
+    const titles = [...document.querySelectorAll(SONG_TITLE_SELECTOR)];
+    assert.equal(document.activeElement, titles.at(-1), "lands on the row, not its drag handle");
 
     search.focus();
     search.dispatchEvent(new window.KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }));
@@ -589,8 +589,8 @@ test("arrow-down on the last song of a personal setlist hands off to the add-son
     ctx.readFile = (path, onLoad) => onLoad(MINIMAL_ABC);
     view.initControls();
     view.renderOpen(entry.name, entry.songs, entry, "");
-    const titles = document.querySelectorAll(SONG_TITLE_SELECTOR);
-    titles[titles.length - 1].dispatchEvent(new window.Event("click")); // open the last song
+    const titles = [...document.querySelectorAll(SONG_TITLE_SELECTOR)];
+    titles.at(-1).dispatchEvent(new window.Event("click")); // open the last song
     assert.equal(ctx.state.currentSetlistSongIndex, 1);
 
     document.dispatchEvent(new window.KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }));
