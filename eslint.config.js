@@ -147,6 +147,16 @@ export default [
       // function that never touches its enclosing function's own
       // parameters/closure variables belongs at module scope instead.
       "unicorn/consistent-function-scoping": "error",
+      // Two more cherry-picks, added after PR #121's SonarCloud scan flagged
+      // both on brand-new code: `arr[arr.length - 1]` -> `arr.at(-1)`
+      // (`unicorn/prefer-at`) and `str.charCodeAt(i)` -> `str.codePointAt(i)`
+      // (`unicorn/prefer-code-point`, only relevant once `i` could land on a
+      // surrogate half — charCodeAt silently reads half of an astral
+      // codepoint there, codePointAt doesn't). Same reasoning as
+      // consistent-function-scoping above: real SonarCloud findings, not
+      // speculative style opinions from unicorn's own "recommended" set.
+      "unicorn/prefer-at": "error",
+      "unicorn/prefer-code-point": "error",
     },
   },
   {

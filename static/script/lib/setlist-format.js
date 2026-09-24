@@ -186,7 +186,7 @@ export function parseSetlistFile(text) {
 
   function handleHeaderLine(line) {
     if (line.length === 0) {
-      if (descLines.length && descLines[descLines.length - 1] !== "") descLines.push("");
+      if (descLines.length && descLines.at(-1) !== "") descLines.push("");
       return;
     }
     if (isDividerLine(line)) {
@@ -243,7 +243,7 @@ export function parseSetlistFile(text) {
     else handleListLine(line);
   });
 
-  while (descLines.length && descLines[descLines.length - 1] === "") descLines.pop();
+  while (descLines.length && descLines.at(-1) === "") descLines.pop();
   let desc = descLines.length ? descLines.join("\n") : null;
   if (legacyDesc !== null) desc = legacyDesc;
 
@@ -260,7 +260,7 @@ export function parseSetlistFile(text) {
 // "("/")" on the way in, same as any other percent-escape, so nothing needs
 // to change on the reading side.
 function encodeQueryValue(value) {
-  return encodeURIComponent(value).replace(/[()]/g, (c) => `%${c.charCodeAt(0).toString(16)}`);
+  return encodeURIComponent(value).replace(/[()]/g, (c) => `%${c.codePointAt(0).toString(16)}`);
 }
 
 function linkTarget(file, key) {
@@ -294,7 +294,7 @@ export function serializeSetlistFile(setlist, options = {}) {
       // A blank line ahead of every "Set N" heading but the first (which
       // already has one from the header-to-list blank above) — reads better,
       // and a blank line ahead of an ATX heading is normal markdown style.
-      if (lines.length && lines[lines.length - 1] !== "") lines.push("");
+      if (lines.length && lines.at(-1) !== "") lines.push("");
       lines.push(item.divider ? `## ${item.divider}` : "##");
       return;
     }
