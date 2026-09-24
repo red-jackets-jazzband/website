@@ -84,6 +84,11 @@ test("parseSetlistFile ignores a song link's own text — only the target matter
   assert.deepEqual(a.songs, b.songs);
 });
 
+test("parseSetlistFile reads a song link whose title itself contains a ]", () => {
+  const setlist = parseSetlistFile(`- [Tiger Rag [instrumental]](/songs/${TIGER_RAG})`);
+  assert.deepEqual(setlist.songs, [{ file: TIGER_RAG, key: "" }]);
+});
+
 test("parseSetlistFile keeps blank-line-separated desc paragraphs apart", () => {
   const text = [
     "# Festival night",

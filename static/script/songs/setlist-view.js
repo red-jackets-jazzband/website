@@ -301,7 +301,8 @@ export function createSetlistView(ctx) {
     }
 
     let cancelled = false;
-    const textEl = el("div", {
+    const textEl = el("button", {
+      type: "button",
       class: "setlist-song-note-text",
       text: song.note || "",
       hidden: !hasNote,
