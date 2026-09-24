@@ -73,8 +73,8 @@ function parseOldComment(line) {
 // titles. Returns null when `line` doesn't start with one.
 function parseMarkdownLink(line) {
   if (line.charAt(0) !== "[") return null;
-  const closeBracket = line.indexOf("]", 1);
-  if (closeBracket === -1 || line.charAt(closeBracket + 1) !== "(") return null;
+  const closeBracket = line.indexOf("](", 1);
+  if (closeBracket === -1) return null;
   const closeParen = line.indexOf(")", closeBracket + 2);
   if (closeParen === -1) return null;
   return { target: line.slice(closeBracket + 2, closeParen) };
