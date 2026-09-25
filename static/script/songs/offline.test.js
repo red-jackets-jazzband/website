@@ -226,6 +226,37 @@ test("waits for the page to become controlled before fetching, so early requests
   }
 });
 
+test("gives up and prompts a normal reload if the page never becomes controlled (a forced/hard reload)", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const { offline, swStub, cleanup } = setup({ controller: null });
+  const fetchCalls = [];
+  globalThis.fetch = fakeFetch(fetchCalls);
+  try {
+    const run = runWithAbcjs(createAbcjsStub(), () => offline.downloadForOffline());
+    // A real setImmediate (not mocked — only setTimeout is) is a genuine
+    // macrotask boundary, so awaiting one flushes every microtask queued so
+    // far — however many `await`/`.then()` hops runDownload needs to reach
+    // waitForController()'s own setTimeout call — without hand-counting them.
+    await new Promise((resolve) => { setImmediate(resolve); });
+
+    t.mock.timers.tick(10000);
+    await run;
+
+    assert.equal(fetchCalls.length, 0, "should never have started fetching the library");
+    assert.equal(
+      document.getElementById("offlineStatus").textContent,
+      "Reload this page normally (not a forced/hard reload) to enable offline mode.",
+    );
+
+    // A late controllerchange (the worker eventually claims the page anyway)
+    // must not resolve an already-timed-out wait a second time.
+    swStub.fireControllerChange({});
+  } finally {
+    delete globalThis.fetch;
+    cleanup();
+  }
+});
+
 test("a second concurrent call is a no-op while a download is already running", async () => {
   const { offline, cleanup } = setup();
   globalThis.fetch = fakeFetch([]);

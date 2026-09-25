@@ -65,6 +65,19 @@ test("resolves relative webfont paths the same as any other url()", () => {
   assert.deepEqual(findCssUrls(css), ["../webfonts/fa-solid-900.woff2"]);
 });
 
+// A url() reference isn't always a real, fetchable network resource — an
+// inline data: URI (split.css's hand-drawn dropdown chevron background-image,
+// for one) is already fully self-contained in the stylesheet's own bytes.
+// findCssUrls stays a plain, general scanner and returns it like any other
+// url() value, unfiltered — deciding which of its results are worth actually
+// fetching (never a data: URI — sw.js's own precacheStylesheetAndFonts skips
+// those, since Cache.put() rejects that request scheme outright) is the
+// caller's job, not this pure scanner's.
+test("returns a data: URI verbatim, same as any other url() value", () => {
+  const css = "select { background-image: url(\"data:image/svg+xml,%3Csvg%3E%3C/svg%3E\"); }";
+  assert.deepEqual(findCssUrls(css), ["data:image/svg+xml,%3Csvg%3E%3C/svg%3E"]);
+});
+
 test("returns nothing when a css file has no url() references", () => {
   assert.deepEqual(findCssUrls("body { color: red; }"), []);
 });
