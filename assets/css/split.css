@@ -1093,7 +1093,7 @@ body.rj-sheet-active .rj-sheet-empty {
 /*
   Mixer panel (#mixerPanel): the Auto-accompaniment (Pattern/Bass/Chords) and
   Voices groups, plus the Swing/Metronome/Quality row, that pop up from the
-  transport cluster's Mixer button. It's a native <dialog> (for real dialog
+  transport cluster's Mixer button. It's a <dialog> (for real dialog
   accessibility semantics) toggled via its own `open` attribute (songs/
   mixer.js's setOpen), never shown modally (no showModal()/::backdrop — this
   is a plain popover, not a modal), so `inset: auto` and `margin: 0` below
@@ -1115,6 +1115,17 @@ body.rj-sheet-active .rj-sheet-empty {
   mobile browser's own bottom chrome (URL bar / tab strip) can eat into the
   visible viewport below the `bottom: 0` edge, hiding whatever doesn't fit
   without a scroll of its own.
+
+  <dialog> itself is Safari 15.4+ (iOS 15.4+) — on Safari 12 it's an
+  unrecognised element with no default UA styling at all, so the panel would
+  otherwise sit permanently visible from page load regardless of the `open`
+  attribute (reported as "Mixer stays, button has no effect": mixer.js's
+  setOpen toggles the attribute correctly, but with nothing here reacting to
+  it, the toggle had no visible effect). `:not([open]) { display: none; }`
+  below is written out explicitly rather than left to the native
+  dialog:not([open]) UA-stylesheet rule modern browsers ship, so hiding the
+  panel doesn't depend on <dialog> support existing at all — a plain
+  attribute selector, unlike the element itself, works on any browser.
 */
 .mixer-panel {
   position: fixed;
@@ -1130,6 +1141,9 @@ body.rj-sheet-active .rj-sheet-empty {
   box-shadow: 0 18px 44px rgba(0,0,0,.6);
   padding: 16px 18px 18px;
   font-family: "Montserrat", sans-serif;
+}
+.mixer-panel:not([open]) {
+  display: none;
 }
 /*
   Every strip below — Pattern, Bass, Chords, a resolved voice, Swing — is the
