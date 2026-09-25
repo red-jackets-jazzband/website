@@ -1326,12 +1326,13 @@ body.rj-sheet-active .rj-sheet-empty {
   letter-spacing: .02em;
   text-transform: uppercase;
   color: var(--rj-gold);
-  background: #2f2f2f;
+  background-color: #2f2f2f;
   border: 1px solid rgba(255,255,255,.18);
   border-radius: 6px;
-  padding: 0 6px;
+  padding: 0 20px 0 6px;
   cursor: pointer;
   color-scheme: dark;
+  background-position: right 6px center;
 }
 .mixer-voice-select:hover,
 .mixer-voice-select:focus {
@@ -1351,7 +1352,8 @@ body.rj-sheet-active .rj-sheet-empty {
   height: 40px;
   font-size: 11px;
   line-height: 38px;
-  padding: 0 14px;
+  padding: 0 34px 0 14px;
+  background-position: right 14px center;
 }
 /* Bass/Chords need chord symbols to build an accompaniment from — a gated
    channel with nothing to mix hides the whole strip (label, Mute, Voice,
@@ -4836,6 +4838,31 @@ body:has(#rjLibrary) .split-bio {
 }
 
 /*
+  Without this, Safari (macOS and iOS alike) ignores every background/
+  border/color rule these three selects carry and falls back to its own
+  light "menulist" bezel — the closed box only takes styling once its
+  native chrome is turned off. Chromium/Firefox already honour those rules
+  with appearance left at its default, which is how this shipped untested
+  on a real Safari device. Turning the native chrome off also drops its
+  built-in disclosure arrow everywhere (not just Safari), hence the
+  hand-drawn gold chevron background-image replacing it here; each select's
+  own rule below still sets its own background-position to match its
+  padding, and the @supports (appearance: base-select) block further down
+  cancels this image where a native ::picker-icon takes over instead.
+*/
+.sheet-status .dropbtn,
+#sheetStatus #instrument,
+.sheet-comping .dropbtn,
+#compingSlot #comping,
+.mixer-voice-select {
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='%23e29d0f' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' d='M2.5 4.5l3.5 3.5 3.5-3.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-size: 10px;
+}
+
+/*
   #sheetStatus #instrument (not just .sheet-status .dropbtn): the select
   also carries the plain #instrument rule (padding/font reset), whose
   id-selector specificity would otherwise beat this class-based one
@@ -4849,20 +4876,22 @@ body:has(#rjLibrary) .split-bio {
   width: 100%;
   height: 44px;
   box-sizing: border-box;
-  background: #2f2f2f;
+  background-color: #2f2f2f;
   border: 1px solid rgba(255,255,255,.11) !important;
   border-radius: 8px;
   color: var(--rj-gold);
   font: 600 12px "Montserrat", sans-serif;
-  padding: 0 14px;
+  padding: 0 34px 0 14px;
   /* Render the popup's own chrome (scrollbar, fallback highlight) dark so it
      doesn't flash a white OS list on open. */
   color-scheme: dark;
+  background-position: right 14px center;
 }
 .sheet-status .dropdown:hover .dropbtn,
 .sheet-comping .dropdown:hover .dropbtn {
-  background: var(--rj-gold);
+  background-color: var(--rj-gold);
   color: #222222;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='%23222222' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' d='M2.5 4.5l3.5 3.5 3.5-3.5'/%3E%3C/svg%3E");
 }
 
 /* ------------------------------------------------------------------
@@ -4907,6 +4936,16 @@ body:has(#rjLibrary) .split-bio {
   #comping::picker(select),
   .mixer-voice-select::picker(select) {
     appearance: base-select;
+  }
+  /* base-select supplies its own ::picker-icon (styled further down) — drop
+     the hand-drawn chevron background-image the non-base-select fallback
+     above needs, or the two would stack. */
+  .sheet-status .dropbtn,
+  #sheetStatus #instrument,
+  .sheet-comping .dropbtn,
+  #compingSlot #comping,
+  .mixer-voice-select {
+    background-image: none;
   }
   /* base-select turns the button into a flex box whose default cross-axis
      alignment leaves the label riding at the top of the 44px control — pin it
