@@ -258,6 +258,21 @@ ledger-line territory).
   re-verify *every* twin instance too, don't just propagate the fix by assumption — that's exactly
   the kind of unverified propagation that let the original error spread through this whole piece.
 
+**If you draw your own pitch guide lines instead of calling `zoom.py` directly (e.g. to
+overlay several hand-picked x/y crops from one Python session), it is very easy to get the
+line-to-pitch mapping off by exactly one half-step** — `zoom.py`'s own formula is correct,
+but a hand-rolled version of it produced guide lines that *looked* right (evenly spaced,
+sensible labels) while every line was shifted one staff position from the real one, and every
+pitch read off it came out one step wrong, consistently, until a numeric check caught it.
+The fix that actually catches this: before trusting any hand-drawn guide overlay, sample the
+image directly for the real staff-line rows (`np.array(Image.open(...).convert('L')) < 100`,
+then find the y's that are dark across a wide, note-free x-range) and confirm your guide's
+"line" y's land exactly on them — don't just eyeball that the spacing looks even. Prefer
+calling `zoom.py scan.png --system N [--xfrac lo-hi]` itself over reimplementing its guide
+math, precisely because it already got this right; only fall back to custom overlay code
+when you need something `zoom.py`'s flags can't do (e.g. annotating one specific system by
+its known staff-top y rather than by system index), and pressure-test that code the same way.
+
 **Draft the ABC straight from the OMR** instead of transcribing by hand (single-key sheets
 with nothing from the list above; otherwise use `omr_staves.py`):
 
@@ -272,6 +287,38 @@ sheet). The draft has pitches, octaves, accidentals, lengths and barlines; stder
 lists bars that don't sum to the meter (a misread rhythm — e.g. an eighth read as a
 quarter made one bar 4.5 beats) and *possible ties*. The draft has no chords, ties or
 lyrics yet.
+
+**A clean, computer-typeset PDF (exported from notation software, not a photo/scan of
+paper) is a different case from everything else in this section and homr handles it very
+well** — on a 300dpi PDF-to-PNG render of a "Voice" lead sheet (Do You Know What It Means
+To Miss New Orleans), homr's pitches/rhythms matched a pixel-level manual re-check on
+every bar but one, and that one miss (an eighth read where the source had a quarter) was
+caught by cross-referencing the identical phrase repeated three times elsewhere in the
+piece — the exact technique the "use the repeat as a second opinion" note below already
+recommends. Don't assume a clean render needs the by-eye fallback path just because it's
+still an image; try `omr_to_abc.py` first and reserve heavy pixel work for what it flags.
+
+**Don't hand-count bars by splitting the draft's `|`-joined text yourself — query music21
+per measure instead, directly against the `.musicxml`, once `omr_dump.py`/`homr` has
+written it.** `omr_to_abc.py`'s own line-wrapping (`--bars-per-line`) and its pickup
+handling make it easy to miscount which line/token corresponds to which real bar number by
+one or more — on this tune, hand-counting produced a bar that looked identical to a much
+*later* bar in the piece (same token shape, wrong bar), and the mistake wasn't caught until
+a tie cross-check (next paragraph) landed on a pitch the hand-count said shouldn't be there.
+Querying measures directly sidesteps this entirely and also surfaces key-signature changes
+for free:
+```python
+import music21 as m21
+s = m21.converter.parse('scan.musicxml')
+for m in s.parts[0].getElementsByClass('Measure'):
+    ks = m.getElementsByClass('KeySignature')
+    if ks: print('measure', m.number, 'KEY CHANGE sharps=', ks[0].sharps)
+    for n in m.notesAndRests:
+        nm = n.nameWithOctave if not n.isRest else 'rest'
+        print(' ', nm, n.duration.quarterLength)
+```
+Trust `m.number` as the ground truth for "which bar is this", not a position you counted
+by eye in the draft text.
 
 **Then verify by eye, once** — the diff in step 6 only shows where your ABC departs
 from the OMR, so it cannot tell you the OMR was right. Read `head.png` (chord grid) and
@@ -345,6 +392,28 @@ heuristic expected them won't be (re-)flagged. On this tune, two of the four con
 bar's source image directly, not from the tool's own tie-candidate list — treat that list as a
 floor, not a ceiling, especially on any bar you've already hand-corrected.
 
+**homr's musicxml can carry real ties as `<slur>` elements instead of `<tie>` elements —
+check for both, not just `n.tie`.** The "every tie is dropped" framing above is the common
+case, but on a clean typeset PDF homr's TrOmr stage emitted explicit `slurStart`/`slurStop`
+markers that music21 exposes as `Slur` spanners (`n.getSpannerSites('Slur')`), while
+`n.tie` stayed `None` for all of them — a plain "does this note have a tie" check misses
+these entirely. A `Slur` spanner between two notes of the **same pitch** is, for every
+purpose that matters here, a tie (write it as one in the ABC); a `Slur` between two
+*different* pitches is an ordinary phrase mark and isn't written as anything in plain ABC.
+This cross-check (`getSpannerSites` + same-pitch filter) found four real ties across the
+piece, including one 3-note tie chain spanning a barline that the "possible ties" heuristic
+above did flag, confirming the same spot two ways:
+```python
+for n in m.notesAndRests:
+    if n.getSpannerSites('Slur'):
+        print(m.number, n.nameWithOctave)
+```
+Two same-pitch notes joined this way don't split lyric duty evenly either: the sung
+syllable goes on the **first** (earlier) note of the pair, and the second — the arrival —
+gets the lyric's `_` continuation slot, regardless of which of the two is the longer note
+(a short pickup note tying into a long held note is common, and it's still the short one
+that carries the word).
+
 **A resolved pitch is a chord tone (or an obvious step/chromatic neighbor to one) far more
 often than not.** Once you know the bar's chord (from the grid/labels, step 4), check
 whether homr's pitch is the root/3rd/5th/7th of it — a `G#` under an `E7`, an `F` under a
@@ -387,6 +456,17 @@ homr ignores chord text, so read it yourself:
 ```
 $VP $SK/chord_map.py scan.png      # per system: barline x's + chord-text x-spans
 ```
+
+**`chord_map.py`'s barline list is a heuristic (0.85 of the staff band's height, at
+`--grey 200`) and can pick up a dense cluster of note stems as a false barline, or miss
+a real one** — its own docstring already says to trust the chord x's more than the exact
+barline list, but if you need real barline x's (to know exactly which notes are in which
+bar, not just which chord), a stricter column scan against the true 5-line staff band is
+more reliable: a genuine barline is dark for nearly the *entire* staff height, not 85% of
+a padded band, so require a column to be dark at ~95%+ of `(staff_bottom - staff_top)` with
+no padding. This mattered on a bar where the padded heuristic returned two barlines 4px
+apart (a stem coincidentally aligned with the real barline) and the tighter scan cleanly
+returned one.
 
 Map each chord's x to the bar it sits above. Cross-check against the changes
 implied by the melody (a `G#` under an `A7` etc.). Zoom in on anything unclear:
@@ -469,6 +549,16 @@ at 2-3 existing files first (`static/songs/when_youre_smiling.abc`,
   (`L:1/8` for busy tunes), `Q:1/2=NNN` if a tempo is on the sheet, `K:Bbmaj`.
 - Chords inline in quotes right before their note: `"Bb"`, `"F7"`, `"Cm7"`,
   `"C7#5"`, `"N.C."`.
+- A degree sign for a diminished chord on the sheet (`A°`) is not a valid ABC/abc2midi
+  chord name — `abc2midi` fails the whole file with `Unrecognized chord name "°"`. Respell
+  it `"Adim"` (matches the existing `"Fdim"` in `bugle_boy_march.abc`); same pitches, same
+  sound, and it's what the house style already uses elsewhere. A rootless `"G5"`-style
+  power-chord symbol (root + 5th, no 3rd) is fine as printed — `abc2midi` and the live
+  site's abcjs both accept it — but if you proof a chord grid through `render.py`
+  (music21/MuseScore) rather than `render_site.mjs`, expect music21's chord-symbol parser
+  to print it back as something like `Gnoneadd5`; that's a quirk of that one proofing tool
+  reinterpreting the symbol, not a mistake in the ABC — check `"G5"`-style symbols against
+  `render_site.mjs`'s abcjs rendering (what the site actually uses), not `render.py`'s.
 - Accidentals: `^`=sharp `_`=flat `=`=natural. In `K:Bbmaj`, bare `B` is B♭;
   write B natural as `=B`.
 - Accidentals **persist to the end of the bar** in ABC for the same pitch, exactly as
