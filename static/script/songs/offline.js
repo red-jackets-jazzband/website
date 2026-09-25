@@ -59,6 +59,8 @@ function registerServiceWorker() {
     .catch(() => false);
 }
 
+const CONTROLLER_WAIT_MS = 10000;
+
 // navigator.serviceWorker.ready only promises the registration has *an*
 // active worker — not that it has claimed *this* page yet. On a first-ever
 // visit, this page loaded before any worker existed, so it stays
@@ -66,10 +68,26 @@ function registerServiceWorker() {
 // own activate handler) reaches it, which happens slightly later and fires
 // a "controllerchange" event here. Fetching the library before that leaves
 // every request bypassing the worker entirely — nothing gets cached.
+//
+// Bounded, not indefinite: a forced/hard reload (Shift+Reload in Chrome, or
+// DevTools' "Bypass for network") explicitly skips the service worker for
+// that one navigation — the registration stays active, but since no new
+// install/activate cycle runs, clients.claim() never fires and
+// "controllerchange" never arrives here. Waiting forever in that case would
+// leave the download silently stuck (and `downloading` never reset) rather
+// than telling the visitor what to do about it.
 function waitForController() {
-  if (navigator.serviceWorker.controller) return Promise.resolve();
+  if (navigator.serviceWorker.controller) return Promise.resolve(true);
   return new Promise((resolve) => {
-    navigator.serviceWorker.addEventListener("controllerchange", resolve, { once: true });
+    const onControllerChange = () => {
+      clearTimeout(timer);
+      resolve(true);
+    };
+    navigator.serviceWorker.addEventListener("controllerchange", onControllerChange, { once: true });
+    const timer = setTimeout(() => {
+      navigator.serviceWorker.removeEventListener("controllerchange", onControllerChange);
+      resolve(false);
+    }, CONTROLLER_WAIT_MS);
   });
 }
 
@@ -146,7 +164,10 @@ async function runDownload(ctx) {
     return;
   }
   await navigator.serviceWorker.ready;
-  await waitForController();
+  if (!(await waitForController())) {
+    setStatus("Reload this page normally (not a forced/hard reload) to enable offline mode.");
+    return;
+  }
 
   let songs;
   let setlists;

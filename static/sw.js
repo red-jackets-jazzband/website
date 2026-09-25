@@ -74,21 +74,41 @@ function targetCacheFor(url) {
   return kind === "font-awesome" ? FONT_AWESOME_CACHE : SHELL_CACHE;
 }
 
-function precacheUrl(absoluteUrl) {
-  return fetch(absoluteUrl).then((response) => {
-    if (!response.ok) return null;
+// `required`: a same-origin asset (our own stylesheet, our own fonts, our
+// own scripts and everything they import) is required — the app genuinely
+// can't run offline without it, so a failure here rejects, which rejects
+// the whole precacheShell() chain and fails installation; the browser
+// retries installing this same worker version on a later registration
+// attempt instead of activating an incomplete one that looks done but
+// silently can't run. A cross-origin asset (Font Awesome's stylesheet and
+// its webfonts, from cdnjs) is optional — a missing icon font is a real but
+// survivable degradation, not worth failing the whole install over, so a
+// failure there is swallowed instead.
+function precacheUrl(absoluteUrl, required) {
+  const attempt = fetch(absoluteUrl).then((response) => {
+    if (!response.ok) throw new Error(`${absoluteUrl}: ${response.status}`);
     return caches.open(targetCacheFor(new URL(absoluteUrl)))
       .then((cache) => cache.put(absoluteUrl, response.clone()))
       .then(() => response);
-  }).catch(() => null);
+  });
+  return required ? attempt : attempt.catch(() => null);
 }
 
 function precacheStylesheetAndFonts(href) {
   const absoluteHref = new URL(href, self.location.origin).href;
-  return precacheUrl(absoluteHref).then((response) => {
+  const required = new URL(absoluteHref).origin === self.location.origin;
+  return precacheUrl(absoluteHref, required).then((response) => {
     if (!response) return null;
     return response.clone().text().then((css) => Promise.all(
-      findCssUrls(css).map((url) => precacheUrl(new URL(url, absoluteHref).href)),
+      findCssUrls(css)
+        // A url() reference isn't always a real network resource — split.css's
+        // hand-drawn dropdown chevron (see its own comment) is an inline
+        // `url("data:image/svg+xml,...")`, already fully self-contained in the
+        // stylesheet's own bytes. Cache.put() rejects a data: request outright
+        // ("Request scheme 'data' is unsupported"), and there'd be nothing
+        // worth fetching/caching there anyway.
+        .filter((url) => !url.startsWith("data:"))
+        .map((url) => precacheUrl(new URL(url, absoluteHref).href, required)),
     ));
   });
 }
@@ -99,12 +119,14 @@ function precacheStylesheetAndFonts(href) {
 // `seen` de-dupes across the whole recursive walk (many modules share
 // imports like lib/dom.js) so each file is fetched once. A classic,
 // non-module script (ABCJS/Tonal/lamejs) has no import statements to find,
-// so this is a one-step fetch for those.
+// so this is a one-step fetch for those. Every script this app serves is
+// same-origin, so this is always `required` (see precacheUrl's own doc
+// comment) — a missing script/module means the app can't run at all.
 function precacheScriptAndImports(src, seen) {
   const absoluteSrc = new URL(src, self.location.origin).href;
   if (seen.has(absoluteSrc)) return Promise.resolve(null);
   seen.add(absoluteSrc);
-  return precacheUrl(absoluteSrc).then((response) => {
+  return precacheUrl(absoluteSrc, true).then((response) => {
     if (!response) return null;
     return response.clone().text().then((js) => Promise.all(
       findModuleImports(js).map((spec) => precacheScriptAndImports(new URL(spec, absoluteSrc).href, seen)),
@@ -141,6 +163,23 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+// Fetches, and — for a genuinely successful response — writes it into the
+// cache before resolving, returning the response either way. The write is
+// chained into the returned promise rather than fired-and-forgotten inside
+// the .then(): both cacheFirstRevalidate and cacheFirstOnly below hand this
+// promise to something that ends the worker's extended lifetime the instant
+// it resolves (event.waitUntil() on one path, event.respondWith() on the
+// other) — if the cache.put() weren't part of what's being waited on, the
+// worker would be free to be killed right after the response is handed
+// back, potentially aborting the write before it finishes and silently
+// dropping the update.
+function fetchAndCache(request, cache) {
+  return fetch(request).then((response) => {
+    const stored = response.ok ? cache.put(request, response.clone()) : Promise.resolve();
+    return stored.then(() => response);
+  });
+}
+
 // Cache-first, but always also refetches in the background and updates the
 // cache — an offline visit is instant even off a stale copy, and the next
 // visit (online) picks up whatever changed (a new/edited song, a setlist
@@ -152,10 +191,7 @@ self.addEventListener("activate", (event) => {
 // finishes and silently drop the update.
 function cacheFirstRevalidate(request, cacheName, event) {
   return caches.open(cacheName).then((cache) => cache.match(request).then((cached) => {
-    const revalidate = fetch(request).then((response) => {
-      if (response.ok) cache.put(request, response.clone());
-      return response;
-    }).catch(() => cached);
+    const revalidate = fetchAndCache(request, cache).catch(() => cached);
     if (cached) {
       event.waitUntil(revalidate);
       return cached;
@@ -166,15 +202,14 @@ function cacheFirstRevalidate(request, cacheName, event) {
 
 // Same shape, but never refetches once cached — for content that's
 // immutable once published (an audio sample, a webfont file), so there's
-// nothing to ever catch up on.
+// nothing to ever catch up on. No event.waitUntil() needed here the way
+// cacheFirstRevalidate's cache-hit path needs one: on a miss, the fetch (and
+// now its chained cache write) is already the exact promise handed to
+// event.respondWith(), so the worker's extended lifetime already covers it.
 function cacheFirstOnly(request, cacheName) {
-  return caches.open(cacheName).then((cache) => cache.match(request).then((cached) => {
-    if (cached) return cached;
-    return fetch(request).then((response) => {
-      if (response.ok) cache.put(request, response.clone());
-      return response;
-    });
-  }));
+  return caches.open(cacheName).then((cache) => cache.match(request).then((cached) => (
+    cached || fetchAndCache(request, cache)
+  )));
 }
 
 // A page load: prefer a live network response (so a content/code update is
