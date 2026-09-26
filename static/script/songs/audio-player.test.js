@@ -749,6 +749,43 @@ test("onFinished recovers when the repeat restart's sc.play() throws synchronous
   }
 });
 
+// A third instance of the race silenceIfStale() guards against (see its own
+// doc comment) — this time reached through the automatic repeat-loop
+// restart rather than a manual Play/Tempo press: tryRepeat()'s own sc.play()
+// is async (a real resume() under ABCjs), and a song swap can land while
+// that promise is still pending, after the identity/stopToken checks above
+// it have already passed.
+test("a repeat restart's sc.play() that resolves after a song swap gets silenced instead of left running", async () => {
+  const {
+    audio, abcjs, cleanup, play,
+  } = await setupPlayingTune({ repeatCount: 3 });
+  try {
+    const sc = await play();
+    let resolvePlay;
+    sc.play = () => new Promise((resolve) => {
+      resolvePlay = resolve;
+      sc.isStarted = true;
+    });
+
+    withAbcjs(abcjs, () => sc._cursorControl.onFinished()); // schedules the deferred restart
+    await flush(); // the setTimeout(0) fires and calls sc.play(), which is still pending
+
+    // Swap songs while that restart's sc.play() is still in flight.
+    withAbcjs(abcjs, () => audio.initForTune({ metaText: {} }));
+    assert.equal(sc.pauseCalls, 1, "initForTune's own immediate pause() on the outgoing controller");
+
+    resolvePlay();
+    await flush();
+    assert.equal(
+      sc.pauseCalls,
+      2,
+      "the repeat restart's own resolution must pause the stale controller again once it notices it's no longer current",
+    );
+  } finally {
+    cleanup();
+  }
+});
+
 test("onFinished restarts after the pickup (first double bar), not at the very top", async () => {
   const { audio, abcjs, cleanup } = await setupAtRepeatRestart({
     metaText: {},

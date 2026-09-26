@@ -321,10 +321,12 @@ export function createAudioPlayer(ctx) {
     intercept it through — the only way to silence audio it's already
     kicked off is to notice, once *our own* promise for that call
     resolves, that this controller is no longer state.synthController, and
-    pause() it straight back down instead of just walking away from it (see
-    playPause() and applyTempo(), the only two places that ever ask ABCjs
-    to start audio). Returns whether the controller was in fact stale, so a
-    caller can skip its own now-meaningless follow-up work in the same branch.
+    pause() it straight back down instead of just walking away from it — see
+    playPause(), applyTempo() and tryRepeat(), the three places that ever
+    ask ABCjs to start audio (a manual Play, a Tempo nudge, and the
+    automatic repeat-loop restart, respectively). Returns whether the
+    controller was in fact stale, so a caller can skip its own
+    now-meaningless follow-up work in the same branch.
   */
   function silenceIfStale(sc) {
     if (sc === state.synthController) return false;
@@ -415,7 +417,14 @@ export function createAudioPlayer(ctx) {
 
       state.repeatsPlayed += 1;
       updateRepeatLabel();
-      Promise.resolve(played.value).catch((err) => {
+      Promise.resolve(played.value).then(() => {
+        // sc.play()'s own promise (runWhenReady -> _play -> a genuine
+        // AudioContext.resume()) can resolve after a song swap has moved on
+        // from this controller — same race silenceIfStale's own doc comment
+        // describes for playPause()/applyTempo(), just reached through the
+        // automatic repeat-loop restart instead of a manual Play/Tempo press.
+        silenceIfStale(sc);
+      }).catch((err) => {
         console.warn("Repeat restart failed:", err);
         // Same two-part guard as above, not just the controller identity
         // check: this rejection can land well after it was attached (a real
