@@ -308,6 +308,34 @@ export function createAudioPlayer(ctx) {
     ctx.metronome.onBarStart(ev.elements ? firstTaggedMeasure(ev.elements) : undefined);
   }
 
+  /*
+    initForTune() calls pause() on the outgoing controller before discarding
+    it, but that can't cancel a play()/setWarp() call already in flight on
+    it (a song swapped in mid-load, or mid-tempo-change) — ABCjs's own
+    promise chain for either one keeps running regardless, and once it
+    resolves it can call the real SynthController.play() a second time
+    on our behalf: play()'s own go()-then-_play() sequence for a first
+    Play still mid-priming, or setWarp()'s "wasPlaying" branch restarting
+    playback after re-priming at the new tempo. Either way that's a real
+    ABCjs internal self.midiBuffer.start() firing, with no hook we can
+    intercept it through — the only way to silence audio it's already
+    kicked off is to notice, once *our own* promise for that call
+    resolves, that this controller is no longer state.synthController, and
+    pause() it straight back down instead of just walking away from it (see
+    playPause() and applyTempo(), the only two places that ever ask ABCjs
+    to start audio). Returns whether the controller was in fact stale, so a
+    caller can skip its own now-meaningless follow-up work in the same branch.
+  */
+  function silenceIfStale(sc) {
+    if (sc === state.synthController) return false;
+    try {
+      sc.pause();
+    } catch {
+      // already torn down some other way — nothing left to silence.
+    }
+    return true;
+  }
+
   // Shared by every way a repeat restart can fail to actually get audio
   // going again — falls back to the same clean stop onFinished uses when
   // repeats are exhausted, rather than leaving state.isPlaying stuck true
@@ -533,7 +561,7 @@ export function createAudioPlayer(ctx) {
     if (!ctrl || typeof ctrl.setWarp !== "function") return;
     Promise.resolve(ctrl.setWarp(bpmToWarpPercent(ctx.state.tempoOverrideBpm, state.nativeQpm)))
       .then(() => {
-        if (ctrl !== state.synthController) return;
+        if (silenceIfStale(ctrl)) return;
         setIsPlaying(Boolean(ctrl.isStarted));
       })
       .catch((err) => console.warn("Tempo change failed:", err));
@@ -612,7 +640,7 @@ export function createAudioPlayer(ctx) {
     }
     Promise.resolve(playResult)
       .then(() => {
-        if (sc !== state.synthController) return;
+        if (silenceIfStale(sc)) return;
         setIsPlaying(Boolean(sc.isStarted), fromStart);
       })
       .catch(recover);

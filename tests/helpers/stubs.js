@@ -158,7 +158,11 @@ export function createAbcjsStub({ audioSupported = false, exportAudioBuffer } = 
           return Promise.resolve();
         };
         this.play = () => { this.isStarted = !this.isStarted; return Promise.resolve(); };
-        this.pause = () => {};
+        // Tracked per instance (`this.pauseCalls`) so a test can tell whether
+        // a *specific*, possibly-discarded controller was paused again after
+        // the fact — see audio-player.js's silenceIfStale().
+        this.pauseCalls = 0;
+        this.pause = () => { this.pauseCalls += 1; };
         this.seek = (fraction) => { calls.seek.push(fraction); };
         // ABCjs's real setWarp() ends with an internal seek that fires one
         // event callback; mirror that so tests can prove the highlight guard.
