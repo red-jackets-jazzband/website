@@ -260,7 +260,7 @@ ledger-line territory).
 
 **If you draw your own pitch guide lines instead of calling `zoom.py` directly (e.g. to
 overlay several hand-picked x/y crops from one Python session), it is very easy to get the
-line-to-pitch mapping off by exactly one half-step** — `zoom.py`'s own formula is correct,
+line-to-pitch mapping off by exactly one staff position** — `zoom.py`'s own formula is correct,
 but a hand-rolled version of it produced guide lines that *looked* right (evenly spaced,
 sensible labels) while every line was shifted one staff position from the real one, and every
 pitch read off it came out one step wrong, consistently, until a numeric check caught it.
@@ -402,11 +402,18 @@ purpose that matters here, a tie (write it as one in the ABC); a `Slur` between 
 *different* pitches is an ordinary phrase mark and isn't written as anything in plain ABC.
 This cross-check (`getSpannerSites` + same-pitch filter) found four real ties across the
 piece, including one 3-note tie chain spanning a barline that the "possible ties" heuristic
-above did flag, confirming the same spot two ways:
+above did flag, confirming the same spot two ways. Filter on each spanner's own two endpoint
+notes, not just "this note has a Slur" — a phrase slur touches notes too, and printing every
+slurred note without comparing pitches will happily mislabel one as a tie:
 ```python
-for n in m.notesAndRests:
-    if n.getSpannerSites('Slur'):
-        print(m.number, n.nameWithOctave)
+seen = set()
+for sl in s.parts[0].getElementsByClass('Slur'):
+    a, b = sl.getSpannedElements()
+    if id(sl) in seen or a.isRest or b.isRest:
+        continue
+    seen.add(id(sl))
+    tag = 'TIE' if a.pitch == b.pitch else 'phrase slur (not a tie)'
+    print(tag, a.nameWithOctave, '->', b.nameWithOctave)
 ```
 Two same-pitch notes joined this way don't split lyric duty evenly either: the sung
 syllable goes on the **first** (earlier) note of the pair, and the second — the arrival —
