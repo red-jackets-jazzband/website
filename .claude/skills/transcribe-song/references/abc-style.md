@@ -35,17 +35,29 @@ part's last chord — a part must be readable/playable on its own. This rule is 
 `P:`-marked part starts specifically; a through-composed tune with no `P:` marks doesn't
 need an invented chord at bar 1 if the source genuinely has none there.
 
-**A chord symbol lands on the bar's downbeat or its exact midpoint** (beat 1 or beat 3 in
-4/4) — `lint:abc` enforces this (in a meter with an even beat count; it's skipped for 3/4,
-9/8, ...). A harmony change that the source shows arriving early — most often an
-eighth-note anticipation under the melody, where the written chord sits a fraction before
-the beat it actually belongs to — should attach to the note that actually falls on the
-beat, not the one that anticipates it. When the note spanning that beat is a single
-sustained duration (no separate note already starts there), split it into two tied notes
-of the same pitch at the boundary and move the chord onto the second one — the tie means
-the audio is unchanged, only where the symbol prints. Example (bar originally `"C"E G A
-"G5"B4 c`, with `G5` landing an eighth early): `"C"EGAB-"G5"B3 c` — `B4` becomes `B-`
-tied to `B3`, and `G5` now sits on the note that starts on beat 3.
+**Aim for a chord symbol on the bar's downbeat or its exact midpoint** (beat 1 or beat 3 in
+4/4) when the source's own harmonic rhythm is that simple — but this is house-style
+guidance, not a blanket rule, and `lint:abc` only enforces the one shape of it that's
+unambiguous: **a chord shouldn't sit on the first half of a tie when its own continuation
+already lands on the beat.** That's almost always an eighth-note anticipation under the
+melody, where the written chord sits a fraction before the harmony it actually belongs to
+— attach it to the note that falls on the beat instead of the one that anticipates it.
+When the note spanning that beat is a single sustained duration (no separate note already
+starts there), split it into two tied notes of the same pitch at the boundary and move the
+chord onto the second one — the tie means the audio is unchanged, only where the symbol
+prints. Example (bar originally `"C"E G A "G5"B4 c`, with `G5` landing an eighth early):
+`"C"EGAB-"G5"B3 c` — `B4` becomes `B-` tied to `B3`, and `G5` now sits on the note that
+starts on beat 3.
+
+**A chord landing cleanly on beat 2 or beat 4 is not an error** — a cadential approach
+chord in the last beat before a repeat or resolution, a syncopated punch (a funk/Latin
+groove routinely puts the harmony where the *rhythm* accents it, not where a swing chart
+would), or a turnaround with more harmonic motion than a two-slot bar has room for (three
+chords in one bar means one of them can't be on beat 1 or 3 no matter what) are all real,
+common lead-sheet writing. `lint:abc` doesn't flag any of these, and don't tie-split or
+overlay-hack a chord into the beat-1/3 grid just because it's there — that fabricates
+rhythmic precision the source doesn't actually have. Move a chord only when it's genuinely
+anticipating its own tied note, per the rule above.
 
 Don't tie-split a note whose own duration is a clean, idiomatic value that just happens to
 span the midpoint — a dotted quarter/half spanning beats 1-3 (or 2-4) of a 4/4 bar is
