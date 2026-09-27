@@ -131,12 +131,25 @@ function findBarLengthIssues(tune, content) {
   return issues;
 }
 
-// 3. Chord placement: a chord symbol should land on the bar's downbeat or its
-//    exact midpoint (beat 1 or beat 3 in 4/4) - the house style's harmonic
-//    rhythm. A symbol anywhere else usually means it got attached to
-//    whichever note happened to start nearest the harmony change (often an
-//    eighth-note anticipation) instead of the note that actually falls on
-//    the beat; see references/abc-style.md for the tie-split fix.
+// 3. Chord placement: a chord shouldn't sit on the first half of a tie when
+//    its own continuation lands exactly on the bar's downbeat or midpoint
+//    (beat 1 or beat 3 in 4/4) - that's a chord symbol anticipating the beat
+//    by whatever the tie-start's own duration is (often one eighth note)
+//    instead of attaching to the note that actually falls on it; see
+//    references/abc-style.md for the tie-split fix. This is deliberately
+//    narrow: a chord elsewhere in the bar (beat 2, beat 4, three chords
+//    sharing a bar, ...) is not flagged - plenty of real harmonic rhythm
+//    (a cadential approach chord, a syncopated punch, a turnaround) legitimately
+//    lands off that grid, and this check has no way to tell that apart from
+//    a real mistake without the original chart. Only the tie-anticipation
+//    shape is unambiguous: the chord and its rightful note are the same
+//    sustained pitch, so moving the symbol changes nothing about the audio.
+//    Also exempt: a chord attached to a `y` spacer - `y` is deliberately
+//    excluded from a bar's counted duration (same as the bar-length check
+//    above), so a chord printed on one isn't claiming a real timed onset at
+//    all; it's a preview/lookahead annotation (the corpus already does
+//    this, e.g. `"F"F8- "Bb7"yyy` previewing the chord after a tied
+//    whole-bar note), not the kind of harmony change this rule checks.
 // 4. Beam grouping: eighths (and shorter) should beam in runs of at most 4,
 //    a run of exactly 4 only at the very start/end of the bar, and never
 //    spanning the bar's halfway point. abcjs's own parser already resolves
@@ -164,18 +177,34 @@ function newRhythmState() {
   return { acc: 0, tripletMultiplier: 1, elements: [] };
 }
 
+function isOnBeatGrid(start, meter) {
+  const atStart = start < DURATION_EPSILON;
+  const atMid = meter.checkMidpoint && Math.abs(start - meter.halfBar) < DURATION_EPSILON;
+  return atStart || atMid;
+}
+
+function findTieContinuation(elements, index) {
+  const pitch = elements[index].el.pitches && elements[index].el.pitches[0];
+  if (!pitch || !pitch.startTie) return null;
+  const next = elements[index + 1];
+  const nextPitch = next && next.el.pitches && next.el.pitches[0];
+  return nextPitch && nextPitch.endTie && nextPitch.name === pitch.name ? next : null;
+}
+
 function checkChordPlacement(elements, meter, content, issues) {
-  for (const entry of elements) {
-    if (!hasRealChord(entry.el)) continue;
-    const atStart = entry.start < DURATION_EPSILON;
-    const atMid = meter.checkMidpoint && Math.abs(entry.start - meter.halfBar) < DURATION_EPSILON;
-    if (atStart || atMid) continue;
+  elements.forEach((entry, index) => {
+    if (!hasRealChord(entry.el)) return;
+    if (entry.el.rest && entry.el.rest.type === "spacer") return;
+    if (isOnBeatGrid(entry.start, meter)) return;
+    const continuation = findTieContinuation(elements, index);
+    if (!continuation || !isOnBeatGrid(continuation.start, meter)) return;
+
     const name = entry.el.chord.find(isRealChord).name;
     issues.push(
-      `Music Line:${charToLineCol(content, entry.el.startChar)}: Chord "${name}" isn't at the bar's ` +
-        "start or midpoint",
+      `Music Line:${charToLineCol(content, entry.el.startChar)}: Chord "${name}" anticipates its tied ` +
+        "continuation, which lands on the beat - move the chord there instead",
     );
-  }
+  });
 }
 
 function computeBeamGroups(elements) {
