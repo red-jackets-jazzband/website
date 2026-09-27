@@ -157,10 +157,18 @@ function findBarLengthIssues(tune, content) {
 //    startBeam/endBeam flags the live site's renderer uses), so this reuses
 //    that instead of re-deriving groups from raw text.
 //
-// Both checks only make sense in a meter that splits evenly in half (4/4,
-// 2/2, 2/4, 6/8, ... - an even numerator); they're skipped for an odd-num
-// meter like 3/4 or 9/8, where there's no such thing as "beat 3". A beam
-// group containing a tuplet note is skipped too - a tuplet forms its own
+// The midpoint-specific parts of both checks (a chord landing exactly on
+// beat 3, a beam group crossing the bar's halfway point) only make sense in
+// a meter whose bar splits evenly in half (4/4, 2/2, 2/4, 6/8, ... - an even
+// numerator) - not because an odd-numerator meter like 3/4 or 9/8 lacks a
+// third beat (it doesn't: 3/4 has three, 9/8 groups into three dotted-quarter
+// beats), but because the bar's exact arithmetic midpoint doesn't line up
+// with any of those beats, so "is this at the midpoint" isn't a meaningful
+// question there; those checks are skipped via `meter.checkMidpoint`. The
+// beam-grouping rule's other two conditions (a group over 4 notes, or a
+// group of exactly 4 that isn't at the bar's true start/end) aren't
+// midpoint-dependent and still apply in every meter. A beam group entirely
+// inside a tuplet is exempt from all of this - a tuplet forms its own
 // bracketed rhythmic unit and isn't subject to the plain-eighths rule.
 
 const MAX_BEAM_GROUP = 4;
@@ -174,7 +182,7 @@ function hasRealChord(el) {
 }
 
 function newRhythmState() {
-  return { acc: 0, tripletMultiplier: 1, elements: [] };
+  return { acc: 0, tripletMultiplier: 1, elements: [], pendingTie: null };
 }
 
 function isOnBeatGrid(start, meter) {
@@ -188,7 +196,12 @@ function findTieContinuation(elements, index) {
   if (!pitch || !pitch.startTie) return null;
   const next = elements[index + 1];
   const nextPitch = next && next.el.pitches && next.el.pitches[0];
-  return nextPitch && nextPitch.endTie && nextPitch.name === pitch.name ? next : null;
+  // Compare the numeric pitch, not the note's printed name: an accidental
+  // persists silently across a tie (house style, see abc-style.md), so the
+  // continuation is often spelled without it - "^F-F" is one sustained F#,
+  // but abcjs reports the first note's name as "^F" and the second as
+  // plain "F" even though both share the same `pitch` value.
+  return nextPitch && nextPitch.endTie && nextPitch.pitch === pitch.pitch ? next : null;
 }
 
 function checkChordPlacement(elements, meter, content, issues) {
@@ -225,7 +238,7 @@ function computeBeamGroups(elements) {
 
 function checkBeamGroups(groups, meter, content, issues) {
   for (const group of groups) {
-    if (group.some((entry) => entry.el.tripletR || entry.el.startTriplet || entry.el.endTriplet)) continue;
+    if (group.some((entry) => entry.inTuplet)) continue;
 
     const first = group[0];
     const last = group[group.length - 1];
@@ -258,8 +271,54 @@ function checkBeamGroups(groups, meter, content, issues) {
 function pushRhythmElement(state, el) {
   const isSpacer = el.rest && el.rest.type === "spacer";
   const duration = typeof el.duration === "number" && !isSpacer ? el.duration * state.tripletMultiplier : 0;
-  state.elements.push({ el, start: state.acc, end: state.acc + duration });
+  // A note pushed while the multiplier is scaled is, by construction, some-
+  // where inside a tuplet's span (set by startTriplet, reset by endTriplet -
+  // see the main loop below) - true for the tuplet's first and last note and
+  // every plain note between them, unlike abcjs's own startTriplet/tripletR/
+  // endTriplet flags, which mark only the boundary notes.
+  state.elements.push({ el, start: state.acc, end: state.acc + duration, inTuplet: state.tripletMultiplier !== 1 });
   state.acc += duration;
+}
+
+// A chord anticipating a tie that resolves on the far side of a barline
+// (`... "C"F- | F2 ...`) needs its continuation checked against the next
+// bar's own first note - but that note hasn't been reached yet when this
+// bar is flushed, and state.elements is cleared right after. `pendingTie`
+// bridges that gap: flush() stashes the flushed bar's last note here when
+// it's an unresolved tie-start, and the next note pushed (the first of the
+// new bar) is checked against it before normal processing continues. Never
+// carried across an overlay flush - that starts a new simultaneous voice
+// lane, not the next bar, so there's no real continuation there.
+function flushRhythmState(state, carryTie, meter, content, issues) {
+  const groups = computeBeamGroups(state.elements);
+  checkChordPlacement(state.elements, meter, content, issues);
+  checkBeamGroups(groups, meter, content, issues);
+  const last = state.elements[state.elements.length - 1];
+  const lastPitch = last && last.el.pitches && last.el.pitches[0];
+  state.pendingTie = carryTie && lastPitch && lastPitch.startTie ? last : null;
+  state.elements = [];
+  state.acc = 0;
+}
+
+function processRhythmElement(state, el, meter, content, issues) {
+  if (el.el_type === "overlay") {
+    flushRhythmState(state, false, meter, content, issues);
+    return;
+  }
+  if (el.el_type === "part") return;
+  if (el.startTriplet) state.tripletMultiplier = el.tripletMultiplier;
+  if (el.el_type === "bar") {
+    flushRhythmState(state, true, meter, content, issues);
+    return;
+  }
+  if (el.el_type === "note") {
+    pushRhythmElement(state, el);
+    if (state.pendingTie) {
+      checkChordPlacement([state.pendingTie, state.elements[state.elements.length - 1]], meter, content, issues);
+      state.pendingTie = null;
+    }
+  }
+  if (el.endTriplet) state.tripletMultiplier = 1;
 }
 
 function findChordAndBeamIssues(tune, content) {
@@ -268,14 +327,6 @@ function findChordAndBeamIssues(tune, content) {
   const issues = [];
   const strands = new Map();
 
-  function flush(state) {
-    const groups = computeBeamGroups(state.elements);
-    checkChordPlacement(state.elements, meter, content, issues);
-    checkBeamGroups(groups, meter, content, issues);
-    state.elements = [];
-    state.acc = 0;
-  }
-
   for (const line of tune.lines) {
     if (!line.staff) continue;
     line.staff.forEach((staff, staffIndex) => {
@@ -283,24 +334,11 @@ function findChordAndBeamIssues(tune, content) {
         const key = `${staffIndex}-${voiceIndex}`;
         if (!strands.has(key)) strands.set(key, newRhythmState());
         const state = strands.get(key);
-        for (const el of voice) {
-          if (el.el_type === "overlay") {
-            flush(state);
-            continue;
-          }
-          if (el.el_type === "part") continue;
-          if (el.startTriplet) state.tripletMultiplier = el.tripletMultiplier;
-          if (el.el_type === "bar") {
-            flush(state);
-            continue;
-          }
-          if (el.el_type === "note") pushRhythmElement(state, el);
-          if (el.endTriplet) state.tripletMultiplier = 1;
-        }
+        for (const el of voice) processRhythmElement(state, el, meter, content, issues);
       });
     });
   }
-  for (const state of strands.values()) flush(state);
+  for (const state of strands.values()) flushRhythmState(state, false, meter, content, issues);
   return issues;
 }
 
