@@ -35,6 +35,34 @@ part's last chord — a part must be readable/playable on its own. This rule is 
 `P:`-marked part starts specifically; a through-composed tune with no `P:` marks doesn't
 need an invented chord at bar 1 if the source genuinely has none there.
 
+**A chord symbol lands on the bar's downbeat or its exact midpoint** (beat 1 or beat 3 in
+4/4) — `lint:abc` enforces this (in a meter with an even beat count; it's skipped for 3/4,
+9/8, ...). A harmony change that the source shows arriving early — most often an
+eighth-note anticipation under the melody, where the written chord sits a fraction before
+the beat it actually belongs to — should attach to the note that actually falls on the
+beat, not the one that anticipates it. When the note spanning that beat is a single
+sustained duration (no separate note already starts there), split it into two tied notes
+of the same pitch at the boundary and move the chord onto the second one — the tie means
+the audio is unchanged, only where the symbol prints. Example (bar originally `"C"E G A
+"G5"B4 c`, with `G5` landing an eighth early): `"C"EGAB-"G5"B3 c` — `B4` becomes `B-`
+tied to `B3`, and `G5` now sits on the note that starts on beat 3.
+
+Don't tie-split a note whose own duration is a clean, idiomatic value that just happens to
+span the midpoint — a dotted quarter/half spanning beats 1-3 (or 2-4) of a 4/4 bar is
+completely normal notation on its own, and breaking it into a tied pair only to satisfy the
+beat-3 rule is worse than the problem it solves (this is *not* what the beam-grouping rule
+below is about: that's a visual-clarity convention for beamed eighth runs, not a reason to
+retie every long note that crosses the middle of the bar — a plain half/quarter note
+crossing the midpoint with no chord change under it needs no tie at all). If a chord
+genuinely changes under a note like that, the idiomatic ABC-native fix is a voice overlay
+(`&`) carrying an invisible rest (`x`) at the midpoint, so the chord symbol has somewhere
+to attach without disturbing the printed note: `C6 & x4 "Bb7"x2` keeps the dotted half
+(`C6`, 3 beats) untouched in the main voice while the overlay's own invisible rests place
+`"Bb7"` exactly on beat 3. The overlay is silent and produces no sound or visible mark —
+`lint:abc`'s bar-length check already resets at each such marker, and it doesn't create a
+new Mixer voice (`parseVoiceList` only looks at `V:` declarations), so this is safe to use
+purely as annotation scaffolding.
+
 ## Accidentals
 
 `^`=sharp `_`=flat `=`=natural. In `K:Bbmaj`, bare `B` is B♭; write B natural as `=B`.
@@ -51,11 +79,26 @@ Ties `-` only between equal pitches; a note held over a barline is `F2- | F ...`
 **Beam grouping for eighth notes (and shorter)**: ABC beams a run together only with **no
 whitespace** between them — `DCDF` is one beamed group, `D C D F` is four separate
 flagged notes, same pitches/durations. A rest or a note of a quarter or longer always
-breaks a beam; a tie never breaks one. Default to matching the source's own engraved
-beam groups: max 4 eighths per group, a group of exactly 4 only at the very start/end of
-the bar, a beam never spans the bar's halfway point. Getting this wrong doesn't fail
-`lint:abc` or `abc2midi` (only visual grouping is affected) — verify with
-`render_site.mjs`, which doesn't check beaming either, by eye.
+breaks a beam; a tie never breaks one (so an eighth note tied into another eighth can
+still beam with what comes before/after it, if there's no whitespace — see the `G7`
+example bar below). Default to matching the source's own engraved beam groups: max 4
+eighths per group, a group of exactly 4 only at the very start/end of the bar, a beam
+never spans the bar's halfway point. `lint:abc` now enforces the max-4 and
+never-spans-the-midpoint parts of this (skipped for a meter with an odd beat count, and
+for any group containing a tuplet note); the "group of 4 only at the start/end" placement
+rule is checked too. It still can't verify the *pitches/spacing* match the source's own
+engraved groups, or catch a group that's under 4 but positioned oddly — verify those with
+`render_site.mjs` by eye, same as before.
+
+A beam group that would otherwise cross the bar's halfway point can usually be split the
+same way an over-early chord is (see **Chords** above): tie the note straddling the
+boundary into two, ending/starting exactly at the midpoint, and join the resulting eighth
+on either side into its neighbors with no whitespace if that completes a clean group.
+Example (bar originally `"D7"e c A "G7"e2 B e2`, with the `G7` chord — and the beam —
+landing early): `"D7"ecAe- "G7"eB e2` — `e2` becomes `e-` tied to `e`, giving a 4-beam
+group at the bar's start (`ecAe-`) and a 2-beam group starting exactly on beat 3
+(`eB`), with the required space between them so the two groups don't merge into one run
+that spans the midpoint.
 
 ## Transposing-instrument sheets
 
