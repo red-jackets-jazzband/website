@@ -31,26 +31,30 @@ for the affected passage — not the pixel count.
 
 ## Running it
 
-```
-$VP $SK/omr_dump.py scan.png       # runs homr, writes scan.musicxml, dumps it
-$VP $SK/omr_dump.py scan.musicxml  # (re-dump an existing musicxml)
-```
-
 Screen-grab scans are often ~600px wide. **Upscale 3x (LANCZOS) before homr** even when
-you expect it to work well — it reads a 596px sheet fine that way. Keep the un-upscaled
-`scan.png` too: crops and `notehead.py` work on it, and its pixel coordinates are the ones
-to quote.
+you expect it to work well — it reads a 596px sheet fine that way, and this is the file
+every command below runs against. Keep the un-upscaled `scan.png` too: crops and
+`notehead.py` work on it, and its pixel coordinates are the ones to quote.
+
+```
+python3 -c "from PIL import Image; im=Image.open('scan.png').convert('RGB'); \
+  im.resize((im.width*3, im.height*3), Image.LANCZOS).save('scan3.png')"
+
+$VP $SK/omr_dump.py scan3.png       # runs homr, writes scan3.musicxml, dumps it
+$VP $SK/omr_dump.py scan3.musicxml  # (re-dump an existing musicxml)
+```
 
 homr gives you: clef, key signature, bar count, and a per-measure note list.
 homr does **not** give you: chord symbols, rehearsal marks, repeats/endings, or lyrics —
 all of those you read yourself (see `references/abc-style.md`).
 
 **Draft the ABC straight from the OMR** instead of transcribing by hand (single-key sheets
-with nothing unusual; otherwise use the per-staff path below):
+with nothing unusual; otherwise use the per-staff path below) — same `scan3.musicxml`
+that `omr_dump.py` just produced:
 
 ```
 $VP $SK/omr_to_abc.py scan3.musicxml --interval M-2 --key Bb --title "Name" > draft.abc
-$VP $SK/crop_systems.py scan.png --out crops     # head.png (grid) + sys1.png ...
+$VP $SK/crop_systems.py scan.png --out crops     # head.png (grid) + sys1.png ... (un-upscaled scan)
 ```
 
 `--interval` is the music21 interval that turns the sheet's written pitch into the
@@ -130,7 +134,7 @@ identical to a much *later* bar (same token shape, wrong bar number):
 
 ```python
 import music21 as m21
-s = m21.converter.parse('scan.musicxml')
+s = m21.converter.parse('scan3.musicxml')
 for m in s.parts[0].getElementsByClass('Measure'):
     ks = m.getElementsByClass('KeySignature')
     if ks: print('measure', m.number, 'KEY CHANGE sharps=', ks[0].sharps)

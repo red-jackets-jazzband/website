@@ -16,7 +16,11 @@ $VP $SK/crop_systems.py scan.png --out R --scale 5 --xrange 0.45-1   # right hal
 
 The 10% overlap means no bar is split. Per bar, in this order: (1) the bar's *stems*
 (up/down), *flags* and *beams* — not the notehead fill, which is unreliable at low
-resolution; (2) the total has to be 4 beats; (3) chord-tone check against the grid chord.
+resolution; (2) the total has to match the source's own time signature (most lead sheets
+here are 4/4, but check the clef for the real `M:` and account for a pickup bar before
+assuming 4 beats); (3) chord-tone check against whichever chord source you established as
+authoritative in step 1 — the grid, *or* the melody's own inline labels if the two charts
+turned out to be unrelated (see below).
 
 **Draw pitch guide lines instead of eyeballing staff position — every time, not as a
 fallback.** `zoom.py scan.png --system N [--xfrac lo-hi]` draws the 5 staff lines + the
@@ -96,7 +100,8 @@ reliably.
 **Third time (Shine, 32 bars, 8 systems): the whole job was 16 crop Reads + one write, no
 OMR at all.** What made it right first time:
 - Read L+R for one system, write its bars immediately in *written* pitches, sum each to
-  4, and convert to concert straight away — don't batch all systems first.
+  the source meter (4 beats for the 4/4 case, otherwise whatever `M:` the sheet actually
+  uses), and convert to concert straight away — don't batch all systems first.
 - **Spot twin systems first.** Repeated systems are usually identical apart from their
   very last bar — still Read every twin's last bar, that's exactly where they diverge.
 - A beamed **dotted eighth + sixteenth** is `d3/4c/4` (with `L:1/4`), glued with no space

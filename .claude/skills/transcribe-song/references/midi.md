@@ -7,9 +7,16 @@ $VP $SK/midi_parts.py song.mid --part N --transpose -2  # dump one part by measu
 
 - The lead is usually the part named/patched as a melody instrument (Trumpet,
   Clarinet, Voice, Lead...) with a moderate note count — not the busiest part.
-- Find the transposition: match one unambiguous early bar of that part to the
-  lead sheet (e.g. MIDI bar 2 `E5 G5` vs lead-sheet bar 1 `B4 A4` under B♭ ->
-  the MIDI is a whole step + octave high, verify on a second bar).
+- Find the transposition: match one unambiguous early bar of that part to the lead
+  sheet's *concert* pitches and check the offset is the same semitone count on a second
+  bar before trusting it — e.g. MIDI bar 2 reads `D6 E6` where the lead sheet's concert
+  pitches for the same bar are `C5 D5`: both pairs are a major 2nd apart and both MIDI
+  notes sit exactly an octave above their lead-sheet counterpart, so the whole part is a
+  consistent `-14` semitones (a whole step + one octave) from concert. State explicitly
+  which side of the comparison is written and which is concert — a transposing-instrument
+  lead sheet's own *written* pitches are a different reference point than its concert
+  ones (see `references/abc-style.md`), and comparing MIDI against the wrong one will
+  look like a real but wrong transposition.
 - `--transpose -N` (semitones) to line it up with the lead sheet's key/octave.
 - Then compare **bar by bar** against the OMR melody. The MIDI resolves OMR
   ambiguities and catches OMR errors. But when a MIDI bar is busy/syncopated or
