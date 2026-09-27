@@ -8,8 +8,10 @@ files first (`static/songs/when_youre_smiling.abc`, `fly_me_to_the_moon.abc`,
 ## Header
 
 In order: `X:1`, `T:Title`, `C:Composer(s) (year)`, then any of `F:youtube-url`,
-`R:style`, `N:performance note`, then `M:4/4`, `L:1/4` (`L:1/8` for busy tunes),
-`Q:1/2=NNN` if a tempo is on the sheet, `K:Bbmaj`.
+`R:style`, `N:performance note`, then `M:` (read the source's own time signature off
+the clef — most of this repo's lead sheets are `4/4`, but don't assume it; a 3/4 waltz
+or a 2/4 march needs its own `M:` and every bar-sum check below scaled to match), `L:1/4`
+(`L:1/8` for busy tunes), `Q:1/2=NNN` if a tempo is on the sheet, `K:Bbmaj`.
 
 ## Chords
 
@@ -66,7 +68,10 @@ a B♭ instrument, a whole step up. Concert = written down a major 2nd:
 | concert ABC | `C` | `D` | `E` | `F` | `G` | `A` | `B` | `c` | `d` | `e` | `f` | `g` |
 
 (bare `B`/`E` are B♭/E♭ from the key signature; the octave shifts down with the letter).
-Written accidentals: C♯→`=B`, F♯→`=E`, D♯→`^c`, G♯→`^F`, E♭→`_d`, B♭→`_A`, A♭→`_G`.
+Written accidentals: C♯→`=B`, F♯→`=E`, D♯→`^C`, G♯→`^F`, E♭→`_D`, B♭→`_A`, A♭→`_G`.
+(D♯4 and E♭4 sit in the same written octave as D4/E4 in the table above, so they take
+the same uppercase case as `C`/`D` there — not the lowercase `c`/`d` used for the octave
+above `C5`; mixing the two is an easy octave slip.)
 
 **Derive the table for other concert keys, don't copy it** — the same M2-down shift,
 compared against the *concert* key signature to see whether a sign is needed (never carry
@@ -92,7 +97,10 @@ signature; re-derive each section's accidental spelling, never copy across secti
 
 ## Repeats, endings, pickups, breaks
 
-`|:` … `:|` for repeat signs; 1st/2nd endings as `…|[1 c4 z4 :|[2 c2 c2 c2 c2 ||`. A
+`|:` … `:|` for repeat signs; 1st/2nd endings as `…|[1 c2 z2 :|[2 c c c c ||` (shown at the
+default `L:1/4` — a half note + half rest for the first ending, four quarter notes for the
+second, both summing to 4/4; scale the multipliers to whatever `L:` and `M:` the tune
+actually uses). A
 repeat that is **written out** on the sheet (two systems that are the same) is written
 out in the ABC too, unless the sheet itself marks it with a repeat sign. A whole note
 tied into the first ending can only tie once in ABC; if the sheet also ties it into the

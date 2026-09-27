@@ -74,11 +74,20 @@ def main():
     if y1 is None:
         y1 = g.shape[0]
 
+    # Find the staff line's OWN ink rows empirically (near-full-width dark), rather than
+    # blanket-excluding a fixed +/-1px band around the ideal position: a notehead centered
+    # on a line puts its widest bulge exactly at the neighbouring row, and a fixed guess
+    # can exclude that row along with the true line, hiding the very evidence this script
+    # exists to show. A row only counts as "the line" if it's dark almost everywhere, not
+    # just near this one column -- a wide notehead run never satisfies that on its own.
     line_rows = set()
     if top is not None:
+        w = g.shape[1]
         for k in (0, 2, 4, 6, 8):
             ly = int(round(top + k * spacing / 2))
-            line_rows.update({ly - 1, ly, ly + 1})
+            for y in (ly - 1, ly, ly + 1):
+                if 0 <= y < g.shape[0] and (g[y] < thresh).sum() > 0.85 * w:
+                    line_rows.add(y)
 
     print(f"column x={x}, probing x-{span}..x+{span}, y={y0}..{y1}")
     print(f"{'y':>5}  {'line?':>5}  " + "  ".join(f"x{dx:+d}" for dx in range(-span, span + 1)))
