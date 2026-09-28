@@ -10,6 +10,7 @@ import {
 import { createSetlistView } from "./setlist-view.js";
 
 const DRAG_HANDLE_SELECTOR = ".setlist-song-row .setlist-drag-handle";
+const NOTE_INPUT_SELECTOR = ".setlist-song-note-input";
 const SONG_TITLE_SELECTOR = ".setlist-song-title";
 const BASIN_STREET_FILE = "basin_street.abc";
 const BASIN_STREET_NAME = "Basin Street Blues";
@@ -324,7 +325,7 @@ test("clicking the '+ note' button reveals an editable field; blur saves the tri
   try {
     view.renderOpen(entry.name, entry.songs, entry, "");
     document.querySelector(".setlist-song-note-add").dispatchEvent(new window.Event("click"));
-    const input = document.querySelector(".setlist-song-note-input");
+    const input = document.querySelector(NOTE_INPUT_SELECTOR);
     assert.equal(input.hidden, false);
     input.value = "  Ben solos 2nd chorus.  ";
     input.dispatchEvent(new window.Event("blur"));
@@ -346,7 +347,7 @@ test("clicking an existing note reveals it prefilled, and Escape cancels without
     assert.equal(textEl.textContent, "Original note.");
     textEl.dispatchEvent(new window.Event("click"));
 
-    const input = document.querySelector(".setlist-song-note-input");
+    const input = document.querySelector(NOTE_INPUT_SELECTOR);
     assert.equal(input.hidden, false);
     assert.equal(input.value, "Original note.");
     input.value = "Changed but cancelled.";
@@ -359,12 +360,29 @@ test("clicking an existing note reveals it prefilled, and Escape cancels without
   }
 });
 
+test("Ctrl+Enter in the note field commits and blurs it, same as a plain blur", () => {
+  const { view, entry, storage, cleanup } = setup({ songs: [{ file: "a.abc" }] });
+  try {
+    view.renderOpen(entry.name, entry.songs, entry, "");
+    document.querySelector(".setlist-song-note-add").dispatchEvent(new window.Event("click"));
+    const input = document.querySelector(NOTE_INPUT_SELECTOR);
+    input.value = "Ben solos 2nd chorus.";
+    input.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter", ctrlKey: true, bubbles: true }));
+    input.dispatchEvent(new window.Event("blur"));
+
+    assert.equal(getPersonalSetlist(storage, entry.id).songs[0].note, "Ben solos 2nd chorus.");
+    assert.equal(document.querySelector(NOTE_INPUT_SELECTOR).hidden, true);
+  } finally {
+    cleanup();
+  }
+});
+
 test("blurring a note field with an unchanged value doesn't write back or lose the escape hatch", () => {
   const { view, entry, storage, cleanup } = setup({ songs: [{ file: "a.abc" }] });
   try {
     view.renderOpen(entry.name, entry.songs, entry, "");
     document.querySelector(".setlist-song-note-add").dispatchEvent(new window.Event("click"));
-    document.querySelector(".setlist-song-note-input").dispatchEvent(new window.Event("blur"));
+    document.querySelector(NOTE_INPUT_SELECTOR).dispatchEvent(new window.Event("blur"));
     assert.equal(getPersonalSetlist(storage, entry.id).songs[0].note, undefined);
   } finally {
     cleanup();
@@ -377,7 +395,7 @@ test("a band setlist shows a read-only note with no edit controls", () => {
     view.renderOpen("Band Night", [{ file: "a.abc", key: "", note: "Ben solos." }], null, "");
     const textEl = document.querySelector(".setlist-song-note-text");
     assert.equal(textEl.textContent, "Ben solos.");
-    assert.equal(document.querySelector(".setlist-song-note-input"), null);
+    assert.equal(document.querySelector(NOTE_INPUT_SELECTOR), null);
     assert.equal(document.querySelector(".setlist-song-note-add"), null);
   } finally {
     cleanup();
