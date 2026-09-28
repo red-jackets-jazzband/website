@@ -1,16 +1,22 @@
 <!--
-  Trimmed copy of the songs-page DOM skeleton from content/songs.md, for jsdom
-  tests. Keep the element ids in sync with content/songs.md — the orchestration
-  modules and static/assets/css/split.css both address them by id.
+  Trimmed copy of the songs-page DOM skeleton from content/songs.md plus the
+  house nav row it renders into (layouts/partials/intro.html), for jsdom
+  tests. Keep the element ids in sync with those two files — the
+  orchestration modules and static/assets/css/split.css both address them by
+  id.
 -->
+<div class="split-intro-nav">
+  <span class="rj-intro-nav-tools">
+    <button type="button" id="tourBtn" class="rj-intro-nav-btn" hidden><span class="fa-solid fa-circle-question" aria-hidden="true"></span></button>
+    <button type="button" id="offlineBtn" class="rj-intro-nav-btn" title="Download for offline" aria-label="Download for offline"><span class="fa-solid fa-cloud-arrow-down" aria-hidden="true"></span></button>
+  </span>
+</div>
 <div class="rj-songs-layout" data-default-tab="library">
 
   <div id="rjLibrary" class="rj-library hideOnprint">
     <div class="rj-library-tabs" id="libraryTabs">
       <button type="button" class="rj-library-tab" data-tab="library">Songs</button>
       <button type="button" class="rj-library-tab" data-tab="setlists">Setlists</button>
-      <button type="button" id="tourBtn" class="rj-library-help-btn" hidden><span class="fa-solid fa-circle-question" aria-hidden="true"></span></button>
-      <button type="button" id="offlineBtn" class="rj-library-help-btn" title="Download for offline" aria-label="Download for offline"><span class="fa-solid fa-cloud-arrow-down" aria-hidden="true"></span></button>
     </div>
     <div id="offlineStatus" class="rj-offline-status" role="status" aria-live="polite" hidden></div>
 

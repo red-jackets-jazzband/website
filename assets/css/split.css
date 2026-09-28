@@ -3746,6 +3746,49 @@ body:has(#rjLibrary) .split-intro {
 body:has(#rjLibrary) .split-intro h1 {
   margin-bottom: 8px;
 }
+/*
+  The tour ("?") and offline-download buttons used to sit in the library
+  sidebar's own tab row. They live in the shared house nav (home icon +
+  language switcher) instead so they read as page-level tools rather than
+  library controls, at the same 16px/16px row the language links already
+  use. Scoped to the songs page (the only one .rj-intro-nav-tools ever
+  renders into) so every other page's nav row is untouched.
+*/
+body:has(#rjLibrary) .split-intro-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.rj-intro-nav-tools {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+}
+.rj-intro-nav-btn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--rj-gold);
+  font-size: 15px;
+  line-height: 16px;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+#tourBtn[hidden],
+#offlineBtn[hidden] {
+  display: none;
+}
+@media (hover: hover) {
+  .rj-intro-nav-btn:hover {
+    color: var(--rj-hover);
+  }
+}
 /* Sitewide footer credit line: pure decoration, not worth the vertical
    budget on a page whose whole point is fitting a working tool on screen. */
 body:has(#rjLibrary) .split-credit {
@@ -5311,36 +5354,11 @@ body.rj-sheet-fullscreen #sheetmenu {
 }
 
 /* ============================================================
-   Guided tour (songs/tour.js): the "?" launcher in the library
-   sidebar and the spotlight overlay.
+   Guided tour (songs/tour.js): the "?" launcher (styled up in the
+   house nav, alongside the language switcher — see .rj-intro-nav-btn
+   above) and the spotlight overlay.
    Everything sits above the modal (z-index 40).
    ============================================================ */
-.rj-library-help-btn {
-  flex: none;
-  width: 32px;
-  height: 32px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  background: none;
-  border: 1px solid rgba(255,255,255,.1);
-  border-radius: 7px;
-  color: rgba(230,228,224,.55);
-  font-size: 14px;
-  cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
-}
-#tourBtn[hidden],
-#offlineBtn[hidden] {
-  display: none;
-}
-@media (hover: hover) {
-  .rj-library-help-btn:hover {
-    color: var(--rj-gold);
-    border-color: rgba(226,157,15,.5);
-  }
-}
 /* "Download for offline" (songs/offline.js) — its progress line, right under
    the tab row, same treatment as the setlist print status line. A negative
    top margin here used to pull this line up snug under the tab buttons, but

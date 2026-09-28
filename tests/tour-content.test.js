@@ -20,6 +20,7 @@ const songsPage = read("content/songs.md");
 // Targets the tour points at that songs.md doesn't contain: they're created at
 // runtime, by the module (and string) named here.
 const RUNTIME_TARGETS = {
+  "#tourBtn": ["layouts/partials/intro.html", 'id="tourBtn"'],
   "#instrument": ["static/script/songs/selects.js", 'id: "instrument"'],
   "#iRealPro": ["static/script/songs/irealpro-link.js", 'id: "iRealPro"'],
   "#inspirationLink": ["static/script/songs/inspiration.js", 'btn.id = "inspirationLink"'],
