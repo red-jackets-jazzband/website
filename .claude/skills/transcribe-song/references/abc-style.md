@@ -112,6 +112,46 @@ group at the bar's start (`ecAe-`) and a 2-beam group starting exactly on beat 3
 (`eB`), with the required space between them so the two groups don't merge into one run
 that spans the midpoint.
 
+## Key signature sanity check
+
+**Before moving on from a tune, check that the `K:` field actually matches the tune's own
+harmony** — a wrong key signature is easy to type (one letter off from what was intended)
+and, unlike a wrong note, it doesn't necessarily break the parser or even sound obviously
+wrong for every note, because a hand-written `=`/`^`/`_` on a given note always overrides
+the key signature's own default for that note. Two independent tells, either one enough to
+stop and re-check:
+
+- **You're writing an explicit accidental on most/all occurrences of one or two specific
+  letters, throughout the whole tune.** One or two hand-spelled accidentals are normal
+  (a passing chromatic tone, a borrowed chord). Needing `=B` or `=E` on nearly *every* B or
+  E in a tune with `K:Bbmaj` (which flats both by default) is a sign the key itself is
+  wrong, not that the tune is unusually chromatic — the natural reading is simpler than
+  the flatted one you keep cancelling.
+- **The chord symbols don't sit comfortably in the stated key** — mostly-natural chords
+  (`C`, `D7`, `G7`, `A7`, `B7`, `F`) over a key signature with two flats, or vice versa.
+  A tune's chords are almost always diatonic to its key, or secondary dominants a 5th
+  above a diatonic chord; if most of them need an accidental relative to the stated key,
+  try the key a whole step either side and see if the chords suddenly read as plain I/IV/V
+  and secondary dominants with no explanation needed.
+
+If both tells point the same way, the `K:` field itself is wrong — fix that, not the
+accidentals. Retyping the accidentals to match a wrong key just relocates the bug: any note
+in the tune that *doesn't* carry an explicit override still silently takes the wrong key
+signature's default, which is real, audible wrongness, not just visual clutter. This is
+exactly what happened in `lou_easy_an_i_a.abc`: transcribed as `K:Bbmaj` with `=B`/`=E`
+hand-spelled on nearly every B and E (needed because Bb major flats both), while its chords
+— A7, D7, G7, C, B7, F, Adim, C7 — are all standard I/IV/V-and-secondary-dominant harmony in
+C major, a whole step up. The giveaway wasn't just the accidental clutter: two spots (`"A7"`
+over an unmarked `e`) had no override, so that note silently sounded as E♭ — clashing
+against A7's own E natural (its plain 5th) rather than reinforcing it. Correcting `K:Bbmaj`
+to `K:C` and dropping the now-redundant `=B`/`=E` signs fixed both the visual clutter and
+those two real wrong notes in one change, with no note letters or durations touched.
+
+This is a different failure from the transposing-instrument case below — there, the written
+notes are deliberately a different pitch than concert and the fix is a systematic per-note
+M2 shift; here, the notes were always meant to sound as literally written, and the fix is
+choosing the right `K:` so they do by default instead of needing constant correction.
+
 ## Transposing-instrument sheets
 
 If the melody's own written pitches don't match its chord labels / the house key (e.g.
