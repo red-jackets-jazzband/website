@@ -5342,9 +5342,14 @@ body.rj-sheet-fullscreen #sheetmenu {
   }
 }
 /* "Download for offline" (songs/offline.js) — its progress line, right under
-   the tab row, same treatment as the setlist print status line. */
+   the tab row, same treatment as the setlist print status line. A negative
+   top margin here used to pull this line up snug under the tab buttons, but
+   the exact gap it was tuned against depends on the browser's own line-box
+   metrics for the tab label text — Firefox computes those tall enough that
+   the negative margin pulled this line up far enough to visibly overlap the
+   Songs/Setlists tab buttons. A plain positive gap has no such dependency. */
 .rj-offline-status {
-  margin: -4px 0 8px;
+  margin: 4px 0 8px;
   color: var(--rj-gold);
   font: 600 11px "Montserrat", sans-serif;
 }
