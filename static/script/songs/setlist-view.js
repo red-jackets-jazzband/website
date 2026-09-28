@@ -320,8 +320,8 @@ export function createSetlistView(ctx) {
     row.append(el("button", {
       type: "button",
       class: "setlist-song-btn setlist-song-remove",
-      text: "×",
       title: "Remove",
+      html: '<span class="fa-solid fa-trash-can" aria-hidden="true"></span>',
       attrs: { "aria-label": "Remove" },
       on: {
         click: () => removeRow(row, personalEntry.id),
