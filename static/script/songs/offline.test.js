@@ -6,7 +6,12 @@ import { createAbcjsStub } from "../../../tests/helpers/stubs.js";
 import { GM_VOICES } from "../lib/gm-voices.js";
 import { createOffline, WIDE_RANGE_ABC } from "./offline.js";
 
-const SONG_INDEX = "Bourbon Street Parade,bourbon_street_parade.abc\nFive Foot Two,five_foot_two.abc\n";
+const SONG_INDEX = "Bourbon Street Parade,bourbon_street_parade.abc\nFive Foot Two,five_foot_two.abc\n"
+  // A file listed twice under different alias names, the same shape
+  // index_of_songs.txt itself uses (e.g. "Ain't my fault" / "It ain't my
+  // fault" both pointing at aint_my_fault.abc) — must be fetched once, not
+  // once per alias.
+  + "St Louis Blues,st_louis_blues.abc\nSaint Louis Blues,st_louis_blues.abc\n";
 const SETLIST_INDEX = "Setlist 2026,setlist_2026.txt\n";
 const TOUR_MD = "# ui\n";
 
@@ -125,6 +130,21 @@ test("downloadForOffline fetches the indexes, every song/setlist/tour file, warm
 
     assert.equal(document.getElementById("offlineStatus").textContent, "Available offline.");
     assert.equal(document.getElementById("offlineStatus").hidden, false);
+  } finally {
+    delete globalThis.fetch;
+    cleanup();
+  }
+});
+
+test("downloadForOffline fetches a file listed under multiple aliases only once", async () => {
+  const { offline, cleanup } = setup();
+  const fetchCalls = [];
+  globalThis.fetch = fakeFetch(fetchCalls);
+  try {
+    await runWithAbcjs(createAbcjsStub(), () => offline.downloadForOffline());
+
+    const stLouisFetches = fetchCalls.filter((path) => path === "/songs/st_louis_blues.abc");
+    assert.equal(stLouisFetches.length, 1);
   } finally {
     delete globalThis.fetch;
     cleanup();
