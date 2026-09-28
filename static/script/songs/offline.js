@@ -156,6 +156,18 @@ async function fetchIndex(path) {
   return parseSongIndex(await response.text());
 }
 
+// The song/setlist index formats allow the same file to appear on more than
+// one line (index_of_songs.txt lists several alias names — "Ain't my
+// fault" / "It ain't my fault" / "No it ain't my fault" — against the one
+// aint_my_fault.abc), which is by design for the library's own search. But
+// that means naively mapping every entry straight to a fetch path would
+// download (and re-download, since the service worker's cacheFirstRevalidate
+// strategy refetches in the background even on a cache hit) the same file
+// once per alias. De-duping by file first keeps each one to a single fetch.
+function uniqueFiles(entries) {
+  return Array.from(new Set(entries.map((entry) => entry.file)));
+}
+
 async function runDownload(ctx) {
   setStatus("Getting ready…");
   const registered = await registerServiceWorker();
@@ -183,11 +195,11 @@ async function runDownload(ctx) {
 
   let failures = 0;
   failures += await fetchAll(
-    songs.map((s) => `/songs/${s.file}`),
+    uniqueFiles(songs).map((file) => `/songs/${file}`),
     (done, total) => setStatus(`Songs: ${done} of ${total}`),
   );
   failures += await fetchAll(
-    setlists.map((s) => `/setlists/${s.file}`),
+    uniqueFiles(setlists).map((file) => `/setlists/${file}`),
     (done, total) => setStatus(`Setlists: ${done} of ${total}`),
   );
   await fetchAll(TOUR_LANGS.map((lang) => `/tour/tour.${lang}.md`), () => {});
