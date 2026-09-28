@@ -74,6 +74,10 @@ function applyOpenChrome(name, isPersonal) {
   show("setlistExportBtn", !isPersonal);
 }
 
+function setRowDragTranslate(row, y) {
+  row.style.transform = y === 0 ? "" : `translateY(${y}px)`;
+}
+
 function draggableRows() {
   const listEl = byId("songList");
   return listEl
@@ -501,9 +505,10 @@ export function createSetlistView(ctx) {
   function beginRowDrag(e, handle, row, personalId) {
     if (e.button != null && e.button !== 0) return;
     e.preventDefault();
-    rowDrag = { personalId, row, moved: false };
+    rowDrag = { personalId, row, moved: false, pointerStartY: e.clientY, translateY: 0 };
     row.classList.add("setlist-row-dragging");
     document.body.classList.add("setlist-dragging");
+    setRowDragTranslate(row, 0);
     try {
       handle.setPointerCapture(e.pointerId);
     } catch {
@@ -517,6 +522,9 @@ export function createSetlistView(ctx) {
   function onRowDragMove(e) {
     if (!rowDrag) return;
     const dragged = rowDrag.row;
+    rowDrag.translateY = e.clientY - rowDrag.pointerStartY;
+    setRowDragTranslate(dragged, rowDrag.translateY);
+
     const others = draggableRows().filter((r) => r !== dragged);
     if (others.length === 0) return;
 
@@ -530,7 +538,18 @@ export function createSetlistView(ctx) {
     }
     const anchor = before || others[others.length - 1].nextSibling;
     if (anchor !== dragged && dragged.nextSibling !== anchor) {
+      // Reordering relocates the row within its parent, which would otherwise
+      // make it jump by a row's height (its untransformed layout position
+      // moves, but the pointer-following translateY doesn't know that yet).
+      // Re-anchor the translate to the row's new resting spot so it keeps
+      // reading as "still under the pointer" instead of snapping.
+      const visualTop = dragged.getBoundingClientRect().top;
+      setRowDragTranslate(dragged, 0);
       dragged.parentNode.insertBefore(dragged, anchor);
+      const restingTop = dragged.getBoundingClientRect().top;
+      rowDrag.translateY = visualTop - restingTop;
+      rowDrag.pointerStartY = e.clientY;
+      setRowDragTranslate(dragged, rowDrag.translateY);
       rowDrag.moved = true;
       renumberOpen();
     }
@@ -543,6 +562,7 @@ export function createSetlistView(ctx) {
     rowDrag = null;
     drag.row.classList.remove("setlist-row-dragging");
     document.body.classList.remove("setlist-dragging");
+    setRowDragTranslate(drag.row, 0);
     if (!drag.moved) return;
     persistOrder(
       drag.personalId,
