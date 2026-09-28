@@ -73,6 +73,7 @@ Indiana,indiana.abc
 Isle of Capri,isle_of_capri.abc
 It ain't my fault,aint_my_fault.abc
 It's Only a Paper Moon,paper_moon.abc
+It's Tight Like That,its_tight_like_that.abc
 Jada,jada.abc
 Jambalaya,jambalaya.abc
 Jazz me Blues,jazz_me_blues.abc
