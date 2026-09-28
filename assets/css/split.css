@@ -3521,9 +3521,13 @@ select.rj-modal-input {
   color: var(--rj-gold);
   box-shadow: 0 0 0 1px var(--rj-gold);
 }
-/* The row follows the pointer live (it's relocated in the DOM as you drag),
-   so it just needs to read as "picked up" while it moves. */
+/* The row is translated with the pointer in real time (setlist-view.js's
+   onRowDragMove), and also relocated in the DOM once it crosses a neighbor's
+   midpoint, so it needs to read as "picked up" the whole time it moves and
+   stay above the rows it's passing over. */
 .setlist-row-dragging {
+  position: relative;
+  z-index: 5;
   opacity: .5;
   background: rgba(226,157,15,.08);
   box-shadow: inset 0 0 0 1px rgba(226,157,15,.35);
