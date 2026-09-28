@@ -18,7 +18,7 @@ aliases: ["/setlists/", "/songbook/"]
     <button type="button" class="rj-library-tab" data-tab="library">Songs</button>
     <button type="button" class="rj-library-tab" data-tab="setlists">Setlists</button>
     <button type="button" id="tourBtn" class="rj-library-help-btn" hidden><span class="fa-solid fa-circle-question" aria-hidden="true"></span></button>
-    <button type="button" id="offlineBtn" class="rj-library-help-btn" title="Download for offline"><span class="fa-solid fa-cloud-arrow-down" aria-hidden="true"></span></button>
+    <button type="button" id="offlineBtn" class="rj-library-help-btn" title="Download for offline" aria-label="Download for offline"><span class="fa-solid fa-cloud-arrow-down" aria-hidden="true"></span></button>
   </div>
   <div id="offlineStatus" class="rj-offline-status" role="status" aria-live="polite" hidden></div>
 
