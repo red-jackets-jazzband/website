@@ -45,7 +45,7 @@ process.env.PLAYWRIGHT_BROWSERS_PATH ??= join(homedir(), ".cache/ms-playwright")
 const { chromium } = resolvePlaywright();
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), "../../../..");
-const abcjs = join(repo, "static/script/abcjs_midi_6.7.0-min.js");
+const abcjs = join(repo, "static/script/abcjs_midi_6.7.1-min.js");
 const font = `data:font/woff;base64,${readFileSync(join(repo, "static/fonts/MuseJazzText.woff")).toString("base64")}`;
 const abc = readFileSync(src, "utf8");
 
