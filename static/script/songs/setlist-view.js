@@ -384,6 +384,7 @@ export function createSetlistView(ctx) {
     const inputEl = el("textarea", {
       class: "setlist-song-note-input",
       placeholder: "Add a note (e.g. who solos)…",
+      title: "Ctrl+Enter to finish, Esc to cancel",
       value: song.note || "",
       rows: 2,
       hidden: true,
@@ -419,6 +420,11 @@ export function createSetlistView(ctx) {
     textEl.addEventListener("click", enterEdit);
     addBtn.addEventListener("click", enterEdit);
     inputEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && e.ctrlKey) {
+        e.preventDefault();
+        inputEl.blur();
+        return;
+      }
       if (e.key !== "Escape") return;
       e.preventDefault();
       cancelled = true;
