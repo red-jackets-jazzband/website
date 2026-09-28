@@ -3369,6 +3369,7 @@ select.rj-modal-input {
    shown only when present, for a band setlist. */
 .setlist-song-note-row {
   flex: 1 0 100%;
+  box-sizing: border-box;
   padding-left: 24px;
 }
 .setlist-song-note-text {
