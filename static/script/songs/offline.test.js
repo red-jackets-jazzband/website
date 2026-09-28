@@ -86,6 +86,22 @@ async function runWithAbcjs(stub, fn) {
   }
 }
 
+// A fake BeforeInstallPromptEvent — neither jsdom nor Node has a real one,
+// and the only parts offline.js touches are preventDefault() (inherited
+// from Event, works as-is on a real dispatched event) plus the two
+// install-specific members, so a plain cancelable Event with those two
+// stubbed on is a faithful enough double.
+function makeInstallPromptEvent({ outcome = "accepted" } = {}) {
+  const event = new window.Event("beforeinstallprompt", { cancelable: true });
+  event.calls = { prompted: 0 };
+  event.prompt = () => {
+    event.calls.prompted += 1;
+    return Promise.resolve();
+  };
+  event.userChoice = Promise.resolve({ outcome });
+  return event;
+}
+
 test("init() hides the button and never registers when serviceWorker isn't supported", () => {
   const {
     offline, registerCalls, cleanup,
@@ -107,6 +123,84 @@ test("init() registers the service worker at /songs/ scope and wires the button"
     assert.equal(registerCalls.length, 1);
     assert.equal(registerCalls[0].url, "/sw.js");
     assert.deepEqual(registerCalls[0].options, { scope: "/songs/", type: "module" });
+  } finally {
+    cleanup();
+  }
+});
+
+test("beforeinstallprompt is captured and suppressed, and offers install on the button", () => {
+  const { offline, cleanup } = setup();
+  try {
+    offline.init();
+    const btn = document.getElementById("offlineBtn");
+    assert.equal(btn.title, "Download for offline");
+
+    const event = makeInstallPromptEvent();
+    window.dispatchEvent(event);
+
+    assert.equal(event.defaultPrevented, true, "the browser's own install affordance should be suppressed");
+    assert.equal(btn.title, "Install app & download for offline");
+    assert.equal(btn.getAttribute("aria-label"), "Install app & download for offline");
+  } finally {
+    cleanup();
+  }
+});
+
+test("downloadForOffline shows the captured install prompt first, then proceeds with the normal download", async () => {
+  const { offline, cleanup } = setup();
+  const fetchCalls = [];
+  globalThis.fetch = fakeFetch(fetchCalls);
+  try {
+    offline.init();
+    const event = makeInstallPromptEvent();
+    window.dispatchEvent(event);
+
+    await runWithAbcjs(createAbcjsStub(), () => offline.downloadForOffline());
+
+    assert.equal(event.calls.prompted, 1);
+    assert.ok(fetchCalls.includes("/songs/index_of_songs.txt"));
+    assert.equal(document.getElementById("offlineStatus").textContent, "Available offline.");
+    // The captured event is spent after one use — the button drops back to
+    // a plain download affordance rather than offering an install that
+    // would just throw if tried again.
+    assert.equal(document.getElementById("offlineBtn").title, "Download for offline");
+  } finally {
+    delete globalThis.fetch;
+    cleanup();
+  }
+});
+
+test("a captured install prompt is used at most once; a later download doesn't try to reuse it", async () => {
+  const { offline, cleanup } = setup();
+  globalThis.fetch = fakeFetch([]);
+  try {
+    offline.init();
+    const event = makeInstallPromptEvent();
+    window.dispatchEvent(event);
+
+    await runWithAbcjs(createAbcjsStub(), () => offline.downloadForOffline());
+    // The first run already consumed the captured prompt; a second,
+    // separate download shouldn't try to call .prompt() on it again.
+    await runWithAbcjs(createAbcjsStub(), () => offline.downloadForOffline());
+
+    assert.equal(event.calls.prompted, 1);
+  } finally {
+    delete globalThis.fetch;
+    cleanup();
+  }
+});
+
+test("appinstalled clears the captured prompt and reverts the button to a plain download affordance", () => {
+  const { offline, cleanup } = setup();
+  try {
+    offline.init();
+    window.dispatchEvent(makeInstallPromptEvent());
+    const btn = document.getElementById("offlineBtn");
+    assert.equal(btn.title, "Install app & download for offline");
+
+    window.dispatchEvent(new window.Event("appinstalled"));
+    assert.equal(btn.title, "Download for offline");
+    assert.equal(btn.getAttribute("aria-label"), "Download for offline");
   } finally {
     cleanup();
   }
