@@ -241,45 +241,79 @@ test("renderOpen restarts numbering per set and shows headings", () => {
   }
 });
 
+// setup() defaults ctx.readFile to a no-op, so a test that needs a song's own
+// key resolved (the badge / picker both fetch the .abc to read its K: field)
+// passes its own stub that calls back synchronously with the given text.
+function stubAbc(ctx, abcByFile) {
+  ctx.readFile = (path, onLoad, onError) => {
+    const file = path.replace(/^\/songs\//, "");
+    const text = abcByFile[file];
+    if (text === undefined) {
+      if (onError) onError(404);
+    } else {
+      onLoad(text);
+    }
+  };
+}
+
 test("a band setlist renders read-only rows with key badges, no controls", () => {
-  const { view, cleanup } = setup({ personal: false });
+  const { view, ctx, cleanup } = setup({ personal: false });
   try {
+    stubAbc(ctx, { "a.abc": "X:1\nK:F\nF2|", "b.abc": "X:1\nK:F\nF2|" });
     const songs = [{ file: "a.abc", key: "2" }, { file: "b.abc", key: "" }];
     view.renderOpen("Band Night", songs, null, "");
     assert.equal(document.querySelectorAll(".setlist-drag-handle").length, 0);
-    assert.equal(document.querySelector(".setlist-song-key-badge").textContent, "+2");
+
+    const [badgeA, badgeB] = document.querySelectorAll(".setlist-song-key-badge");
+    assert.equal(badgeA.textContent, "G", "F transposed +2 resolves to the real key, not \"+2\"");
+    assert.equal(badgeA.classList.contains("is-transposed"), true);
+    assert.equal(badgeB.textContent, "F", "no override — shows the tune's own key");
+    assert.equal(badgeB.classList.contains("is-transposed"), false);
   } finally {
     cleanup();
   }
 });
 
-test("the per-song semitone field writes a signed integer back to storage", () => {
-  const { view, entry, storage, cleanup } = setup({ songs: [{ file: "a.abc" }] });
+test("the per-song key picker writes a target-key override back to storage", () => {
+  const { view, ctx, entry, storage, cleanup } = setup({ songs: [{ file: "a.abc" }] });
   try {
+    stubAbc(ctx, { "a.abc": "X:1\nK:C\nC2|" });
     view.renderOpen(entry.name, entry.songs, entry, "");
-    const field = document.querySelector(".setlist-song-semitones");
-    field.value = "-3";
-    field.dispatchEvent(new window.Event("change"));
-    assert.equal(getPersonalSetlist(storage, entry.id).songs[0].key, "-3");
+    const select = document.querySelector(".setlist-song-key-select");
+    assert.equal(select.disabled, false, "enabled once the tune's own key has loaded");
+    assert.equal(select.value, "C", "shows the tune's own key with no override yet");
+
+    select.value = "B♭";
+    select.dispatchEvent(new window.Event("change"));
+    assert.equal(getPersonalSetlist(storage, entry.id).songs[0].key, "B♭");
   } finally {
     cleanup();
   }
 });
 
-test("the per-song semitone field rejects fractional and out-of-range input", () => {
-  const { view, entry, storage, cleanup } = setup({ songs: [{ file: "a.abc", key: "4" }] });
+test("picking the song's own native key in the picker clears the override", () => {
+  const { view, ctx, entry, storage, cleanup } = setup({ songs: [{ file: "a.abc", key: "2" }] });
   try {
+    stubAbc(ctx, { "a.abc": "X:1\nK:C\nC2|" });
     view.renderOpen(entry.name, entry.songs, entry, "");
-    const field = document.querySelector(".setlist-song-semitones");
+    const select = document.querySelector(".setlist-song-key-select");
+    assert.equal(select.value, "D", "C + 2 semitones resolves to D");
+    assert.equal(select.classList.contains("is-transposed"), true);
 
-    field.value = "1.5";
-    field.dispatchEvent(new window.Event("change"));
-    assert.equal(getPersonalSetlist(storage, entry.id).songs[0].key, "");
+    select.value = "C";
+    select.dispatchEvent(new window.Event("change"));
+    assert.equal(getPersonalSetlist(storage, entry.id).songs[0].key, "", "back to the tune's own key");
+  } finally {
+    cleanup();
+  }
+});
 
-    view.renderOpen(entry.name, getPersonalSetlist(storage, entry.id).songs, entry, "");
-    document.querySelector(".setlist-song-semitones").value = "40";
-    document.querySelector(".setlist-song-semitones").dispatchEvent(new window.Event("change"));
-    assert.equal(getPersonalSetlist(storage, entry.id).songs[0].key, "");
+test("the key picker stays disabled until the song's own key has loaded", () => {
+  const { view, entry, cleanup } = setup({ songs: [{ file: "a.abc" }] });
+  try {
+    // Default ctx.readFile never calls back, so the native key never resolves.
+    view.renderOpen(entry.name, entry.songs, entry, "");
+    assert.equal(document.querySelector(".setlist-song-key-select").disabled, true);
   } finally {
     cleanup();
   }
@@ -643,16 +677,22 @@ test("a slow earlier song load can't overwrite the sheet the user moved on to", 
     songs: [{ file: "a.abc", key: "" }, { file: "b.abc", key: "" }],
   });
   try {
+    // Rendering itself also fires a read per row (each row's own key picker
+    // resolves the tune's native key) — the two title clicks below are what
+    // this test cares about, so it grabs the *latest* call after each one
+    // rather than assuming fixed indices.
     const calls = [];
     ctx.readFile = (path, onLoad) => calls.push({ path, onLoad });
     view.renderOpen(entry.name, entry.songs, entry, "");
 
     const [titleA, titleB] = document.querySelectorAll(SONG_TITLE_SELECTOR);
     titleA.dispatchEvent(new window.Event("click")); // start loading A
+    const loadA = calls[calls.length - 1];
     titleB.dispatchEvent(new window.Event("click")); // switch to B before A lands
+    const loadB = calls[calls.length - 1];
 
-    calls[1].onLoad("X:1\nK:F\nF2|"); // B resolves
-    calls[0].onLoad("X:1\nK:Bb\nB2|"); // stale A resolves afterwards
+    loadB.onLoad("X:1\nK:F\nF2|"); // B resolves
+    loadA.onLoad("X:1\nK:Bb\nB2|"); // stale A resolves afterwards
 
     assert.equal(rendered.length, 1, "only the still-current request renders");
     assert.equal(ctx.state.currentSongFile, "b.abc");
@@ -674,7 +714,9 @@ test("openSongInOpenSetlist opens the matching song at its list position", () =>
     assert.equal(view.openSongInOpenSetlist("b"), true);
     assert.equal(ctx.state.currentSongFile, "b.abc");
     assert.equal(ctx.state.currentSetlistSongIndex, 2);
-    assert.equal(loads[0].path, "/songs/b.abc");
+    // The most recent read is this open, not one of the rows' own native-key
+    // prefetches fired earlier by renderOpen.
+    assert.equal(loads[loads.length - 1].path, "/songs/b.abc");
     assert.ok(
       document.querySelector('.setlist-song-row[data-setlist-index="2"]').classList.contains("is-current-song"),
     );

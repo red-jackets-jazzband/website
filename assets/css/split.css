@@ -3461,8 +3461,17 @@ select.rj-modal-input {
 }
 .setlist-song-key-badge {
   flex: none;
+  width: 28px;
+  text-align: center;
   font: 600 11px "JetBrains Mono", monospace;
   color: rgba(230,228,224,.4);
+}
+/* The song's key differs from its own written key (a per-setlist override is
+   in play) — same gold the personal setlist's key picker uses for the same
+   fact, so "this isn't the tune's standard key" reads the same way whether
+   the setlist is read-only or editable. */
+.setlist-song-key-badge.is-transposed {
+  color: var(--rj-gold);
 }
 /* The setlist song currently open in the sheet — "you are here" in the set. */
 .song-list-item.setlist-song-row.is-current-song {
@@ -3474,27 +3483,32 @@ select.rj-modal-input {
   color: #fff;
   font-weight: 600;
 }
-/* Per-song transpose, in semitones (personal setlists). A bare number field
-   — the spinners are hidden to keep it narrow; type or paste a signed int. */
-.setlist-song-semitones {
+/* Per-song key override (personal setlists): a plain 12-key picker rather
+   than a semitone stepper — pick "B♭" instead of doing the semitone maths.
+   Neutral while it reads the song's own native key; gold (.is-transposed)
+   once the picked key differs from it, same treatment as the read-only
+   badge above. Disabled (dim) until the tune's own key has loaded, since the
+   picker can't tell "standard" from "overridden" without it. */
+.setlist-song-key-select {
   flex: none;
-  width: 42px;
+  width: 54px;
   height: 26px;
   box-sizing: border-box;
-  padding: 0 2px 0 4px;
+  padding: 0 2px;
   background: #1f1f1f;
   border: 1px solid rgba(255,255,255,.1);
   border-radius: 6px;
-  color: var(--rj-gold);
+  color: rgba(230,228,224,.7);
   font: 600 11px "JetBrains Mono", monospace;
   text-align: center;
-  -moz-appearance: textfield;
-  appearance: textfield;
+  text-align-last: center;
 }
-.setlist-song-semitones::-webkit-outer-spin-button,
-.setlist-song-semitones::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
+.setlist-song-key-select:disabled {
+  opacity: .5;
+}
+.setlist-song-key-select.is-transposed {
+  color: var(--rj-gold);
+  border-color: rgba(226,157,15,.4);
 }
 /* Drag handle for reordering rows in an open personal setlist. Drag it, or
    focus it and press the up/down arrows. */
