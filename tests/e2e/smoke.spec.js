@@ -1,0 +1,113 @@
+import { test, expect } from "@playwright/test";
+
+// Third-party hosts (fonts CDN, soundfonts, embeds) aren't what's under test
+// and aren't reachable from every CI/sandbox network: refuse them up front so
+// the suite is hermetic and their failures don't count as page errors.
+async function isolate(context) {
+  await context.route(
+    (url) => url.hostname !== "localhost",
+    (route) => route.abort(),
+  );
+}
+
+// Console/page errors that are the aborted third-party requests above.
+const SONGS_URL = "/songs/";
+const SONG_ITEM = ".song-list-item";
+const IGNORED_ERROR = /Failed to load resource|net::ERR|ERR_FAILED|status of 40|blocked/i;
+
+function collectErrors(page) {
+  const errors = [];
+  page.on("pageerror", (err) => errors.push(err.message));
+  page.on("console", (msg) => {
+    if (msg.type() === "error" && !IGNORED_ERROR.test(msg.text())) errors.push(msg.text());
+  });
+  return errors;
+}
+
+test.beforeEach(async ({ context }) => { await isolate(context); });
+
+test("/songs/ loads its module graph with no script errors and lists the library", async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto(SONGS_URL);
+  await expect(page.locator(SONG_ITEM).first()).toBeVisible();
+  expect(await page.locator(SONG_ITEM).count()).toBeGreaterThan(100);
+  expect(errors).toEqual([]);
+});
+
+test("picking a song renders its title, chord grid and notation", async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto(SONGS_URL);
+  await page.locator("#songSearch").fill("Bourbon Street");
+  await page.locator(SONG_ITEM).first().click();
+
+  await expect(page.locator("#songtitle")).toContainText(/bourbon/i);
+  await expect(page.locator("#notation svg").first()).toBeVisible();
+  await expect(page.locator("#chordtable")).not.toBeEmpty();
+  expect(errors).toEqual([]);
+});
+
+test("the Mixer <dialog> is hidden until its button is clicked, then toggles", async ({ page }) => {
+  await page.goto(SONGS_URL);
+  await page.locator("#songSearch").fill("Bourbon Street");
+  await page.locator(SONG_ITEM).first().click();
+  await expect(page.locator("#notation svg").first()).toBeVisible();
+
+  const panel = page.locator("#mixerPanel");
+  await expect(panel).toBeHidden();
+  // Enabled once the tune's synth is ready, which needs the (blocked)
+  // soundfont host — so drive the same state change the click handler makes.
+  await page.evaluate(() => { document.getElementById("mixerBtn").disabled = false; });
+  await page.locator("#mixerBtn").click();
+  await expect(panel).toBeVisible();
+  await page.locator("#mixerBtn").click();
+  await expect(panel).toBeHidden();
+});
+
+test("a band setlist opens from a deep link and lists its songs", async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto(`${SONGS_URL}#sl=setlist_2026`);
+  await expect(page.locator("#setlistTitleText")).toContainText(/2026/);
+  await expect(page.locator(SONG_ITEM).first()).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test("the service worker installs and precaches the shell, stylesheet, module graph and lamejs", async ({ page }) => {
+  await page.goto(SONGS_URL);
+  const cached = await page.evaluate(async () => {
+    await navigator.serviceWorker.ready;
+    // install() only resolves once precacheShell() has succeeded, so by
+    // "ready" the shell cache is complete.
+    const names = await caches.keys();
+    const urls = [];
+    for (const name of names.filter((n) => n.startsWith("rj-songs-shell"))) {
+      const cache = await caches.open(name);
+      for (const req of await cache.keys()) urls.push(new URL(req.url).pathname);
+    }
+    return urls;
+  });
+
+  expect(cached).toContain(SONGS_URL);
+  expect(cached).toContain("/manifest.webmanifest");
+  expect(cached).toContain("/script/lamejs-1.2.1-min.js");
+  expect(cached).toContain("/script/songs-page.js");
+  expect(cached).toContain("/script/songs/app.js");
+  expect(cached.some((u) => /^\/css\/split\.min\..+\.css$/.test(u))).toBe(true);
+});
+
+test("Export MP3 loads lamejs on demand rather than with the page", async ({ page }) => {
+  await page.goto(SONGS_URL);
+  await expect(page.locator(SONG_ITEM).first()).toBeVisible();
+  expect(await page.evaluate(() => typeof window.lamejs)).toBe("undefined");
+  await expect(page.locator('script[src*="lamejs"]')).toHaveCount(0);
+});
+
+test("the instrument <select> drops native styling (WebKit ignores author styles otherwise)", async ({ page }) => {
+  await page.goto(SONGS_URL);
+  const appearance = await page.locator("#instrument").evaluate((node) => {
+    const style = getComputedStyle(node);
+    return style.appearance || style.webkitAppearance;
+  });
+  // "base-select" is the customisable-select mode split.css opts into where
+  // supported; either way the UA's native menulist chrome is off.
+  expect(["none", "base-select"]).toContain(appearance);
+});

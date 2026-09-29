@@ -11,6 +11,7 @@
     "lint:types": "tsc -p tsconfig.lib.json",
     "lint:abc": "node scripts/lint-abc.js",
     "lint:setlists": "node scripts/lint-setlists.js",
+    "test:e2e": "playwright test",
     "lint:catalog": "node scripts/lint-catalog.js",
     "lint:seo": "node scripts/lint-seo.js",
     "audit": "npm audit --audit-level=high",
@@ -18,6 +19,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "1.56.1",
     "@stylistic/eslint-plugin": "^5.10.0",
     "@types/node": "^26.6.3",
     "abcjs": "^6.7.1",
