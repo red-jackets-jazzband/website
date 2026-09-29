@@ -3407,6 +3407,19 @@ select.rj-modal-input {
 .setlist-song-note-add:hover {
   color: var(--rj-gold);
 }
+/* Declutter: a song with no note yet only offers the "+ note" affordance
+   once its row is actually being interacted with — hovered, keyboard-focused
+   (:focus-within also covers the textarea itself while editing), the song
+   open in the sheet (.is-current-song), or its row being dragged to reorder
+   (.setlist-row-dragging, set the instant the drag handle is pressed) — not
+   on every note-less row in the list at rest. A song that already has a note
+   is unaffected; this only hides the add button itself. .rj-tour-reveal-note
+   is the guided tour's own override (see revealDemoNote in tour-actions.js) —
+   it can't hover/select/drag a row by remote control. */
+.setlist-song-row:not(.is-current-song):not(.setlist-row-dragging):not(.rj-tour-reveal-note):not(:hover):not(:focus-within)
+  .setlist-song-note-add {
+  display: none;
+}
 .setlist-song-note-input {
   display: block;
   width: 100%;
@@ -3463,7 +3476,14 @@ select.rj-modal-input {
 .setlist-song-key-badge {
   flex: none;
   width: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
   text-align: center;
+}
+.setlist-song-key-badge-key {
   font: 600 11px "JetBrains Mono", monospace;
   color: rgba(230,228,224,.4);
 }
@@ -3471,8 +3491,16 @@ select.rj-modal-input {
    in play) — same gold the personal setlist's key picker uses for the same
    fact, so "this isn't the tune's standard key" reads the same way whether
    the setlist is read-only or editable. */
-.setlist-song-key-badge.is-transposed {
+.setlist-song-key-badge.is-transposed .setlist-song-key-badge-key {
   color: var(--rj-gold);
+}
+/* The tune's own native bpm, just under the key — same small caption
+   treatment as the Inspiration panel's armed A/B loop-marker buttons
+   (.inspiration-loop-btn-time) use for their own timestamp. */
+.setlist-song-key-badge-bpm {
+  font: 600 6.5px/1 "Montserrat", sans-serif;
+  letter-spacing: .04em;
+  color: rgba(236,234,230,.4);
 }
 /* The setlist song currently open in the sheet — "you are here" in the set. */
 .song-list-item.setlist-song-row.is-current-song {
@@ -3483,33 +3511,6 @@ select.rj-modal-input {
 .setlist-song-row.is-current-song .setlist-song-title {
   color: #fff;
   font-weight: 600;
-}
-/* Per-song key override (personal setlists): a plain 12-key picker rather
-   than a semitone stepper — pick "B♭" instead of doing the semitone maths.
-   Neutral while it reads the song's own native key; gold (.is-transposed)
-   once the picked key differs from it, same treatment as the read-only
-   badge above. Disabled (dim) until the tune's own key has loaded, since the
-   picker can't tell "standard" from "overridden" without it. */
-.setlist-song-key-select {
-  flex: none;
-  width: 54px;
-  height: 26px;
-  box-sizing: border-box;
-  padding: 0 2px;
-  background: #1f1f1f;
-  border: 1px solid rgba(255,255,255,.1);
-  border-radius: 6px;
-  color: rgba(230,228,224,.7);
-  font: 600 11px "JetBrains Mono", monospace;
-  text-align: center;
-  text-align-last: center;
-}
-.setlist-song-key-select:disabled {
-  opacity: .5;
-}
-.setlist-song-key-select.is-transposed {
-  color: var(--rj-gold);
-  border-color: rgba(226,157,15,.4);
 }
 /* Drag handle for reordering rows in an open personal setlist. Drag it, or
    focus it and press the up/down arrows. */

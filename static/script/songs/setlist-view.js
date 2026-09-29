@@ -6,7 +6,7 @@ import { walkSetlist } from "../lib/setlist-walk.js";
 import { filterSongsByQuery } from "../lib/song-index.js";
 import {
   extractKeyFromAbc, setlistTransposeSteps, formatSetlistKeyLabel,
-  resolvedSetlistKeyName, noteChroma, KEY_NAME_BY_CHROMA,
+  resolvedSetlistKeyName, tempoBpmFromAbc,
 } from "../lib/music-theory.js";
 import {
   getPersonalSetlist,
@@ -138,23 +138,30 @@ export function createSetlistView(ctx) {
 
   // ---- per-song key resolution -----------------------------------
 
-  // A song's own written key (its K: field), fetched once per file and kept
-  // for the life of this view — every open setlist's key display (band badge
-  // or personal key picker) reads off this rather than the raw override, so
+  // A song's own written key (its K: field) and native tempo (its Q: field),
+  // fetched once per file (one XHR covers both) and kept for the life of
+  // this view — every open setlist's key display (band badge or personal key
+  // picker) reads off the cached key rather than the raw override, so
   // "F, +2" shows as the real resulting key ("G") instead of a semitone
-  // count. undefined = not yet requested, null = fetched but no K: found.
+  // count. undefined = not yet requested, null = fetched but no K:/Q: found.
   const nativeKeyCache = {};
+  const nativeBpmCache = {};
   const pendingKeyFetches = new Set();
 
   function resolveNativeKey(file) {
     if (Object.prototype.hasOwnProperty.call(nativeKeyCache, file) || pendingKeyFetches.has(file)) return;
     pendingKeyFetches.add(file);
-    const settle = (key) => {
+    const settle = (key, bpm) => {
       nativeKeyCache[file] = key;
+      nativeBpmCache[file] = bpm;
       pendingKeyFetches.delete(file);
       updateKeyDisplays();
     };
-    ctx.readFile(`/songs/${file}`, (text) => settle(extractKeyFromAbc(text)), () => settle(null));
+    ctx.readFile(
+      `/songs/${file}`,
+      (text) => settle(extractKeyFromAbc(text), tempoBpmFromAbc(text)),
+      () => settle(null, null),
+    );
   }
 
   // What a row's key control should currently show, given what's known about
@@ -189,56 +196,39 @@ export function createSetlistView(ctx) {
     });
   }
 
-  function applySelectDisplay(select, song) {
-    const info = keyDisplayInfo(song);
-    select.disabled = info.disabled;
-    if (info.text) select.value = info.text;
-    select.classList.toggle("is-transposed", info.isTransposed);
-  }
-
   function applyBadgeDisplay(badge, song) {
     const info = keyDisplayInfo(song);
-    badge.textContent = info.text;
+    const keyEl = badge.querySelector(".setlist-song-key-badge-key");
+    keyEl.textContent = info.text;
     badge.classList.toggle("is-transposed", info.isTransposed);
+
+    // The tune's own native bpm (Q: field) — read-only everywhere, same as
+    // the key, since a setlist has no per-song tempo override to resolve.
+    const bpmEl = badge.querySelector(".setlist-song-key-badge-bpm");
+    const bpm = Object.prototype.hasOwnProperty.call(nativeBpmCache, song.file)
+      ? nativeBpmCache[song.file]
+      : null;
+    bpmEl.textContent = bpm ? String(bpm) : "";
+    bpmEl.hidden = !bpm;
   }
 
   function applyKeyDisplay(row, song) {
-    const select = row.querySelector(".setlist-song-key-select");
-    if (select) {
-      applySelectDisplay(select, song);
-      return;
-    }
     const badge = row.querySelector(".setlist-song-key-badge");
     if (badge) applyBadgeDisplay(badge, song);
   }
 
-  // The personal-setlist key picker: a fixed 12-key palette (same spelling as
-  // every other resolved-key display) rather than a semitone stepper — pick
-  // "B♭" instead of doing the semitone maths yourself. Selecting the song's
-  // own native key clears the override (back to "standard"); anything else is
-  // stored as a target-key override, the same format band setlists' `?key=`
-  // links already use.
-  function keySelect(song, index, personalEntry) {
-    const select = el("select", {
-      class: "setlist-song-key-select",
-      title: "Key for this setlist",
-      disabled: true,
-      attrs: { "aria-label": `Key of ${ctx.songName(song.file)} in this setlist` },
-    }, KEY_NAME_BY_CHROMA.map((name) => el("option", { value: name, text: name })));
-    select.addEventListener("change", () => {
-      const nativeKey = nativeKeyCache[song.file];
-      if (!nativeKey) return;
-      const stored = noteChroma(select.value) === noteChroma(nativeKey) ? "" : select.value;
-      updateSongKeyInPersonalSetlist(ctx.storage(), personalEntry.id, index, stored);
-      refreshOpenPersonal();
-    });
-    resolveNativeKey(song.file);
-    applySelectDisplay(select, song);
-    return select;
-  }
-
+  // Every row's key is read-only here, band setlist or personal — the same
+  // badge either way, so a personal setlist's list looks and reads like a
+  // band one. A personal setlist's per-song override is still editable, but
+  // only via the Key stepper above the sheet while that song is open
+  // (initTransposeWriteBack below), not from the list itself. The tune's
+  // native bpm sits just underneath, small, the same caption treatment the
+  // Inspiration panel's A/B loop-marker buttons use for their own timestamp.
   function keyBadge(song) {
-    const badge = el("span", { class: "setlist-song-key-badge" });
+    const badge = el("span", { class: "setlist-song-key-badge" }, [
+      el("span", { class: "setlist-song-key-badge-key" }),
+      el("span", { class: "setlist-song-key-badge-bpm", hidden: true }),
+    ]);
     resolveNativeKey(song.file);
     applyBadgeDisplay(badge, song);
     return badge;
@@ -401,6 +391,11 @@ export function createSetlistView(ctx) {
       inputEl.hidden = true;
       textEl.hidden = !hasNote;
       addBtn.hidden = hasNote;
+      // Blur already moved focus to <body> by the time this runs — without
+      // reclaiming it here, Alt+Up/Down's row lookup (e.target.closest(...))
+      // finds nothing and keyboard reorder silently stops working until the
+      // row is clicked again.
+      (hasNote ? textEl : addBtn).focus();
     };
     const commit = () => {
       if (cancelled) {
@@ -414,6 +409,10 @@ export function createSetlistView(ctx) {
         return;
       }
       updateSongNoteInPersonalSetlist(ctx.storage(), personalEntry.id, index, value);
+      // The row gets fully rebuilt by this re-render, so the local textEl
+      // above won't exist afterward — hand off to the same post-render
+      // refocus mechanism removeRow/moveRowByKeyboard use instead.
+      focusHandleAfterRender = index;
       refreshOpenPersonal();
     };
 
@@ -451,12 +450,8 @@ export function createSetlistView(ctx) {
       }),
     ]);
 
-    if (personalEntry) {
-      row.append(keySelect(song, index, personalEntry));
-      appendRowControls(row, personalEntry);
-    } else {
-      row.append(keyBadge(song));
-    }
+    row.append(keyBadge(song));
+    if (personalEntry) appendRowControls(row, personalEntry);
 
     const note = noteBlock(song, index, personalEntry);
     if (note) row.append(note);
