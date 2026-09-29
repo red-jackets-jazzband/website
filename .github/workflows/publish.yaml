@@ -52,6 +52,16 @@ jobs:
       - name: Check SEO
         run: node scripts/lint-seo.js
 
+      - name: Install browsers for smoke tests
+        run: |
+          npm ci --ignore-scripts
+          npx playwright install --with-deps chromium webkit
+
+      - name: Browser smoke tests (Chromium + WebKit)
+        run: npm run test:e2e
+        env:
+          E2E_WEBKIT: "1"
+
       - uses: actions/upload-artifact@v7.0.1
         with:
           name: website
