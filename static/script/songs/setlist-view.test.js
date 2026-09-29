@@ -412,66 +412,6 @@ test("Ctrl+Enter in the note field commits and blurs it, same as a plain blur", 
   }
 });
 
-test("committing a note (Ctrl+Enter) refocuses the row so Alt+Up/Down reorder still works", () => {
-  const { view, entry, storage, cleanup } = setup({
-    songs: [{ file: "a.abc" }, { file: "b.abc" }, { file: "c.abc" }],
-  });
-  try {
-    view.initControls();
-    view.renderOpen(entry.name, entry.songs, entry, "");
-
-    document.querySelectorAll(NOTE_ADD_SELECTOR)[0].dispatchEvent(new window.Event("click"));
-    const input = document.querySelectorAll(NOTE_INPUT_SELECTOR)[0];
-    input.value = NOTE_TEXT;
-    input.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter", ctrlKey: true, bubbles: true }));
-    input.dispatchEvent(new window.Event("blur"));
-
-    // Committing re-renders the row from scratch; without an explicit
-    // refocus, focus falls through to <body> and the very next Alt+Down
-    // silently does nothing, since moveRowByKeyboard's row lookup
-    // (e.target.closest(".setlist-song-row")) finds nothing to act on.
-    assert.ok(document.activeElement.closest(".setlist-song-row"), "focus stayed inside a row after commit");
-
-    document.activeElement.dispatchEvent(
-      new window.KeyboardEvent("keydown", { key: "ArrowDown", altKey: true, bubbles: true }),
-    );
-    assert.deepEqual(
-      getPersonalSetlist(storage, entry.id).songs.map((s) => s.file),
-      ["b.abc", "a.abc", "c.abc"],
-    );
-  } finally {
-    cleanup();
-  }
-});
-
-test("committing a note by clicking another row's drag handle relocates focus there, not back to the edited row", () => {
-  const { view, entry, storage, cleanup } = setup({
-    songs: [{ file: "a.abc" }, { file: "b.abc" }, { file: "c.abc" }],
-  });
-  try {
-    view.initControls();
-    view.renderOpen(entry.name, entry.songs, entry, "");
-
-    document.querySelectorAll(NOTE_ADD_SELECTOR)[0].dispatchEvent(new window.Event("click"));
-    const input = document.querySelectorAll(NOTE_INPUT_SELECTOR)[0];
-    input.value = NOTE_TEXT;
-    const destination = document.querySelectorAll(DRAG_HANDLE_SELECTOR)[2];
-    input.dispatchEvent(new window.FocusEvent("blur", { relatedTarget: destination, bubbles: true }));
-
-    assert.equal(getPersonalSetlist(storage, entry.id).songs[0].note, NOTE_TEXT);
-    // The row list is fully rebuilt by the commit, so the original
-    // `destination` node is gone — focus should land on ITS rebuilt
-    // equivalent (song c's drag handle), not get pulled back onto row 0
-    // just because that's the row whose note was being edited.
-    assert.equal(
-      document.activeElement.closest(".setlist-song-row").dataset.songFile,
-      "c.abc",
-    );
-  } finally {
-    cleanup();
-  }
-});
-
 test("blurring a note field with an unchanged value doesn't write back or lose the escape hatch", () => {
   const { view, entry, storage, cleanup } = setup({ songs: [{ file: "a.abc" }] });
   try {
@@ -542,6 +482,61 @@ function openThreeSongSetlist() {
   view.renderOpen(entry.name, entry.songs, entry, "");
   return result;
 }
+
+// Open a three-song personal setlist and start editing its first song's
+// note, with NOTE_TEXT typed in but not yet committed (blur is left to the
+// caller, since that's the part the two note-commit-focus tests differ on).
+function openNoteEditorWithChange() {
+  const result = openThreeSongSetlist();
+  document.querySelectorAll(NOTE_ADD_SELECTOR)[0].dispatchEvent(new window.Event("click"));
+  const input = document.querySelectorAll(NOTE_INPUT_SELECTOR)[0];
+  input.value = NOTE_TEXT;
+  return { ...result, input };
+}
+
+test("committing a note (Ctrl+Enter) refocuses the row so Alt+Up/Down reorder still works", () => {
+  const { entry, storage, input, cleanup } = openNoteEditorWithChange();
+  try {
+    input.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter", ctrlKey: true, bubbles: true }));
+    input.dispatchEvent(new window.Event("blur"));
+
+    // Committing re-renders the row from scratch; without an explicit
+    // refocus, focus falls through to <body> and the very next Alt+Down
+    // silently does nothing, since moveRowByKeyboard's row lookup
+    // (e.target.closest(".setlist-song-row")) finds nothing to act on.
+    assert.ok(document.activeElement.closest(".setlist-song-row"), "focus stayed inside a row after commit");
+
+    document.activeElement.dispatchEvent(
+      new window.KeyboardEvent("keydown", { key: "ArrowDown", altKey: true, bubbles: true }),
+    );
+    assert.deepEqual(
+      getPersonalSetlist(storage, entry.id).songs.map((s) => s.file),
+      ["b.abc", "a.abc", "c.abc"],
+    );
+  } finally {
+    cleanup();
+  }
+});
+
+test("committing a note by clicking another row's drag handle relocates focus there, not back to the edited row", () => {
+  const { entry, storage, input, cleanup } = openNoteEditorWithChange();
+  try {
+    const destination = document.querySelectorAll(DRAG_HANDLE_SELECTOR)[2];
+    input.dispatchEvent(new window.FocusEvent("blur", { relatedTarget: destination, bubbles: true }));
+
+    assert.equal(getPersonalSetlist(storage, entry.id).songs[0].note, NOTE_TEXT);
+    // The row list is fully rebuilt by the commit, so the original
+    // `destination` node is gone — focus should land on ITS rebuilt
+    // equivalent (song c's drag handle), not get pulled back onto row 0
+    // just because that's the row whose note was being edited.
+    assert.equal(
+      document.activeElement.closest(".setlist-song-row").dataset.songFile,
+      "c.abc",
+    );
+  } finally {
+    cleanup();
+  }
+});
 
 // Open a three-song personal setlist, run `trigger` against it, and assert
 // the surviving song files. Shared by the remove-row tests below.
