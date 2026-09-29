@@ -2453,7 +2453,9 @@ body.rj-sheet-active .rj-sheet-empty {
      the artwork's own 210:297 ratio (268.7mm < 281mm, no distortion), centred
      with the sheet's normal white margin. The SVG's viewBox scales the text
      and art uniformly, so the build-time fit still holds. */
-  @supports (-moz-appearance: none) {
+  /* -moz-osx-font-smoothing is Firefox-only; Chromium/Edge also match
+     `-moz-appearance`, so that one is not a safe Firefox test. */
+  @supports (-moz-osx-font-smoothing: auto) {
     .setlist-titlepage {
       width: 190mm;
       height: 268.5mm;
