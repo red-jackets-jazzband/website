@@ -2441,28 +2441,30 @@ body.rj-sheet-active .rj-sheet-empty {
     which needs the real font already applied AND the same physical size
     it will actually print at, not just once printing actually starts.)
   */
+  /* The cover is sized to fit the page's normal content area in EVERY browser
+     (no bleed to the paper edge, no browser sniffing). A 210x297mm box with
+     negative margins overflows the ~190x281mm content area left by the shared
+     @page margin: Firefox then splits it across two sheets and clips it on the
+     right, and Chromium/Edge also mis-position it. 190mm wide keeps the
+     artwork's own 210:297 ratio at 268.5mm tall (< 281mm), so nothing is
+     stretched, and the SVG's viewBox scales the text and art uniformly.
+     The art is absolutely positioned to fill the box exactly, rather than
+     relying on percentage height, which browsers resolve differently. */
   .setlist-titlepage {
     page-break-after: always;
     break-after: page;
+    width: 190mm;
+    height: 268.5mm;
+    margin: 0;
+    overflow: hidden;
+    break-inside: avoid;
   }
-  /* Firefox fragments the cover across sheets (and clips it at the right) when
-     it is 210x297mm with negative margins: it lays the box out inside the
-     margin-limited content area (190x281mm) and does not let it bleed, and a
-     margin-less named @page was not honoured either. So give Firefox a cover
-     that genuinely fits the content area — full content width, height kept at
-     the artwork's own 210:297 ratio (268.7mm < 281mm, no distortion), centred
-     with the sheet's normal white margin. The SVG's viewBox scales the text
-     and art uniformly, so the build-time fit still holds. */
-  /* -moz-osx-font-smoothing is Firefox-only; Chromium/Edge also match
-     `-moz-appearance`, so that one is not a safe Firefox test. */
-  @supports (-moz-osx-font-smoothing: auto) {
-    .setlist-titlepage {
-      width: 190mm;
-      height: 268.5mm;
-      margin: 0;
-      overflow: hidden;
-      break-inside: avoid;
-    }
+  .setlist-titlepage-art {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
   }
   /* Echoes the old standalone Songbook page's own bottom-right instrument
      badge (`.text-block`, further down): black box, white MuseJazzText. */
