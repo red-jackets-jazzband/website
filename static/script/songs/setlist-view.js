@@ -65,6 +65,57 @@ function draggableRows() {
     : [];
 }
 
+// A row control that can plausibly be a note field's blur destination (the
+// user clicking straight from an open note onto something else in the
+// list) — used by describeFocusTarget/restoreDescribedFocus below to carry
+// focus across a refreshOpenPersonal() rebuild, which wipes and rebuilds
+// every one of these from scratch.
+const ROW_FOCUS_SELECTORS = [
+  ".setlist-drag-handle",
+  ".setlist-song-remove",
+  ".setlist-song-title",
+  ".setlist-song-note-add",
+  ".setlist-song-note-text",
+  ".setlist-divider-input",
+];
+
+// Describe `target` (a note field's blur `relatedTarget`) in a way that
+// survives refreshOpenPersonal() wiping and rebuilding #songList: a row
+// index + the control's own role, or one of the two fixed controls in the
+// "Add to setlist" tray at the list's foot. Returns null for anything else
+// — outside #songList entirely (refreshOpenPersonal never touches it, so
+// it's still correctly focused once the render settles) or a control this
+// list doesn't know how to relocate.
+function describeFocusTarget(listEl, target) {
+  if (!listEl || !listEl.contains(target)) return null;
+  if (target.id === "setlistAddSongSearch") return { addSearch: true };
+  if (target.closest(".rj-library-add-break")) return { addBreak: true };
+  const row = target.closest(".setlist-song-row, .setlist-divider-row");
+  if (!row) return null;
+  const selector = ROW_FOCUS_SELECTORS.find((s) => target.closest(s));
+  return selector ? { index: row.dataset.setlistIndex, selector } : null;
+}
+
+// The other half of describeFocusTarget: relocate and focus the equivalent
+// control after a rebuild. Returns whether it found one.
+function restoreDescribedFocus(listEl, described) {
+  if (!listEl || !described) return false;
+  if (described.addSearch) {
+    const target = byId("setlistAddSongSearch");
+    if (target) target.focus();
+    return Boolean(target);
+  }
+  if (described.addBreak) {
+    const target = listEl.querySelector(".rj-library-add-break");
+    if (target) target.focus();
+    return Boolean(target);
+  }
+  const row = listEl.querySelector(`[data-setlist-index="${described.index}"]`);
+  const target = row && row.querySelector(described.selector);
+  if (target) target.focus();
+  return Boolean(target);
+}
+
 // Rewrite the number badges / "Set N" placeholders straight from current DOM
 // order — used mid-drag, before any re-render. Mirrors walkSetlist: numbers
 // restart each set when the list has any dividers, else run 1..n.
@@ -133,6 +184,7 @@ export function createSetlistView(ctx) {
   let addSongActiveIndex = -1; // keyboard-highlighted add-song result, -1 = none
   let focusAddSongAfterRender = false;
   let focusHandleAfterRender = null; // draggable-row index to re-focus after a keyboard nudge
+  let noteFocusAfterRender = null; // describeFocusTarget() result to re-focus after a note commit
   let rowDrag = null;
   let songLoadSeq = 0; // bumped per song open; a stale XHR callback checks it before rendering
 
@@ -387,7 +439,13 @@ export function createSetlistView(ctx) {
       inputEl.hidden = false;
       inputEl.focus();
     };
-    const leaveEdit = () => {
+    // `relatedTarget` is the blur's real destination, if any: null for a
+    // programmatic blur() with nowhere else to go (Ctrl+Enter, Escape), set
+    // when the user instead clicked straight onto another focusable control
+    // (a different row, the add-song tray). Only the null case should pull
+    // focus back onto this row — otherwise we'd be fighting the browser's
+    // own pending focus change to wherever the user actually clicked.
+    const leaveEdit = (relatedTarget) => {
       inputEl.hidden = true;
       textEl.hidden = !hasNote;
       addBtn.hidden = hasNote;
@@ -395,24 +453,30 @@ export function createSetlistView(ctx) {
       // reclaiming it here, Alt+Up/Down's row lookup (e.target.closest(...))
       // finds nothing and keyboard reorder silently stops working until the
       // row is clicked again.
-      (hasNote ? textEl : addBtn).focus();
+      if (!relatedTarget) (hasNote ? textEl : addBtn).focus();
     };
-    const commit = () => {
+    const commit = (relatedTarget) => {
       if (cancelled) {
         cancelled = false;
-        leaveEdit();
+        leaveEdit(relatedTarget);
         return;
       }
       const value = inputEl.value.trim();
       if (value === (song.note || "")) {
-        leaveEdit();
+        leaveEdit(relatedTarget);
         return;
       }
       updateSongNoteInPersonalSetlist(ctx.storage(), personalEntry.id, index, value);
       // The row gets fully rebuilt by this re-render, so the local textEl
-      // above won't exist afterward — hand off to the same post-render
-      // refocus mechanism removeRow/moveRowByKeyboard use instead.
-      focusHandleAfterRender = index;
+      // above won't exist afterward. A keyboard commit / nowhere-else blur
+      // hands off to the same post-render refocus mechanism removeRow/
+      // moveRowByKeyboard use (this row's drag handle); a real click
+      // destination gets relocated to its own rebuilt equivalent instead.
+      if (relatedTarget) {
+        noteFocusAfterRender = describeFocusTarget(byId("songList"), relatedTarget);
+      } else {
+        focusHandleAfterRender = index;
+      }
       refreshOpenPersonal();
     };
 
@@ -430,7 +494,7 @@ export function createSetlistView(ctx) {
       inputEl.value = song.note || "";
       inputEl.blur();
     });
-    inputEl.addEventListener("blur", commit);
+    inputEl.addEventListener("blur", (e) => commit(e.relatedTarget));
 
     return el("div", { class: "setlist-song-note-row" }, [textEl, addBtn, inputEl]);
   }
@@ -519,6 +583,11 @@ export function createSetlistView(ctx) {
       const handles = listEl.querySelectorAll(".setlist-drag-handle");
       if (handles[focusHandleAfterRender]) handles[focusHandleAfterRender].focus();
       focusHandleAfterRender = null;
+    }
+    if (noteFocusAfterRender) {
+      const described = noteFocusAfterRender;
+      noteFocusAfterRender = null;
+      restoreDescribedFocus(listEl, described);
     }
   }
 

@@ -34,13 +34,13 @@ const DEMO_SETLIST_FILES = [DEMO_SETLIST_SONG_1, DEMO_SETLIST_SONG_2];
 // Whether `song` is still exactly one of the demo's own two scripted songs —
 // never a divider, a transposed one, or one already counted.
 function isPlainDemoSong(song, filesSoFar) {
-  return !isSetlistDivider(song) && !song.key
+  return !isSetlistDivider(song) && !song.key && !song.note
     && DEMO_SETLIST_FILES.includes(song.file) && !filesSoFar.includes(song.file);
 }
 
 // True while a demo setlist entry still holds nothing but what the tour's own
 // script put there — no rename, no extra or duplicated song, no set break, no
-// transpose. Every one of those is directly reachable while the tour is open
+// transpose, no note. Every one of those is directly reachable while the tour is open
 // (the add-song, reorder and break steps are all `interactive: true`), so a
 // visitor can turn this into something real of their own; once they do, it
 // must never be swept away or deleted like ordinary tour scaffolding.
@@ -160,7 +160,11 @@ function exitFullscreen() {
 // a later step moves on.
 async function revealDemoNote() {
   const list = byId("songList");
-  const row = list && list.querySelector(`.setlist-song-row[data-song-file="${DEMO_SETLIST_SONG_1}"]`);
+  // NOSONAR: SonarCloud prefers `list?.querySelector(...)`, but this file is
+  // Safari-12 browser code — optional chaining is a SyntaxError there and
+  // ESLint's own ChainExpression ban would fail the build first anyway (see
+  // CLAUDE.md's Browser support section). The `&&` guard is intentional.
+  const row = list && list.querySelector(`.setlist-song-row[data-song-file="${DEMO_SETLIST_SONG_1}"]`); // NOSONAR
   if (row) row.classList.add(TOUR_REVEAL_NOTE_CLASS);
 }
 

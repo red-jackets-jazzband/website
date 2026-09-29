@@ -21,6 +21,7 @@ const BASIN_STREET_NAME = "Basin Street Blues";
 const ADD_SONG_SEARCH_ID = "setlistAddSongSearch";
 const addSongSearch = () => document.getElementById(ADD_SONG_SEARCH_ID);
 const MINIMAL_ABC = "X:1\nK:C\nC2|";
+const NOTE_TEXT = "Ben solos.";
 
 function setup({ songs = [], personal = true } = {}) {
   const page = mountPage();
@@ -421,7 +422,7 @@ test("committing a note (Ctrl+Enter) refocuses the row so Alt+Up/Down reorder st
 
     document.querySelectorAll(NOTE_ADD_SELECTOR)[0].dispatchEvent(new window.Event("click"));
     const input = document.querySelectorAll(NOTE_INPUT_SELECTOR)[0];
-    input.value = "Ben solos.";
+    input.value = NOTE_TEXT;
     input.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter", ctrlKey: true, bubbles: true }));
     input.dispatchEvent(new window.Event("blur"));
 
@@ -443,6 +444,34 @@ test("committing a note (Ctrl+Enter) refocuses the row so Alt+Up/Down reorder st
   }
 });
 
+test("committing a note by clicking another row's drag handle relocates focus there, not back to the edited row", () => {
+  const { view, entry, storage, cleanup } = setup({
+    songs: [{ file: "a.abc" }, { file: "b.abc" }, { file: "c.abc" }],
+  });
+  try {
+    view.initControls();
+    view.renderOpen(entry.name, entry.songs, entry, "");
+
+    document.querySelectorAll(NOTE_ADD_SELECTOR)[0].dispatchEvent(new window.Event("click"));
+    const input = document.querySelectorAll(NOTE_INPUT_SELECTOR)[0];
+    input.value = NOTE_TEXT;
+    const destination = document.querySelectorAll(DRAG_HANDLE_SELECTOR)[2];
+    input.dispatchEvent(new window.FocusEvent("blur", { relatedTarget: destination, bubbles: true }));
+
+    assert.equal(getPersonalSetlist(storage, entry.id).songs[0].note, NOTE_TEXT);
+    // The row list is fully rebuilt by the commit, so the original
+    // `destination` node is gone — focus should land on ITS rebuilt
+    // equivalent (song c's drag handle), not get pulled back onto row 0
+    // just because that's the row whose note was being edited.
+    assert.equal(
+      document.activeElement.closest(".setlist-song-row").dataset.songFile,
+      "c.abc",
+    );
+  } finally {
+    cleanup();
+  }
+});
+
 test("blurring a note field with an unchanged value doesn't write back or lose the escape hatch", () => {
   const { view, entry, storage, cleanup } = setup({ songs: [{ file: "a.abc" }] });
   try {
@@ -458,9 +487,9 @@ test("blurring a note field with an unchanged value doesn't write back or lose t
 test("a band setlist shows a read-only note with no edit controls", () => {
   const { view, cleanup } = setup({ personal: false });
   try {
-    view.renderOpen("Band Night", [{ file: "a.abc", key: "", note: "Ben solos." }], null, "");
+    view.renderOpen("Band Night", [{ file: "a.abc", key: "", note: NOTE_TEXT }], null, "");
     const textEl = document.querySelector(".setlist-song-note-text");
-    assert.equal(textEl.textContent, "Ben solos.");
+    assert.equal(textEl.textContent, NOTE_TEXT);
     assert.equal(document.querySelector(NOTE_INPUT_SELECTOR), null);
     assert.equal(document.querySelector(NOTE_ADD_SELECTOR), null);
   } finally {
