@@ -2444,22 +2444,23 @@ body.rj-sheet-active .rj-sheet-empty {
   .setlist-titlepage {
     page-break-after: always;
     break-after: page;
-    /* Firefox fragments the cover across sheets (a strip of art on page 2, the
-       instrument badge cut off) because the 297mm box overflows the ~281mm
-       content area left by the shared @page margin — the negative margin above
-       only shifts it, it doesn't enlarge the page's own content box. A named
-       margin-less page gives the cover a content box the size of the sheet;
-       the height is a hair under 297mm so sub-pixel rounding can't tip it onto
-       a second page (preserveAspectRatio="none" absorbs the 0.5mm). */
-    page: titlepage;
-    margin: 0;
-    height: 296.5mm;
-    overflow: hidden;
-    break-inside: avoid;
   }
-  @page titlepage {
-    size: A4 portrait;
-    margin: 0;
+  /* Firefox fragments the cover across sheets (and clips it at the right) when
+     it is 210x297mm with negative margins: it lays the box out inside the
+     margin-limited content area (190x281mm) and does not let it bleed, and a
+     margin-less named @page was not honoured either. So give Firefox a cover
+     that genuinely fits the content area — full content width, height kept at
+     the artwork's own 210:297 ratio (268.7mm < 281mm, no distortion), centred
+     with the sheet's normal white margin. The SVG's viewBox scales the text
+     and art uniformly, so the build-time fit still holds. */
+  @supports (-moz-appearance: none) {
+    .setlist-titlepage {
+      width: 190mm;
+      height: 268.5mm;
+      margin: 0;
+      overflow: hidden;
+      break-inside: avoid;
+    }
   }
   /* Echoes the old standalone Songbook page's own bottom-right instrument
      badge (`.text-block`, further down): black box, white MuseJazzText. */
