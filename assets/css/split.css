@@ -2444,6 +2444,22 @@ body.rj-sheet-active .rj-sheet-empty {
   .setlist-titlepage {
     page-break-after: always;
     break-after: page;
+    /* Firefox fragments the cover across sheets (a strip of art on page 2, the
+       instrument badge cut off) because the 297mm box overflows the ~281mm
+       content area left by the shared @page margin — the negative margin above
+       only shifts it, it doesn't enlarge the page's own content box. A named
+       margin-less page gives the cover a content box the size of the sheet;
+       the height is a hair under 297mm so sub-pixel rounding can't tip it onto
+       a second page (preserveAspectRatio="none" absorbs the 0.5mm). */
+    page: titlepage;
+    margin: 0;
+    height: 296.5mm;
+    overflow: hidden;
+    break-inside: avoid;
+  }
+  @page titlepage {
+    size: A4 portrait;
+    margin: 0;
   }
   /* Echoes the old standalone Songbook page's own bottom-right instrument
      badge (`.text-block`, further down): black box, white MuseJazzText. */
