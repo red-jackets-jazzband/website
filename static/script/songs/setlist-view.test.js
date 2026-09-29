@@ -12,6 +12,7 @@ import { createSetlistView } from "./setlist-view.js";
 const DRAG_HANDLE_SELECTOR = ".setlist-song-row .setlist-drag-handle";
 const NOTE_INPUT_SELECTOR = ".setlist-song-note-input";
 const SONG_TITLE_SELECTOR = ".setlist-song-title";
+const KEY_SELECT_SELECTOR = ".setlist-song-key-select";
 const BASIN_STREET_FILE = "basin_street.abc";
 const BASIN_STREET_NAME = "Basin Street Blues";
 const ADD_SONG_SEARCH_ID = "setlistAddSongSearch";
@@ -280,7 +281,7 @@ test("the per-song key picker writes a target-key override back to storage", () 
   try {
     stubAbc(ctx, { "a.abc": "X:1\nK:C\nC2|" });
     view.renderOpen(entry.name, entry.songs, entry, "");
-    const select = document.querySelector(".setlist-song-key-select");
+    const select = document.querySelector(KEY_SELECT_SELECTOR);
     assert.equal(select.disabled, false, "enabled once the tune's own key has loaded");
     assert.equal(select.value, "C", "shows the tune's own key with no override yet");
 
@@ -297,7 +298,7 @@ test("picking the song's own native key in the picker clears the override", () =
   try {
     stubAbc(ctx, { "a.abc": "X:1\nK:C\nC2|" });
     view.renderOpen(entry.name, entry.songs, entry, "");
-    const select = document.querySelector(".setlist-song-key-select");
+    const select = document.querySelector(KEY_SELECT_SELECTOR);
     assert.equal(select.value, "D", "C + 2 semitones resolves to D");
     assert.equal(select.classList.contains("is-transposed"), true);
 
@@ -309,12 +310,46 @@ test("picking the song's own native key in the picker clears the override", () =
   }
 });
 
+test("the key picker labels the tune's own native key option as \"(original)\"", () => {
+  const { view, ctx, entry, cleanup } = setup({ songs: [{ file: "a.abc", key: "2" }] });
+  try {
+    stubAbc(ctx, { "a.abc": "X:1\nK:C\nC2|" });
+    view.renderOpen(entry.name, entry.songs, entry, "");
+    const select = document.querySelector(KEY_SELECT_SELECTOR);
+    const options = [...select.options];
+    const cOption = options.find((opt) => opt.value === "C");
+    const dOption = options.find((opt) => opt.value === "D");
+    assert.equal(cOption.textContent, "C (original)", "native key option is labelled");
+    assert.equal(dOption.textContent, "D", "other options are left plain");
+  } finally {
+    cleanup();
+  }
+});
+
 test("the key picker stays disabled until the song's own key has loaded", () => {
   const { view, entry, cleanup } = setup({ songs: [{ file: "a.abc" }] });
   try {
     // Default ctx.readFile never calls back, so the native key never resolves.
     view.renderOpen(entry.name, entry.songs, entry, "");
-    assert.equal(document.querySelector(".setlist-song-key-select").disabled, true);
+    const select = document.querySelector(KEY_SELECT_SELECTOR);
+    assert.equal(select.disabled, true);
+    assert.equal(select.value, "", "no option pre-selected while the key is still loading");
+  } finally {
+    cleanup();
+  }
+});
+
+test("the key picker falls back to its blank option when the tune's key can't be read", () => {
+  const { view, ctx, entry, cleanup } = setup({ songs: [{ file: "a.abc", key: "2" }] });
+  try {
+    // 404: the tune's own key never resolves, so the picker falls back to
+    // formatSetlistKeyLabel's "+2" badge text — not one of the select's own
+    // canonical key-name options, so it must not be set as the select's value.
+    stubAbc(ctx, {});
+    view.renderOpen(entry.name, entry.songs, entry, "");
+    const select = document.querySelector(KEY_SELECT_SELECTOR);
+    assert.equal(select.disabled, true);
+    assert.equal(select.value, "", "a non-matching badge string never becomes the select's value");
   } finally {
     cleanup();
   }

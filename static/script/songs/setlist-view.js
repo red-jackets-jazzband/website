@@ -6,7 +6,7 @@ import { walkSetlist } from "../lib/setlist-walk.js";
 import { filterSongsByQuery } from "../lib/song-index.js";
 import {
   extractKeyFromAbc, setlistTransposeSteps, formatSetlistKeyLabel,
-  resolvedSetlistKeyName, noteChroma, KEY_NAME_BY_CHROMA,
+  resolvedSetlistKeyName, noteChroma, KEY_NAME_BY_CHROMA, transposeKeyName,
 } from "../lib/music-theory.js";
 import {
   getPersonalSetlist,
@@ -189,10 +189,29 @@ export function createSetlistView(ctx) {
     });
   }
 
+  // Marks whichever option matches the tune's own native key with an
+  // "(original)" suffix, so the picker itself shows which choice is a no-op
+  // — otherwise "standard" is only visible as the absence of gold styling.
+  // Reapplied on every display refresh since the native key isn't known
+  // until its own async fetch resolves, and options are built once up front.
+  function markNativeKeyOption(select, song) {
+    const nativeKey = nativeKeyCache[song.file];
+    const canonical = nativeKey ? transposeKeyName(nativeKey, 0) : null;
+    qsa("option", select).forEach((opt) => {
+      if (!opt.value) return;
+      opt.textContent = opt.value === canonical ? `${opt.value} (original)` : opt.value;
+    });
+  }
+
   function applySelectDisplay(select, song) {
     const info = keyDisplayInfo(song);
     select.disabled = info.disabled;
-    if (info.text) select.value = info.text;
+    markNativeKeyOption(select, song);
+    // info.text is sometimes a badge string ("+2") or a raw override spelling
+    // ("Bb") rather than one of the select's own canonical option values — in
+    // either case, and while still loading (info.text === ""), fall back to
+    // the blank placeholder option instead of leaving selectedIndex at -1.
+    select.value = KEY_NAME_BY_CHROMA.includes(info.text) ? info.text : "";
     select.classList.toggle("is-transposed", info.isTransposed);
   }
 
@@ -224,7 +243,10 @@ export function createSetlistView(ctx) {
       title: "Key for this setlist",
       disabled: true,
       attrs: { "aria-label": `Key of ${ctx.songName(song.file)} in this setlist` },
-    }, KEY_NAME_BY_CHROMA.map((name) => el("option", { value: name, text: name })));
+    }, [
+      el("option", { value: "", text: "" }),
+      ...KEY_NAME_BY_CHROMA.map((name) => el("option", { value: name, text: name })),
+    ]);
     select.addEventListener("change", () => {
       const nativeKey = nativeKeyCache[song.file];
       if (!nativeKey) return;
