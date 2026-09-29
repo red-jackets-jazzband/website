@@ -2466,6 +2466,23 @@ body.rj-sheet-active .rj-sheet-empty {
     width: 100%;
     height: 100%;
   }
+  /* Full bleed, where the browser supports named pages (`page`: Chrome/Edge 85+,
+     Firefox 110+): the cover gets its own zero-margin A4 @page, so a real
+     210x297mm box fits exactly and runs to the paper edge. Browsers without
+     `page` keep the inset 190mm cover above instead of overflowing. The height
+     is a hair under 297mm so sub-pixel rounding can't spill onto a second
+     sheet (the SVG's preserveAspectRatio="none" absorbs the 0.5mm). */
+  @supports (page: titlepage) {
+    .setlist-titlepage {
+      page: titlepage;
+      width: 210mm;
+      height: 296.5mm;
+    }
+  }
+  @page titlepage {
+    size: A4 portrait;
+    margin: 0;
+  }
   /* Echoes the old standalone Songbook page's own bottom-right instrument
      badge (`.text-block`, further down): black box, white MuseJazzText. */
   .setlist-titlepage-instrument {
