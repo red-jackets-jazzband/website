@@ -169,13 +169,13 @@ export default [
     // at *parse* time, which — since everything here loads as one ES module
     // graph — aborts the whole graph before a single line runs, with nothing
     // in the page to say why. `.at()`, `String#matchAll`,
-    // `String#replaceAll`, `Node#replaceChildren` and `crypto.randomUUID`
-    // don't throw until called, but still don't exist on Safari 12 either
-    // way — `replaceChildren` in particular is why the song list stayed
-    // empty even after the ?./?? SyntaxError was fixed: lib/dom.js's
-    // clear() used it, and it's the first thing render() calls before
-    // listing anything, so it threw silently on every render, in an async
-    // XHR callback no synchronous try/catch could catch.
+    // `String#replaceAll`, `Node#replaceChildren`, `crypto.randomUUID` and
+    // `Object.hasOwn` don't throw until called, but still don't exist on
+    // Safari 12 either way — `replaceChildren` in particular is why the song
+    // list stayed empty even after the ?./?? SyntaxError was fixed:
+    // lib/dom.js's clear() used it, and it's the first thing render() calls
+    // before listing anything, so it threw silently on every render, in an
+    // async XHR callback no synchronous try/catch could catch.
     // `logical-assignment-operators` above is flipped to "never" for the
     // same reason: `&&=`/`||=`/`??=` are Safari 14+.
     files: ["static/script/lib/**/*.js", "static/script/songs/**/*.js", "static/script/*.js"],
@@ -217,6 +217,19 @@ export default [
           message: "crypto.randomUUID() is Safari 15.4+ — for a non-cryptographic local id, "
             + "Date.now().toString(36) + Math.random().toString(36).slice(2, 10) is plenty "
             + "(see lib/setlists-store.js's generateId).",
+        },
+        {
+          // SonarCloud's javascript:S6653 suggests this over
+          // Object.prototype.hasOwnProperty.call(...) on general-modernity
+          // grounds, with no idea this project targets Safari 12 — it's
+          // ES2022 (Safari 15.4+), so applying that suggestion here would be
+          // a real regression, not a cleanup. hasOwnProperty.call(...) stays
+          // the intentional spelling in static/script/songs/setlist-view.js
+          // and elsewhere; this rule is what makes that a build error instead
+          // of a silent one the next time SonarCloud flags it.
+          selector: "CallExpression[callee.object.name='Object'][callee.property.name='hasOwn']",
+          message: "Object.hasOwn() is Safari 15.4+ (SonarCloud's javascript:S6653 doesn't know this project "
+            + "targets Safari 12) — use Object.prototype.hasOwnProperty.call(obj, key) instead.",
         },
       ],
     },
