@@ -28,10 +28,10 @@ export default defineConfig({
   timeout: 30_000,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? "github" : "list",
-  use: { baseURL: `http://localhost:${PORT}` },
+  use: { baseURL: `http://127.0.0.1:${PORT}` },
   webServer: {
     command: "node scripts/serve-public.js",
-    url: `http://localhost:${PORT}/songs/`,
+    url: `http://127.0.0.1:${PORT}/songs/`,
     env: { PORT: String(PORT) },
     reuseExistingServer: !process.env.CI,
   },

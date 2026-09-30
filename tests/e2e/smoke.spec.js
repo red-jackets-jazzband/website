@@ -5,7 +5,7 @@ import { test, expect } from "@playwright/test";
 // the suite is hermetic and their failures don't count as page errors.
 async function isolate(context) {
   await context.route(
-    (url) => url.hostname !== "localhost",
+    (url) => url.hostname !== "127.0.0.1",
     (route) => route.abort(),
   );
 }
