@@ -11,4 +11,4 @@ Because we are commited into spreading the joy of jazz, we share [our music](/so
 
 If you would like to see us in action, take a look at our [agenda](/agenda) or our [in action](/in-action) page. 
 
-**[Read more](/band)**
+**[Read more about the band](/band)**

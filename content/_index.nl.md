@@ -11,4 +11,4 @@ Omdat we zoveel mogelijk mensen van jazz willen laten genieten, delen we [onze m
 
 Als u ons in actie wilt zien, neem dan een kijkje in onze [agenda](/agenda) of onze pagina [in actie](/in-action).
 
-**[Lees meer](/nl/band)**
+**[Lees meer over de band](/nl/band)**
