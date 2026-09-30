@@ -12,7 +12,11 @@ description: "Aankomende optredens, festivals en streetparades van de Red Jacket
 
 <div id="agendaUpcoming" class="rj-agenda-upcoming" hidden></div>
 
-<p class="rj-agenda-note">Speelt u een festival en zoekt u een straatband? Mail naar <a href="mailto:info@redjackets.nl">info@redjackets.nl</a> en wij komen eraan.</p>
+<div class="rj-agenda-booking">
+<span class="rj-agenda-badge">Beschikbaar voor boekingen</span>
+<p class="rj-agenda-pitch">Organiseert u een jazzfestival, streetparade of een ander evenement waar wat ouderwetse jazz niet mag ontbreken?</p>
+<p class="rj-agenda-note">Wij brengen onze muziek graag naar de straat, naar festivals en overal waar mensen samenkomen. Wilt u de Red Jackets erbij hebben? Neem dan contact met ons op via <a href="mailto:booking@redjackets.nl">booking@redjackets.nl</a>.</p>
+</div>
 
 <div class="rj-agenda-earlier">
 <div class="rj-agenda-tally"><span id="agendaEarlierCount">92</span> optredens sinds 2009, en dat aantal groeit</div>
