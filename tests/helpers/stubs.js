@@ -167,7 +167,7 @@ export function createAbcjsStub({ audioSupported = false, exportAudioBuffer } = 
         // ABCjs's real setWarp() ends with an internal seek that fires one
         // event callback; mirror that so tests can prove the highlight guard.
         this.setWarp = () => {
-          if (this._cursorControl && this._cursorControl.onEvent) {
+          if (this._cursorControl?.onEvent) {
             this._cursorControl.onEvent({ elements: stub._warpEventElements || [] });
           }
           return Promise.resolve();
