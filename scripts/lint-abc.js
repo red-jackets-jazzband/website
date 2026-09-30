@@ -68,7 +68,7 @@ function closeBar(state, el) {
 }
 
 function accumulateNote(state, el) {
-  const isSpacer = el.rest && el.rest.type === "spacer";
+  const isSpacer = el.rest?.type === "spacer";
   if (typeof el.duration === "number" && !isSpacer) {
     state.acc += el.duration * state.tripletMultiplier;
   }
@@ -192,22 +192,22 @@ function isOnBeatGrid(start, meter) {
 }
 
 function findTieContinuation(elements, index) {
-  const pitch = elements[index].el.pitches && elements[index].el.pitches[0];
+  const pitch = elements[index].el.pitches?.[0];
   if (!pitch || !pitch.startTie) return null;
   const next = elements[index + 1];
-  const nextPitch = next && next.el.pitches && next.el.pitches[0];
+  const nextPitch = next?.el.pitches?.[0];
   // Compare the numeric pitch, not the note's printed name: an accidental
   // persists silently across a tie (house style, see abc-style.md), so the
   // continuation is often spelled without it - "^F-F" is one sustained F#,
   // but abcjs reports the first note's name as "^F" and the second as
   // plain "F" even though both share the same `pitch` value.
-  return nextPitch && nextPitch.endTie && nextPitch.pitch === pitch.pitch ? next : null;
+  return nextPitch?.endTie && nextPitch.pitch === pitch.pitch ? next : null;
 }
 
 function checkChordPlacement(elements, meter, content, issues) {
   elements.forEach((entry, index) => {
     if (!hasRealChord(entry.el)) return;
-    if (entry.el.rest && entry.el.rest.type === "spacer") return;
+    if (entry.el.rest?.type === "spacer") return;
     if (isOnBeatGrid(entry.start, meter)) return;
     const continuation = findTieContinuation(elements, index);
     if (!continuation || !isOnBeatGrid(continuation.start, meter)) return;
@@ -269,7 +269,7 @@ function checkBeamGroups(groups, meter, content, issues) {
 }
 
 function pushRhythmElement(state, el) {
-  const isSpacer = el.rest && el.rest.type === "spacer";
+  const isSpacer = el.rest?.type === "spacer";
   const duration = typeof el.duration === "number" && !isSpacer ? el.duration * state.tripletMultiplier : 0;
   // A note pushed while the multiplier is scaled is, by construction, some-
   // where inside a tuplet's span (set by startTriplet, reset by endTriplet -
@@ -294,8 +294,8 @@ function flushRhythmState(state, carryTie, meter, content, issues) {
   checkChordPlacement(state.elements, meter, content, issues);
   checkBeamGroups(groups, meter, content, issues);
   const last = state.elements[state.elements.length - 1];
-  const lastPitch = last && last.el.pitches && last.el.pitches[0];
-  state.pendingTie = carryTie && lastPitch && lastPitch.startTie ? last : null;
+  const lastPitch = last?.el.pitches?.[0];
+  state.pendingTie = carryTie && lastPitch?.startTie ? last : null;
   state.elements = [];
   state.acc = 0;
 }

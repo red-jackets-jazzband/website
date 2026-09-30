@@ -31,11 +31,15 @@ const TYPES = {
 // A request only ever *looks up* its path in this map — request data never
 // reaches the filesystem, so there is no path to traverse.
 async function indexFiles(dir, urlPrefix, files) {
-  for (const entry of await readdir(dir, { withFileTypes: true })) {
-    const url = `${urlPrefix}${entry.name}`;
-    if (entry.isDirectory()) await indexFiles(join(dir, entry.name), `${url}/`, files);
-    else files.set(url, join(dir, entry.name));
-  }
+  const entries = await readdir(dir, { withFileTypes: true });
+  await Promise.all(
+    entries.map((entry) => {
+      const url = `${urlPrefix}${entry.name}`;
+      if (entry.isDirectory()) return indexFiles(join(dir, entry.name), `${url}/`, files);
+      files.set(url, join(dir, entry.name));
+      return undefined;
+    }),
+  );
   return files;
 }
 

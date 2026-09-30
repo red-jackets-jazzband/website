@@ -63,7 +63,7 @@ for (const file of songFiles) {
   }
 }
 
-const unindexed = [...songFiles].filter((f) => !indexed.has(f)).sort();
+const unindexed = [...songFiles].filter((f) => !indexed.has(f)).sort((a, b) => a.localeCompare(b));
 if (unindexed.length > 0) {
   console.error(`note: ${unindexed.length} .abc file(s) not in index_of_songs.txt: ${unindexed.join(", ")}`);
 }
