@@ -9,4 +9,4 @@ Die **Red Jackets Jazzband** ist eine Streetparade-Jazzband aus Bergen op Zoom i
 
 Wenn Sie uns *"in action"* sehen möchten, werfen Sie einen Blick auf unsere [Agenda](/agenda) oder unsere [in Action](/in-action) -Seite.
 
-**[Weiter lesen](/de/band)**
+**[Mehr über die Band](/de/band)**

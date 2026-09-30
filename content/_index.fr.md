@@ -11,4 +11,4 @@ Parce que nous tenons à partager la joie du jazz, nous mettons [notre musique](
 
 Si vous voulez nous voir *en action*, jetez un œil à notre [agenda](/agenda) ou à notre page [en action](/in-action).
 
-**[En savoir plus](/fr/band)**
+**[En savoir plus sur le groupe](/fr/band)**
