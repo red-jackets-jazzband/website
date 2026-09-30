@@ -18,11 +18,19 @@ index b734a0c..1aa9b54 100644
        <div class="split-content-vertically-center">
          <!-- Intro -->
          {{ partial "intro" . }}
-@@ -38,7 +38,7 @@
-         {{ partial "footer" . }}
+@@ -34,11 +34,11 @@
+           <!-- Bio -->
+           {{ partial "bio" . }}
+         {{ end }}
+-
+-        <!-- Footer -->
+-        {{ partial "footer" . }}
        </div>
 -    </div>
 +    </main>
++
++    <!-- Footer -->
++    {{ partial "footer" . }}
  
    </div>
  
