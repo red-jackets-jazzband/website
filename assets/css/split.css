@@ -4560,10 +4560,36 @@ body:has(#rjLibrary) .split-bio {
   font-weight: 400;
   color: var(--rj-body);
 }
+.rj-agenda-booking {
+  margin: 0 0 56px;
+  padding: 4px 0 4px 22px;
+  border-left: 2px solid var(--rj-gold);
+}
+.rj-agenda-badge {
+  display: inline-block;
+  margin-bottom: 12px;
+  padding: 4px 12px;
+  border: 1px solid var(--rj-gold);
+  border-radius: 3px;
+  color: var(--rj-gold);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.split-bio .rj-agenda-pitch {
+  margin: 0 0 10px;
+  font-family: "Lora", serif;
+  font-style: italic;
+  font-size: 24px;
+  line-height: 1.3;
+  color: #ffffff;
+  text-wrap: balance;
+}
 .split-bio .rj-agenda-note {
   font-family: "Lora", serif;
   color: var(--rj-body);
-  margin: 0 0 48px;
+  margin: 0;
 }
 .rj-agenda-tally {
   font-weight: 700;
