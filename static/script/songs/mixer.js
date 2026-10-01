@@ -371,6 +371,11 @@ export function createMixer(ctx) {
   // below mutates the exact object sheet.js reads back out of ctx.state).
   let voiceRows = [];
   let voiceListSig = "";
+  // The listener brought the lead back while Solo plays. Kept here (not on the
+  // voice object) so it survives voice-list changes such as toggling Comping;
+  // cleared when Solo turns off or the tune's own voices change.
+  let leadUnmuted = false;
+  let ownVoicesSig = "";
 
   function rebuildVoiceStrips() {
     const container = byId("mixerVoicesList");
@@ -394,8 +399,12 @@ export function createMixer(ctx) {
       on(row.muteBtn, "click", () => {
         // Un-muting a lead that Solo silenced is a one-off override (this
         // song, until Solo changes); the persisted mute choice stays as it was.
-        if (v.autoMuted) v.autoMuted = false;
-        else v.muted = !v.muted;
+        if (v.autoMuted) {
+          v.autoMuted = false;
+          leadUnmuted = true;
+        } else {
+          v.muted = !v.muted;
+        }
         updateVoiceRowVisual({ v, ...row });
         persistVoiceState(v);
         ctx.sheet.rerender();
@@ -441,6 +450,9 @@ export function createMixer(ctx) {
     const withSlugs = dedupeVoiceSlugs(voices);
     // While Solo plays, the first voice (typically the lead) steps aside.
     const soloOn = voices.some((v) => v.label === "Solo");
+    const ownSig = voiceListSignature(voices.filter((v) => v.label !== "Solo" && v.label !== "Comping"));
+    if (!soloOn || ownSig !== ownVoicesSig) leadUnmuted = false;
+    ownVoicesSig = ownSig;
     ctx.state.mixerVoices = withSlugs.map((v) => {
       const muted = readPref(voiceMutedKey(v.slug)) === "1";
       const storedProgram = readPref(voiceProgramKey(v.slug));
@@ -448,7 +460,7 @@ export function createMixer(ctx) {
       const storedVolume = readPref(voiceVolumeKey(v.slug));
       const volume = storedVolume === null ? 100 : clampPercent(storedVolume);
       return {
-        ...v, muted, program, volume, autoMuted: soloOn && v.index === 0,
+        ...v, muted, program, volume, autoMuted: soloOn && v.index === 0 && !leadUnmuted,
       };
     });
     rebuildVoiceStrips();
