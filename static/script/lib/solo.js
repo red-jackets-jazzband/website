@@ -190,9 +190,14 @@ function barFragments(notes, bars, spell) {
   });
 }
 
-// The last take, kept so a re-render with nothing changed (a Key / Tempo /
-// Mixer move) doesn't re-run the GA.
-let lastTake = { key: "", notes: [] };
+// Takes already evolved, by chart + style + lead, so switching style or song
+// back and forth doesn't re-run the GA. Small: the oldest entry is dropped.
+const TAKE_CACHE_SIZE = 8;
+const takes = new Map();
+
+// Lighter than the GA's own defaults: it runs on the main thread inside
+// engrave(), and the rules converge well before the full 60 x 160.
+const LIVE_GA = { popSize: 40, generations: 100 };
 
 function leadOptions(style, lead) {
   if (MELODY_STYLES.has(style)) return { melody: lead };
@@ -202,12 +207,13 @@ function leadOptions(style, lead) {
 function solveSolo(names, style, lead, gaOptions) {
   const leadKey = lead.map((n) => `${n.start}:${n.midi}`).join(",");
   const key = `${style}|${names.map((row) => row.join(",")).join(";")}|${leadKey}`;
-  if (lastTake.key === key) return lastTake.notes;
+  if (takes.has(key)) return takes.get(key);
   const { progression, breaks } = toProgression(names);
   const { notes } = generateSolo(progression, {
-    style, breaks, seed: seedOf(key, style), ...leadOptions(style, lead), ...gaOptions,
+    style, breaks, seed: seedOf(key, style), ...LIVE_GA, ...leadOptions(style, lead), ...gaOptions,
   });
-  lastTake = { key, notes };
+  takes.set(key, notes);
+  if (takes.size > TAKE_CACHE_SIZE) takes.delete(takes.keys().next().value);
   return notes;
 }
 

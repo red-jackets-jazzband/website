@@ -1026,3 +1026,23 @@ test("clicking the lead's mute while Solo silenced it brings it back for this ta
     cleanup();
   }
 });
+
+test("an un-muted lead stays un-muted when Comping is toggled while Solo plays, and re-mutes once Solo goes off and on", () => {
+  const { ctx, mixer, cleanup } = setup();
+  try {
+    mixer.syncVoices(MELODY_AND_SOLO);
+    document.querySelector("#mixerVoiceStrip-melody .mixer-mute-btn").click();
+    mixer.syncVoices([
+      { id: "1", index: 0, label: "Melody" },
+      { id: "2", index: 1, label: "Comping" },
+      { id: "3", index: 2, label: "Solo", fallbackProgram: 71 },
+    ]);
+    assert.equal(ctx.state.mixerVoices[0].autoMuted, false);
+    mixer.syncVoices([{ id: "1", index: 0, label: "Melody" }]);
+    mixer.syncVoices(MELODY_AND_SOLO);
+    assert.equal(ctx.state.mixerVoices[0].autoMuted, true);
+  } finally {
+    window.localStorage.clear();
+    cleanup();
+  }
+});
