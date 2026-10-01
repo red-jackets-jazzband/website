@@ -23,6 +23,12 @@
 //  [N]  Nelias et al. (2022), "Downbeat delays are a key component of swing
 //       in jazz", Communications Physics — soloists delay downbeats ~30 ms
 //       (at ~150 bpm) while their offbeats stay with the rhythm section.
+//  [S]  Schuller, "Early Jazz" (1968), ch. on Armstrong — a solo is a few
+//       ideas that return with "diversity combined with identity and
+//       repetition": the "triple call" (Big Butter and Egg Man: one figure
+//       stated three times, each slightly altered), the repeated-note
+//       figure, sequence and near repetition (West End Blues), a build to
+//       a high point; blue notes belong to the blues choruses.
 //  [H]  Harker, "'Telling a Story': Louis Armstrong and Coherence in Early
 //       Jazz", Current Musicology 63 (1997) — a solo built as a story with a
 //       climax; triadic extensions, blue notes, high-register brilliance.
@@ -50,7 +56,8 @@ const MAJOR_WITH_SEVENTH = [0, 2, 3, 4, 5, 7, 9, 11];
   degree 0 (a multiple of 12); density = target onsets per bar; phraseWeight
   scales the phrase rules; falls/rips = chance of tagging that articulation;
   approach = weight for chromatic approach notes and enclosures; crossRhythm =
-  weight for dotted-quarter (3-against-4) groupings; arc = build the solo to a
+  weight for dotted-quarter (3-against-4) groupings; figures = Armstrong's
+  trademark repeated-note figure and "triple call" [S]; arc = build the solo to a
   late climax [H]; extensions = upper structures and maj7 [H]; climb =
   clarinet's ascending runs and long high notes; tailgate = roots on 1, fifths
   on 3, gliss into chord changes; below = stay under the voice passed as
@@ -60,7 +67,7 @@ export const STYLES = {
   trumpet: { low: 58, high: 82, base: 60, density: 4, phraseWeight: 1, falls: 0.35, rips: 0.4, approach: 0.5, crossRhythm: 0.8 },
   armstrong: {
     low: 58, high: 86, base: 60, density: 5, phraseWeight: 1, falls: 0.3, rips: 0.7,
-    approach: 1.5, approachMax: 0.15, crossRhythm: 1.5, arc: true, extensions: true,
+    approach: 1.5, approachMax: 0.15, crossRhythm: 1.5, arc: true, extensions: true, figures: true,
   },
   clarinet: { low: 62, high: 89, base: 72, density: 7, phraseWeight: 0.8, falls: 0, rips: 0, approach: 0.8, crossRhythm: 1, climb: true },
   trombone: { low: 40, high: 67, base: 48, density: 3, phraseWeight: 0.3, falls: 0.3, rips: 0, approach: 0, crossRhythm: 0, tailgate: true },
@@ -368,7 +375,7 @@ function strongBeatScore(ctx, e) {
 // A blue note is spice, not staple: it must resolve by step [D4].
 function blueNoteScore(e, next) {
   const resolves = Boolean(next) && Math.abs(next.midi - e.midi) <= 2 && next.slot === e.slot + e.len;
-  return resolves ? 0.6 : -2.5;
+  return resolves ? 0.1 : -4;
 }
 
 // Arpeggio tones on beats 1 & 3 [D4]; approach notes must lead somewhere [H].
@@ -590,6 +597,52 @@ function polyphonyScore(ctx, bar, onsets) {
   return theirsBusy === mineBusy ? 0 : 1;
 }
 
+// Two bars are the same idea when every slot matches: the same rests/holds,
+// and the same scale degrees up to one constant shift (a sequence).
+function sameIdea(ctx, g, a, b) {
+  let shift = null;
+  let degrees = 0;
+  for (let i = 0; i < ctx.spb; i++) {
+    const x = g[a * ctx.spb + i];
+    const y = g[b * ctx.spb + i];
+    if (isDegree(x) !== isDegree(y) || (!isDegree(x) && x !== y)) {
+      return false;
+    }
+    if (isDegree(x)) {
+      degrees++;
+      shift = shift === null ? y - x : shift;
+      if (y - x !== shift) {
+        return false;
+      }
+    }
+  }
+  return degrees >= 3;
+}
+
+// A solo is built from a few ideas that come back (answered, repeated, moved
+// up or down), not a new thought every bar: reward an idea returning one, two
+// or four bars later (the phrase length), and penalise too many distinct ones.
+const IDEA_LAGS = [[1, 0.8], [2, 1.2], [4, 1.5]];
+
+function ideaScore(ctx, g) {
+  if (ctx.o.tailgate || ctx.ag) {
+    return 0; // a part that follows the lead and the changes repeats nothing of its own
+  }
+  let f = 0;
+  for (let bar = 1; bar < ctx.bars; bar++) {
+    for (const [lag, reward] of IDEA_LAGS) {
+      if (bar >= lag && sameIdea(ctx, g, bar - lag, bar)) {
+        f += reward;
+        break;
+      }
+    }
+    if (bar >= 2 && sameIdea(ctx, g, bar - 1, bar) && sameIdea(ctx, g, bar - 2, bar - 1)) {
+      f += 0.6; // the triple call [S]
+    }
+  }
+  return f;
+}
+
 function barsScore(ctx, g, ev, covered) {
   const history = { masks: [], contours: [] };
   let f = 0;
@@ -602,7 +655,9 @@ function barsScore(ctx, g, ev, covered) {
     history.masks.push(stats.mask);
     history.contours.push(contour);
   }
-  return f;
+  // Ideas return, but the rhythm still has to move: a handful of distinct bars at least.
+  const distinct = new Set(history.masks).size;
+  return f - 2 * Math.max(0, Math.floor(ctx.bars / 4) + 1 - distinct);
 }
 
 // A break lands on the downbeat after it.
@@ -618,6 +673,27 @@ function breakLandingScore(ctx, g) {
 }
 
 // Approach notes are ornaments, not the line.
+// Armstrong's repeated-note figure [S]: three or more equal notes in a row,
+// one or two per solo.
+function repeatedNoteScore(ctx, ev) {
+  if (!ctx.o.figures) {
+    return 0;
+  }
+  let figures = 0;
+  for (let i = 0; i + 2 < ev.length; i++) {
+    const [a, b, c] = [ev[i], ev[i + 1], ev[i + 2]];
+    const joined = !a.app && a.midi === b.midi && b.midi === c.midi && a.slot + a.len === b.slot && b.slot + b.len === c.slot;
+    figures += joined && a.len <= 2 ? 1 : 0;
+  }
+  return 2 * Math.min(figures, Math.max(1, Math.round(ctx.bars / 6))) - 1.5 * Math.max(0, figures - Math.ceil(ctx.bars / 4));
+}
+
+// Blue notes are sparse: about one per six bars at most.
+function blueCapScore(ctx, ev) {
+  const blues = ev.filter((e) => !e.app && isBlueNote(ctx, e.midi, e.slot)).length;
+  return -3 * Math.max(0, blues - Math.ceil(ctx.bars / 6));
+}
+
 function ornamentCapScore(ctx, ev) {
   const approaches = ev.filter((e) => e.app).length;
   return -2.5 * Math.max(0, approaches - ctx.o.approachMax * ev.length);
@@ -858,7 +934,7 @@ function fitness(ctx, g) {
   }
   const covered = coverage(ctx, ev);
   return notesScore(ctx, ev) + barsScore(ctx, g, ev, covered) + breakLandingScore(ctx, g)
-    + ornamentCapScore(ctx, ev) + crossRhythmScore(ctx, ev) + phrasesScore(ctx, ev)
+    + ornamentCapScore(ctx, ev) + blueCapScore(ctx, ev) + ideaScore(ctx, g) + repeatedNoteScore(ctx, ev) + crossRhythmScore(ctx, ev) + phrasesScore(ctx, ev)
     + breathsScore(ctx, covered) + arcScore(ctx, ev) + melodyScore(ctx, g)
     + registerScore(ctx, ev) + endingScore(ctx, ev);
 }
@@ -995,7 +1071,8 @@ function repeatLickOp(ctx, g) {
     return;
   }
   const src = randInt(ctx, 0, ctx.bars - 2);
-  const dst = randInt(ctx, src + 1, ctx.bars - 1);
+  const lags = [1, 2, 4].filter((lag) => src + lag < ctx.bars);
+  const dst = src + lags[randInt(ctx, 0, lags.length - 1)];
   const shift = ctx.rand() < 0.5 ? 0 : randInt(ctx, -2, 2);
   for (let i = 0; i < ctx.spb && dst * ctx.spb + i < ctx.total; i++) {
     const v = g[src * ctx.spb + i];
@@ -1043,8 +1120,40 @@ function climaxOp(ctx, g) {
   }
 }
 
+// Three equal notes in a row on one scale degree [S].
+function repeatNoteOp(ctx, g) {
+  const s = randInt(ctx, 0, ctx.total - 3);
+  const before = degreeSlots(g, Math.max(0, s - ctx.spb), s + 1);
+  const deg = before.length ? g[before[before.length - 1]] : startDegree(ctx);
+  for (let k = 0; k < 3; k++) {
+    g[s + k] = deg;
+  }
+}
+
+// The triple call [S]: bar `src` stated again in the next two bars, each time
+// moved a step or so.
+function tripleCallOp(ctx, g) {
+  if (ctx.bars < 3) {
+    return;
+  }
+  const src = randInt(ctx, 0, ctx.bars - 3);
+  for (const back of [1, 2]) {
+    const shift = ctx.rand() < 0.4 ? 0 : randInt(ctx, -1, 1);
+    for (let i = 0; i < ctx.spb; i++) {
+      const v = g[src * ctx.spb + i];
+      g[(src + back) * ctx.spb + i] = isDegree(v) ? clampDegree(v + shift) : v;
+    }
+  }
+}
+
 function operatorsFor(ctx) {
   const ops = [perturbOp, splitMergeOp, transposeOp, invertOp, retrogradeOp, sortOp, repeatLickOp, breathOp, approachOp];
+  if (!ctx.o.tailgate && !ctx.ag) {
+    ops.push(repeatLickOp); // ideas that come back: twice the weight for a lead
+  }
+  if (ctx.o.figures) {
+    ops.push(repeatNoteOp, tripleCallOp);
+  }
   if (ctx.o.arc) {
     ops.push(climaxOp);
   }
