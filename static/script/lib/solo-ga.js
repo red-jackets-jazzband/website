@@ -29,6 +29,10 @@
 //       stated three times, each slightly altered), the repeated-note
 //       figure, sequence and near repetition (West End Blues), a build to
 //       a high point; blue notes belong to the blues choruses.
+//       Also from Schuller: phrases that restart on the same high note and
+//       fall (the five descending phrases of West End Blues), a long high
+//       note released into a repeated phrase in the last chorus, and the
+//       bridge as the imaginative climax of a 32-bar chorus.
 //  [H]  Harker, "'Telling a Story': Louis Armstrong and Coherence in Early
 //       Jazz", Current Musicology 63 (1997) — a solo built as a story with a
 //       climax; triadic extensions, blue notes, high-register brilliance.
@@ -717,6 +721,52 @@ function arpeggioScore(ctx, ev) {
   return 2.5 * Math.min(runs, wanted) + Math.min(sevenths, wanted) - 2 * Math.max(0, runs - wanted - 1);
 }
 
+// Phrases restarting on the same high note and falling away [S]: each pair of
+// neighbouring phrases that begin on one high pitch and end lower counts.
+function phraseRecallScore(ctx, ev) {
+  if (!ctx.o.figures) {
+    return 0;
+  }
+  const high = ctx.o.low + 0.6 * (ctx.o.high - ctx.o.low);
+  const phrases = phrasesOf(ctx, ev);
+  let pairs = 0;
+  for (let i = 1; i < phrases.length; i++) {
+    const [prev, cur] = [phrases[i - 1], phrases[i]];
+    const same = cur[0].midi === prev[0].midi && cur[0].midi >= high;
+    const falls = cur[cur.length - 1].midi < cur[0].midi - 2 && prev[prev.length - 1].midi < prev[0].midi - 2;
+    pairs += same && falls ? 1 : 0;
+  }
+  return 1.2 * Math.min(pairs, 4);
+}
+
+// The last chorus [S]: a long high note held, then released into a repeated
+// phrase. Counts a note of two beats or more in the top quarter of the range
+// in the final third, plus a repeated-note figure after it.
+function finaleScore(ctx, ev) {
+  if (!ctx.o.figures) {
+    return 0;
+  }
+  const from = Math.floor(ctx.total * 0.62);
+  const heldIndex = ev.findIndex((e) => e.slot >= from && !e.app && e.len >= 2 * ctx.sub && e.midi >= ctx.highQuarter);
+  if (heldIndex === -1) {
+    return 0;
+  }
+  const after = ev.slice(heldIndex + 1, heldIndex + 7);
+  const repeated = after.some((e, k) => k >= 2 && e.midi === after[k - 1].midi && e.midi === after[k - 2].midi);
+  return 9 + (repeated ? 3 : 0); // outweighs the bar-density target a long note gives up
+}
+
+// The bridge of an AABA chorus is its imaginative climax [S]: sit higher there.
+function bridgeScore(ctx, ev) {
+  if (!ctx.o.figures || ctx.bars < 24 || ctx.bars % 8 !== 0) {
+    return 0;
+  }
+  const [from, to] = [ctx.bars / 2 * ctx.spb, ctx.bars * 3 / 4 * ctx.spb];
+  const inside = meanPitch(ev, from, to);
+  const outside = (meanPitch(ev, 0, from) + meanPitch(ev, to, ctx.total)) / 2;
+  return inside && outside ? 1.2 * Math.max(0, Math.min(4, inside - outside)) : 0;
+}
+
 // Blue notes are sparse: about one per six bars at most.
 function blueCapScore(ctx, ev) {
   const blues = ev.filter((e) => !e.app && isBlueNote(ctx, e.midi, e.slot)).length;
@@ -963,7 +1013,7 @@ function fitness(ctx, g) {
   }
   const covered = coverage(ctx, ev);
   return notesScore(ctx, ev) + barsScore(ctx, g, ev, covered) + breakLandingScore(ctx, g)
-    + ornamentCapScore(ctx, ev) + blueCapScore(ctx, ev) + ideaScore(ctx, g) + repeatedNoteScore(ctx, ev) + arpeggioScore(ctx, ev) + crossRhythmScore(ctx, ev) + phrasesScore(ctx, ev)
+    + ornamentCapScore(ctx, ev) + blueCapScore(ctx, ev) + ideaScore(ctx, g) + repeatedNoteScore(ctx, ev) + arpeggioScore(ctx, ev) + phraseRecallScore(ctx, ev) + finaleScore(ctx, ev) + bridgeScore(ctx, ev) + crossRhythmScore(ctx, ev) + phrasesScore(ctx, ev)
     + breathsScore(ctx, covered) + arcScore(ctx, ev) + melodyScore(ctx, g)
     + registerScore(ctx, ev) + endingScore(ctx, ev);
 }
@@ -1166,6 +1216,30 @@ function arpeggioOp(ctx, g) {
   }
 }
 
+// A phrase restarting on the pitch an earlier phrase began on [S].
+function recallOp(ctx, g) {
+  const first = randInt(ctx, 0, ctx.bars - 2);
+  const later = randInt(ctx, first + 1, ctx.bars - 1);
+  const [a, b] = [first * ctx.spb, later * ctx.spb];
+  if (isDegree(g[a])) {
+    g[b] = degreeOf(ctx, midiOf(ctx, g[a], a), b);
+  }
+}
+
+// A long high note in the last chorus [S].
+function heldHighOp(ctx, g) {
+  const bar = randInt(ctx, Math.floor(ctx.bars * 0.62), ctx.bars - 1);
+  const t = bar * ctx.spb;
+  let deg = MAX_DEG;
+  while (deg > MIN_DEG && (midiOf(ctx, deg, t) > ctx.o.high - 2 || !isChordTone(ctx, midiOf(ctx, deg, t), t))) {
+    deg--;
+  }
+  g[t] = deg;
+  for (let k = 1; k < 6 && t + k < ctx.total; k++) {
+    g[t + k] = HOLD;
+  }
+}
+
 // Three equal notes in a row on one scale degree [S].
 function repeatNoteOp(ctx, g) {
   const s = randInt(ctx, 0, ctx.total - 3);
@@ -1198,7 +1272,7 @@ function operatorsFor(ctx) {
     ops.push(repeatLickOp); // ideas that come back: twice the weight for a lead
   }
   if (ctx.o.figures) {
-    ops.push(repeatNoteOp, tripleCallOp);
+    ops.push(repeatNoteOp, tripleCallOp, recallOp, heldHighOp);
   }
   if (ctx.o.arpeggios) {
     ops.push(arpeggioOp);
@@ -1257,12 +1331,7 @@ function nextGeneration(ctx, ops, pop) {
   return next;
 }
 
-function evolve(ctx) {
-  const ops = operatorsFor(ctx);
-  let pop = initialPopulation(ctx, ops);
-  for (let gen = 0; gen < ctx.o.generations; gen++) {
-    pop = nextGeneration(ctx, ops, pop);
-  }
+function bestOf(pop) {
   return pop.reduce((best, x) => (x.f > best.f ? x : best), pop[0]);
 }
 
@@ -1352,8 +1421,39 @@ function buildNotes(ctx, ev) {
   "bend" | "gliss" | "fall" | "rip" | "vibrato" | "accent".
 */
 export function generateSolo(progression, opts = {}) {
+  const job = startSolo(progression, opts);
+  job.step(Infinity);
+  return job.result();
+}
+
+/*
+  The same evolution as generateSolo, but in slices, so a page can run it in
+  the background and show progress. step(ms) evolves for about `ms`
+  milliseconds and returns true once every generation is done; progress is
+  0..1; result() is generateSolo's return value (the best so far, so it is
+  usable at any point). The slicing never changes the outcome: a seed gives
+  the same take however it is stepped.
+*/
+export function startSolo(progression, opts = {}) {
   const ctx = createContext(progression, opts);
-  const best = evolve(ctx);
-  const ev = decode(ctx, best.g);
-  return { fitness: best.f, seed: ctx.o.seed, style: ctx.o.style, notes: buildNotes(ctx, ev) };
+  const ops = operatorsFor(ctx);
+  let pop = initialPopulation(ctx, ops);
+  let generation = 0;
+  return {
+    get progress() {
+      return generation / ctx.o.generations;
+    },
+    step(ms) {
+      const until = Date.now() + ms;
+      while (generation < ctx.o.generations && Date.now() < until) {
+        pop = nextGeneration(ctx, ops, pop);
+        generation++;
+      }
+      return generation >= ctx.o.generations;
+    },
+    result() {
+      const best = bestOf(pop);
+      return { fitness: best.f, seed: ctx.o.seed, style: ctx.o.style, notes: buildNotes(ctx, decode(ctx, best.g)) };
+    },
+  };
 }

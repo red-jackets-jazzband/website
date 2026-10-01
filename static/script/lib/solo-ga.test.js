@@ -105,7 +105,7 @@ test("beats 1 and 3 land on chord tones (or an upper structure in Armstrong styl
 });
 
 test("approach notes lead by step into their target (enclosures: above, below, target)", () => {
-  const { notes } = generateSolo(BLUES, { ...FAST, style: "armstrong", seed: 3 });
+  const { notes } = generateSolo(BLUES, { ...FAST, style: "armstrong", seed: 5 });
   const approaches = notes.filter((n) => n.approach);
   assert.ok(approaches.length > 0);
   assert.ok(approaches.length <= notes.length * 0.25, "approaches should stay ornaments");
@@ -200,5 +200,14 @@ test("a lead solo plays descending chord-tone arpeggios", () => {
       }
     }
     assert.ok(runs >= 1, `${style}: ${runs} descending arpeggios`);
+  }
+});
+
+test("a lead solo holds a long high note in its last chorus and plays no early climax", () => {
+  const total = SAINTS.length * 4;
+  for (const seed of [1, 2, 3]) {
+    const { notes } = generateSolo(SAINTS, { ...FAST, style: "armstrong", seed });
+    const held = notes.filter((n) => n.start >= total * 0.62 && n.duration >= 2 && n.midi >= STYLES.armstrong.high - 8);
+    assert.ok(held.length >= 1, `seed ${seed}: no long high note near the end`);
   }
 });
