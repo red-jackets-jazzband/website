@@ -172,6 +172,7 @@ function applySolo(renderText, abcText, chords, isBooklet, compose) {
     compose({ chords: concertChords, song: concertSong, style });
     return { renderText, program: null };
   }
+  cancelSolo(); // a job for the previous song must not re-render over this one
   compose(null);
   const solo = buildSoloTune(renderText, concertChords, concertSong, style);
   return solo ? { renderText: solo.abc, program: SOLO_PROGRAMS[style] } : { renderText, program: null };
