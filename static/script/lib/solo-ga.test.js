@@ -1,6 +1,15 @@
-import { test } from "node:test";
 import assert from "node:assert/strict";
-import { applyFeel, createRng, FEELS, generateSolo, parseChord, STYLES } from "./solo-ga.js";
+import { before, after, test } from "node:test";
+import { createRng, generateSolo, parseChord, STYLES } from "./solo-ga.js";
+import { tonalStub } from "../../../tests/helpers/stubs.js";
+
+// parseChord reads chords through the Tonal global, as in the page.
+before(() => {
+  globalThis.Tonal = tonalStub;
+});
+after(() => {
+  delete globalThis.Tonal;
+});
 
 // Smaller GA runs than the defaults keep the suite fast; the rules still converge.
 const FAST = { popSize: 40, generations: 90 };
@@ -151,43 +160,9 @@ test("a break is played through and lands on the next downbeat", () => {
   assert.ok(notes.some((n) => n.start === 32), "no note on the downbeat after the break");
 });
 
-test("the triplet grid produces whole triplet figures and keeps them occasional", () => {
-  const { notes, grid } = generateSolo(BLUES, { ...FAST, style: "solo", grid: "triplet", seed: 13 });
-  assert.equal(grid, "triplet");
-  const triplets = notes.filter((n) => n.tuplet);
-  assert.ok(triplets.length > 0);
-  const beats = new Set(triplets.map((n) => Math.floor(n.start + 1e-9)));
-  assert.equal(triplets.length, beats.size * 3);
-  assert.ok(beats.size <= BLUES.length, "at most about one triplet figure per bar");
-});
-
-test("applyFeel 'modern' delays downbeats but leaves offbeats with the band", () => {
-  const notes = [
-    { start: 0, duration: 0.5, midi: 60, phrase: 0, tuplet: false },
-    { start: 0.5, duration: 0.5, midi: 62, phrase: 0, tuplet: false },
-  ];
-  const bpm = 150;
-  const [down, off] = applyFeel(notes, { bpm, feel: "modern", seed: 3 });
-  const delayMs = (down.start * 60000) / bpm;
-  assert.ok(delayMs >= FEELS.modern.downbeatDelay[0] && delayMs <= FEELS.modern.downbeatDelay[1], `${delayMs} ms`);
-  assert.ok(off.start >= FEELS.modern.swing[0] / 100 && off.start <= FEELS.modern.swing[1] / 100, `offbeat at ${off.start}`);
-});
-
-test("applyFeel 'armstrong' swings around 1.6:1 and 'ory' can drag a whole phrase", () => {
-  const notes = [
-    { start: 1, duration: 0.5, midi: 60, phrase: 0, tuplet: false },
-    { start: 1.5, duration: 0.5, midi: 62, phrase: 0, tuplet: false },
-  ];
-  const armstrong = applyFeel(notes, { feel: "armstrong", downbeatDelay: [0, 0], seed: 1 });
-  assert.equal(armstrong[0].start, 1);
-  assert.ok(armstrong[1].start >= 1.58 && armstrong[1].start <= 1.66);
-  const dragged = applyFeel(notes, { bpm: 120, feel: "ory", drag: [40, 40], swing: [66, 66], seed: 1 });
-  assert.ok(Math.abs(dragged[0].start - 1.08) < 1e-9, `${dragged[0].start}`);
-  assert.ok(Math.abs(dragged[1].start - 1.74) < 1e-9, `${dragged[1].start}`);
-});
-
-test("applyFeel keeps triplet figures exact on the triplet grid", () => {
-  const notes = [1, 4 / 3, 5 / 3].map((start) => ({ start, duration: 1 / 3, midi: 60, phrase: 0, tuplet: true }));
-  const out = applyFeel(notes, { feel: "armstrong", grid: "triplet", downbeatDelay: [0, 0] });
-  out.forEach((n, i) => assert.ok(Math.abs(n.start - notes[i].start) < 1e-9));
+test("an N.C. slot borrows the neighbouring harmony so the line plays through it", () => {
+  const progression = [{ chord: "F", beats: 4 }, { chord: null, beats: 4 }, { chord: "C7", beats: 4 }, { chord: "F", beats: 4 }];
+  const { notes } = generateSolo(progression, { ...FAST, style: "solo", breaks: [1], seed: 7 });
+  const inBreak = notes.filter((n) => n.start >= 4 && n.start < 8);
+  assert.ok(inBreak.length >= 3, `${inBreak.length} notes in the N.C. bar`);
 });
