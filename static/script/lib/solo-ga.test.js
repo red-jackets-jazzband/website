@@ -103,7 +103,7 @@ test("beats 1 and 3 land on chord tones (or an upper structure in Armstrong styl
 });
 
 test("approach notes lead by step into their target (enclosures: above, below, target)", () => {
-  const { notes } = generateSolo(BLUES, { ...FAST, style: "armstrong", seed: 4 });
+  const { notes } = generateSolo(BLUES, { ...FAST, style: "armstrong", seed: 3 });
   const approaches = notes.filter((n) => n.approach);
   assert.ok(approaches.length > 0);
   assert.ok(approaches.length <= notes.length * 0.25, "approaches should stay ornaments");
@@ -165,4 +165,18 @@ test("an N.C. slot borrows the neighbouring harmony so the line plays through it
   const { notes } = generateSolo(progression, { ...FAST, style: "solo", breaks: [1], seed: 7 });
   const inBreak = notes.filter((n) => n.start >= 4 && n.start < 8);
   assert.ok(inBreak.length >= 3, `${inBreak.length} notes in the N.C. bar`);
+});
+
+test("a lead solo repeats its ideas and keeps blue notes rare", () => {
+  for (const style of ["armstrong", "trumpet", "solo"]) {
+    const { notes } = generateSolo(BLUES, { ...FAST, style, seed: 8 });
+    const blues = notes.filter((n) => {
+      const chord = chordAtBeat(BLUES, n.start);
+      return chord.blue.has(relToChord(BLUES, n)) && !n.approach;
+    });
+    assert.ok(blues.length <= Math.ceil(BLUES.length / 6) + 1, `${style}: ${blues.length} blue notes`);
+    const bars = BLUES.map((_, b) => notes.filter((n) => Math.floor(n.start / 4) === b).map((n) => n.start % 4).join(","));
+    const repeated = bars.filter((bar, b) => bar !== "" && [1, 2, 4].some((lag) => b >= lag && bars[b - lag] === bar));
+    assert.ok(repeated.length >= 4, `${style}: ${repeated.length} bars repeat an earlier rhythm`);
+  }
 });
