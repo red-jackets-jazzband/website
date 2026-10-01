@@ -57,17 +57,20 @@ const MAJOR_WITH_SEVENTH = [0, 2, 3, 4, 5, 7, 9, 11];
   scales the phrase rules; falls/rips = chance of tagging that articulation;
   approach = weight for chromatic approach notes and enclosures; crossRhythm =
   weight for dotted-quarter (3-against-4) groupings; figures = Armstrong's
-  trademark repeated-note figure and "triple call" [S]; arc = build the solo to a
+  trademark repeated-note figure and "triple call" [S]; arpeggios = descending
+  chord-tone arpeggios, ideally landing on the seventh [S]; arc = build the solo to a
   late climax [H]; extensions = upper structures and maj7 [H]; climb =
   clarinet's ascending runs and long high notes; tailgate = roots on 1, fifths
   on 3, gliss into chord changes; below = stay under the voice passed as
   `against`.
 */
 export const STYLES = {
-  trumpet: { low: 58, high: 82, base: 60, density: 4, phraseWeight: 1, falls: 0.35, rips: 0.4, approach: 0.5, crossRhythm: 0.8 },
+  trumpet: {
+    low: 58, high: 82, base: 60, density: 4, phraseWeight: 1, falls: 0.35, rips: 0.4, approach: 0.5, crossRhythm: 0.8, arpeggios: true,
+  },
   armstrong: {
     low: 58, high: 86, base: 60, density: 5, phraseWeight: 1, falls: 0.3, rips: 0.7,
-    approach: 1.5, approachMax: 0.15, crossRhythm: 1.5, arc: true, extensions: true, figures: true,
+    approach: 1.5, approachMax: 0.15, crossRhythm: 1.5, arc: true, extensions: true, figures: true, arpeggios: true,
   },
   clarinet: { low: 62, high: 89, base: 72, density: 7, phraseWeight: 0.8, falls: 0, rips: 0, approach: 0.8, crossRhythm: 1, climb: true },
   trombone: { low: 40, high: 67, base: 48, density: 3, phraseWeight: 0.3, falls: 0.3, rips: 0, approach: 0, crossRhythm: 0, tailgate: true },
@@ -688,6 +691,32 @@ function repeatedNoteScore(ctx, ev) {
   return 2 * Math.min(figures, Math.max(1, Math.round(ctx.bars / 6))) - 1.5 * Math.max(0, figures - Math.ceil(ctx.bars / 4));
 }
 
+// A descending arpeggio [S]: three or more notes in a row, each a chord tone a
+// third or more below the last. Landing on the seventh earns a little extra.
+function arpeggioScore(ctx, ev) {
+  if (!ctx.o.arpeggios) {
+    return 0;
+  }
+  let runs = 0;
+  let sevenths = 0;
+  let len = 1;
+  for (let i = 1; i <= ev.length; i++) {
+    const a = ev[i - 1];
+    const b = ev[i];
+    const steps = b && !a.app && !b.app && a.slot + a.len === b.slot && a.midi - b.midi >= 3 && a.midi - b.midi <= 7;
+    if (steps && isChordTone(ctx, a.midi, a.slot) && isChordTone(ctx, b.midi, b.slot)) {
+      len++;
+    } else {
+      const seventh = [10, 11].includes(relToRoot(ctx, a.midi, a.slot));
+      runs += len >= 3 ? 1 : 0;
+      sevenths += len >= 3 && seventh ? 1 : 0;
+      len = 1;
+    }
+  }
+  const wanted = Math.max(1, Math.round(ctx.bars / 4));
+  return 2.5 * Math.min(runs, wanted) + Math.min(sevenths, wanted) - 2 * Math.max(0, runs - wanted - 1);
+}
+
 // Blue notes are sparse: about one per six bars at most.
 function blueCapScore(ctx, ev) {
   const blues = ev.filter((e) => !e.app && isBlueNote(ctx, e.midi, e.slot)).length;
@@ -934,7 +963,7 @@ function fitness(ctx, g) {
   }
   const covered = coverage(ctx, ev);
   return notesScore(ctx, ev) + barsScore(ctx, g, ev, covered) + breakLandingScore(ctx, g)
-    + ornamentCapScore(ctx, ev) + blueCapScore(ctx, ev) + ideaScore(ctx, g) + repeatedNoteScore(ctx, ev) + crossRhythmScore(ctx, ev) + phrasesScore(ctx, ev)
+    + ornamentCapScore(ctx, ev) + blueCapScore(ctx, ev) + ideaScore(ctx, g) + repeatedNoteScore(ctx, ev) + arpeggioScore(ctx, ev) + crossRhythmScore(ctx, ev) + phrasesScore(ctx, ev)
     + breathsScore(ctx, covered) + arcScore(ctx, ev) + melodyScore(ctx, g)
     + registerScore(ctx, ev) + endingScore(ctx, ev);
 }
@@ -1120,6 +1149,23 @@ function climaxOp(ctx, g) {
   }
 }
 
+// A descending chord-tone arpeggio [S]: four eighths from a chord tone down
+// through the chord's own tones.
+function arpeggioOp(ctx, g) {
+  const t = randInt(ctx, 0, ctx.bars - 1) * ctx.spb + ctx.beatSlots[randInt(ctx, 0, ctx.beatSlots.length - 1)];
+  if (t + 4 > ctx.total) {
+    return;
+  }
+  let deg = randInt(ctx, 3, 12);
+  for (let k = 0; k < 4; k++) {
+    while (deg > MIN_DEG && !isChordTone(ctx, midiOf(ctx, deg, t + k), t + k)) {
+      deg--;
+    }
+    g[t + k] = deg;
+    deg--;
+  }
+}
+
 // Three equal notes in a row on one scale degree [S].
 function repeatNoteOp(ctx, g) {
   const s = randInt(ctx, 0, ctx.total - 3);
@@ -1153,6 +1199,9 @@ function operatorsFor(ctx) {
   }
   if (ctx.o.figures) {
     ops.push(repeatNoteOp, tripleCallOp);
+  }
+  if (ctx.o.arpeggios) {
+    ops.push(arpeggioOp);
   }
   if (ctx.o.arc) {
     ops.push(climaxOp);
