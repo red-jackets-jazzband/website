@@ -1,6 +1,7 @@
 import {
   appendBarVoice, distribute, pcChromaVal, rebeamBar, resolveChordNames, respellBar,
 } from "./comping.js";
+import { computeChordOffset } from "./chords.js";
 import { generateSolo } from "./solo-ga.js";
 
 /*
@@ -31,6 +32,79 @@ const SLOTS_PER_BAR = 8;
 const SLOTS_PER_BEAT = 2;
 // Plain ABC lengths in eighth slots; anything longer is split with a tie.
 const LENGTHS = [8, 6, 4, 3, 2, 1];
+
+// What a style does with the lead: the front-line styles play the tune with
+// variation, the others weave around it (above / below) as another horn.
+const MELODY_STYLES = new Set(["trumpet", "armstrong"]);
+const AGAINST_STYLES = new Set(["clarinet", "trombone"]);
+
+const STEP_SEMITONES = [0, 2, 4, 5, 7, 9, 11];
+const ACCIDENTAL_SHIFT = {
+  sharp: 1, flat: -1, natural: 0, dblsharp: 2, dblflat: -2,
+};
+
+// The key signature as { LETTER: semitone shift } from the parsed key.
+function keyShifts(song) {
+  const shifts = {};
+  const key = song.lines[0].staff[0].key;
+  for (const acc of (key && key.accidentals) || []) {
+    shifts[acc.note.toUpperCase()] = ACCIDENTAL_SHIFT[acc.acc] || 0;
+  }
+  return shifts;
+}
+
+// MIDI number of the top pitch of a parsed note element. `barShifts` carries
+// the accidentals set earlier in the bar (they persist per letter + octave).
+function topMidi(element, keySig, barShifts) {
+  let top = -Infinity;
+  for (const p of element.pitches) {
+    const index = ((p.pitch % 7) + 7) % 7;
+    const octave = 4 + Math.floor(p.pitch / 7);
+    const id = `${"CDEFGAB"[index]}${octave}`;
+    if (p.accidental !== undefined) barShifts.set(id, ACCIDENTAL_SHIFT[p.accidental] || 0);
+    const shift = barShifts.has(id) ? barShifts.get(id) : keySig["CDEFGAB"[index]] || 0;
+    const midi = 12 * (octave + 1) + STEP_SEMITONES[index] + shift;
+    top = Math.max(top, midi);
+  }
+  return top;
+}
+
+/*
+  The tune's first voice as GA input: [{ start, duration, midi }] in beats from
+  the first chord bar (the chart's pickup / intro bars, `leadingBars`, are left
+  out so it lines up with the chord scheme). Read straight from the ABCjs parse
+  `song` (concert pitch): its diatonic steps, key signature and in-bar
+  accidentals become MIDI notes; rests are skipped and a chord keeps its top
+  note.
+*/
+export function melodyNotes(song, leadingBars) {
+  const keySig = keyShifts(song);
+  const notes = [];
+  const at = { measure: 0, pos: 0, hasNotes: false, barShifts: new Map() };
+  for (const element of firstVoiceElements(song)) {
+    if (element.el_type === "bar") {
+      at.measure += at.hasNotes ? 1 : 0;
+      Object.assign(at, { pos: 0, hasNotes: false, barShifts: new Map() });
+    } else if (element.el_type === "note" && element.duration) {
+      at.hasNotes = true;
+      const duration = element.duration[0] * 4;
+      const sounding = element.pitches && element.pitches.length > 0;
+      if (sounding && at.measure >= leadingBars) {
+        notes.push({
+          start: (at.measure - leadingBars) * 4 + at.pos, duration, midi: topMidi(element, keySig, at.barShifts),
+        });
+      }
+      at.pos += duration;
+    }
+  }
+  return notes;
+}
+
+function firstVoiceElements(song) {
+  return song.lines.flatMap((line) => (line.staff && line.staff[0] && line.staff[0].voices
+    ? line.staff[0].voices[0] || []
+    : []));
+}
 
 // A stable seed per chart + style, so the same song always gets the same take
 // (and a Key / Tempo / Mixer re-render doesn't reshuffle it).
@@ -120,12 +194,18 @@ function barFragments(notes, bars, spell) {
 // Mixer move) doesn't re-run the GA.
 let lastTake = { key: "", notes: [] };
 
-function solveSolo(names, style, gaOptions) {
-  const key = `${style}|${names.map((row) => row.join(",")).join(";")}`;
+function leadOptions(style, lead) {
+  if (MELODY_STYLES.has(style)) return { melody: lead };
+  return AGAINST_STYLES.has(style) ? { against: lead } : {};
+}
+
+function solveSolo(names, style, lead, gaOptions) {
+  const leadKey = lead.map((n) => `${n.start}:${n.midi}`).join(",");
+  const key = `${style}|${names.map((row) => row.join(",")).join(";")}|${leadKey}`;
   if (lastTake.key === key) return lastTake.notes;
   const { progression, breaks } = toProgression(names);
   const { notes } = generateSolo(progression, {
-    style, breaks, seed: seedOf(key, style), ...gaOptions,
+    style, breaks, seed: seedOf(key, style), ...leadOptions(style, lead), ...gaOptions,
   });
   lastTake = { key, notes };
   return notes;
@@ -141,7 +221,8 @@ function solveSolo(names, style, gaOptions) {
 export function buildSoloTune(text, chords, song, style, gaOptions = {}) {
   if (!chords || chords.length === 0 || !SOLO_STYLES.some((s) => s.value === style)) return null;
   const names = resolveChordNames(chords);
-  const notes = solveSolo(names, style, gaOptions);
+  const lead = melodyNotes(song, computeChordOffset(song) || 0);
+  const notes = solveSolo(names, style, lead, gaOptions);
   const abc = appendBarVoice(text, song, ({ keyScale, keySig, lnum, lden }) => (
     barFragments(notes, chords.length, createSpeller(keyScale))
       .map((fragment) => rebeamBar(respellBar(fragment, keySig), lnum, lden))
