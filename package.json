@@ -19,7 +19,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@playwright/test": "1.56.1",
+    "@playwright/test": "1.63.0",
     "@stylistic/eslint-plugin": "^5.10.0",
     "@types/node": "^26.6.3",
     "abcjs": "^6.7.1",
