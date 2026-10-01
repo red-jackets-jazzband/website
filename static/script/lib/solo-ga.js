@@ -27,14 +27,9 @@
 //       Jazz", Current Musicology 63 (1997) — a solo built as a story with a
 //       climax; triadic extensions, blue notes, high-register brilliance.
 //
-// Output notes are on a straight grid (start/duration in beats); applyFeel()
-// turns them into swung, laid-back timing (presets "ory", "armstrong",
-// "modern").
-
-const PITCH_CLASS = {
-  "C": 0, "C#": 1, "Db": 1, "D": 2, "D#": 3, "Eb": 3, "E": 4, "F": 5, "F#": 6,
-  "Gb": 6, "G": 7, "G#": 8, "Ab": 8, "A": 9, "A#": 10, "Bb": 10, "B": 11,
-};
+// Output notes sit on a straight eighth-note grid (start/duration in beats).
+// The swing itself is the page's tune-wide Mixer Swing (ABCjs's own option),
+// and chord parsing goes through Tonal like lib/comping.js does.
 
 // scale = degrees the GA may pick; tones = chord tones; blue = blue notes
 // (♭3/♭5 over major & dominant [D4], must resolve by step); ext = upper
@@ -49,18 +44,6 @@ const CHORDS = {
 };
 // maj7 is rare in New Orleans playing generally [D4]; only Armstrong style gets it.
 const MAJOR_WITH_SEVENTH = [0, 2, 3, 4, 5, 7, 9, 11];
-
-// Ordered: the first pattern matching the chord's quality wins.
-/** @type {Array<[string, RegExp]>} */
-const CHORD_TYPE_PATTERNS = [
-  ["hdim", /^(?:m7b5|ø)/],
-  ["dim", /^(?:dim|o)/],
-  ["aug", /^(?:aug|\+|7#5|7\+)/],
-  ["maj", /^(?:maj|M|6|$)/],
-  ["min", /^(?:min|m|-)/],
-  ["dom", /^(?:7|9|11|13)/],
-];
-const CHORD_SYMBOL = /^([A-G][b#]?)(.*)$/;
 
 /*
   Per-role defaults [D5]. low/high = MIDI range; base = MIDI octave of scale
@@ -86,21 +69,8 @@ export const STYLES = {
 };
 
 const DEFAULTS = {
-  style: "solo", beatsPerBar: 4, grid: "eighth", melodyWeight: 1, popSize: 60, generations: 160,
+  style: "solo", beatsPerBar: 4, melodyWeight: 1, popSize: 60, generations: 160,
   breaks: [], stopTime: [], approachMax: 0.1, melody: null, against: null,
-};
-
-/*
-  Micro-timing presets, in rhythmic cents (Ingham's unit: 50 = straight
-  eighths, ~61.5 = 1.6:1, ~66.7 = triplet 2:1, 75 = dotted). drag delays a
-  whole phrase (Ory [I]); downbeatDelay delays only notes on a beat, leaving
-  offbeats with the band [N]. All ranges are [min, max], one value drawn per
-  phrase so the feel breathes the way Ory's measured swing did.
-*/
-export const FEELS = {
-  ory: { swing: [60, 78], drag: [0, 40], downbeatDelay: [0, 0] },
-  armstrong: { swing: [58, 66], drag: [0, 0], downbeatDelay: [0, 15] },
-  modern: { swing: [53, 60], drag: [0, 0], downbeatDelay: [25, 35] },
 };
 
 // Genome values: a scale degree (>= MIN_DEG), or one of these markers.
@@ -108,6 +78,7 @@ const REST = -100;
 const HOLD = -99;
 const APPROACH_BELOW = -98; // chromatic half step below the next note
 const APPROACH_ABOVE = -97; // scale step above the next note
+const SUB = 2; // slots per beat: a straight eighth-note grid
 const MIN_DEG = -9;
 const MAX_DEG = 18;
 
@@ -116,30 +87,37 @@ const isOnset = (v) => isDegree(v) || v === APPROACH_BELOW || v === APPROACH_ABO
 const clampDegree = (d) => Math.max(MIN_DEG, Math.min(MAX_DEG, d));
 const mod12 = (x) => ((x % 12) + 12) % 12;
 
-function chordType(quality) {
-  for (const [type, pattern] of CHORD_TYPE_PATTERNS) {
-    if (pattern.test(quality)) {
-      return type;
-    }
+// Chord quality from Tonal's own interval analysis, not from parsing the
+// symbol text: the third, fifth and seventh decide which scale/tone set applies.
+function chordType(intervals) {
+  const has = (interval) => intervals.includes(interval);
+  if (has("3m") && has("5d")) {
+    return has("7m") ? "hdim" : "dim";
   }
-  return "maj";
+  if (has("5A")) {
+    return "aug";
+  }
+  if (has("3m")) {
+    return "min";
+  }
+  return has("7m") ? "dom" : "maj";
 }
 
 /*
-  Parse a chord symbol ("F", "C7", "Gm7", "Bdim", "Em7b5", "C7#5") into its
-  root and the scale/chord-tone sets the GA works with. Roots are folded into
-  -5..6 so scale degrees move smoothly across chord changes.
+  Parse a chord symbol ("F", "C7", "Gm7", "Bdim", "Em7b5", "C7#5") with
+  Tonal.Chord.get into its root and the scale/chord-tone sets the GA works
+  with. Roots are folded into -5..6 so scale degrees move smoothly across
+  chord changes.
 */
 export function parseChord(sym) {
-  const m = CHORD_SYMBOL.exec(sym.trim());
-  if (!m) {
+  const info = Tonal.Chord.get(sym.trim());
+  const rootMidi = info.tonic ? Tonal.Note.midi(`${info.tonic}4`) : null;
+  if (!info.intervals || info.intervals.length === 0 || rootMidi === null || rootMidi === undefined) {
     throw new Error(`Unknown chord: ${sym}`);
   }
-  const type = chordType(m[2]);
-  let root = PITCH_CLASS[m[1]];
-  if (root > 6) {
-    root -= 12;
-  }
+  const type = chordType(info.intervals);
+  const chroma = mod12(rootMidi);
+  const root = chroma > 6 ? chroma - 12 : chroma;
   const c = CHORDS[type];
   return { sym, root, type, scale: c.scale, tones: new Set(c.tones), blue: new Set(c.blue), ext: new Set(c.ext) };
 }
@@ -167,17 +145,29 @@ function applyExtensions(chord, enabled) {
   }
 }
 
+// A null chord (N.C.) borrows the previous chord's harmony, or the next one's
+// at the very start.
+function resolveGaps(progression) {
+  const names = progression.map((p) => (typeof p === "string" ? p : p.chord));
+  const firstNamed = names.find((n) => n !== null);
+  let last = firstNamed === undefined ? "C" : firstNamed;
+  return names.map((n) => {
+    last = n === null ? last : n;
+    return last;
+  });
+}
+
 function buildChordTimeline(progression, o, sub) {
+  const names = resolveGaps(progression);
   const chordAt = [];
-  for (const p of progression) {
-    const isSymbol = typeof p === "string";
-    const chord = parseChord(isSymbol ? p : p.chord);
+  progression.forEach((p, k) => {
+    const chord = parseChord(names[k]);
     applyExtensions(chord, o.extensions);
-    const beats = isSymbol ? o.beatsPerBar : p.beats;
+    const beats = typeof p === "string" ? o.beatsPerBar : p.beats;
     for (let i = 0; i < beats * sub; i++) {
       chordAt.push(chord);
     }
-  }
+  });
   return chordAt;
 }
 
@@ -211,7 +201,7 @@ function onsetsPerBar(onset, spb, bars) {
 function createContext(progression, opts) {
   const merged = { ...DEFAULTS, ...opts };
   const o = { ...DEFAULTS, ...STYLES[merged.style], ...opts, seed: opts.seed === undefined ? Date.now() : opts.seed };
-  const sub = o.grid === "triplet" ? 3 : 2;
+  const sub = SUB;
   const spb = o.beatsPerBar * sub;
   const chordAt = buildChordTimeline(progression, o, sub);
   const total = chordAt.length;
@@ -238,7 +228,6 @@ function createContext(progression, opts) {
 const randInt = (ctx, a, b) => a + Math.floor(ctx.rand() * (b - a + 1));
 const onBeat = (ctx, s) => s % ctx.sub === 0;
 const offBeat = (ctx, s) => s % ctx.sub === ctx.sub - 1; // the (swung) "and"
-const midTriplet = (ctx, s) => ctx.sub === 3 && s % ctx.sub === 1;
 const barOf = (ctx, s) => Math.floor(s / ctx.spb);
 
 function densityOf(ctx, bar) {
@@ -285,7 +274,7 @@ function readEvents(ctx, g) {
     const v = g[s];
     if (isOnset(v)) {
       const deg = isDegree(v) ? v : null;
-      cur = { slot: s, len: 1, deg, app: deg === null ? v : 0, midi: deg === null ? 0 : midiOf(ctx, v, s), ok: true, tuplet: false };
+      cur = { slot: s, len: 1, deg, app: deg === null ? v : 0, midi: deg === null ? 0 : midiOf(ctx, v, s), ok: true };
       ev.push(cur);
     } else if (v === HOLD && cur) {
       cur.len++;
@@ -313,28 +302,12 @@ function resolveApproach(ctx, ev, i) {
   }
 }
 
-function markTriplets(ctx, ev) {
-  const onsets = new Set(ev.map((e) => e.slot));
-  for (const e of ev) {
-    if (midTriplet(ctx, e.slot) && onsets.has(e.slot - 1) && onsets.has(e.slot + 1)) {
-      for (const x of ev) {
-        if (Math.abs(x.slot - e.slot) <= 1) {
-          x.tuplet = true;
-        }
-      }
-    }
-  }
-}
-
 function decode(ctx, g) {
   const ev = readEvents(ctx, g);
   for (let i = ev.length - 1; i >= 0; i--) {
     if (ev[i].app) {
       resolveApproach(ctx, ev, i);
     }
-  }
-  if (ctx.sub === 3) {
-    markTriplets(ctx, ev);
   }
   return ev;
 }
@@ -416,7 +389,7 @@ function harmonyScore(ctx, ev, i) {
   return f;
 }
 
-// Range, ragtime syncopation [D4], triplets as a figure only, clarinet's high notes [D5].
+// Range, ragtime syncopation [D4], clarinet's high notes [D5].
 function placementScore(ctx, e) {
   let f = 0;
   if (e.midi < ctx.o.low || e.midi > ctx.o.high) {
@@ -424,9 +397,6 @@ function placementScore(ctx, e) {
   }
   if (isSyncopated(ctx, e)) {
     f += ctx.stopBar.has(barOf(ctx, e.slot)) ? 1.6 : 0.8;
-  }
-  if (midTriplet(ctx, e.slot)) {
-    f += e.tuplet ? 0.3 : -2;
   }
   if (ctx.o.climb && e.len >= 2 * ctx.sub && e.midi >= ctx.highQuarter) {
     f += 1.5;
@@ -553,13 +523,11 @@ function notesScore(ctx, ev) {
 
 function barStats(ctx, g, bar) {
   let onsets = 0;
-  let triplets = 0;
   let mask = "";
   for (let s = bar * ctx.spb; s < Math.min(ctx.total, (bar + 1) * ctx.spb); s++) {
     const on = isOnset(g[s]);
     if (on) {
       onsets++;
-      triplets += midTriplet(ctx, s) ? 1 : 0;
     }
     if (on) {
       mask += "x";
@@ -567,7 +535,7 @@ function barStats(ctx, g, bar) {
       mask += g[s] === REST ? "." : "-";
     }
   }
-  return { onsets, triplets, mask };
+  return { onsets, mask };
 }
 
 function barContour(ctx, ev, bar) {
@@ -584,12 +552,9 @@ function countUncovered(covered, from, to) {
   return k;
 }
 
-// Target density; at most one triplet figure per bar; a break is played through.
+// Target density; a break is played through.
 function barDensityScore(ctx, bar, stats, covered) {
   let f = -1.2 * Math.abs(stats.onsets - densityOf(ctx, bar));
-  if (stats.triplets > 1) {
-    f -= 3 * (stats.triplets - 1);
-  }
   if (ctx.breakBar.has(bar)) {
     f -= 0.5 * countUncovered(covered, bar * ctx.spb, (bar + 1) * ctx.spb);
   }
@@ -628,19 +593,14 @@ function polyphonyScore(ctx, bar, onsets) {
 function barsScore(ctx, g, ev, covered) {
   const history = { masks: [], contours: [] };
   let f = 0;
-  let triplets = 0;
   for (let bar = 0; bar < ctx.bars; bar++) {
     const stats = barStats(ctx, g, bar);
     const contour = barContour(ctx, ev, bar);
-    triplets += stats.triplets;
     f += barDensityScore(ctx, bar, stats, covered);
     f += repetitionScore(history, bar, stats, contour);
     f += polyphonyScore(ctx, bar, stats.onsets);
     history.masks.push(stats.mask);
     history.contours.push(contour);
-  }
-  if (triplets > ctx.bars / 3) {
-    f -= 2 * (triplets - ctx.bars / 3); // triplets are an occasional device [D4]
   }
   return f;
 }
@@ -665,7 +625,7 @@ function ornamentCapScore(ctx, ev) {
 
 // Dotted-quarter groupings: secondary rag (3+3+2) and Armstrong's 3-against-4.
 function crossRhythmScore(ctx, ev) {
-  if (ctx.sub !== 2 || !ctx.o.crossRhythm) {
+  if (!ctx.o.crossRhythm) {
     return 0;
   }
   let runs = 0;
@@ -936,11 +896,8 @@ function tailgateGene(ctx, s, deg) {
   return ctx.rand() < 0.6 ? HOLD : REST;
 }
 
-// A random walk: mostly notes and holds, the odd rest; mid-triplets rare.
+// A random walk: mostly notes and holds, the odd rest.
 function freeGene(ctx, s, walk) {
-  if (midTriplet(ctx, s)) {
-    return ctx.rand() < 0.12 ? clampDegree(walk.deg + randInt(ctx, -1, 1)) : HOLD;
-  }
   const r = ctx.rand();
   if (r < walk.pNote) {
     walk.deg = clampDegree(walk.deg + randInt(ctx, -3, 3));
@@ -1086,23 +1043,10 @@ function climaxOp(ctx, g) {
   }
 }
 
-function tripletOp(ctx, g) {
-  const t = randInt(ctx, 0, ctx.total / ctx.sub - 1) * ctx.sub;
-  const step = randInt(ctx, -2, 2);
-  const before = degreeSlots(g, t - ctx.spb, t);
-  const start = before.length ? g[before[before.length - 1]] : 4;
-  for (let k = 0; k < 3; k++) {
-    g[t + k] = clampDegree(start + step * k);
-  }
-}
-
 function operatorsFor(ctx) {
   const ops = [perturbOp, splitMergeOp, transposeOp, invertOp, retrogradeOp, sortOp, repeatLickOp, breathOp, approachOp];
   if (ctx.o.arc) {
     ops.push(climaxOp);
-  }
-  if (ctx.sub === 3) {
-    ops.push(tripletOp);
   }
   return ops;
 }
@@ -1227,7 +1171,6 @@ function buildNotes(ctx, ev) {
         midi: e.midi,
         velocity: velocityOf(ctx, e, around),
         phrase: phraseIndex,
-        tuplet: e.tuplet,
         approach: Boolean(e.app),
         artic: articulationsOf(ctx, e, around),
       });
@@ -1238,82 +1181,21 @@ function buildNotes(ctx, ev) {
 
 /*
   Evolve one line over `progression` — chord symbols, one bar each, or
-  {chord, beats} objects. Options (all optional): style (a STYLES key) plus
-  any STYLES field to override it; beatsPerBar; grid ("eighth" | "triplet" —
-  the triplet grid allows triplet figures, its swung offbeat is the third
-  triplet); melody (the tune, [{start, duration, midi}] in beats -> melody
-  with variation) and melodyWeight; against (another voice's notes, for
-  polyphony and register); breaks / stopTime (bar indices where the band
-  stops / plays stop-time); popSize; generations; seed.
-  Returns { fitness, seed, style, grid, notes } — notes are
-  { start, duration, midi, velocity, phrase, tuplet, approach, artic } with
-  start/duration in beats on a straight grid, artic a subset of
+  {chord, beats} objects (a null `chord` is an N.C. gap: the line carries on
+  over the neighbouring harmony — pair it with `breaks` so it plays as a
+  break). Options (all optional): style (a STYLES key) plus any STYLES field to
+  override it; beatsPerBar; melody (the tune, [{start, duration, midi}] in
+  beats -> melody with variation) and melodyWeight; against (another voice's
+  notes, for polyphony and register); breaks / stopTime (bar indices where the
+  band stops / plays stop-time); popSize; generations; seed.
+  Returns { fitness, seed, style, notes } — notes are
+  { start, duration, midi, velocity, phrase, approach, artic } with
+  start/duration in beats on a straight eighth grid, artic a subset of
   "bend" | "gliss" | "fall" | "rip" | "vibrato" | "accent".
 */
 export function generateSolo(progression, opts = {}) {
   const ctx = createContext(progression, opts);
   const best = evolve(ctx);
   const ev = decode(ctx, best.g);
-  return { fitness: best.f, seed: ctx.o.seed, style: ctx.o.style, grid: ctx.o.grid, notes: buildNotes(ctx, ev) };
-}
-
-// ---------------------------------------------------------------------------
-// Micro-timing.
-
-const fractionOf = (t) => t - Math.floor(t + 1e-9);
-const isOnTheBeat = (t) => fractionOf(t) < 1e-6;
-
-// Piecewise-linear time warp moving the grid's offbeat (pivot) to `swing`.
-function warp(t, swing, pivot) {
-  const beat = Math.floor(t + 1e-9);
-  const f = t - beat;
-  if (f <= pivot) {
-    return beat + (f / pivot) * swing;
-  }
-  return beat + swing + ((f - pivot) / (1 - pivot)) * (1 - swing);
-}
-
-const pickIn = (rand, range) => range[0] + rand() * (range[1] - range[0]);
-
-function phraseFeel(params, rand, bpm) {
-  const msToBeats = (ms) => (ms * bpm) / 60000;
-  return {
-    swing: pickIn(rand, params.swing) / 100,
-    drag: msToBeats(pickIn(rand, params.drag)),
-    downbeatDelay: msToBeats(pickIn(rand, params.downbeatDelay)),
-  };
-}
-
-function timeNote(note, feel, pivot) {
-  const end = note.start + note.duration;
-  let start = note.tuplet ? note.start : warp(note.start, feel.swing, pivot);
-  let stop = note.tuplet ? end : warp(end, feel.swing, pivot);
-  if (isOnTheBeat(note.start)) {
-    start += feel.downbeatDelay;
-  }
-  if (isOnTheBeat(end)) {
-    stop += feel.downbeatDelay;
-  }
-  return { ...note, start: start + feel.drag, duration: Math.max(0.05, stop - start) };
-}
-
-/*
-  Turn straight-grid notes into played timing: per phrase, a swing degree, an
-  overall drag and a downbeat-only delay (see FEELS). Options: bpm, feel
-  (a FEELS key), grid (the grid the notes were generated on; triplet figures
-  stay exact), seed, and swing/drag/downbeatDelay ranges to override the
-  preset. Returns new note objects; start/duration in beats.
-*/
-export function applyFeel(notes, options = {}) {
-  const { bpm = 120, feel = "armstrong", grid = "eighth", seed = 7, ...overrides } = options;
-  const params = { ...FEELS[feel], ...overrides };
-  const rand = createRng(seed);
-  const pivot = grid === "triplet" ? 2 / 3 : 0.5;
-  const perPhrase = new Map();
-  return notes.map((note) => {
-    if (!perPhrase.has(note.phrase)) {
-      perPhrase.set(note.phrase, phraseFeel(params, rand, bpm));
-    }
-    return timeNote(note, perPhrase.get(note.phrase), pivot);
-  });
+  return { fitness: best.f, seed: ctx.o.seed, style: ctx.o.style, notes: buildNotes(ctx, ev) };
 }
