@@ -11,7 +11,8 @@
 //    is left out.
 // 5. A pickup is written as just its notes: the first bar of a (single-voice)
 //    tune must not be a full bar that starts with rests and ends on a double or
-//    repeat bar line - drop the rests and let the first bar be short.
+//    repeat bar line (or on a plain bar line when it has no chord) - drop the
+//    rests and let the first bar be short.
 //
 // Nothing is required before a tune's very first chord (a chordless intro or
 // lead-in has no chord to restate, and inventing one is not the linter's job).
@@ -175,7 +176,10 @@ function isSoundingRest(el) {
 
 function checkPickup(bars, barLength, findings) {
   const bar = bars[0];
-  if (!bar?.closedBy || bar.closedBy.type === PLAIN_BAR) return;
+  if (!bar?.closedBy) return;
+  // Closed by a plain `|` it is only a pickup when it has no chord: a chorded
+  // full first bar is ordinary music that happens to start on a rest.
+  if (bar.closedBy.type === PLAIN_BAR && hasChord(bar)) return;
   if (Math.abs(bar.acc - barLength) > DURATION_EPSILON) return;
   const leading = [];
   for (const el of bar.notes) {
