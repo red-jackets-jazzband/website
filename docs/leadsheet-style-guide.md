@@ -33,10 +33,10 @@ and reading the image back — most of the review-only rules can only be seen th
 
 | Rule | Check |
 |---|---|
-| **(new)** Parts are separated by a **double bar line** (`||`; `|]` for the very last bar; a repeat sign `:|` already counts). | lint |
+| **(new)** Parts are separated by a **double bar line** (`\|\|`; `\|]` for the very last bar; a repeat sign `:\|` already counts). | lint |
 | Mark every part with a `P:` line (`P:Intro`, `P:A`, `P:B`, …). The site draws the part boxes from it. | review |
-| Last bar of the tune ends `|]`. | review |
-| Repeats: `|:` … `:|`; 1st/2nd endings as `\|1 … :\|2 … \|\|`. A repeat that is **written out** on the sheet is written out in the ABC; use repeat signs only if the sheet does. | review |
+| Last bar of the tune ends `\|]`. | review |
+| Repeats: `\|:` … `:\|`; 1st/2nd endings as `\|1 … :\|2 … \|\|`. A repeat that is **written out** on the sheet is written out in the ABC; use repeat signs only if the sheet does. | review |
 | A whole note tied into the 1st ending can only be tied once in ABC. If the sheet also ties into the 2nd ending, tie only into the first and say so in the PR. | review |
 | Dashed "break" spans on the sheet: put `"^Break"` next to the chord on the first bar of each span and list the spans in an `N:` line. | review |
 
@@ -46,7 +46,7 @@ and reading the image back — most of the review-only rules can only be seen th
 |---|---|
 | **(new)** A pickup (anacrusis) is written as the notes only. **No rests in front of it.** The first bar is allowed to be short. | lint |
 | A short first bar, or a short bar right before/after a `P:` change, is exempt from the bar-length check. A tune's closing bar is exempt too. | lint |
-| A pickup is followed by `||` when it is a real anacrusis (`F G A ||`). | review |
+| A pickup is followed by `\|\|` when it is a real anacrusis (`F G A \|\|`). | review |
 
 ## 4. Chord symbols
 
