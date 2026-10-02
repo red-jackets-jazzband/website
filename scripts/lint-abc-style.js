@@ -92,7 +92,7 @@ function startBar(state, el) {
 
 function startPart(state, el, findings) {
   state.pendingPart = true;
-  const afterPlainBar = state.lastBar && state.lastBar.type === PLAIN_BAR;
+  const afterPlainBar = state.lastBar?.type === PLAIN_BAR;
   if (afterPlainBar && state.current.notes.length === 0 && state.bars.length > 0) {
     findings.push({ type: "plain-bar-before-part", at: el.startChar, bar: state.lastBar });
   }
@@ -175,7 +175,7 @@ function isSoundingRest(el) {
 
 function checkPickup(bars, barLength, findings) {
   const bar = bars[0];
-  if (!bar || !bar.closedBy || bar.closedBy.type === PLAIN_BAR) return;
+  if (!bar?.closedBy || bar.closedBy.type === PLAIN_BAR) return;
   if (Math.abs(bar.acc - barLength) > DURATION_EPSILON) return;
   const leading = [];
   for (const el of bar.notes) {
