@@ -126,12 +126,21 @@ These are not style as such, but a lead sheet that breaks one of them shows up a
 ## Review notes inside the tune
 
 Anything a reviewer (or the next person with the original chart) still has to check is
-recorded in the tune itself, as `N:Review: <what to check>` header lines, one per issue.
-`N:` is metadata: it is not drawn on the sheet, so it never shows up for players. Typical
-uses: a chordless intro or lead-in whose chords have to come from the original chart, a
-transcription read by eye from a poor scan (name the bars/accidentals you are unsure
-about), or a date that disagrees between sources. Remove the line when the question is
-settled. Nothing lints these notes; `grep -n "N:Review" static/songs/*.abc` lists the open ones.
+written into the tune itself, using standard ABC constructs, so it is **drawn on the
+sheet** where it applies:
+
+- **At a bar:** a text annotation on the first note in question, `"^Review: <what to check>"`
+  (the `^` puts it above the staff, the same construct as `"^Break"`). Example:
+  `"^Review: add chords from the original chart"CDEF | ...` on a chordless intro, or
+  `"^Review: check ^d"^d2` on an accidental that was hard to read.
+- **For the whole tune:** a `%%text Review: <what to check>` line in the header, which prints as a
+  line of text above the first system. Use it for things that are not tied to a bar (a poor
+  scan, a date that disagrees between sources).
+
+Always start the text with `Review:` so the open items are searchable
+(`grep -n "Review:" static/songs/*.abc`). Remove the note when the question is settled.
+Nothing lints these notes. Don't use `N:` for them: abcjs reads `N:` but never draws it,
+so a reviewer wouldn't see it on the sheet.
 
 ## Review checklist
 
@@ -143,7 +152,7 @@ settled. Nothing lints these notes; `grep -n "N:Review" static/songs/*.abc` list
 6. Pickup has no rests before it.
 7. Beaming reads like the source; no tie-split or overlay tricks that aren't needed.
 8. Lyrics (if any) read back correctly off the render.
-9. Anything guessed or unreadable on the source is called out in the PR description and in an `N:Review:` line in the tune.
+9. Anything guessed or unreadable on the source is called out in the PR description and in a `Review:` note in the tune.
 
 ## What the style lint checks, and what it leaves alone
 
