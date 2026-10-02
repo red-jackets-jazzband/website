@@ -123,24 +123,22 @@ These are not style as such, but a lead sheet that breaks one of them shows up a
 - The chord table has one cell per bar. Bar structure on the sheet (pickup, repeats, endings) therefore decides what the cells and the click-to-seek bar mapping look like.
 - A `.abc` file that is not in the index is not shown in the library (only printed as a note by `lint:catalog`). That can be deliberate, but check it.
 
-## Review notes inside the tune
+## Song form remarks
 
-Anything a reviewer (or the next person with the original chart) still has to check is
-written into the tune itself, using standard ABC constructs, so it is **drawn on the
-sheet** where it applies:
+Remarks about how the band plays the tune (the form: intro, how many choruses, singing,
+solos, breaks, outro, key changes) are written in the tune itself so a band member sees
+them on the sheet. They are `%%text` lines in the header, one remark per line, each
+printed as a line of text above the first system:
 
-- **At a bar:** a text annotation on the first note in question, `"^Review: <what to check>"`
-  (the `^` puts it above the staff, the same construct as `"^Break"`). Example:
-  `"^Review: add chords from the original chart"CDEF | ...` on a chordless intro, or
-  `"^Review: check ^d"^d2` on an accidental that was hard to read.
-- **For the whole tune:** a `%%text Review: <what to check>` line in the header, which prints as a
-  line of text above the first system. Use it for things that are not tied to a bar (a poor
-  scan, a date that disagrees between sources).
+```
+%%text Intro bass, 2x collective, singing, solos
+%%text After solos: 1xA (no rhythm), 1xA with rhythm, 1xB, 1xB stop in break
+```
 
-Always start the text with `Review:` so the open items are searchable
-(`grep -n "Review:" static/songs/*.abc`). Remove the note when the question is settled.
-Nothing lints these notes. Don't use `N:` for them: abcjs reads `N:` but never draws it,
-so a reviewer wouldn't see it on the sheet.
+`%%text` is a standard ABC stylesheet directive that abcjs draws. Keep each remark short and
+put them before the `K:` line. Use `N:` only for background that is not meant for the
+stage (an alternative title, an arrangement credit, a source): abcjs reads `N:` but never
+draws it. Open questions about a transcription belong in the PR description, not in the tune.
 
 ## Review checklist
 
@@ -152,7 +150,7 @@ so a reviewer wouldn't see it on the sheet.
 6. Pickup has no rests before it.
 7. Beaming reads like the source; no tie-split or overlay tricks that aren't needed.
 8. Lyrics (if any) read back correctly off the render.
-9. Anything guessed or unreadable on the source is called out in the PR description and in a `Review:` note in the tune.
+9. Anything guessed or unreadable on the source is called out in the PR description (not in the tune).
 
 ## What the style lint checks, and what it leaves alone
 
