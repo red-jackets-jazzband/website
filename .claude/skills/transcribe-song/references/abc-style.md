@@ -205,8 +205,11 @@ A dashed line under a stretch of staff (and under matching chord-grid cells) mar
 *breaks* — put `"^Break"` beside the chord on the first bar of each dashed span, and list
 the spans in an `N:` line.
 
-Pickup bar: match the sheet — a real anacrusis is `F G A ||` before bar 1; a written-out
-"rest + pickup" full bar is `z F G A |`.
+Pickup bar: a real anacrusis is written as just its notes — `F G A ||` — with **no rests
+in front of it**; the first bar is simply short (`lint:abc` exempts a short first bar, and
+`lint:abc`'s style check rejects a full first bar that starts with rests and ends on a
+double or repeat bar line). Don't write the sheet's lead-in as a `z F G A |` rest + pickup
+bar.
 
 ## Line layout
 

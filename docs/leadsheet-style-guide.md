@@ -33,7 +33,7 @@ and reading the image back — most of the review-only rules can only be seen th
 
 | Rule | Check |
 |---|---|
-| **(new)** Parts are separated by a **double bar line** (`||`; `|]` for the very last bar; a repeat sign `:|` already counts). | review |
+| **(new)** Parts are separated by a **double bar line** (`||`; `|]` for the very last bar; a repeat sign `:|` already counts). | lint |
 | Mark every part with a `P:` line (`P:Intro`, `P:A`, `P:B`, …). The site draws the part boxes from it. | review |
 | Last bar of the tune ends `|]`. | review |
 | Repeats: `|:` … `:|`; 1st/2nd endings as `\|1 … :\|2 … \|\|`. A repeat that is **written out** on the sheet is written out in the ABC; use repeat signs only if the sheet does. | review |
@@ -44,7 +44,7 @@ and reading the image back — most of the review-only rules can only be seen th
 
 | Rule | Check |
 |---|---|
-| **(new)** A pickup (anacrusis) is written as the notes only. **No rests in front of it.** The first bar is allowed to be short. | review |
+| **(new)** A pickup (anacrusis) is written as the notes only. **No rests in front of it.** The first bar is allowed to be short. | lint |
 | A short first bar, or a short bar right before/after a `P:` change, is exempt from the bar-length check. A tune's closing bar is exempt too. | lint |
 | A pickup is followed by `||` when it is a real anacrusis (`F G A ||`). | review |
 
@@ -54,9 +54,9 @@ Chords go in quotes right before the note: `"Bb"`, `"F7"`, `"Cm7"`, `"C7#5"`, `"
 
 | Rule | Check |
 |---|---|
-| **(new)** The **first bar of every part** carries a chord, even if it repeats the previous part's last chord. | review |
-| **(new)** The **first bar of every printed line of music** carries a chord. That bar is also the first cell of its line in the chord table, so each line of the table starts with a chord. | review |
-| **(new)** Everywhere else, if a bar has exactly the same chord as the bar before it, **leave the chord out.** Write chords at each change only. | review |
+| **(new)** The **first bar of every part** carries a chord, even if it repeats the previous part's last chord. | lint |
+| **(new)** The **first bar of every printed line of music** carries a chord. That bar is also the first cell of its line in the chord table, so each line of the table starts with a chord. | lint |
+| **(new)** Everywhere else, if a bar has exactly the same chord as the bar before it, **leave the chord out.** Write chords at each change only. | lint |
 | Aim for a chord on beat 1 or on the exact midpoint (beat 3 in 4/4) when the source's harmonic rhythm is that simple. Beat 2/4 chords are fine when the source really has them (cadential approach chords, syncopated punches, three chords in one bar). Don't tie-split or overlay-hack a chord onto the beat 1/3 grid just because it's there. | review |
 | A chord must not sit on the **first half of a tie whose continuation lands on beat 1 or the midpoint**. Move it to the continuation. If one long note spans the beat, split it into two tied notes of the same pitch and put the chord on the second. | lint |
 | A chord change under one long note (a dotted half spanning beats 1–3) that has no note starting there: use an overlay with an invisible rest, `C6 & x4 "Bb7"x2`. | review |
@@ -135,9 +135,20 @@ These are not style as such, but a lead sheet that breaks one of them shows up a
 8. Lyrics (if any) read back correctly off the render.
 9. Anything guessed or unreadable on the source is called out in the PR description.
 
-## Open questions / candidates for lint
+## What the style lint checks, and what it leaves alone
 
-The **(new)** rules above are review-only for now. They could be added to
-`scripts/lint-abc.js`: a double bar between `P:` parts, a chord on the first bar of each
-part and each line, and an identical chord on two consecutive bars. The line-start rule
-depends on the line breaks in the file, which are a layout choice, so it needs some care.
+The **(new)** rules above are enforced by `scripts/lint-abc-style.js` (part of `npm run lint:abc`),
+on the voice that carries the chords. Deliberate gaps:
+
+- Nothing is required before a tune's **first chord**: a chordless intro or lead-in has no
+  chord to restate, and the linter won't invent one. (Those songs still need a chord adding
+  by someone with the original chart.)
+- A **melody-only** tune (no chord symbols at all) isn't checked.
+- A **short pickup** first bar may hand the part's/line's chord to the bar after it.
+- A **repeat sign or 1st/2nd ending** resets the chord in effect, so a chord restated right
+  after one isn't flagged.
+- The no-rests-before-a-pickup check only looks at a **single-voice** tune's first bar, and
+  only when that bar is a full bar starting with rests and closed by a double or repeat bar
+  line. In a multi-voice chart the first bar is a riff for every voice, not a pickup.
+- "Line of music" means a line of the ABC source; joining or splitting lines changes which
+  bars must carry a chord.

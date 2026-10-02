@@ -2,7 +2,7 @@
 // parser - the same parser the /songs/ page uses to render a tune, run
 // headlessly here (no DOM needed for parsing) so a broken or malformed
 // transcription fails CI instead of only showing up as a blank/garbled staff
-// discovered later in the browser. Four checks:
+// discovered later in the browser. Five checks:
 //
 // 1. Parser warnings: unknown characters, malformed headers, bad note
 //    syntax, ... - anything abcjs's own parser flags.
@@ -16,10 +16,14 @@
 //    an overfull bar, or an underfull *interior* bar, is flagged.
 // 3. Chord placement and 4. beam grouping: see the doc comment above
 //    findChordAndBeamIssues below.
+// 5. House style (double bar before a part change, a chord on the first bar of
+//    every part and line, no restated chords, pickups without rests): see
+//    lint-abc-style.js and docs/leadsheet-style-guide.md.
 
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import ABCJS from "abcjs";
+import { findStyleIssues } from "./lint-abc-style.js";
 
 const SONGS_DIR = join(import.meta.dirname, "..", "static", "songs");
 const DURATION_EPSILON = 1e-6;
@@ -349,6 +353,7 @@ function lintFile(file) {
     ...(tune.warnings || []).map(stripMarkup),
     ...findBarLengthIssues(tune, content),
     ...findChordAndBeamIssues(tune, content),
+    ...findStyleIssues(tune, (index) => charToLineCol(content, index)),
   ]);
 }
 
