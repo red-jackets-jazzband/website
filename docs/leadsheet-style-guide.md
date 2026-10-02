@@ -123,22 +123,28 @@ These are not style as such, but a lead sheet that breaks one of them shows up a
 - The chord table has one cell per bar. Bar structure on the sheet (pickup, repeats, endings) therefore decides what the cells and the click-to-seek bar mapping look like.
 - A `.abc` file that is not in the index is not shown in the library (only printed as a note by `lint:catalog`). That can be deliberate, but check it.
 
-## Song form remarks
+## Arrangement notes
 
-Remarks about how the band plays the tune (the form: intro, how many choruses, singing,
-solos, breaks, outro, key changes) are written in the tune itself so a band member sees
-them on the sheet. They are `%%text` lines in the header, one remark per line, each
-printed as a line of text above the first system:
+Remarks about how the band plays this tune (the arrangement or "road map": intro, how many
+choruses, singing, solos, breaks, outro, key changes) are written in the tune itself so a
+band member sees them on the sheet. They are `W:` lines in the header, one remark per line,
+printed as lines of text **below the music**:
 
 ```
-%%text Intro bass, 2x collective, singing, solos
-%%text After solos: 1xA (no rhythm), 1xA with rhythm, 1xB, 1xB stop in break
+W:Intro bass, 2x collective, singing, solos
+W:After solos: 1xA (no rhythm), 1xA with rhythm, 1xB, 1xB stop in break
 ```
 
-`%%text` is a standard ABC stylesheet directive that abcjs draws. Keep each remark short and
-put them before the `K:` line. Use `N:` only for background that is not meant for the
-stage (an alternative title, an arrangement credit, a source): abcjs reads `N:` but never
-draws it. Open questions about a transcription belong in the PR description, not in the tune.
+`W:` is ABC's standard "words printed after the tune" field; abcjs draws it at the bottom
+of the sheet, and in the header it is safe for the Comping/Solo generators, which only read
+the body. (A `%%text` line in the body would be drawn too, but those generators would read it
+as music.) Keep each remark short and put the lines before the `K:` line, together with the other header
+fields. Don't use them for sung lyrics: those are `w:` lines under the notes.
+
+*Song form* is something else: the structure of the composition itself (12-bar blues, AABA,
+32 bars). Use `N:` only for background that is not meant for the stage (an alternative
+title, an arrangement credit, a source): abcjs reads `N:` but never draws it. Open
+questions about a transcription belong in the PR description, not in the tune.
 
 ## Review checklist
 
