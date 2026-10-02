@@ -2,8 +2,8 @@ X:1
 T:Panama
 C:William H. Tyers (1911)
 F:https://secondhandsongs.com/work/217916
-N:Review: transcribed by eye from a low-resolution scan - check the accidentals against the original (^d in D strain bars 4 and 11, ^D in E strain bar 3)
-N:Review: the sheet says 1911, SecondHandSongs gives 1912 (published) and 1922 (first recording)
+%%text Review: read by eye from a low-resolution scan - check against the original
+%%text Review: the sheet says 1911, SecondHandSongs says 1912 (published) and 1922 (first recording)
 M:4/4
 L:1/8
 K:F
@@ -20,8 +20,8 @@ K:Bb
 "Bb"d4 d4 | "Bb7"d6 d2 | "Cm"d2 c2 =B c2 G- | G4 GAB=B | "F7"c4 c4 | c6 c2 | "Bb"c2 B2 A2 BF- | "F7"F2 FG ABc^c |
 "Bb"d4 d4 | "Gm"d8 | "Dm"z2 d2 ^c d2 f- | f4 z f2 d | "A7"f =e2 ^c2 A2 z | f =e2 ^c2 A2 z | "Dm"d2 d2 ^c2 d2 | "F7"f2 d2 f2 d2 ||
 P:D
-|:"Bb"c B2 B4- B | z2 AB cBAG | "F7"B A2 A4- A | z2 ^d2 g2 d2 | d c2 c4- c | z2 =Bc dc_BA | "Bb"cBA B4- B | z2 f2 f2 d2 |
-"Bb7"c B2 B4- B | z2 f2 f2 f2 | "Eb"f ^d2 d3 B _d- | "Ebm"_d8 | "Bb"d2 d2 dc B2 | "F7"c2 c2 cBAB | "Bb"B8 | z2 d2 d2 d2 :|
+|:"Bb"c B2 B4- B | z2 AB cBAG | "F7"B A2 A4- A | z2 "^Review: check ^d"^d2 g2 d2 | d c2 c4- c | z2 =Bc dc_BA | "Bb"cBA B4- B | z2 f2 f2 d2 |
+"Bb7"c B2 B4- B | z2 f2 f2 f2 | "Eb"f "^Review: check ^d"^d2 d3 B _d- | "Ebm"_d8 | "Bb"d2 d2 dc B2 | "F7"c2 c2 cBAB | "Bb"B8 | z2 d2 d2 d2 :|
 P:E
-|:"Bb"d8- | d ccB BAAG | "F7"GF ^D6 | z2 c2 c2 c2 | c8- | c BBA AGGF | "Bb"FE D6 | z2 d2 d2 d2 |
+|:"Bb"d8- | d ccB BAAG | "F7"G F "^Review: check ^D"^D6 | z2 c2 c2 c2 | c8- | c BBA AGGF | "Bb"FE D6 | z2 d2 d2 d2 |
 "Bb7"d8 | c4 B2 _A2 | "Eb"G4 B2 G2 | "Ebm"_G6 d2 | "Bb"B6 d2 | "F7"c6 d2 |1 "Bb"B8- | B2 d2 d2 d2 :|2 "Bb"B8- | B4 z4 |]
