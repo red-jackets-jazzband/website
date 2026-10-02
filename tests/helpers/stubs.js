@@ -121,7 +121,7 @@ function fakeAudioBuffer() {
 /** @param {{ audioSupported?: boolean, exportAudioBuffer?: any }} [options] */
 export function createAbcjsStub({ audioSupported = false, exportAudioBuffer } = {}) {
   const calls = {
-    renderAbc: [], parseOnly: [], setTune: [], synthControllers: [], createSynths: [], seek: [],
+    renderAbc: [], parseOnly: [], setTune: [], synthControllers: [], createSynths: [], seek: [], go: [],
   };
 
   const stub = {
@@ -160,13 +160,26 @@ export function createAbcjsStub({ audioSupported = false, exportAudioBuffer } = 
           this.isStarted = false;
           return Promise.resolve();
         };
-        this.play = () => { this.isStarted = !this.isStarted; return Promise.resolve(); };
+        // Like the real controller, nothing is loaded (no timer, no MIDI buffer)
+        // until go() runs — directly, or from the first play() — and seek() is
+        // a silent no-op before that.
+        this.isLoaded = false;
+        this.isLoading = false;
+        this.go = () => {
+          calls.go.push(this);
+          this.isLoaded = true;
+          return Promise.resolve();
+        };
+        this.play = () => {
+          const ready = this.isLoaded ? Promise.resolve() : this.go();
+          return ready.then(() => { this.isStarted = !this.isStarted; });
+        };
         // Tracked per instance (`this.pauseCalls`) so a test can tell whether
         // a *specific*, possibly-discarded controller was paused again after
         // the fact — see audio-player.js's silenceIfStale().
         this.pauseCalls = 0;
         this.pause = () => { this.pauseCalls += 1; };
-        this.seek = (fraction) => { calls.seek.push(fraction); };
+        this.seek = (fraction) => { if (this.isLoaded) calls.seek.push(fraction); };
         // ABCjs's real setWarp() ends with an internal seek that fires one
         // event callback; mirror that so tests can prove the highlight guard.
         this.setWarp = () => {
