@@ -123,6 +123,16 @@ These are not style as such, but a lead sheet that breaks one of them shows up a
 - The chord table has one cell per bar. Bar structure on the sheet (pickup, repeats, endings) therefore decides what the cells and the click-to-seek bar mapping look like.
 - A `.abc` file that is not in the index is not shown in the library (only printed as a note by `lint:catalog`). That can be deliberate, but check it.
 
+## Review notes inside the tune
+
+Anything a reviewer (or the next person with the original chart) still has to check is
+recorded in the tune itself, as `N:Review: <what to check>` header lines, one per issue.
+`N:` is metadata: it is not drawn on the sheet, so it never shows up for players. Typical
+uses: a chordless intro or lead-in whose chords have to come from the original chart, a
+transcription read by eye from a poor scan (name the bars/accidentals you are unsure
+about), or a date that disagrees between sources. Remove the line when the question is
+settled. Nothing lints these notes; `grep -n "N:Review" static/songs/*.abc` lists the open ones.
+
 ## Review checklist
 
 1. `npm run lint` is green.
@@ -133,7 +143,7 @@ These are not style as such, but a lead sheet that breaks one of them shows up a
 6. Pickup has no rests before it.
 7. Beaming reads like the source; no tie-split or overlay tricks that aren't needed.
 8. Lyrics (if any) read back correctly off the render.
-9. Anything guessed or unreadable on the source is called out in the PR description.
+9. Anything guessed or unreadable on the source is called out in the PR description and in an `N:Review:` line in the tune.
 
 ## What the style lint checks, and what it leaves alone
 
