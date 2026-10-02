@@ -536,7 +536,16 @@ export function createAudioPlayer(ctx) {
     const sc = state.synthController;
     if (!sc || state.totalMs <= 0 || typeof sc.seek !== "function") return;
     sc.seek(Math.max(0, Math.min(1, ms / state.totalMs)));
-    if (state.isPlaying && typeof sc.play === "function") sc.play();
+    if (typeof sc.play !== "function") return;
+    // Already playing: seek() pauses the synth, so resume it from the new spot.
+    // Stopped/paused: a click on a note starts playback from there.
+    if (state.isPlaying) {
+      sc.play();
+    } else {
+      // The seek makes this a "resume from here", not a fresh start from 0.
+      state.pausedMidway = true;
+      playPause();
+    }
   }
 
   function handleNotationClick(e) {
