@@ -142,6 +142,26 @@ test("parseChordScheme extracts one chord per measure", () => {
   assert.deepEqual(chords[1].text, ["F"]);
 });
 
+test("parseChordScheme finds the chord when an annotation like \"_In swing\" precedes it on the same note", () => {
+  const song = {
+    lines: [
+      {
+        staff: [
+          {
+            voices: [
+              [
+                { el_type: "note", chord: [{ name: "_In swing" }, { name: "Dm" }] },
+                { el_type: "bar", type: "bar_thin" },
+              ],
+            ],
+          },
+        ],
+      },
+    ],
+  };
+  assert.deepEqual(parseChordScheme(song)[0].text, ["Dm"]);
+});
+
 test("parseChordScheme keeps the final measure when the body has no trailing barline", () => {
   const song = {
     lines: [

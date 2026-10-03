@@ -270,6 +270,19 @@ test("buildVoiceBody rests a mid-tune anacrusis and skips its phantom pattern", 
 
 const callPatternBuilder = (fn) => fn("N", "ND", "NU", "NU2");
 
+// One char per eighth-note slot (ties ignored), so "z2" and "z z" compare equal.
+const expandSlots = (str) =>
+  str
+    .replace(/-/g, " ")
+    .split(" ")
+    .filter(Boolean)
+    .map((t) => {
+      const m = /^(\D+?)(\d*)$/.exec(t);
+      const len = m[2] === "" ? 1 : Number(m[2]);
+      return m[1] === "z" ? "z".repeat(len) : m[1] + "_".repeat(len - 1);
+    })
+    .join("");
+
 // Every pattern's exact twobar1/twobar2/half rhythm template, called with
 // plain placeholder tokens ("N"/"ND"/"NU"/"NU2" for the chord/down-step/
 // up-step/up-2-step tokens) so each pattern is pinned precisely without
@@ -291,12 +304,12 @@ test("every COMPING_PATTERNS entry's rhythm templates match exactly", () => {
     full_walk: { twobar1: "N N ND N NU N ND N", twobar2: "ND z z N-N4", half: "N N ND N" },
     third_approach: { twobar1: "N ND z ND-N4", twobar2: "NU2 ND z ND-N4", half: "N ND z ND" },
     step_neighbor: { twobar1: "N ND z NU-N4", twobar2: "N ND z NU z N3", half: "N ND z NU" },
-    charleston: { twobar1: "N3 N z4", twobar2: "N3 N z4", half: "N2 N z" },
-    reverse_charleston: { twobar1: "z4 N3 N", twobar2: "z4 N3 N", half: "z N2 N" },
-    clave_3_2: { twobar1: "N3 N3 N2", twobar2: "z2 N3 N3", half: "N3 N" },
-    clave_2_3: { twobar1: "z2 N3 N3", twobar2: "N3 N3 N2", half: "z2 N2" },
-    three_hit: { twobar1: "N N N z z4", twobar2: "N N N z z4", half: "N N z2" },
-    i_got_a_woman: { twobar1: "z2 N2 z N2 z", twobar2: "N2 z6", half: "z N2 z" },
+    charleston: { twobar1: "N3 N z4", twobar2: "N3 N z4", half: "N3 N" },
+    reverse_charleston: { twobar1: "z4 N3 N", twobar2: "z4 N3 N", half: "z4" },
+    clave_3_2: { twobar1: "N z2 N z2 N z", twobar2: "z2 N z2 N z2", half: "N z2 N" },
+    clave_2_3: { twobar1: "z2 N z2 N z2", twobar2: "N z2 N z2 N z", half: "z2 N z" },
+    three_hit: { twobar1: "N N N z z4", twobar2: "N N N z z4", half: "N N N z" },
+    i_got_a_woman: { twobar1: "z2 N2 z N2 z", twobar2: "N2 z6", half: "z2 N2" },
     honky_tonk_riff: { twobar1: "N z N z N z N z", twobar2: "z N ND N z N z N", half: "N z N z" },
   };
   assert.deepEqual(Object.keys(PATTERNS).sort(), Object.keys(expected).sort());
@@ -304,6 +317,17 @@ test("every COMPING_PATTERNS entry's rhythm templates match exactly", () => {
     assert.equal(callPatternBuilder(pat.twobar1), expected[name].twobar1, `${name}.twobar1`);
     assert.equal(callPatternBuilder(pat.twobar2), expected[name].twobar2, `${name}.twobar2`);
     assert.equal(callPatternBuilder(pat.half), expected[name].half, `${name}.half`);
+    // a two-chord bar's two halves stitch back into the full bar's rhythm
+    const halves = [
+      [pat.half, pat.half2 || pat.half, pat.twobar1, "even"],
+      [pat.halfOdd || pat.half, pat.half2Odd || pat.half2 || pat.half, pat.twobar2, "odd"],
+    ];
+    for (const [a, b, full, bar] of halves) {
+      const stitched = `${callPatternBuilder(a)} ${callPatternBuilder(b)}`;
+      // a whole-bar hold is re-struck at the midpoint when the chord changes there
+      const restruck = expandSlots(stitched).replace("N___N", "N____");
+      assert.equal(restruck, expandSlots(callPatternBuilder(full)), `${name} ${bar} halves`);
+    }
   }
 });
 
