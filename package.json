@@ -14,7 +14,7 @@
     "test:e2e": "playwright test",
     "lint:catalog": "node scripts/lint-catalog.js",
     "lint:seo": "node scripts/lint-seo.js",
-    "audit": "npm audit --audit-level=high",
+    "audit": "node scripts/audit.js",
     "test": "node --test \"static/script/lib/*.test.js\" \"static/script/songs/*.test.js\" \"tests/**/*.test.js\""
   },
   "devDependencies": {
