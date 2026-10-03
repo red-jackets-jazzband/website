@@ -65,6 +65,8 @@ export const TOUR_ACTION_NAMES = [
   "openMixer",
   "openInspiration",
   "compingOn",
+  "compingSplit",
+  "compingUnsplit",
   "createDemoSetlist",
   "addDemoSong1",
   "addDemoSong2",
@@ -126,6 +128,11 @@ function setDrawer(open) {
 }
 
 // Set the (native) <select> to `value` the way a user's pick would.
+function setCompingSplit(on) {
+  const btn = byId("compingSplitBtn");
+  if (btn && (btn.getAttribute("aria-pressed") === "true") !== on) btn.click();
+}
+
 function chooseComping(value) {
   const select = byId("comping");
   if (!select || select.value === value) return false;
@@ -141,6 +148,20 @@ function chooseComping(value) {
 function leaveSheetIfStacked() {
   const back = byId("sheetBackBtn");
   if (document.body.classList.contains(SHEET_ACTIVE_CLASS) && isShown(back)) back.click();
+}
+
+// Split comping into its R / 3 / 5 voices — the same click on the Split
+// button a visitor would make. Needs comping on first (the button is hidden
+// while it's off), so a step using this also says `setup: compingOn`.
+async function compingSplit() {
+  const btn = byId("compingSplitBtn");
+  if (btn && btn.getAttribute("aria-pressed") !== "true") btn.click();
+}
+
+// The reverse: back to the single three-note staff, so the steps before the
+// Split step always show the unsplit staff (also when walking Back to them).
+async function compingUnsplit() {
+  setCompingSplit(false);
 }
 
 async function openDrawer() {
@@ -307,6 +328,8 @@ export function createTourActions(ctx) {
     openMixer,
     openInspiration,
     compingOn,
+    compingSplit,
+    compingUnsplit,
     createDemoSetlist,
     addDemoSong1,
     addDemoSong2,
@@ -348,6 +371,7 @@ export function createTourActions(ctx) {
       sheetActive: document.body.classList.contains(SHEET_ACTIVE_CLASS),
       drawerOpen: isDrawerOpen(),
       compingValue: select ? select.value : null,
+      compingSplit: Boolean(byId("compingSplitBtn")) && byId("compingSplitBtn").getAttribute("aria-pressed") === "true",
       fullscreen: document.body.classList.contains(FULLSCREEN_CLASS),
       mixerOpen: Boolean(ctx.mixer.isOpen()),
       inspirationOpen: Boolean(ctx.inspiration.isOpen()),
@@ -428,6 +452,7 @@ export function createTourActions(ctx) {
     ctx.mixer.setOpen(false);
     ctx.inspiration.setOpen(false);
     setDrawer(snap.drawerOpen);
+    setCompingSplit(snap.compingSplit);
     if (snap.compingValue !== null) chooseComping(snap.compingValue);
     await restoreLocation(snap);
     restorePanels(snap);

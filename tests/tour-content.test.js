@@ -24,6 +24,8 @@ const RUNTIME_TARGETS = {
   "#instrument": ["static/script/songs/selects.js", 'id: "instrument"'],
   "#iRealPro": ["static/script/songs/irealpro-link.js", 'id: "iRealPro"'],
   "#inspirationLink": ["static/script/songs/inspiration.js", 'btn.id = "inspirationLink"'],
+  "#compingSplitBtn": ["static/script/songs/selects.js", 'id: "compingSplitBtn"'],
+  "#compingParts": ["static/script/songs/selects.js", 'id: "compingParts"'],
   ".rj-library-new-setlist-btn": ["static/script/songs/setlist-home.js", 'class: "rj-library-new-setlist-btn"'],
   ".rj-library-add-song-field": ["static/script/songs/setlist-view.js", 'class: "rj-library-add-song-field"'],
   ".rj-library-add-break": ["static/script/songs/setlist-view.js", 'class: "rj-library-add-break"'],
@@ -56,12 +58,14 @@ test("every language has copy for every step, and no leftover English metadata",
   }
 });
 
-test("English step ids are unique within their chapter and every step has a target", () => {
+test("English step ids are unique within their chapter and every step but the welcome has a target", () => {
   for (const chapter of english.chapters) {
     const ids = chapter.steps.map((step) => step.id);
     assert.equal(new Set(ids).size, ids.length, `duplicate step id in ${chapter.id}`);
   }
   for (const item of allSteps) {
+    // The welcome card is centred: it introduces the chapter dots in the card itself.
+    if (item.chapter === english.chapters[0] && item.step.id === "welcome") continue;
     assert.ok(item.step.targets.length > 0, `${label(item)} has no target`);
   }
 });
