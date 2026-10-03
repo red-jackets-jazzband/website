@@ -305,7 +305,8 @@ export function computeChordOffset(song) {
     const voice = line.staff[0].voices[0] || [];
     for (let j = 0; j < voice.length; j++) {
       const el = voice[j];
-      if (el.chord && el.chord.length > 0 && isValidChordName(pickChordName(el.chord))) {
+      const chordName = el.chord && el.chord.length > 0 ? pickChordName(el.chord) : null;
+      if (chordName !== null && (isValidChordName(chordName) || isBreakChordName(chordName))) {
         return measureCount;
       }
       if (el.el_type === "note") hasNotesInMeasure = true;

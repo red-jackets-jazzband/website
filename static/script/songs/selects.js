@@ -93,7 +93,8 @@ const ARIA_PRESSED = "aria-pressed";
   while comping is off; the toggles also while it isn't split.
 */
 function createCompingSplit(ctx, select) {
-  const storedParts = (readPref(PREF_KEYS.compingParts) || "R,3,5").split(",");
+  const validStored = (readPref(PREF_KEYS.compingParts) || "").split(",").filter((p) => COMPING_PARTS.includes(p));
+  const storedParts = validStored.length > 0 ? validStored : COMPING_PARTS;
   const splitBtn = el("button", {
     type: "button", class: "sheet-icon-btn", id: "compingSplitBtn",
     attrs: {

@@ -111,6 +111,27 @@ test("computeChordOffset counts measures before the first chord", () => {
   assert.equal(computeChordOffset(song), 2);
 });
 
+test("computeChordOffset treats a break annotation as the first onset", () => {
+  const song = {
+    lines: [
+      {
+        staff: [
+          {
+            voices: [
+              [
+                { el_type: "note", chord: [{ name: "_In swing" }, { name: "N.C." }] },
+                { el_type: "bar" },
+                { el_type: "note", chord: [{ name: "C" }] },
+              ],
+            ],
+          },
+        ],
+      },
+    ],
+  };
+  assert.equal(computeChordOffset(song), 0);
+});
+
 test("computeChordOffset returns 0 when there are no lines", () => {
   assert.equal(computeChordOffset({}), 0);
 });
