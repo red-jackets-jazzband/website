@@ -5233,6 +5233,26 @@ body:has(#rjLibrary) .split-bio {
   border: none !important;
   border-radius: 0;
 }
+/* On a phone the 220px dropdown plus Split / R / 3 / 5 overflows the
+   screen; scale the dropdown (and its buttons) down so the whole pill fits. */
+@media (max-width: 600px) {
+  #compingSlot .dropdown {
+    flex: 0 1 130px;
+    width: 130px;
+  }
+  #compingSlot #comping {
+    font-size: 11px;
+    padding: 0 24px 0 10px;
+    background-position: right 8px center;
+    text-overflow: ellipsis;
+  }
+  #sheetmenu #compingSlot .sheet-icon-btn {
+    width: 34px;
+  }
+  .comping-part-btn {
+    width: 30px;
+  }
+}
 #sheetmenu #compingSlot .sheet-icon-btn {
   box-sizing: border-box;
   width: 42px;
