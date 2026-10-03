@@ -33,7 +33,16 @@ function runAudit() {
     maxBuffer: 64 * 1024 * 1024,
   });
   if (result.error) throw result.error;
-  return JSON.parse(result.stdout);
+  const report = JSON.parse(result.stdout);
+  // A failed audit (registry unreachable, bad lockfile, ...) still prints JSON,
+  // just an error object instead of a report. Treating that as "no
+  // vulnerabilities" would turn the gate green exactly when it couldn't check.
+  // A real report always has a `vulnerabilities` object, even when the exit
+  // status is non-zero because it lists some.
+  if (!report || typeof report.vulnerabilities !== "object" || report.vulnerabilities === null) {
+    throw new Error(`npm audit did not return an audit report (exit status ${result.status}): ${result.stdout.slice(0, 300)}`);
+  }
+  return report;
 }
 
 function advisoryId(url) {
@@ -42,7 +51,7 @@ function advisoryId(url) {
 
 function blockingAdvisories(report) {
   const found = new Map();
-  for (const vuln of Object.values(report.vulnerabilities || {})) {
+  for (const vuln of Object.values(report.vulnerabilities)) {
     for (const via of vuln.via) {
       // A string `via` is just "depends on that other vulnerable package".
       if (typeof via === "string" || !BLOCKING.has(via.severity)) continue;
