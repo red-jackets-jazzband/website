@@ -5449,6 +5449,46 @@ body.rj-sheet-fullscreen #sheetmenu {
   }
 }
 
+/*
+  Where full screen shows the sheet alone (portrait, or a short landscape
+  phone), keep the "< Songs" / "< Setlist" back button on screen, pinned to the
+  top of the scrolling sheet. Back drops body.rj-sheet-active, which here swaps
+  the pinned sheet for the library/setlist list — still full screen — and
+  picking a song swaps the sheet back in, so you can step to another song
+  without leaving full screen.
+*/
+@media (orientation: portrait), (max-height: 500px) and (orientation: landscape) {
+  body.rj-sheet-fullscreen #sheetBackBtn.rj-sheet-back {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    width: 100%;
+    margin: 0;
+    padding: 10px 16px;
+    background: var(--rj-ground);
+    border: none;
+    color: var(--rj-gold);
+    font: 600 12px/1 "Montserrat", sans-serif;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    cursor: pointer;
+  }
+  body.rj-sheet-fullscreen:not(.rj-sheet-active) #rjSheet.rj-sheet {
+    display: none;
+  }
+  body.rj-sheet-fullscreen:not(.rj-sheet-active) #rjLibrary.rj-library {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    border: none;
+    border-radius: 0;
+  }
+}
+
 /* ============================================================
    Guided tour (songs/tour.js): the "?" launcher (styled up in the
    house nav, alongside the language switcher — see .rj-intro-nav-btn
