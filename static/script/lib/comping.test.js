@@ -8,6 +8,7 @@ import {
   rebeamBar,
   respellBar,
   buildVoiceBody,
+  explicitBar,
   buildCompingTune,
   measureBarSlots,
 } from "./comping.js";
@@ -179,7 +180,7 @@ test("buildVoiceBody ignores a stray F: link line above the first bar", () => {
 
 test("buildVoiceBody ignores a stray L: field left above the pickup", () => {
   // Isle of Capri / All of Me / Jada order their header K: before L:, so
-  // splitHeaderBody (which cuts on the last K:) drops the L: field into the
+  // splitHeaderBody (which cuts on the first K:) drops the L: field into the
   // body, right above the pickup. Its newline must not read as a mid-measure
   // line break — that wrapped the comping's first bar onto the melody's second
   // system instead of sitting under the first full bar of line 1.
@@ -196,6 +197,28 @@ test("buildVoiceBody keeps a genuine mid-tune M: field, not just header leakage"
   const melody = '"C" c8 |\nM:3/4\n| "C" c4 c4 c4 |';
   const out = buildVoiceBody(melody, ["B1", "B2"], 0, "x8");
   assert.equal(out.trim(), "B1 |\nM:3/4\n| B2 |");
+});
+
+test("buildVoiceBody carries a whole-line K: change as an inline field, not a bar", () => {
+  // do_you_know_what_it_means.abc modulates mid-tune with whole-line K: fields.
+  const melody = '"C" c8 |\nK:Ebmaj\n"Eb" e8 |';
+  const out = buildVoiceBody(melody, ["B1", "B2"], 0, "x8");
+  assert.equal(out.trim(), "B1 |\n[K:Ebmaj] B2 |");
+});
+
+test("buildVoiceBody respells bars after a K: change for the new key", () => {
+  const melody = '"C" c8 |\nK:Ebmaj\n"Eb" e8 |';
+  const out = buildVoiceBody(melody, ["B1", "B2"], 0, "x8", undefined, undefined, (bar, key) => bar + "@" + key);
+  assert.equal(out.trim(), "B1 |\n[K:Ebmaj] B2@Ebmaj |");
+});
+
+test("explicitBar then respellBar moves a bar between key signatures", () => {
+  const cMaj = {};
+  const ebMaj = { B: "_", E: "_", A: "_" };
+  const explicit = explicitBar("[EGB]", cMaj);
+  assert.equal(explicit, "[EGB]");
+  assert.equal(respellBar(explicit, ebMaj), "[=EG=B]");
+  assert.equal(respellBar(explicitBar("[_E_B]", cMaj), ebMaj), "[EB]");
 });
 
 test("measureBarSlots sums a bar segment in eighth slots", () => {

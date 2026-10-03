@@ -685,6 +685,27 @@ export function respellBar(fragment, keySig) {
   ));
 }
 
+// The inverse of respellBar: every note spelled with its full, effective
+// accidental (key signature and earlier in-bar accidentals folded in), so a
+// bar respelled for one key can be respelled again for another.
+export function explicitBar(fragment, keySig) {
+  const barAcc = new Map();
+  return String(fragment).replace(
+    /([_^=]{0,2})([A-Ga-g])([,']{0,4})/g,
+    (_all, acc, letterRaw, oct) => {
+      const letterOct = letterRaw + oct;
+      let eff;
+      if (acc === "") {
+        eff = barAcc.has(letterOct) ? barAcc.get(letterOct) : keySig[letterRaw.toUpperCase()] || "";
+      } else {
+        eff = acc.replace(/=/g, "");
+        barAcc.set(letterOct, eff);
+      }
+      return eff + letterOct;
+    },
+  );
+}
+
 // Spread `total` eighth slots across `parts` notes as evenly as possible.
 export function distribute(total, parts) {
   const base = Math.floor(total / parts);
@@ -712,21 +733,22 @@ function readUnit(text) {
   return [1, 8];
 }
 
-function lastKLineIndex(lines) {
-  for (let i = lines.length - 1; i >= 0; i--) {
-    if (lines[i].startsWith("K:")) return i;
-  }
-  return -1;
+// The header's closing K: line. Only the *first* one: a tune that modulates
+// (do_you_know_what_it_means.abc) carries later whole-line K: fields in its
+// body, and splitting on the last would swallow every section before it into
+// the header and leave the comping voice covering only the final section.
+function headerKLineIndex(lines) {
+  return lines.findIndex((line) => line.startsWith("K:"));
 }
 
 /*
    Split an ABC tune string into { header, kLine, body }: header is every line
-   before the last K: line, body is everything after it. Returns null when
+   before the first K: line, body is everything after it. Returns null when
    there is no K: line to split on.
 */
 function splitHeaderBody(text) {
   const lines = text.split("\n");
-  const kIdx = lastKLineIndex(lines);
+  const kIdx = headerKLineIndex(lines);
   if (kIdx === -1) return null;
   return {
     header: lines.slice(0, kIdx),
@@ -811,7 +833,7 @@ function extractInlineVoiceLine(line, targetId, startVoice) {
 // only the target voice's barlines, never another voice's.
 function extractVoiceBody(text, targetId) {
   const lines = text.split("\n");
-  const kIdx = lastKLineIndex(lines);
+  const kIdx = headerKLineIndex(lines);
   let current = null;
   const out = [];
   for (let i = 0; i < lines.length; i++) {
@@ -840,7 +862,7 @@ function extractVoiceBody(text, targetId) {
 // leading bar that shoves the whole comping voice down a system.
 const ALWAYS_STRIP = /^\s*(w:|W:|s:|P:|N:|O:|F:|I:|r:|%)/;
 
-// `splitHeaderBody` splits on the *last* K: line, so a tune that orders its
+// `splitHeaderBody` splits on the K: line, so a tune that orders its
 // header `K:` before `L:`/`M:`/`Q:` (all_of_me, isle_of_capri, jada order K:
 // before L:) drops that field into the body. It carries no note letters on
 // its own, but joined to the pickup segment below it (`L:1/4\nC/F/A/`) its
@@ -851,7 +873,7 @@ const ALWAYS_STRIP = /^\s*(w:|W:|s:|P:|N:|O:|F:|I:|r:|%)/;
 // the comping voice must too, or its later bars fall out of step. Only strip
 // them from the contiguous run of header leakage right after K:, never once
 // music has begun.
-const HEADER_LEAK = /^\s*(L:|M:|Q:)/;
+const HEADER_LEAK = /^\s*(K:|L:|M:|Q:)/;
 
 function stripNonMusicLines(body) {
   const lines = body.split("\n");
@@ -859,8 +881,11 @@ function stripNonMusicLines(body) {
   while (leadEnd < lines.length && (ALWAYS_STRIP.test(lines[leadEnd]) || HEADER_LEAK.test(lines[leadEnd]))) {
     leadEnd++;
   }
+  // A whole-line K: after the music has started is a key change: kept as an
+  // inline [K:...] field so buildVoiceBody carries it onto the next bar.
   return lines
     .filter((line, i) => i >= leadEnd && !ALWAYS_STRIP.test(line))
+    .map((line) => (/^\s*K:/.test(line) ? "[" + line.trim() + "]" : line))
     .join("\n");
 }
 
@@ -886,7 +911,7 @@ const BARLINE = /:(?:\|\d+|\|:?|:)|\|(?:\|:?|:|\]|\d+)?|\[(?:\|:?|\d+(?:[-,]\d+)
    pickup) instead gets an invisible rest of its own measured length, so the
    comping voices stay bar-aligned with the melody.
 */
-export function buildVoiceBody(rawBody, barStrings, leadingRestBars, restToken, lnum, lden) {
+export function buildVoiceBody(rawBody, barStrings, leadingRestBars, restToken, lnum, lden, respellForKey) {
   const rest = restToken || "x8";
   const body = stripNonMusicLines(rawBody);
   const parts = [];
@@ -903,6 +928,7 @@ export function buildVoiceBody(rawBody, barStrings, leadingRestBars, restToken, 
   let patternIdx = 0;
   let seen = 0;
   let out = "";
+  let currentKey = null;
   for (const p of parts) {
     if (p.bar) {
       out += p.s;
@@ -916,7 +942,11 @@ export function buildVoiceBody(rawBody, barStrings, leadingRestBars, restToken, 
       out += p.s;
       continue;
     }
-    const inlineFields = (p.s.match(/\[[A-Za-z]:[^\]]*\]/g) || []).join(" ");
+    const fieldList = p.s.match(/\[[A-Za-z]:[^\]]*\]/g) || [];
+    const inlineFields = fieldList.join(" ");
+    for (const f of fieldList) {
+      if (f.startsWith("[K:")) currentKey = f.slice(3, -1).trim();
+    }
     const leadWs = (p.s.match(/^\s*/) || [""])[0];
     // A melody measure that straddles a source line break carries the newline
     // *inside* this note segment (e.g. "…| F\nFAB||:" once the P: line between
@@ -951,6 +981,7 @@ export function buildVoiceBody(rawBody, barStrings, leadingRestBars, restToken, 
       contentIsRest = true;
     } else if (seen >= leadingRestBars && patternIdx < barStrings.length) {
       content = barStrings[patternIdx++];
+      if (currentKey && respellForKey) content = respellForKey(content, currentKey);
     } else {
       content = measuredRest(p.s);
       contentIsRest = true;
@@ -1556,8 +1587,15 @@ export function appendBarVoice(text, song, makeBars, voice) {
   // Invisible rest: keeps the comping voice bar-aligned with the melody
   // through pickup / intro / tail bars without drawing anything.
   const restToken = "x" + formatDuration(8, lnum, lden);
+  // A mid-tune K: change re-spells each comping bar for the key in effect.
+  const respellForKey = (bar, keyField) => {
+    const m = /^([A-G])([#b]?)\s*([A-Za-z]*)/.exec(keyField);
+    if (!m) return bar;
+    const sig = keySignature(keyScaleNotes({ root: m[1], acc: m[2], mode: m[3] }));
+    return respellBar(explicitBar(bar, keySig), sig);
+  };
   const compBody = buildVoiceBody(
-    patternSourceBody, compBars, leadingRestBars, restToken, lnum, lden,
+    patternSourceBody, compBars, leadingRestBars, restToken, lnum, lden, respellForKey,
   ).trim();
   const clefSuffix = bassClef ? " clef=bass middle=D" : "";
   const headerOut = [];
