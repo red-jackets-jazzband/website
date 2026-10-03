@@ -46,21 +46,37 @@ export const PATTERNS = {
     twobar1: (n) => `z2 ${n}2 z2 ${n}2`,
     twobar2: (n) => `${n} z z ${n}-${n}4`,
     half: (n) => `z2 ${n}2`,
+    // Two chords in a bar: each half carries its slice of the full bar's rhythm.
+    half2: (n) => `z2 ${n}2`,
+    halfOdd: (n) => `${n} z z ${n}`,
+    half2Odd: (n) => `${n}4`,
   },
   hold_over: {
     twobar1: (n) => `${n}8-`,
     twobar2: (n) => `${n}6 z2`,
     half: (n) => `${n}4`,
+    // Two chords in a bar: each half carries its slice of the full bar's rhythm.
+    half2: (n) => `${n}4`,
+    halfOdd: (n) => `${n}4`,
+    half2Odd: (n) => `${n}2 z2`,
   },
   hit_and_hold: {
     twobar1: (n) => `${n} z z ${n}-${n}4`,
     twobar2: (n) => `${n} z z ${n}-${n}4`,
     half: (n) => `${n} z z ${n}`,
+    // Two chords in a bar: each half carries its slice of the full bar's rhythm.
+    half2: (n) => `${n}4`,
+    halfOdd: (n) => `${n} z z ${n}`,
+    half2Odd: (n) => `${n}4`,
   },
   double_hit: {
     twobar1: (n) => `${n} ${n} z2 z4`,
     twobar2: (n) => `${n} ${n} z ${n} z ${n}3`,
     half: (n) => `${n} ${n} z2`,
+    // Two chords in a bar: each half carries its slice of the full bar's rhythm.
+    half2: () => "z4",
+    halfOdd: (n) => `${n} ${n} z ${n}`,
+    half2Odd: (n) => `z ${n}3`,
   },
   whole_note: {
     twobar1: (n) => `${n}8-`,
@@ -71,51 +87,94 @@ export const PATTERNS = {
     twobar1: (n) => `${n} z z ${n}-${n}2 z2`,
     twobar2: (n, nd) => `${n} ${n} ${nd} ${n} z4`,
     half: (n) => `${n} z z ${n}`,
+    // Two chords in a bar: each half carries its slice of the full bar's rhythm.
+    half2: (n) => `${n}2 z2`,
+    halfOdd: (n, nd) => `${n} ${n} ${nd} ${n}`,
+    half2Odd: () => "z4",
   },
   walk_down_b: {
     twobar1: (n, nd) => `z2 ${n} z ${nd} ${n}2 ${nd}`,
     twobar2: (n, nd) => `${n} ${n} ${nd} ${n} z4`,
     half: (n) => `z2 ${n} z`,
+    // Two chords in a bar: keep the full bar's rhythm (hits at slots 2, 4,
+    // 5-6, 7) instead of repeating the first half's figure.
+    half2: (n, nd) => `${nd} ${n}2 ${nd}`,
+    // Odd bars carry twobar2's rhythm (eighth-note run, then silence): the
+    // first chord gets the run, the second half stays silent like the pattern.
+    halfOdd: (n, nd) => `${n} ${n} ${nd} ${n}`,
+    half2Odd: () => "z4",
   },
   whole_then_step: {
     twobar1: (n) => `${n}8`,
     twobar2: (n, nd) => `${nd} z z ${nd} z4`,
     half: (n) => `${n}4`,
+    // Two chords in a bar: each half carries its slice of the full bar's rhythm.
+    half2: (n) => `${n}4`,
+    halfOdd: (n, nd) => `${nd} z z ${nd}`,
+    half2Odd: () => "z4",
   },
   walk_eighths: {
     twobar1: (n, nd) => `${n} ${n} ${nd} ${nd} ${n} ${n} ${nd} ${nd}`,
     twobar2: (n) => `${n} z z ${n}-${n}4`,
     half: (n, nd) => `${n} ${n} ${nd} ${nd}`,
+    // Two chords in a bar: each half carries its slice of the full bar's rhythm.
+    half2: (n, nd) => `${n} ${n} ${nd} ${nd}`,
+    halfOdd: (n) => `${n} z z ${n}`,
+    half2Odd: (n) => `${n}4`,
   },
   cross_step: {
     twobar1: (n) => `z2 ${n} z z ${n} z2`,
     twobar2: (n, nd, nu) => `${n} z z ${n}-${n} ${nu} ${nd} z`,
     half: (n) => `z2 ${n} z`,
+    // Two chords in a bar: each half carries its slice of the full bar's rhythm.
+    half2: (n) => `z ${n} z2`,
+    halfOdd: (n) => `${n} z z ${n}`,
+    half2Odd: (n, nd, nu) => `${n} ${nu} ${nd} z`,
   },
   step_approach: {
     twobar1: (n, nd, nu) => `${n} ${nd} z2 ${nu} ${nd} z2`,
     twobar2: (n, nd, nu) => `${nu}3 ${nd} z4`,
     half: (n, nd) => `${n} ${nd} z2`,
+    // Two chords in a bar: each half carries its slice of the full bar's rhythm.
+    half2: (n, nd, nu) => `${nu} ${nd} z2`,
+    halfOdd: (n, nd, nu) => `${nu}3 ${nd}`,
+    half2Odd: () => "z4",
   },
   double_then_step: {
     twobar1: (n) => `${n} ${n} z2 ${n} ${n} z2`,
     twobar2: (n, nd, nu) => `${n} z ${nu} ${nd} z4`,
     half: (n) => `${n} ${n} z2`,
+    // Two chords in a bar: each half carries its slice of the full bar's rhythm.
+    half2: (n) => `${n} ${n} z2`,
+    halfOdd: (n, nd, nu) => `${n} z ${nu} ${nd}`,
+    half2Odd: () => "z4",
   },
   full_walk: {
     twobar1: (n, nd, nu) => `${n} ${n} ${nd} ${n} ${nu} ${n} ${nd} ${n}`,
     twobar2: (n, nd) => `${nd} z z ${n}-${n}4`,
     half: (n, nd) => `${n} ${n} ${nd} ${n}`,
+    // Two chords in a bar: each half carries its slice of the full bar's rhythm.
+    half2: (n, nd, nu) => `${nu} ${n} ${nd} ${n}`,
+    halfOdd: (n, nd) => `${nd} z z ${n}`,
+    half2Odd: (n) => `${n}4`,
   },
   third_approach: {
     twobar1: (n, nd) => `${n} ${nd} z ${nd}-${n}4`,
     twobar2: (n, nd, nu, nu2) => `${nu2} ${nd} z ${nd}-${n}4`,
     half: (n, nd) => `${n} ${nd} z ${nd}`,
+    // Two chords in a bar: each half carries its slice of the full bar's rhythm.
+    half2: (n) => `${n}4`,
+    halfOdd: (n, nd, nu, nu2) => `${nu2} ${nd} z ${nd}`,
+    half2Odd: (n) => `${n}4`,
   },
   step_neighbor: {
     twobar1: (n, nd, nu) => `${n} ${nd} z ${nu}-${n}4`,
     twobar2: (n, nd, nu) => `${n} ${nd} z ${nu} z ${n}3`,
     half: (n, nd, nu) => `${n} ${nd} z ${nu}`,
+    // Two chords in a bar: each half carries its slice of the full bar's rhythm.
+    half2: (n) => `${n}4`,
+    halfOdd: (n, nd, nu) => `${n} ${nd} z ${nu}`,
+    half2Odd: (n) => `z ${n}3`,
   },
   // Charleston: the classic two-note kick — a held chord on beat 1 (a dotted
   // quarter, 3 slots) answered by a short stab on the "and" of beat 2, then
@@ -123,7 +182,11 @@ export const PATTERNS = {
   charleston: {
     twobar1: (n) => `${n}3 ${n} z4`,
     twobar2: (n) => `${n}3 ${n} z4`,
-    half: (n) => `${n}2 ${n} z`,
+    half: (n) => `${n}3 ${n}`,
+    // Two chords in a bar: each half carries its slice of the full bar's rhythm.
+    half2: () => "z4",
+    halfOdd: (n) => `${n}3 ${n}`,
+    half2Odd: () => "z4",
   },
   // Reverse Charleston: the same kick, placed in the back half of the bar
   // instead of the front — silence through beats 1-2, then the held-chord +
@@ -131,29 +194,48 @@ export const PATTERNS = {
   reverse_charleston: {
     twobar1: (n) => `z4 ${n}3 ${n}`,
     twobar2: (n) => `z4 ${n}3 ${n}`,
-    half: (n) => `z ${n}2 ${n}`,
+    half: () => "z4",
+    // Two chords in a bar: each half carries its slice of the full bar's rhythm.
+    half2: (n) => `${n}3 ${n}`,
+    halfOdd: () => "z4",
+    half2Odd: (n) => `${n}3 ${n}`,
   },
   // Son clave, 3-2: bar 1 is the "three side" (tresillo — hits on beat 1,
   // the "and" of 2, and beat 4), bar 2 the "two side" (hits on beat 2 and
-  // the "and" of 3), each chord held until the next clave stroke.
+  // the "and" of 3), each a short staccato stab (one eighth, then silence)
+  // so the comping doesn't drown out a soloist.
   clave_3_2: {
-    twobar1: (n) => `${n}3 ${n}3 ${n}2`,
-    twobar2: (n) => `z2 ${n}3 ${n}3`,
-    half: (n) => `${n}3 ${n}`,
+    twobar1: (n) => `${n} z2 ${n} z2 ${n} z`,
+    twobar2: (n) => `z2 ${n} z2 ${n} z2`,
+    half: (n) => `${n} z2 ${n}`,
+    // Two chords in a bar keep the bar's own clave rhythm: even bars are the
+    // three side (halves 1-2), odd bars the two side.
+    half2: (n) => `z2 ${n} z`,
+    halfOdd: (n) => `z2 ${n} z`,
+    half2Odd: (n) => `z ${n} z2`,
   },
   // Son clave, 2-3: the same two bars in the opposite order — the "two
   // side" first, then the "three side".
   clave_2_3: {
-    twobar1: (n) => `z2 ${n}3 ${n}3`,
-    twobar2: (n) => `${n}3 ${n}3 ${n}2`,
-    half: (n) => `z2 ${n}2`,
+    twobar1: (n) => `z2 ${n} z2 ${n} z2`,
+    twobar2: (n) => `${n} z2 ${n} z2 ${n} z`,
+    half: (n) => `z2 ${n} z`,
+    // Two chords in a bar keep the bar's own clave rhythm: even bars are the
+    // two side, odd bars the three side.
+    half2: (n) => `z ${n} z2`,
+    halfOdd: (n) => `${n} z2 ${n}`,
+    half2Odd: (n) => `z2 ${n} z`,
   },
   // Three hit: a rhythm-section "kick" figure — three quick stabs on beats
   // 1, the "and" of 1, and 2, then held silence through the rest of the bar.
   three_hit: {
     twobar1: (n) => `${n} ${n} ${n} z z4`,
     twobar2: (n) => `${n} ${n} ${n} z z4`,
-    half: (n) => `${n} ${n} z2`,
+    half: (n) => `${n} ${n} ${n} z`,
+    // Two chords in a bar: each half carries its slice of the full bar's rhythm.
+    half2: () => "z4",
+    halfOdd: (n) => `${n} ${n} ${n} z`,
+    half2Odd: () => "z4",
   },
   // I Got a Woman: the gospel/R&B push figure — three separate quarter-note
   // hits (no ties) on beat 2 and the "and" of beat 3 of bar 1, then landing
@@ -161,7 +243,11 @@ export const PATTERNS = {
   i_got_a_woman: {
     twobar1: (n) => `z2 ${n}2 z ${n}2 z`,
     twobar2: (n) => `${n}2 z6`,
-    half: (n) => `z ${n}2 z`,
+    half: (n) => `z2 ${n}2`,
+    // Two chords in a bar: each half carries its slice of the full bar's rhythm.
+    half2: (n) => `z ${n}2 z`,
+    halfOdd: (n) => `${n}2 z2`,
+    half2Odd: () => "z4",
   },
   // Honky Tonk Riff: the syncopated left-hand riff figure from "Down in
   // Honky Tonk Town" — four punchy off-beat stabs on the beat in bar 1,
@@ -182,6 +268,10 @@ export const PATTERNS = {
     twobar1: (n) => `${n} z ${n} z ${n} z ${n} z`,
     twobar2: (n, nd) => `z ${n} ${nd} ${n} z ${n} z ${n}`,
     half: (n) => `${n} z ${n} z`,
+    // Two chords in a bar: each half carries its slice of the full bar's rhythm.
+    half2: (n) => `${n} z ${n} z`,
+    halfOdd: (n, nd) => `z ${n} ${nd} ${n}`,
+    half2Odd: (n) => `z ${n} z ${n}`,
   },
 };
 
@@ -837,14 +927,17 @@ export function buildVoiceBody(rawBody, barStrings, leadingRestBars, restToken, 
     const measuredRest = (segment) => {
       if (lnum && lden) {
         const slots = measureBarSlots(segment, lnum, lden);
-        if (slots > 0 && slots < 8) return "x" + formatDuration(slots, lnum, lden);
+        if (slots > 0 && slots < 8)
+        {return "x" + formatDuration(slots, lnum, lden);}
       }
       return rest;
     };
     let content;
     let contentIsRest = false;
     const stubSlots =
-      seen >= leadingRestBars && lnum && lden ? measureBarSlots(p.s, lnum, lden) : 0;
+      seen >= leadingRestBars && lnum && lden
+        ? measureBarSlots(p.s, lnum, lden)
+        : 0;
     if (stubSlots > 0 && stubSlots < 8) {
       // A sub-bar measure mid-tune — the `D2` anacrusis at the top of Bei Mir's
       // chorus, or any half-bar lead-in after a `||`. parseChordScheme still
@@ -1291,12 +1384,21 @@ function compingBars(chords, pat, { keyScale, keySig, lnum, lden }) {
         barPalette = new Array(countChords(fragment)).fill(order);
       }
     } else if (cb.length === 2) {
-      const fragA = cb[0] === null ? "z4" : pat.half.apply(null, chordArgs(cb[0], keyScale));
-      const fragB = cb[1] === null ? "z4" : pat.half.apply(null, chordArgs(cb[1], keyScale));
+      const odd = bar % 2 === 1;
+      const halfA = (odd && pat.halfOdd) || pat.half;
+      const halfB = (odd && pat.half2Odd) || pat.half2 || pat.half;
+      const fragA =
+        cb[0] === null ? "z4" : halfA.apply(null, chordArgs(cb[0], keyScale));
+      const fragB =
+        cb[1] === null ? "z4" : halfB.apply(null, chordArgs(cb[1], keyScale));
       fragment = fragA + " " + fragB;
       barPalette = new Array(countChords(fragA))
         .fill(cb[0] === null ? [] : cb[0].map((v) => v.fn))
-        .concat(new Array(countChords(fragB)).fill(cb[1] === null ? [] : cb[1].map((v) => v.fn)));
+        .concat(
+          new Array(countChords(fragB)).fill(
+            cb[1] === null ? [] : cb[1].map((v) => v.fn),
+          ),
+        );
     } else {
       const durs = distribute(8, cb.length);
       fragment = cb
