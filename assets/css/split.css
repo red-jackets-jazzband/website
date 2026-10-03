@@ -1132,7 +1132,7 @@ body.rj-sheet-active .rj-sheet-empty {
   inset: auto;
   margin: 0;
   z-index: 20;
-  width: 340px;
+  width: 364px;
   max-width: calc(100vw - 24px);
   background: #222222;
   color: #ece6e6;
@@ -1160,7 +1160,7 @@ body.rj-sheet-active .rj-sheet-empty {
 */
 .mixer-strip {
   display: grid;
-  grid-template-columns: 58px minmax(60px, 90px) 1fr 30px 28px;
+  grid-template-columns: 82px minmax(60px, 90px) 1fr 30px 28px;
   align-items: center;
   column-gap: 8px;
 }
@@ -1440,7 +1440,7 @@ body.rj-sheet-active .rj-sheet-empty {
   the shared template's Mute/Voice columns.
 */
 .mixer-strip--swing {
-  grid-template-columns: 58px 1fr 30px 60px;
+  grid-template-columns: 82px 1fr 30px 60px;
 }
 .mixer-backdrop {
   position: fixed;
@@ -5208,10 +5208,70 @@ body:has(#rjLibrary) .split-bio {
   flex-wrap: wrap;
   gap: 10px;
 }
+/* The comping controls (pattern dropdown, Split, R / 3 / 5 toggles) are one
+   pill with the same shell as .sheet-transport / .sheet-actions: flush
+   fields divided by hairlines, the pill's own border carrying the outline. */
+#compingSlot {
+  flex: none;
+  display: flex;
+  align-items: stretch;
+  max-width: 100%;
+  height: 44px;
+  background: #2f2f2f;
+  border: 1px solid rgba(255,255,255,.11);
+  border-radius: 8px;
+  overflow: hidden;
+}
 #compingSlot .dropdown {
   display: block;
-  width: 100%;
-  max-width: 280px;
+  flex: 0 1 220px;
+  min-width: 0;
+  width: 220px;
+}
+#compingSlot #comping {
+  height: 100%;
+  border: none !important;
+  border-radius: 0;
+}
+#sheetmenu #compingSlot .sheet-icon-btn {
+  box-sizing: border-box;
+  width: 42px;
+  height: 100%;
+  border: none;
+  border-radius: 0;
+  color: rgba(236,234,230,.72);
+}
+@media (hover: hover) {
+  #sheetmenu #compingSlot .sheet-icon-btn:hover:not(:disabled) {
+    color: #222222;
+  }
+}
+#compingSlot > * + *,
+#compingSlot .comping-part-btn + .comping-part-btn {
+  border-left: 1px solid rgba(255,255,255,.1);
+}
+/* Split-comping controls (songs/selects.js): the R / 3 / 5 voice toggles. */
+.comping-parts {
+  display: flex;
+}
+.comping-part-btn {
+  box-sizing: border-box;
+  width: 36px;
+  height: 100%;
+  background: #2f2f2f;
+  border: none;
+  border-radius: 0;
+  color: rgba(236,234,230,.72);
+  font: 600 13px "Montserrat", sans-serif;
+  cursor: pointer;
+}
+.comping-part-btn[aria-pressed="true"] {
+  background: var(--rj-gold);
+  color: #222222;
+}
+#compingSplitBtn[hidden],
+.comping-parts[hidden] {
+  display: none;
 }
 /*
   Anchored to #sheetmenu's own bottom edge (#sheetmenu is `position:
