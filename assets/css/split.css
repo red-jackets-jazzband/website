@@ -734,6 +734,43 @@ body.rj-sheet-active .rj-sheet-empty {
     padding: 20px;
 }
 
+/* Arrangement table from `W:| a | b |` lines (sheet.js renderWordsTables) */
+.songWordsTable {
+    font-family: 'MuseJazzText', serif;
+    font-size: large;
+    border-collapse: collapse;
+    margin: 16px auto;
+    break-inside: avoid;
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+}
+.songWordsTable th,
+.songWordsTable td {
+    padding: 4px 14px;
+    text-align: center;
+    vertical-align: top;
+    border-bottom: 1px solid rgba(128, 128, 128, 0.35);
+}
+.songWordsTable td {
+    min-width: 5em;
+}
+/* On paper there is no sideways scrolling: fill the page width and wrap the
+   cells rather than overflowing the edge. */
+@media print {
+  .songWordsTable {
+    display: table;
+    width: 100%;
+    overflow: visible;
+    font-size: medium;
+  }
+  .songWordsTable td {
+    min-width: 0;
+    padding: 3px 6px;
+    overflow-wrap: anywhere;
+  }
+}
+
 .chordtable > .chordGrid {
     display: grid;
     grid-template-columns: repeat(var(--chord-cols, 4), 1fr);

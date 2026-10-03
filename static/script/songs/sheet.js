@@ -1,4 +1,5 @@
-import { byId } from "../lib/dom.js";
+import { byId, el, qsa } from "../lib/dom.js";
+import { extractWordsTables, transposeTable } from "../lib/words-table.js";
 import { offsetForInstrument, changeClefForInstrument } from "../lib/instruments.js";
 import { parseChordScheme, computeChordOffset } from "../lib/chords.js";
 import { convertChordsToRoman } from "../lib/music-theory.js";
@@ -198,6 +199,22 @@ function showSoloStatus(fraction) {
   const status = byId("soloStatus");
   if (!status) return;
   status.textContent = fraction === null ? "" : `Composing solo… ${Math.round(fraction * 100)}%`;
+}
+
+// Draw the tables written as `W:| a | b |` lines as real <table>s (turned on their side: each form step is a column) just below
+// the notation (and its lyrics), replacing whatever an earlier render of this sheet left there.
+function renderWordsTables(notationEl, tables) {
+  qsa(".songWordsTable", notationEl.parentNode).forEach((old) => old.remove());
+  tables.forEach((source) => {
+    const { rows } = transposeTable(source);
+    const table = el("table", { class: "songWordsTable" });
+    // The header cells only name the columns; sideways there is no room worth
+    // spending on them, so they're dropped.
+    table.append(el("tbody", {}, rows.map((cells) => el("tr", {}, cells.map((text) => el("td", { text }))))));
+    const next = notationEl.nextElementSibling;
+    const anchor = next && next.id === "lyrics" ? next : notationEl;
+    anchor.parentNode.insertBefore(table, anchor.nextSibling);
+  });
 }
 
 // Move W: lyric SVGs out of the notation container so the printer can
@@ -406,7 +423,9 @@ export function createSheet(ctx) {
     const notationEl = byId(notationId);
     notationEl.classList.toggle("comping-active", comping.active);
 
-    const visualObjs = ABCJS.renderAbc(notationId, renderText, abcParams(visual));
+    const { abcText: renderTextNoTables } = extractWordsTables(renderText);
+    const visualObjs = ABCJS.renderAbc(notationId, renderTextNoTables, abcParams(visual));
+    renderWordsTables(notationEl, extractWordsTables(abcText).tables);
 
     colorComping(notationEl, comping);
 
