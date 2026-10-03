@@ -74,7 +74,11 @@ test("a full first bar that starts with rests and ends on a double bar is a pick
 test("a real short pickup, an all-rest bar, or a plain first bar is fine", () => {
   assert.deepEqual(findings('GA ||\n"C"c4 |'), []);
   assert.deepEqual(findings('z4 ||\n"C"c4 |'), []);
-  assert.deepEqual(findings('z2 GA |\n"C"c4 |'), []);
+  assert.deepEqual(findings('"C"z2 GA |\n"C"c4 |'), []);
+});
+
+test("a chordless full first bar that starts with rests and closes on a plain bar is also a pickup", () => {
+  assert.deepEqual(findings('z2 GA |\n"C"c4 |'), ["pickup-rests"]);
 });
 
 test("messages carry the location and the rule", () => {
