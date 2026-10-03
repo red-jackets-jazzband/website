@@ -400,6 +400,48 @@ test("buildCompingTune adds a bracketed one-voice block-chord comping staff", ()
   assert.match(v2, /\[[A-Ga-g][A-Ga-g][A-Ga-g]\]/);
 });
 
+test("buildCompingTune with parts splits comping into one single-note staff per chord tone", () => {
+  const out = withTonal(() => buildCompingTune(TUNE, CHORDS, fakeSong(), "whole_note", [1, 2]));
+  assert.ok(out?.abc, PRODUCED_A_TUNE);
+  assert.deepEqual(out.parts, ["3", "5"]);
+  const abc = out.abc;
+  assert.match(abc, /^V:2 name="3"$/m);
+  assert.match(abc, /^V:3 name="5"$/m);
+  assert.doesNotMatch(abc, /^V:4/m);
+  assert.match(abc, /T:Test Tune {2}\(comping – Whole note: 3 \+ 5\)/);
+  const v2 = abc.split("\nV:2\n").pop().split("\nV:3 name")[0];
+  const v3 = abc.split("\nV:3 name=\"5\"\n").pop();
+  assert.doesNotMatch(v2, /\[/);
+  assert.doesNotMatch(v3, /\[/);
+  assert.notEqual(v2.trim(), v3.trim());
+});
+
+test("buildCompingTune split only ties a voice into a note of the same pitch", () => {
+  const out = withTonal(() => buildCompingTune(TUNE, CHORDS, fakeSong(), "whole_note", [1]));
+  const notes = out.abc.split("\nV:2\n").pop().match(/[A-Ga-g][,']*\d*-?/g);
+  notes.forEach((n, i) => {
+    if (n.endsWith("-")) assert.equal(notes[i + 1].replace("-", ""), n.slice(0, -1), n);
+  });
+});
+
+test("buildCompingTune split brackets every staff, with the layout line ahead of the V: lines", () => {
+  const out = withTonal(() => buildCompingTune(TUNE, CHORDS, fakeSong(), "whole_note", [0, 1, 2]));
+  const lines = out.abc.split("\n");
+  const layout = lines.findIndex((l) => l.startsWith("%%staves"));
+  assert.equal(lines[layout], "%%staves [1 2 3 4]");
+  assert.ok(layout < lines.findIndex((l) => l.startsWith("V:")));
+});
+
+test("buildCompingTune split keeps the repeat structure and bar count of the block voice", () => {
+  const block = withTonal(() => buildCompingTune(TUNE, CHORDS, fakeSong(), "on_2_and_4"));
+  const split = withTonal(() => buildCompingTune(TUNE, CHORDS, fakeSong(), "on_2_and_4", [0]));
+  const blockBody = block.abc.split("\nV:2\n").pop().trim();
+  const splitBody = split.abc.split("\nV:2\n").pop().trim();
+  assert.equal(splitBody.split("|").length, blockBody.split("|").length);
+  assert.match(splitBody, /^\|:/);
+  assert.match(splitBody, /:\|$/);
+});
+
 // Mixer integration check: lib/audio-mix.js's injectMixerAudio depends on
 // this function's exact "%%staves [1 2]\nV:1\nV:2 name=...\nK:...\nV:1\n
 // <melody>\nV:2\n<comping>\n" header+body shape (see its own doc comment

@@ -1345,13 +1345,67 @@ function chordKey(triple) {
 
 // One comping bar fragment per chord-scheme bar, plus the colour order of each
 // chord onset in it (see buildCompingTune's `palette`).
-function compingBars(chords, pat, { keyScale, keySig, lnum, lden }) {
+// Replace every "[low mid high]" chord token in a bar fragment with just its
+// `part`-th note (0 = root voice, 1 = third voice, 2 = fifth voice — the
+// bracket lists them bottom-to-top), keeping the duration and tie that follow
+// it. Rests and everything else pass through untouched, so the result is the
+// same rhythm played by one chord tone alone.
+function pickChordNote(fragment, part) {
+  let out = "";
+  let i = 0;
+  while (i < fragment.length) {
+    const end = fragment[i] === "[" ? scanChordBracket(fragment, i) : -1;
+    if (end === -1) {
+      out += fragment[i];
+      i += 1;
+      continue;
+    }
+    const notes = [];
+    let j = i + 1;
+    let noteEnd = scanNoteLetter(fragment, j, CHORD_NOTE_LETTERS);
+    while (noteEnd !== -1) {
+      notes.push(fragment.slice(j, noteEnd));
+      j = noteEnd;
+      noteEnd = scanNoteLetter(fragment, j, CHORD_NOTE_LETTERS);
+    }
+    out += notes[part] || notes[notes.length - 1];
+    i = end;
+  }
+  return out;
+}
+
+// A single chord-tone voice ties a note into the next one only when that next
+// note is the same pitch: whole_note ties every chord into whatever follows,
+// and once one voice is pulled out of the chord, a tie into a *different*
+// pitch is drawn by abcjs as a deep slur while the voices that happen to hold
+// their note get a shallow tie -- so the voices look unrelated. Strip the
+// dash wherever the next note (in this bar or the next) differs or is a rest.
+function dropCrossPitchTies(fragments) {
+  const bars = fragments.map(tokenizeBar);
+  const notes = bars.flat().filter((t) => !t.annotation);
+  notes.forEach((tok, i) => {
+    const next = notes[i + 1];
+    if (tok.tie && !(next && !next.rest && next.pitch === tok.pitch)) tok.tie = false;
+  });
+  return bars.map((tokens) => tokens.map(formatSlotToken).join(" "));
+}
+
+function formatSlotToken(t) {
+  if (t.annotation) return t.annotation;
+  const dur = t.dur === 1 ? "" : t.dur;
+  return t.pitch + dur + (t.tie ? "-" : "");
+}
+
+// `part` (0-2, or null for the ordinary block-chord voice) narrows every
+// chord to that one voice — see pickChordNote — before respelling, so the
+// accidental bookkeeping only sees the notes that voice actually plays.
+function compingBars(chords, pat, { keyScale, keySig, lnum, lden }, part = null) {
   const voiced = voiceLead(extractChordNotes(chords));
 
   // One comping voice: each pattern slot is a block chord "[low mid high]".
   // compBars[i] is bar i's ABC fragment; compPalettes[i] is a colour order
   // (["R","3","5"] bottom-to-top) per chord onset in that fragment.
-  const compBars = [];
+  let fragments = [];
   const compPalettes = [];
   for (let bar = 0; bar < voiced.length; bar++) {
     const cb = voiced[bar];
@@ -1420,9 +1474,12 @@ function compingBars(chords, pat, { keyScale, keySig, lnum, lden }) {
         .join(" ");
       barPalette = cb.map((triple) => (triple === null ? [] : triple.map((v) => v.fn)));
     }
-    compBars.push(rebeamBar(respellBar(fragment, keySig), lnum, lden));
+    if (part !== null) fragment = pickChordNote(fragment, part);
+    fragments.push(fragment);
     compPalettes.push(barPalette);
   }
+  if (part !== null) fragments = dropCrossPitchTies(fragments);
+  const compBars = fragments.map((f) => rebeamBar(respellBar(f, keySig), lnum, lden));
   return { compBars, compPalettes };
 }
 
@@ -1550,7 +1607,12 @@ export function appendBarVoice(text, song, makeBars, voice) {
     // just tacked on the end as its own ungrouped staff, same as it would be
     // appended to the voice declarations themselves, rather than losing the
     // tune's own grouping outright the way stripping-and-not-replacing would.
-    if (layoutLine) headerOut.push(layoutLine.trimEnd() + " " + newVoiceId);
+    // abcjs only draws a multi-staff bracket correctly (it otherwise collapses
+    // onto the last staff) when the layout line precedes the "V:" declarations.
+    if (layoutLine) {
+      const at = headerOut.findIndex((line) => /^V:/.test(line));
+      headerOut.splice(at === -1 ? headerOut.length : at, 0, extendLayout(layoutLine.trimEnd(), newVoiceId, voice.joinBracket));
+    }
     headerOut.push(split.kLine);
     abc =
       headerOut.join("\n") +
@@ -1567,6 +1629,14 @@ export function appendBarVoice(text, song, makeBars, voice) {
       "\nV:2\n" + compBody + "\n";
   }
   return abc;
+}
+
+// Add `id` to a "%%staves" line: tacked on after it as its own ungrouped
+// staff, or (`joinBracket`, for the split comping voices) inside its closing
+// bracket so every chord-tone staff sits in the same group as the first.
+function extendLayout(line, id, joinBracket) {
+  if (joinBracket && line.endsWith("]")) return line.slice(0, -1) + " " + id + "]";
+  return line + " " + id;
 }
 
 /*
@@ -1586,9 +1656,10 @@ export function appendBarVoice(text, song, makeBars, voice) {
                assumed so sheet-decorations.js — which zips it against the
                rendered noteheads and tie arcs — stays correct regardless.
 */
-export function buildCompingTune(text, chords, song, pattern) {
+export function buildCompingTune(text, chords, song, pattern, parts = null) {
   const pat = PATTERNS[pattern];
   if (!pat || !chords || !chords.length) return null;
+  if (parts && parts.length) return buildSplitCompingTune(text, chords, song, pat, pattern, parts);
   let palettes = [];
   const abc = appendBarVoice(text, song, (layout) => {
     const { compBars, compPalettes } = compingBars(chords, pat, layout);
@@ -1604,4 +1675,26 @@ export function buildCompingTune(text, chords, song, pattern) {
     titleSuffix: "  (comping \u2013 " + (PATTERN_LABEL[pattern] || pattern) + ")",
   });
   return abc === null ? null : { abc, palette: palettes };
+}
+
+/*
+   The split flavour of the comping tune: instead of one staff of block
+   chords, one single-note staff per entry of `parts` (indices into R / 3 / 5,
+   ascending), appended one after another like any other generated voice. A
+   subset — say just the 3 and the 5 — gives sheet music for only those
+   voices. Returns { abc, palette: [], parts: ["3", "5"] }, or null when the
+   voice can't apply (see appendBarVoice).
+*/
+function buildSplitCompingTune(text, chords, song, pat, pattern, parts) {
+  const names = parts.map((p) => VOICE_KEYS[p]);
+  const suffix = "  (comping \u2013 " + (PATTERN_LABEL[pattern] || pattern) + ": " + names.join(" + ") + ")";
+  let abc = text;
+  for (let i = 0; i < parts.length && abc !== null; i++) {
+    abc = appendBarVoice(abc, song, (layout) => compingBars(chords, pat, layout, parts[i]).compBars, {
+      name: names[i],
+      titleSuffix: i === 0 ? suffix : "",
+      joinBracket: i > 0,
+    });
+  }
+  return abc === null ? null : { abc, palette: [], parts: names };
 }

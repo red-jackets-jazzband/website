@@ -169,3 +169,27 @@ export function applyCompingColors(container, palette, voiceIndex = 1) {
     });
   }
 }
+
+/*
+  Colour a split comping tune (buildCompingTune's `parts`): each part is its
+  own single-note voice, so the whole voice takes its chord tone's colour —
+  noteheads, tie arcs and the staff's name label. `firstVoiceIndex` is the
+  first split voice's 0-indexed ABCjs voice number; the rest follow in order.
+*/
+export function applySplitCompingColors(container, parts, firstVoiceIndex) {
+  if (!container) return;
+  parts.forEach((fn, i) => {
+    const color = COMPING_FN_FILL[fn];
+    const voiceClass = `abcjs-v${firstVoiceIndex + i}`;
+    container.querySelectorAll(`g.abcjs-note.${voiceClass} .abcjs-notehead`).forEach((head) => {
+      head.style.fill = color;
+    });
+    container.querySelectorAll(`path.abcjs-slur.${voiceClass}`).forEach((tie) => {
+      if (tie.getAttribute("fill") === "none") tie.style.stroke = color;
+      else tie.style.fill = color;
+    });
+    container.querySelectorAll(`text.abcjs-voice-name.${voiceClass}`).forEach((label) => {
+      label.style.fill = color;
+    });
+  });
+}
