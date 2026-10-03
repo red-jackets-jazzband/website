@@ -11,6 +11,7 @@ import {
   explicitBar,
   buildCompingTune,
   measureBarSlots,
+  plainChordName,
 } from "./comping.js";
 import { BREAK_CHORD } from "./chords.js";
 import { tonalStub as TonalStub, withTonal, nameToMidi } from "../../../tests/helpers/stubs.js";
@@ -1125,4 +1126,11 @@ test("buildCompingTune voice-leads the chord after a break from the chord before
   const withBreakMidis = compingChordMidis(withBreak.abc);
   const noBreakMidis = compingChordMidis(noBreak.abc);
   assert.deepEqual(withBreakMidis[1], noBreakMidis[1]);
+});
+
+test("plainChordName spells half-diminished as m7b5, keeping dim7", () => {
+  assert.equal(plainChordName("AmØ"), "Am7b5");
+  assert.equal(plainChordName("BØ"), "Bm7b5");
+  assert.equal(plainChordName("AØ7"), "Adim7");
+  assert.equal(plainChordName("C♯m"), "C#m");
 });
