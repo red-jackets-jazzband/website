@@ -293,7 +293,7 @@ test("every COMPING_PATTERNS entry's rhythm templates match exactly", () => {
     hold_over: { twobar1: "N8-", twobar2: "N6 z2", half: "N4" },
     hit_and_hold: { twobar1: "N z z N-N4", twobar2: "N z z N-N4", half: "N z z N" },
     double_hit: { twobar1: "N N z2 z4", twobar2: "N N z N z N3", half: "N N z2" },
-    whole_note: { twobar1: "N8-", twobar2: "N8", half: "N4" },
+    whole_note: { twobar1: "N8-", twobar2: "N8-", half: "N4" },
     walk_down_a: { twobar1: "N z z N-N2 z2", twobar2: "N N ND N z4", half: "N z z N" },
     walk_down_b: { twobar1: "z2 N z ND N2 ND", twobar2: "N N ND N z4", half: "z2 N z" },
     whole_then_step: { twobar1: "N8", twobar2: "ND z z ND z4", half: "N4" },

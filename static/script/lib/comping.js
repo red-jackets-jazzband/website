@@ -80,7 +80,7 @@ export const PATTERNS = {
   },
   whole_note: {
     twobar1: (n) => `${n}8-`,
-    twobar2: (n) => `${n}8`,
+    twobar2: (n) => `${n}8-`,
     half: (n) => `${n}4`,
   },
   walk_down_a: {
@@ -1367,17 +1367,23 @@ function compingBars(chords, pat, { keyScale, keySig, lnum, lden }) {
       } else {
         const fn = bar % 2 === 0 ? pat.twobar1 : pat.twobar2;
         fragment = fn.apply(null, chordArgs(cb[0], keyScale));
-        // twobar1 templates that end in a bare tie (hold_over, whole_note)
-        // commit to holding the same chord into the next bar's first note.
+        // Templates that end in a bare tie (hold_over's twobar1, whole_note's
+        // both bars) commit to holding the same chord into the next bar's first note.
         // When that bar actually changes chord -- the far more common case,
         // since the two-bar twobar1/twobar2 split is chosen by bar parity,
         // not by where the chord scheme actually repeats -- a literal "-"
         // ties into an unrelated pitch: abcjs still draws the arc, so it
         // reads as a tangle of tie lines running into the wrong chord.
         // Dropping the dash leaves a plain sustained whole bar instead.
-        if (bar % 2 === 0 && fragment.endsWith("-")) {
+        if (fragment.endsWith("-")) {
           const next = voiced[bar + 1];
-          const continues = next && next.length === 1 && chordKey(next[0]) === chordKey(cb[0]);
+          // A two-chord next bar still continues when its first half is the
+          // same chord (that half is a plain held chord, so the tie lands).
+          // whole_note ties into every following bar regardless, so its
+          // bars read the same all the way through; only the tune's last
+          // bar (nothing to tie to) loses the dash.
+          const continues =
+            next && next[0] !== null && (pat === PATTERNS.whole_note || chordKey(next[0]) === chordKey(cb[0]));
           if (!continues) fragment = fragment.slice(0, -1);
         }
         const order = cb[0].map((v) => v.fn);
@@ -1392,6 +1398,14 @@ function compingBars(chords, pat, { keyScale, keySig, lnum, lden }) {
       const fragB =
         cb[1] === null ? "z4" : halfB.apply(null, chordArgs(cb[1], keyScale));
       fragment = fragA + " " + fragB;
+      // whole_note ties every chord into whatever follows, halves included.
+      if (pat === PATTERNS.whole_note) {
+        // (never into a break rest, which has no note to tie to).
+        const next = voiced[bar + 1];
+        const tieA = cb[0] !== null && cb[1] !== null ? "-" : "";
+        const tieB = cb[1] !== null && next && next[0] !== null ? "-" : "";
+        fragment = `${fragA}${tieA} ${fragB}${tieB}`;
+      }
       barPalette = new Array(countChords(fragA))
         .fill(cb[0] === null ? [] : cb[0].map((v) => v.fn))
         .concat(
