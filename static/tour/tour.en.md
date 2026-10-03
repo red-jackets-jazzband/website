@@ -31,7 +31,7 @@ Use **Next** and **Back**, or the **←** and **→** keys. **Esc** closes the t
 setup: showLibrary
 target: #songSearch
 interactive: true
-Type part of a title and the list gets shorter as you go. Press **/** anywhere to jump to this box, then use **↑** **↓** and **Enter** to open a song. The **A–Z** strip beside the list jumps to a letter.
+Type part of a title and the list gets shorter as you go. Click this box, then use **↑** **↓** and **Enter** to open a song. The **A–Z** strip beside the list jumps to a letter.
 
 ## open: Your lead sheet
 setup: openDemoSong
