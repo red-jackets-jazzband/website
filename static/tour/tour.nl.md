@@ -27,7 +27,7 @@ Hier staan de nummers die de Red Jackets spelen (of speelden, of misschien gaan 
 Gebruik **Volgende** en **Terug**, of de toetsen **←** en **→**. Met **Esc** sluit je de rondleiding op elk moment, en met de **?**-knop start je hem opnieuw.
 
 ## search: Zoek een nummer
-Typ een deel van een titel en de lijst wordt korter terwijl je typt. Druk overal op **/** om naar dit vak te gaan, en gebruik daarna **↑** **↓** en **Enter** om een nummer te openen. De **A–Z**-balk naast de lijst springt naar een letter.
+Typ een deel van een titel en de lijst wordt korter terwijl je typt. Klik op dit vak en gebruik daarna **↑** **↓** en **Enter** om een nummer te openen. De **A–Z**-balk naast de lijst springt naar een letter.
 
 ## open: Je leadsheet
 Als je een nummer kiest, opent het hier. Voor de rondleiding hebben we *Bourbon Street Parade* geopend. Eerst komt de akkoordentabel, met de volledige notatie eronder. Op een telefoon vult het leadsheet het hele scherm, en met de **‹ Songs**-knop bovenaan ga je terug naar de lijst.

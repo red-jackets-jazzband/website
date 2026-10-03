@@ -27,7 +27,7 @@ Vous trouverez ici les morceaux que les Red Jackets jouent (ou ont joués, ou jo
 Utilisez **Suivant** et **Retour**, ou les touches **←** et **→**. **Échap** ferme la visite à tout moment, et le bouton **?** la relance.
 
 ## search: Trouver un morceau
-Tapez une partie du titre et la liste se réduit au fil de la frappe. Appuyez sur **/** n'importe où pour aller dans ce champ, puis utilisez **↑** **↓** et **Entrée** pour ouvrir un morceau. La barre **A–Z** à côté de la liste mène directement à une lettre.
+Tapez une partie du titre et la liste se réduit au fil de la frappe. Cliquez dans ce champ, puis utilisez **↑** **↓** et **Entrée** pour ouvrir un morceau. La barre **A–Z** à côté de la liste mène directement à une lettre.
 
 ## open: Votre grille
 Quand vous choisissez un morceau, il s'ouvre ici. Pour la visite, nous avons ouvert *Bourbon Street Parade*. Le tableau d'accords vient d'abord, avec la partition complète en dessous. Sur téléphone, la grille occupe tout l'écran, et le bouton **‹ Songs** en haut ramène à la liste.

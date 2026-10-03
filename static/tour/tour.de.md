@@ -27,7 +27,7 @@ Hier stehen die Songs, die die Red Jackets spielen (oder gespielt haben oder vie
 Nutze **Weiter** und **Zurück** oder die Tasten **←** und **→**. Mit **Esc** beendest du die Tour jederzeit, und mit dem **?**-Knopf startest du sie neu.
 
 ## search: Einen Song finden
-Tipp einen Teil des Titels ein, dann wird die Liste beim Tippen kürzer. Mit **/** springst du von überall in dieses Feld, und mit **↑** **↓** und **Enter** öffnest du dann einen Song. Die **A–Z**-Leiste neben der Liste springt zu einem Buchstaben.
+Tipp einen Teil des Titels ein, dann wird die Liste beim Tippen kürzer. Klick in dieses Feld. Mit **↑** **↓** und **Enter** öffnest du dann einen Song. Die **A–Z**-Leiste neben der Liste springt zu einem Buchstaben.
 
 ## open: Dein Leadsheet
 Wenn du einen Song auswählst, öffnet er sich hier. Für die Tour haben wir *Bourbon Street Parade* geöffnet. Zuerst kommt die Akkordtabelle, darunter die vollständige Notation. Auf einem Handy füllt das Leadsheet den ganzen Bildschirm, und mit dem **‹ Songs**-Knopf oben kommst du zurück zur Liste.
