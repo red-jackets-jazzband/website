@@ -1011,12 +1011,16 @@ export function buildVoiceBody(rawBody, barStrings, leadingRestBars, restToken, 
 // Tonal-backed note math
 // ---------------------------------------------------------------------------
 
-// Undo parseChordScheme's cosmetic unicode so Tonal can read the chord.
+// Undo parseChordScheme's cosmetic unicode so Tonal can read the chord. "Ø"
+// (what "dim" becomes) is spelled "m7b5" rather than back to "dim": a written
+// "AmØ" would otherwise become "Amdim", which Tonal can't read at all, and the
+// triad falls back to C-C-C stacked over three octaves.
 export function plainChordName(name) {
   return String(name)
     .replace(/♭/g, "b")
     .replace(/♯/g, "#")
-    .replace(/Ø/g, "dim")
+    .replace(/Ø7/g, "dim7")
+    .replace(/m?Ø/g, "m7b5")
     .trim();
 }
 
