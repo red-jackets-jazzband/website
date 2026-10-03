@@ -91,12 +91,14 @@ function tieAnchorY(el) {
   they leave) with no position class of their own — so we group the ties by
   that onset and, within a group, sort by the arc's y (top voice first) to line
   them up against the palette entry (bottom-to-top, so reversed). Normal ties
-  are a filled crescent; a dotted tie is a stroked open path — colour whichever
+  are a filled crescent; a tie into a *different* chord is drawn by ABCjs as
+  an `abcjs-legato` slur (not `abcjs-tie`) for each tone with no matching pitch
+  next door, so we select every `abcjs-slur` (ties carry that class too); a dotted tie is a stroked open path — colour whichever
   the arc uses.
 */
 function colorCompingTies(container, orderByOnset, voiceClass) {
   const groups = new Map();
-  container.querySelectorAll(`path.abcjs-tie.${voiceClass}`).forEach((tie) => {
+  container.querySelectorAll(`path.abcjs-slur.${voiceClass}`).forEach((tie) => {
     const cls = tie.getAttribute("class") || "";
     const start = /abcjs-start-m(\d+)-n(\d+)/.exec(cls);
     const line = /(?:^|\s)abcjs-l(\d+)(?:\s|$)/.exec(cls);
