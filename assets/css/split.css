@@ -4157,7 +4157,8 @@ body:has(#rjLibrary) .split-bio {
   overflow: hidden;
 }
 
-.rj-sheet-navrow {
+/* .rj-sheet prefix: outranks .hideOnprint's screen-only display rule. */
+.rj-sheet .rj-sheet-navrow {
   display: none;
 }
 #sheetBackBtn.rj-sheet-back {
@@ -4274,7 +4275,7 @@ body:not(.rj-sheet-active) .rj-sheet-pager .rj-sheet-step {
   body.rj-sheet-active #rjSheet.rj-sheet {
     display: block;
   }
-  .rj-sheet-navrow {
+  .rj-sheet .rj-sheet-navrow {
     display: flex;
     align-items: center;
     margin: 12px 16px 0;
