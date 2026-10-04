@@ -58,7 +58,9 @@ aliases: ["/setlists/", "/songbook/"]
 </div>
 
 <div id="rjSheet" class="rj-sheet">
-<button id="sheetBackBtn" class="rj-sheet-back hideOnprint" type="button"><span class="fa-solid fa-chevron-left" aria-hidden="true"></span><span id="sheetBackLabel">Songs</span></button>
+<div class="rj-sheet-navrow hideOnprint">
+<button id="sheetBackBtn" class="rj-sheet-back" type="button"><span class="fa-solid fa-chevron-left" aria-hidden="true"></span><span id="sheetBackLabel">Songs</span></button>
+</div>
 <div id="sheetmenu" class="hideOnprint">
   <div id="sheetStatus" class="sheet-status"></div>
 
@@ -186,7 +188,7 @@ aliases: ["/setlists/", "/songbook/"]
   <button type="button" id="tourStartLink" class="rj-sheet-empty-tour" hidden>First time here? Take the tour <span class="fa-solid fa-arrow-right" aria-hidden="true"></span></button>
 </div>
 <button id="sheetFullscreenBtn" class="rj-sheet-fullscreen-btn hideOnprint" type="button" title="Full screen" aria-label="Full screen" aria-pressed="false"><span class="fa-solid fa-expand" aria-hidden="true"></span></button>
-<div id="songtitle" class="songtitle"></div>
+<div class="rj-sheet-pager"><button id="sheetPrevBtn" class="rj-sheet-step hideOnprint" type="button" title="Previous song" aria-label="Previous song"><span class="fa-solid fa-chevron-left" aria-hidden="true"></span></button><div id="songtitle" class="songtitle"></div><button id="sheetNextBtn" class="rj-sheet-step hideOnprint" type="button" title="Next song" aria-label="Next song"><span class="fa-solid fa-chevron-right" aria-hidden="true"></span></button></div>
 <div id="chordtable" class="chordtable"></div>
 <div id="notation" class="notation"></div>
 <div id="lyrics" class="lyrics"></div>
