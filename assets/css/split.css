@@ -2833,6 +2833,19 @@ body.rj-sheet-active .rj-sheet-empty {
     min-height: 0;
   }
   /*
+    abcjs's responsive mode stamps the notation container with an inline
+    `display: inline-block; overflow: hidden`. An inline-block is atomic to
+    pagination: it can't be split across pages, so once comping makes the
+    staves taller than the room left under the chord table, the whole chart
+    jumps to page 2 instead of its first lines sharing page 1. Force it back
+    to a fragmentable block so the break-inside rules below can work line by
+    line.
+  */
+  #notation {
+    display: block !important;
+    overflow: visible !important;
+  }
+  /*
     oneSvgPerLine makes each engraved line its own SVG (wrapped in
     abcjs's responsive-resize <div>). Keep every line — and the
     title/chord grid — whole rather than letting a page break run
