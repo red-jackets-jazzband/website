@@ -4087,8 +4087,60 @@ body:has(#rjLibrary) .split-bio {
   overflow: hidden;
 }
 
-#sheetBackBtn.rj-sheet-back {
+.rj-sheet-navrow {
   display: none;
+}
+#sheetBackBtn.rj-sheet-back {
+  display: inline-flex;
+}
+/*
+  Prev / next song: the same pale chip as .rj-sheet-fullscreen-btn, one on
+  each side of the song title. The pager is a centred flex row, so each chip
+  keeps a fixed gap from the title's first / last letter whatever its
+  length. Only offered while a song is actually showing.
+*/
+.rj-sheet-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 0 56px;
+}
+.rj-sheet-pager .songtitle {
+  flex: 0 1 auto;
+  min-width: 0;
+  padding-left: 0;
+  padding-right: 0;
+}
+body:not(.rj-sheet-active) .rj-sheet-pager .rj-sheet-step {
+  display: none;
+}
+/* .rj-sheet-pager prefix: outranks .hideOnprint's screen-only display rule. */
+.rj-sheet-pager .rj-sheet-step {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  background: rgba(255,255,255,.8);
+  border: none;
+  border-radius: 9px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.1);
+  color: #666666;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.15s, box-shadow 0.15s, color 0.15s;
+}
+@media (hover: hover) {
+  .rj-sheet-step:hover {
+    background: #ffffff;
+    color: #333333;
+    box-shadow: 0 2px 6px rgba(0,0,0,.14);
+  }
+}
+.rj-sheet-step:focus-visible {
+  outline: 2px solid var(--rj-gold);
+  outline-offset: 2px;
 }
 
 /*
@@ -4152,11 +4204,16 @@ body:has(#rjLibrary) .split-bio {
   body.rj-sheet-active #rjSheet.rj-sheet {
     display: block;
   }
+  .rj-sheet-navrow {
+    display: flex;
+    align-items: center;
+    margin: 12px 16px 0;
+  }
   #sheetBackBtn.rj-sheet-back {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    margin: 12px 0 0 16px;
+    margin: 0;
     padding: 8px 4px;
     background: none;
     border: none;
@@ -4273,6 +4330,10 @@ body:has(#rjLibrary) .split-bio {
   .songtitle {
     font-size: x-large;
     padding: 12px 16px;
+  }
+  .rj-sheet-pager {
+    gap: 8px;
+    padding: 0 8px;
   }
 
   /*
@@ -5459,7 +5520,7 @@ body.rj-sheet-fullscreen .split-image,
 body.rj-sheet-fullscreen .split-intro {
   display: none;
 }
-body.rj-sheet-fullscreen #sheetBackBtn.rj-sheet-back {
+body.rj-sheet-fullscreen .rj-sheet-navrow {
   display: none;
 }
 body.rj-sheet-fullscreen .rj-songs-layout {
@@ -5575,10 +5636,10 @@ body.rj-sheet-fullscreen #sheetmenu {
   without leaving full screen.
 */
 @media (orientation: portrait), (max-height: 500px) and (orientation: landscape) {
-  body.rj-sheet-fullscreen #sheetBackBtn.rj-sheet-back {
+  body.rj-sheet-fullscreen .rj-sheet-navrow {
     display: flex;
     align-items: center;
-    gap: 6px;
+    justify-content: space-between;
     position: sticky;
     top: 0;
     z-index: 4;
@@ -5586,6 +5647,13 @@ body.rj-sheet-fullscreen #sheetmenu {
     margin: 0;
     padding: 10px 16px;
     background: var(--rj-ground);
+  }
+  body.rj-sheet-fullscreen #sheetBackBtn.rj-sheet-back {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
     border: none;
     color: var(--rj-gold);
     font: 600 12px/1 "Montserrat", sans-serif;
