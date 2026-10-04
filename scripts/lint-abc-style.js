@@ -191,14 +191,33 @@ function checkPickup(bars, barLength, findings) {
   findings.push({ type: "pickup-rests", at: leading[0].startChar, rests: leading });
 }
 
+// Mirrors chord-table.js: a long scheme wraps into 8 columns, a short one into
+// 4. A bar that opens a table row restates its chord even when it is the one
+// already in effect, so a bare "%" never starts a row. Counted from the first
+// chorded bar (the table has no cells before it); an approximation that only
+// ever permits a restatement, never demands one.
+const TABLE_LONG_BARS = 24;
+const TABLE_LONG_COLS = 8;
+const TABLE_SHORT_COLS = 4;
+
+function tableRowStarts(bars) {
+  const first = bars.findIndex(hasChord);
+  const starts = new Set();
+  if (first < 0) return starts;
+  const cols = bars.length - first >= TABLE_LONG_BARS ? TABLE_LONG_COLS : TABLE_SHORT_COLS;
+  for (let i = first; i < bars.length; i += cols) starts.add(bars[i]);
+  return starts;
+}
+
 function checkRepeatedChords(bars, findings) {
   let current = null;
+  const rowStarts = tableRowStarts(bars);
   for (const bar of bars) {
     if (breaksContext(bar.precededBy)) current = null;
     let firstInBar = true;
     for (const el of bar.notes) {
       realChords(el).forEach((chord, chordIndex) => {
-        const required = firstInBar && (bar.partStart || bar.lineStart);
+        const required = firstInBar && (bar.partStart || bar.lineStart || rowStarts.has(bar));
         if (chord.name === current && !required) {
           findings.push({ type: "repeated-chord", at: el.startChar, name: chord.name, el, chordIndex });
         }
