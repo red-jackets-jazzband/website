@@ -4548,6 +4548,13 @@ body:not(.rj-sheet-active) .rj-sheet-pager .rj-sheet-step {
   --chord-cell-border-left: 1px;
 }
 
+/* The first row after an intro and the first row of an ending section (Outro,
+   Coda), set off a little from the rows above. On every cell of that row, so
+   they all stay the same height. */
+.chordCellSectionGap {
+  margin-top: 0.3em;
+}
+
 /* A small boxed section letter ("A", "B", ...) from the tune's own ABC `P:`
    field, pinned to the top-left corner of the cell holding that section's
    first chord — the chord-table equivalent of stylePartMarkers' boxed letter

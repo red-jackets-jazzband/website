@@ -141,6 +141,15 @@ the body. (A `%%text` line in the body would be drawn too, but those generators 
 as music.) Keep each remark short and put the lines before the `K:` line, together with the other header
 fields. Don't use them for sung lyrics: those are `w:` lines under the notes.
 
+**Round-by-round form (who plays what, per round) is a `W:` pipe table**, not a `P:` header line:
+one row per round, `W:| <round> | <what the band plays> |`, with `;`-separated asides
+(`+Instrument` for someone joining in). The site draws it as an arrow strip under the chord
+grid. Put an exception for a particular round (e.g. "final round: play the Outro instead of
+A3") in that round's row, and keep the extra part itself as its own `P:` section at the end
+of the music (`P:Outro`). Both the regular last part and the extra one end on `|]`, so the sheet shows the extra part is an alternative ending, not a continuation. A header `P:` line
+(before `K:`) is only the plain order of the parts, e.g. `P:Intro A B A`. Don't add a second
+table for the same tune: consecutive `W:|` lines merge into one table.
+
 *Song form* is something else: the structure of the composition itself (12-bar blues, AABA,
 32 bars). Use `N:` only for background that is not meant for the stage (an alternative
 title, an arrangement credit, a source): abcjs reads `N:` but never draws it. Open
