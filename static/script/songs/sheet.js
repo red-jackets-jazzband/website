@@ -226,7 +226,7 @@ function stepWeight(step) {
 function formStep(step, shade) {
   const arrow = el("div", { class: "songForm-arrow", style: { backgroundColor: shade } }, [
     el("span", { class: "songForm-num", text: step.number }),
-    step.part ? el("span", { class: "songForm-part", text: step.part }) : null,
+    ...step.part.split(" ").filter(Boolean).map((name) => el("span", { class: name === "..." ? "songForm-part songForm-part--more" : "songForm-part", text: name })),
     step.repeat ? el("span", { class: "songForm-repeat", text: step.repeat }) : null,
   ]);
   return el("li", { class: "songForm-step", style: { flex: `${stepWeight(step)} 1 0` } }, [
