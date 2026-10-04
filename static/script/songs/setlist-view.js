@@ -336,6 +336,7 @@ export function createSetlistView(ctx) {
       return;
     }
     renderOpen(entry.name, entry.songs, entry, entry.desc);
+    if (ctx.swipeNav) ctx.swipeNav.updateButtons();
   }
 
   // ---- row controls (personal) ----------------------------------

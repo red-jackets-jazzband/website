@@ -126,6 +126,12 @@ export function createLibraryTab(ctx) {
     });
   }
 
+  // The prev / next chevrons depend on the rendered list, so refresh them
+  // whenever it is rebuilt (a search can leave the open song with no neighbour).
+  function refreshPager() {
+    if (ctx.swipeNav) ctx.swipeNav.updateButtons();
+  }
+
   function render(query) {
     const listEl = byId("songList");
     const railEl = byId("songRail");
@@ -139,6 +145,7 @@ export function createLibraryTab(ctx) {
         filtered.forEach((song) => listEl.append(buildSongRow(song)));
       }
       if (railEl) clear(railEl);
+      refreshPager();
       return;
     }
 
@@ -152,6 +159,7 @@ export function createLibraryTab(ctx) {
       group.items.forEach((song) => listEl.append(buildSongRow(song)));
     });
     if (railEl) renderRail(railEl, groups);
+    refreshPager();
   }
 
   // ---- keyboard navigation ------------------------------------------
