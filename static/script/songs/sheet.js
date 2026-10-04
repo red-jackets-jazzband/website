@@ -31,6 +31,11 @@ const JAZZ_FONTS = [
   return fonts;
 }, {});
 
+// The title and part order are hidden (the page draws its own), so the vertical gaps ABCjs reserves
+// around them are only dead white between the form strip and the composer/style line. These are
+// file-header directives; ABCjs ignores the same keys in the `format` render option.
+const TIGHT_HEADER_SPACING = "%%titlespace 0\n%%composerspace 0\n%%musicspace 0\n%%titlefont MuseJazzText 1\n";
+
 function abcParams(visualTranspose) {
   return {
     visualTranspose,
@@ -470,7 +475,7 @@ export function createSheet(ctx) {
     notationEl.classList.toggle("comping-active", comping.active);
 
     const { abcText: renderTextNoTables } = extractWordsTables(renderText);
-    const visualObjs = ABCJS.renderAbc(notationId, renderTextNoTables, abcParams(visual));
+    const visualObjs = ABCJS.renderAbc(notationId, TIGHT_HEADER_SPACING + renderTextNoTables, abcParams(visual));
 
     colorComping(notationEl, comping);
 

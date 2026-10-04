@@ -746,7 +746,7 @@ body.rj-sheet-active .rj-sheet-empty {
     /* Same width and centring as the chord grid above it (.chordtable > .chordGrid). */
     width: 90%;
     box-sizing: border-box;
-    margin: 10px auto;
+    margin: 10px auto 2px;
     padding: 0;
     font-family: 'MuseJazzText', serif;
     font-size: small;
@@ -2789,7 +2789,12 @@ body.rj-sheet-active .rj-sheet-empty {
     max-width: none;
     height: auto;
     margin: 0;
-    padding: 0;
+    /* !important: the screen rules' top padding (and .split-bio's) otherwise
+       survive here and push a single-sheet print ~40px below the songbook's. */
+    padding: 0 !important;
+  }
+  .fs-split .split-bio {
+    padding: 0 !important;
   }
   .rj-songs-layout {
     display: block !important;
@@ -3878,6 +3883,9 @@ body.setlist-dragging {
 .songPrintFooter {
   text-align:center;
   color:#000000;
+  font-family: "Montserrat", sans-serif;
+  font-size: 9px;
+  line-height: 1;
   position: fixed;
   bottom: 0;
   left: 0;
