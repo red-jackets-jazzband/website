@@ -4224,6 +4224,12 @@ body:not(.rj-sheet-active) .rj-sheet-pager .rj-sheet-step {
   display: none;
 }
 /* .rj-sheet-pager prefix: outranks .hideOnprint's screen-only display rule. */
+/* Kept in the layout (not display:none) so the centred title doesn't shift
+   as the chevrons come and go at the ends of the list. */
+.rj-sheet-pager .rj-sheet-step[hidden] {
+  display: grid;
+  visibility: hidden;
+}
 .rj-sheet-pager .rj-sheet-step {
   flex: none;
   width: 36px;
