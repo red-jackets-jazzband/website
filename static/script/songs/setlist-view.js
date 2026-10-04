@@ -756,24 +756,32 @@ export function createSetlistView(ctx) {
   // Open the previous / next song of the open setlist, skipping break dividers
   // and clamping at both ends. Returns whether it actually moved, so a caller
   // (initArrowNav) can tell a clamped edge apart from a real step.
-  function stepSong(dir) {
+  // Index (into the songs array) of the song stepSong(dir) would open, or -1
+  // when there is none — nothing open, or already at that end of the list.
+  function stepTarget(dir) {
     const songs = ctx.state.currentOpenSongs;
-    if (ctx.state.setlistsView !== "open" || !songs || !songs.length) return false;
+    if (ctx.state.setlistsView !== "open" || !songs || !songs.length) return -1;
     const songIndexes = [];
     songs.forEach((item, i) => {
       if (!isSetlistDivider(item)) songIndexes.push(i);
     });
-    if (!songIndexes.length) return false;
+    if (!songIndexes.length) return -1;
 
     const pos = songIndexes.indexOf(ctx.state.currentSetlistSongIndex);
-    let next;
-    if (pos === -1) {
-      next = dir > 0 ? songIndexes[0] : songIndexes[songIndexes.length - 1];
-    } else {
-      const np = pos + dir;
-      if (np < 0 || np >= songIndexes.length) return false;
-      next = songIndexes[np];
-    }
+    if (pos === -1) return dir > 0 ? songIndexes[0] : songIndexes[songIndexes.length - 1];
+    const np = pos + dir;
+    if (np < 0 || np >= songIndexes.length) return -1;
+    return songIndexes[np];
+  }
+
+  function canStep(dir) {
+    return stepTarget(dir) !== -1;
+  }
+
+  function stepSong(dir) {
+    const next = stepTarget(dir);
+    if (next === -1) return false;
+    const songs = ctx.state.currentOpenSongs;
 
     openSetlistSong(songs[next], next);
     const row = byId("songList")
@@ -1121,6 +1129,6 @@ export function createSetlistView(ctx) {
 
   return {
     openBand, openPersonal, refreshOpenPersonal, renderOpen,
-    highlightCurrent, stepSong, openSongInOpenSetlist, openSongAtIndex, addSongByFile, initControls,
+    highlightCurrent, stepSong, canStep, openSongInOpenSetlist, openSongAtIndex, addSongByFile, initControls,
   };
 }

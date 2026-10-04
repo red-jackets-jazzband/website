@@ -172,14 +172,22 @@ export function createLibraryTab(ctx) {
   // advance past it. The stored index is only trusted while it still points
   // at a row for the current song — a stale index (the list was re-filtered
   // since) falls back to the first matching row, same as before.
-  function stepLibrarySong(dir) {
-    if (!ctx.state.currentSongFile) return;
-    const rows = libraryRows();
-    if (!rows.length) return;
+  function libraryStepTarget(rows, dir) {
+    if (!ctx.state.currentSongFile || !rows.length) return -1;
     const current = currentSongRowIndex(rows, ctx);
-    if (current < 0) return;
+    if (current < 0) return -1;
     const next = current + dir;
-    if (next < 0 || next >= rows.length) return;
+    return next < 0 || next >= rows.length ? -1 : next;
+  }
+
+  function canStepLibrary(dir) {
+    return libraryStepTarget(libraryRows(), dir) !== -1;
+  }
+
+  function stepLibrarySong(dir) {
+    const rows = libraryRows();
+    const next = libraryStepTarget(rows, dir);
+    if (next === -1) return;
     ctx.state.currentLibraryIndex = next;
     ctx.state.currentLibrarySongName = rows[next].dataset.songName;
     rows[next].click();
@@ -234,5 +242,5 @@ export function createLibraryTab(ctx) {
     initKeyNav(searchInput);
   }
 
-  return { render, init, stepLibrarySong };
+  return { render, init, stepLibrarySong, canStepLibrary };
 }

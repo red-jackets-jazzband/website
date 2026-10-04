@@ -429,6 +429,12 @@ export function createSheet(ctx) {
     });
   }
 
+  // Show the sheet screen and refresh the prev / next chevrons for this song.
+  function activateSheet() {
+    document.body.classList.add("rj-sheet-active");
+    if (ctx.swipeNav) ctx.swipeNav.updateButtons();
+  }
+
   function engrave(text, opts) {
     const {
       notationId, chordId, titleId,
@@ -469,7 +475,7 @@ export function createSheet(ctx) {
     // #rjSheet / #notation start display:none until a song is active; that must
     // flip before ABCjs measures the container ("responsive: resize" reads its
     // width at render time; a display:none box measures 0).
-    if (!isBooklet) document.body.classList.add("rj-sheet-active");
+    if (!isBooklet) activateSheet();
 
     const notationEl = byId(notationId);
     notationEl.classList.toggle("comping-active", comping.active);
