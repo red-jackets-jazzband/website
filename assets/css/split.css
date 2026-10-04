@@ -734,40 +734,110 @@ body.rj-sheet-active .rj-sheet-empty {
     padding: 20px;
 }
 
-/* Arrangement table from `W:| a | b |` lines (sheet.js renderWordsTables) */
-.songWordsTable {
+/* `.split-bio ol` (specificity) would otherwise impose its own inherited
+   line-height and margins on the strip. */
+/* Form strip from `W:| a | b |` lines (sheet.js renderWordsTables): one arrow
+   per step (number + part box), what plays underlined beneath it. */
+.split-bio ol.songForm {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0;
+    list-style: none;
+    /* Same width and centring as the chord grid above it (.chordtable > .chordGrid). */
+    width: 90%;
+    box-sizing: border-box;
+    margin: 10px auto;
+    padding: 0;
     font-family: 'MuseJazzText', serif;
-    font-size: large;
-    border-collapse: collapse;
-    margin: 16px auto;
+    font-size: small;
+    line-height: 1.05;
     break-inside: avoid;
-    display: block;
-    max-width: 100%;
-    overflow-x: auto;
 }
-.songWordsTable th,
-.songWordsTable td {
-    padding: 4px 14px;
-    text-align: center;
-    vertical-align: top;
-    border-bottom: 1px solid rgba(128, 128, 128, 0.35);
+.songForm-step {
+    flex: 1 1 0;
+    /* Never narrower than the arrow's own number, part box and repeat note
+       (the latter doesn't wrap), so those stay readable. */
+    min-width: min-content;
+    margin: 0;
+    padding: 0 4px 0 0;
 }
-.songWordsTable td {
-    min-width: 5em;
+/* The gap between arrows is padding, so the last step has none: its point ends flush with the chord grid. */
+.songForm-step:last-child {
+    padding-right: 0;
 }
-/* On paper there is no sideways scrolling: fill the page width and wrap the
-   cells rather than overflowing the edge. */
-@media print {
-  .songWordsTable {
-    display: table;
-    width: 100%;
-    overflow: visible;
-    font-size: medium;
-  }
-  .songWordsTable td {
-    min-width: 0;
-    padding: 3px 6px;
+.songForm-arrow {
+    display: flex;
+    white-space: nowrap;
+    /* Baseline, not centre: the 12px number, 10px part box and 10px "2x" have different
+       line boxes, so centring left the repeat note sitting off the number's line. */
+    align-items: baseline;
+    gap: 3px;
+    min-height: 16px;
+    margin: 0;
+    padding: 0 8px 0 2px;
+    color: #000000;
+    font-family: "Montserrat", sans-serif;
+    clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 50%, calc(100% - 6px) 100%, 0 100%, 6px 50%);
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+}
+.songForm-step:first-child .songForm-arrow {
+    clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 50%, calc(100% - 6px) 100%, 0 100%);
+}
+.songForm-step:last-child .songForm-arrow {
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 6px 50%);
+}
+.songForm-step:first-child:last-child .songForm-arrow {
+    clip-path: none;
+}
+.songForm-num {
+    margin-left: 6px;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 700;
+}
+.songForm-step:first-child .songForm-num {
+    margin-left: 0;
+}
+.songForm-part {
+    padding: 0 3px;
+    background-color: #ffffff;
+    border: 1px solid #000000;
+    color: #000000;
+    font-size: 10px;
+    line-height: 13px;
     overflow-wrap: anywhere;
+}
+.songForm-repeat {
+    white-space: nowrap;
+    font-size: 10px;
+    line-height: 13px;
+    font-weight: 600;
+}
+/* The theme gives plain blocks and list items their own spacing. */
+.songForm-lead,
+.songForm-add {
+    margin: 0;
+    padding: 0;
+    overflow-wrap: break-word;
+}
+.songForm-lead {
+    text-decoration: underline;
+}
+.songForm-note {
+    margin: 0;
+    font-size: x-small;
+    font-style: italic;
+    overflow-wrap: break-word;
+}
+@media print {
+  .split-bio ol.songForm {
+    font-size: x-small;
+  }
+}
+@media (max-width: 480px) {
+  .split-bio ol.songForm {
+    width: 100%;
   }
 }
 

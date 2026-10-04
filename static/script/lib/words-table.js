@@ -62,3 +62,53 @@ export function transposeTable({ header, rows }) {
   if (!header) return { labels: null, rows: columns };
   return { labels: columns.map((column) => column[0]), rows: columns.map((column) => column.slice(1)) };
 }
+
+const NO_REPEAT = " no repeat";
+
+// "Verse 2x" -> { name: "Verse", repeat: "2x" }, "A no repeat" -> { name: "A", repeat: "no repeat" }:
+// a repeat note at the end of a part cell is drawn after the part box, not in it.
+function splitPartRepeat(part) {
+  if (part.endsWith(NO_REPEAT)) return { name: part.slice(0, -NO_REPEAT.length), repeat: NO_REPEAT.trim() };
+  const cut = part.lastIndexOf(" ");
+  const last = part.slice(cut + 1);
+  const isCount = cut > 0 && last.length > 1 && last.endsWith("x") && Number.isInteger(Number(last.slice(0, -1)));
+  return isCount ? { name: part.slice(0, cut), repeat: last } : { name: part, repeat: "" };
+}
+
+// One row of a form table -> a step of the form: `[number, text]` or
+// `[number, part, text]`. The text is `;`-separated: the first piece is what
+// plays (`lead`), pieces starting with `+` are instruments joining in
+// (`adds`), anything else is an aside (`notes`).
+export function parseFormStep(cells) {
+  const number = cells[0] || "";
+  const { name: part, repeat: partRepeat } = splitPartRepeat(cells.length > 2 ? cells[1] : "");
+  const text = cells.slice(cells.length > 2 ? 2 : 1).join(" ");
+  const pieces = text.split(";").map((piece) => piece.trim()).filter(Boolean);
+  let lead = pieces.length > 0 && !pieces[0].startsWith("+") ? pieces.shift() : "";
+  // A count on the lead text ("Collective 2x") belongs in the arrow too, when the part cell had none.
+  let repeat = partRepeat;
+  if (repeat === "") {
+    const split = splitPartRepeat(lead);
+    lead = split.name;
+    repeat = split.repeat;
+  }
+  const adds = pieces.filter((piece) => piece.startsWith("+")).map((piece) => piece.slice(1).trim());
+  const notes = pieces.filter((piece) => !piece.startsWith("+"));
+  return { number, part, repeat, lead, adds, notes };
+}
+
+// The part order written as a `P:` field in the tune header (before `K:`),
+// e.g. `P:Intro A C A B B B A Intro`, as one form-table row per part:
+// `[number, part, ""]`. Null when the header has none (a `P:` after `K:` is a
+// part marker in the music, not an order).
+export function extractPartOrderRows(abcText) {
+  for (const line of abcText.split("\n")) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith("K:")) return null;
+    if (trimmed.startsWith("P:")) {
+      const parts = trimmed.slice(2).split(/\s+/).filter(Boolean);
+      return parts.length > 1 ? parts.map((part, i) => [String(i + 1), part, ""]) : null;
+    }
+  }
+  return null;
+}

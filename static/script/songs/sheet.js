@@ -1,5 +1,5 @@
 import { byId, el, qsa } from "../lib/dom.js";
-import { extractWordsTables, transposeTable } from "../lib/words-table.js";
+import { extractWordsTables, extractPartOrderRows, parseFormStep } from "../lib/words-table.js";
 import { offsetForInstrument, changeClefForInstrument } from "../lib/instruments.js";
 import { parseChordScheme, computeChordOffset } from "../lib/chords.js";
 import { convertChordsToRoman } from "../lib/music-theory.js";
@@ -201,19 +201,60 @@ function showSoloStatus(fraction) {
   status.textContent = fraction === null ? "" : `Composing solo… ${Math.round(fraction * 100)}%`;
 }
 
-// Draw the tables written as `W:| a | b |` lines as real <table>s (turned on their side: each form step is a column) just below
-// the notation (and its lyrics), replacing whatever an earlier render of this sheet left there.
-function renderWordsTables(notationEl, tables) {
-  qsa(".songWordsTable", notationEl.parentNode).forEach((old) => old.remove());
+// Shade of the `index`th of `count` kinds of step in the form strip: very light grey to light grey (dark text on top, to save ink).
+function stepShade(index, count) {
+  const level = Math.round(225 - (count > 1 ? (index / (count - 1)) * 60 : 0));
+  return `rgb(${level}, ${level}, ${level})`;
+}
+
+// A step's share of the strip's width: what its arrow needs for the number, part box and repeat
+// note, plus a bonus growing with its text length.
+function stepWeight(step) {
+  const text = [step.lead, ...step.adds, ...step.notes].join(" ");
+  const arrow = step.number.length + step.part.length + step.repeat.length + 8;
+  // Square root: a long text earns more room, but not so much that its neighbours get squeezed.
+  return arrow + 4 * Math.sqrt(text.length);
+}
+
+// One step of the form strip: an arrow with the step number and part box,
+// and below it what plays (underlined), who joins (+), and any asides.
+function formStep(step, shade) {
+  const arrow = el("div", { class: "songForm-arrow", style: { backgroundColor: shade } }, [
+    el("span", { class: "songForm-num", text: step.number }),
+    step.part ? el("span", { class: "songForm-part", text: step.part }) : null,
+    step.repeat ? el("span", { class: "songForm-repeat", text: step.repeat }) : null,
+  ]);
+  return el("li", { class: "songForm-step", style: { flex: `${stepWeight(step)} 1 0` } }, [
+    arrow,
+    step.lead ? el("div", { class: "songForm-lead", text: step.lead }) : null,
+    ...step.adds.map((add) => el("div", { class: "songForm-add", text: `+ ${add}` })),
+    step.notes.length > 0 ? el("div", { class: "songForm-note", text: step.notes.join(" · ") }) : null,
+  ]);
+}
+
+// Arrow colour per step: the same part (every A, every Intro) always gets the same shade, so a
+// repeated part reads at a glance. Steps without a part each count as their own kind.
+function stepShades(steps) {
+  const kinds = [];
+  const kindOf = steps.map((step, i) => {
+    const key = step.part || `#${i}`;
+    if (!kinds.includes(key)) kinds.push(key);
+    return kinds.indexOf(key);
+  });
+  return kindOf.map((kind) => stepShade(kind, kinds.length));
+}
+
+// Draw the tables written as `W:| a | b |` lines as a strip of arrows, one per form step, just below
+// the chord table, replacing whatever an earlier render of this sheet left there.
+function renderWordsTables(chordEl, tables) {
+  qsa(".songForm", chordEl.parentNode).forEach((old) => old.remove());
+  let anchor = chordEl;
   tables.forEach((source) => {
-    const { rows } = transposeTable(source);
-    const table = el("table", { class: "songWordsTable" });
-    // The header cells only name the columns; sideways there is no room worth
-    // spending on them, so they're dropped.
-    table.append(el("tbody", {}, rows.map((cells) => el("tr", {}, cells.map((text) => el("td", { text }))))));
-    const next = notationEl.nextElementSibling;
-    const anchor = next && next.id === "lyrics" ? next : notationEl;
-    anchor.parentNode.insertBefore(table, anchor.nextSibling);
+    const steps = source.rows.map(parseFormStep);
+    const shades = stepShades(steps);
+    const form = el("ol", { class: "songForm" }, steps.map((step, i) => formStep(step, shades[i])));
+    anchor.after(form);
+    anchor = form;
   });
 }
 
@@ -425,17 +466,20 @@ export function createSheet(ctx) {
 
     const { abcText: renderTextNoTables } = extractWordsTables(renderText);
     const visualObjs = ABCJS.renderAbc(notationId, renderTextNoTables, abcParams(visual));
-    renderWordsTables(notationEl, extractWordsTables(abcText).tables);
 
     colorComping(notationEl, comping);
 
-    notationEl.querySelectorAll(".abcjs-title").forEach((node) => {
+    notationEl.querySelectorAll(".abcjs-title, .abcjs-part-order").forEach((node) => {
       node.setAttribute("display", "none");
     });
     stylePartMarkersWhenReady(notationEl);
 
     const chordEl = byId(chordId);
     renderChordTable(displayChords, chordEl);
+    // The form strip stands in for the header's printed part order: a W: table wins, else the P: order becomes the strip.
+    const { tables } = extractWordsTables(abcText);
+    const orderRows = extractPartOrderRows(abcText);
+    renderWordsTables(chordEl, tables.length === 0 && orderRows ? [{ header: null, rows: orderRows }] : tables);
     if (!isBooklet) {
       fitLiveChordGrid(chordId);
       ctx.audio.setRepeatBoundaries(scanRepeatBoundaries(chordEl));
