@@ -2347,7 +2347,11 @@ body.rj-sheet-active .rj-sheet-empty {
     print-hiding class of its own, so without this it would print alongside
     the booklet too.
   */
-  body.export-booklet-mode #rjSheet {
+  body.export-booklet-mode #rjSheet,
+  /* An empty (0px) block ahead of the cover is still in-flow content on the
+     unnamed page, so the cover's named @page forced a break after it: a blank
+     first sheet in Chromium. Nothing in the library layout prints anyway. */
+  body.export-booklet-mode .rj-songs-layout {
     display: none !important;
   }
   /*
@@ -2580,19 +2584,26 @@ body.rj-sheet-active .rj-sheet-empty {
   /* Full bleed, where the browser supports named pages (`page`: Chrome/Edge 85+,
      Firefox 110+): the cover gets its own zero-margin A4 @page, so a real
      210x297mm box fits exactly and runs to the paper edge. Browsers without
-     `page` keep the inset 190mm cover above instead of overflowing. The height
-     is a hair under 297mm so sub-pixel rounding can't spill onto a second
-     sheet (the SVG's preserveAspectRatio="none" absorbs the 0.5mm). */
-  @supports (page: titlepage) {
+     `page` keep the inset 190mm cover above instead of overflowing. The box is
+     the full 297mm: anything shorter leaves a white band at the page foot. */
+  /* Not in Firefox: switching from the unnamed page context to a named one
+     forces a break before the cover, which left a blank first sheet there.
+     It keeps the inset 190mm cover above, which fits every browser. */
+  @supports ((page: titlepage) and (not (-moz-appearance: none))) {
     .setlist-titlepage {
       page: titlepage;
       width: 210mm;
-      height: 296.5mm;
+      height: 297mm;
+      /* The artwork's black frame stops a hair short of the page edge; this
+         keeps that sliver black instead of a white band. */
+      background: #000;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
-  }
-  @page titlepage {
-    size: A4 portrait;
-    margin: 0;
+    @page titlepage {
+      size: A4 portrait;
+      margin: 0;
+    }
   }
   /* Echoes the old standalone Songbook page's own bottom-right instrument
      badge (`.text-block`, further down): black box, white MuseJazzText. */
@@ -2830,6 +2841,12 @@ body.rj-sheet-active .rj-sheet-empty {
   }
   .fs-split .split-bio {
     padding: 0 !important;
+  }
+  /* Same flex-ancestor problem one level down: the songs page's <main> is a
+     flex column on screen, and a flex ancestor breaks the booklet's page
+     handling (a blank first sheet before the cover). */
+  body:has(#rjLibrary) .fs-split .split-content-vertically-center > main {
+    display: block !important;
   }
   .rj-songs-layout {
     display: block !important;
