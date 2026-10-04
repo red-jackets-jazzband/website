@@ -178,7 +178,7 @@ export function fitChordTable(container) {
   screen, and re-fit on rotate.
 */
 export function fitSongForms(chordEl) {
-  const parent = chordEl && chordEl.parentNode;
+  const parent = chordEl && chordEl.parentNode; // NOSONAR: `?.` is a SyntaxError on Safari 12 (see Browser support)
   if (!parent) return;
   parent.querySelectorAll(".songForm").forEach((form) => {
     form.style.zoom = "";

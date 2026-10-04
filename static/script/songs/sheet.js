@@ -67,7 +67,8 @@ function fitLiveChordGrid(chordId) {
   };
   fit();
   if (document.fonts && document.fonts.status !== "loaded") {
-    document.fonts.ready.then(fit);
+    // Fit even if the font load fails: the fallback face is still better than no fit.
+    document.fonts.ready.then(fit, fit);
   }
 }
 
