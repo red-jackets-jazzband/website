@@ -13,24 +13,31 @@ index b734a0c..1aa9b54 100644
      {{ end }}
  
      <!-- Content Side -->
--    <div class="split-content">
-+    <main class="split-content">
+     <div class="split-content">
        <div class="split-content-vertically-center">
-         <!-- Intro -->
-         {{ partial "intro" . }}
-@@ -34,11 +34,11 @@
-           <!-- Bio -->
-           {{ partial "bio" . }}
-         {{ end }}
+-        <!-- Intro -->
+-        {{ partial "intro" . }}
 -
--        <!-- Footer -->
--        {{ partial "footer" . }}
-       </div>
--    </div>
-+    </main>
+-        <!-- Main -->
+-        {{ block "main" .  }}
+-          <!-- Bio -->
+-          {{ partial "bio" . }}
+-        {{ end }}
++        <main>
++          <!-- Intro -->
++          {{ partial "intro" . }}
 +
-+    <!-- Footer -->
-+    {{ partial "footer" . }}
++          <!-- Main -->
++          {{ block "main" .  }}
++            <!-- Bio -->
++            {{ partial "bio" . }}
++          {{ end }}
++        </main>
+ 
+         <!-- Footer -->
+         {{ partial "footer" . }}
+       </div>
+     </div>
  
    </div>
  

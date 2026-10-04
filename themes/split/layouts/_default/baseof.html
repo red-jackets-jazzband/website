@@ -24,21 +24,23 @@
     {{ end }}
 
     <!-- Content Side -->
-    <main class="split-content">
+    <div class="split-content">
       <div class="split-content-vertically-center">
-        <!-- Intro -->
-        {{ partial "intro" . }}
+        <main>
+          <!-- Intro -->
+          {{ partial "intro" . }}
 
-        <!-- Main -->
-        {{ block "main" .  }}
-          <!-- Bio -->
-          {{ partial "bio" . }}
-        {{ end }}
+          <!-- Main -->
+          {{ block "main" .  }}
+            <!-- Bio -->
+            {{ partial "bio" . }}
+          {{ end }}
+        </main>
+
+        <!-- Footer -->
+        {{ partial "footer" . }}
       </div>
-    </main>
-
-    <!-- Footer -->
-    {{ partial "footer" . }}
+    </div>
 
   </div>
 
