@@ -2795,6 +2795,15 @@ body.rj-sheet-active .rj-sheet-empty {
     max-width: 100%;
     height: auto;
   }
+  /* The longest songbook tunes ("Isle of Capri": five parts plus a form
+     table) fill a sheet to the last pixel, so a slightly different font
+     fallback, instrument transposition or browser tips the final staff line
+     onto a second page. Same small uniform shrink the single-sheet print
+     uses; `zoom` reduces the laid-out height, so pagination still works. The
+     chordbook's tiles are sized separately. */
+  body:not(.export-mode-chordbook) #setlistPrintBooklet .setlist-booklet-song {
+    zoom: 0.9;
+  }
 }
 
 /* ============================================================
