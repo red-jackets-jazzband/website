@@ -3528,7 +3528,9 @@ select.rj-modal-input {
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  padding: 8px 4px;
+  /* Left padding leaves room between the current-song gold bar (inset
+     box-shadow on the row's left edge) and the number. */
+  padding: 8px 4px 8px 12px;
 }
 /* Per-song note (e.g. "who solos") — a full-width line that wraps onto its
    own row under the song's title/controls (flex-basis: 100% forces the
@@ -3537,7 +3539,7 @@ select.rj-modal-input {
 .setlist-song-note-row {
   flex: 1 0 100%;
   box-sizing: border-box;
-  padding-left: 24px;
+  padding-left: 16px;
 }
 .setlist-song-note-text {
   display: block;
