@@ -87,3 +87,13 @@ test("messages carry the location and the rule", () => {
   assert.equal(issues.length, 1);
   assert.match(issues[0], /^Music Line:i\d+: Chord "C" repeats the chord already in effect/);
 });
+
+function bars(chord, n) {
+  return Array.from({ length: n }, (_, i) => (i === 0 ? `"${chord}"C4` : "C4")).join(" | ");
+}
+
+test("a chord may be restated where a long scheme's 8-column chord table starts a row", () => {
+  const restated = `${bars("C", 8)} | "C"C4 | ${bars("F", 15)} |`;
+  assert.deepEqual(findings(restated), []);
+  assert.deepEqual(findings(`${bars("C", 8)} | C4 | "C"C4 | ${bars("F", 14)} |`), ["repeated-chord"]);
+});
