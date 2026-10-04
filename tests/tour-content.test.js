@@ -21,6 +21,7 @@ const songsPage = read("content/songs.md");
 // runtime, by the module (and string) named here.
 const RUNTIME_TARGETS = {
   "#tourBtn": ["layouts/partials/intro.html", 'id="tourBtn"'],
+  ".songForm": ["static/script/songs/sheet.js", 'class: "songForm"'],
   "#instrument": ["static/script/songs/selects.js", 'id: "instrument"'],
   "#iRealPro": ["static/script/songs/irealpro-link.js", 'id: "iRealPro"'],
   "#inspirationLink": ["static/script/songs/inspiration.js", 'btn.id = "inspirationLink"'],
@@ -126,7 +127,7 @@ test("the tour's UI strings cover everything songs/tour.js reads", () => {
 test("the demo song and setlist the tour opens exist", () => {
   const songs = read("static/songs/index_of_songs.txt");
   const setlists = read("static/setlists/index_of_setlists.txt");
-  assert.ok(songs.includes("bourbon_street_parade.abc"));
+  assert.ok(songs.includes("bill_bailey.abc"));
   assert.ok(setlists.includes("setlist_2026.txt"));
-  assert.ok(read("static/setlists/setlist_2026.txt").includes("bourbon_street_parade.abc"));
+  assert.ok(read("static/setlists/setlist_2026.txt").includes("bill_bailey.abc"));
 });
