@@ -2682,11 +2682,11 @@ body.rj-sheet-active .rj-sheet-empty {
     height: 95mm;
     overflow: hidden;
     padding: 3mm 8mm;
-    /* Sit the chart in the middle of its quarter-page; `safe` keeps a chart
-       taller than the tile pinned to the top rather than clipped both ends. */
-    display: flex;
-    flex-direction: column;
-    justify-content: safe center;
+    /* A centred, shrink-to-fit grid (see the comment further down). */
+    display: grid;
+    grid-template-columns: 100%;
+    grid-template-rows: auto minmax(0, auto) auto;
+    align-content: safe center;
   }
   /* Every "Set N" heading, "Set 1" included (see the frontmatter-adjacency
      rule above), opens a fresh page; clear the tiled row before it and let
@@ -2711,11 +2711,46 @@ body.rj-sheet-active .rj-sheet-empty {
   body.export-mode-chordbook #setlistPrintBooklet .chordtable > .chordGrid {
     font-size: x-large;
     width: 100%;
-    margin: 3mm auto 0;
+    margin: 3mm 0 0;
+    min-height: 0; /* stretched to the chord table's own (shrinkable) row, no percentage height */
+    grid-auto-rows: minmax(20px, 50px);
   }
   body.export-mode-chordbook #setlistPrintBooklet .chordDiv {
-    height: 50px;
-    line-height: 50px; /* vertically centre the single line of chord text */
+    height: auto;
+    line-height: 1.2;
+  }
+  /* A chart with more rows than fit (Isle of Capri, ...) must still show its
+     whole grid AND the song-form strip inside the A5 tile, which otherwise
+     clips the overflow. The tile is a grid whose middle track (the chord
+     table) is the only one allowed to shrink; short charts keep their natural
+     height and stay centred as a stack. Rows are up to 50px and give way
+     evenly (never below a legible 20px); each cell centres its chord text. */
+  body.export-mode-chordbook #setlistPrintBooklet .chordtable {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr);
+    min-height: 0;
+    padding-bottom: 2mm; /* breathing room above the song form, inside the shrinkable track */
+  }
+  body.export-mode-chordbook #setlistPrintBooklet ol.songForm {
+    margin-top: 2mm;
+  }
+  /* Bar-line cells (double-style side border) lose their top/bottom border at
+     the shrinking rows' fractional pixel positions: Chromium anti-aliases it
+     away under the 1px corner radius (a Firefox workaround, see
+     .chordCellDoubleThinBarLeft), Firefox drops it at the mismatched-width
+     corner. Paint the top/bottom hairlines as an inset shadow instead, which neither engine can lose. */
+  body.export-mode-chordbook #setlistPrintBooklet .chordCell:is(.chordCellDoubleThinBarLeft, .chordCellDoubleThinBarRight, .chordCellLeftRepeat, .chordCellRightRepeat) {
+    border-radius: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    box-shadow: inset 0 1px 0 #000000, inset 0 -1px 0 #000000;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  body.export-mode-chordbook #setlistPrintBooklet .chordCell {
+    display: grid;
+    align-items: center;
+    min-height: 0;
   }
 
   /* Keep the title, chord grid and each engraved staff line whole across a
