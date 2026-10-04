@@ -3914,6 +3914,16 @@ body:has(#rjLibrary) .fs-split .split-content-vertically-center {
   flex-direction: column;
   margin: 0;
 }
+/* The <main> landmark wraps the intro and .split-bio, so it's the flex item
+   of the column above — without its own flex/min-height:0 it grows to its
+   content (the whole song list) and the list never scrolls internally,
+   which also stretched the A-Z rail over thousands of pixels. */
+body:has(#rjLibrary) .fs-split .split-content-vertically-center > main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
 /* Compact heading — this page is a practice tool, not an article; the
    sitewide 64px hero tagline is decorative weight the sidebar can't spare. */
 body:has(#rjLibrary) .split-intro {
