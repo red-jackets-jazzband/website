@@ -808,6 +808,10 @@ body.rj-sheet-active .rj-sheet-empty {
     line-height: 13px;
     overflow-wrap: anywhere;
 }
+/* "..." in a part cell: the preceding parts can repeat any number of times (solos). */
+.songForm-part--more {
+    border-style: dashed;
+}
 .songForm-repeat {
     white-space: nowrap;
     font-size: 10px;
