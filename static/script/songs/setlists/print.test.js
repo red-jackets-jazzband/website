@@ -291,8 +291,8 @@ test("buildBooklet hands the listen handler every song's title and sources, in s
   const { print, settle, cleanup } = setup();
   try {
     let latest = null;
-    print.setListenChangeHandler((url, songs) => { latest = songs; });
-    withAbcjs(createAbcjsStub(), () => print.buildBooklet("Gig", SONGS, ""));
+    print.setListenChangeHandler((_url, songs) => { latest = songs; });
+    withAbcjs(createAbcjsStub(), () => { print.buildBooklet("Gig", SONGS, ""); });
     await settle();
     assert.equal(print.getListenTitle(), "Gig");
     assert.deepEqual(latest.map((song) => song.title), ["A", "B", "A"]);

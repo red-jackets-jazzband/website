@@ -83,18 +83,22 @@ export function createPlaylistExport(ctx) {
     busy = true;
     const tab = openPendingTab();
     setStatus(BUSY_TEXT);
-    requestShareUrl(body).then((url) => {
-      if (tab) {
-        tab.location.replace(url);
-        setStatus(null);
-      } else {
-        setStatus(el("a", { href: url, target: "_blank", rel: "noopener", text: "Open the playlist on Soundiiz" }));
-      }
-    }, (err) => {
-      console.warn("Soundiiz import failed:", err);
-      if (tab) tab.close();
-      setStatus(FAIL_TEXT);
-    }).then(() => { busy = false; });
+    const done = () => { busy = false; };
+    requestShareUrl(body)
+      .then((url) => {
+        if (tab) {
+          tab.location.replace(url);
+          setStatus(null);
+        } else {
+          setStatus(el("a", { href: url, target: "_blank", rel: "noopener", text: "Open the playlist on Soundiiz" }));
+        }
+      })
+      .catch((err) => {
+        console.warn("Soundiiz import failed:", err);
+        if (tab) tab.close();
+        setStatus(FAIL_TEXT);
+      })
+      .then(done, done);
   }
 
   function init() {

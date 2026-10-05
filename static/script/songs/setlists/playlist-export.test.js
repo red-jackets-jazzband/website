@@ -38,7 +38,7 @@ function setup({ reply, tab = { location: { replace(url) { this.url = url; } }, 
   return {
     exporter, requests, tab,
     status: () => document.getElementById("listenStatus"),
-    cleanup() {
+    cleanup: () => {
       globalThis.fetch = originalFetch;
       page.cleanup();
     },
@@ -108,5 +108,21 @@ test("a failed or untrusted reply closes the pending tab and says so", async () 
     }
   } finally {
     console.warn = originalWarn;
+  }
+});
+
+test("an error steering the tab still reports failure and lets the button be used again", async (t) => {
+  t.mock.method(console, "warn", () => {});
+  const tab = { location: { replace() { throw new Error("blocked"); } }, close() { this.closed = true; } };
+  const { requests, status, cleanup } = setup({ reply: { status: "success", shareUrl: SHARE_URL }, tab });
+  try {
+    document.getElementById("listenExportBtn").click();
+    await flush();
+    assert.match(status().textContent, /Couldn’t reach Soundiiz/);
+    document.getElementById("listenExportBtn").click();
+    await flush();
+    assert.equal(requests.length, 2, "not stuck busy after the failure");
+  } finally {
+    cleanup();
   }
 });
