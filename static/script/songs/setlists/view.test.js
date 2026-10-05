@@ -11,6 +11,7 @@ import {
 import { createSetlistView } from "./view.js";
 
 const DRAG_HANDLE_SELECTOR = ".setlist-song-row .setlist-drag-handle";
+const REMOVE_SELECTOR = ".setlist-song-remove";
 const NOTE_INPUT_SELECTOR = ".setlist-song-note-input";
 const NOTE_ADD_SELECTOR = ".setlist-song-note-add";
 const SONG_TITLE_SELECTOR = ".setlist-song-title";
@@ -97,7 +98,7 @@ test("renderOpen numbers a flat personal setlist 1..n with drag handles + remove
     view.renderOpen(entry.name, entry.songs, entry, "");
     assert.deepEqual(rowNumbers(), ["1", "2", "3"]);
     assert.equal(document.querySelectorAll(DRAG_HANDLE_SELECTOR).length, 3);
-    assert.equal(document.querySelectorAll(".setlist-song-remove").length, 3);
+    assert.equal(document.querySelectorAll(REMOVE_SELECTOR).length, 3);
     assert.ok(addSongSearch(), "add-song tray present");
   } finally {
     cleanup();
@@ -595,7 +596,7 @@ function assertRemoval(trigger, expectedFiles) {
 
 test("the remove button drops the song from the personal setlist", () => {
   assertRemoval(
-    () => document.querySelectorAll(".setlist-song-remove")[1]
+    () => document.querySelectorAll(REMOVE_SELECTOR)[1]
       .dispatchEvent(new window.Event("click")),
     ["a.abc", "c.abc"],
   );
@@ -629,7 +630,7 @@ test("remove reads the row's live position so it survives a reorder", () => {
     // position, not a stale index captured when the row was built.
     setPersonalSetlistOrder(storage, entry.id, [1, 0, 2]);
     view.renderOpen(entry.name, getPersonalSetlist(storage, entry.id).songs, entry, "");
-    document.querySelector(".setlist-song-remove").dispatchEvent(new window.Event("click"));
+    document.querySelector(REMOVE_SELECTOR).dispatchEvent(new window.Event("click"));
     assert.deepEqual(
       getPersonalSetlist(storage, entry.id).songs.map((s) => s.file),
       ["a.abc", "c.abc"],
@@ -925,5 +926,106 @@ test("the Listen button tracks setlistPrint's listen-change callback and opens i
   } finally {
     window.open = originalOpen;
     page.cleanup();
+  }
+});
+
+// ---- the open song's index pointer survives structural edits ------------
+// Splitting, merging, removing and adding all shift the item indices that
+// follow the edit; the pointer to the open song (highlight, Up/Down stepping,
+// the Key stepper's write-back) must be carried along with its song.
+
+function openSongAt(ctx, view, file, index) {
+  ctx.readFile = (path, onLoad) => onLoad(MINIMAL_ABC);
+  assert.ok(view.openSongAtIndex(index), `opened ${file}`);
+  assert.equal(ctx.state.currentSongFile, file);
+}
+
+const currentRowFile = () => {
+  const row = document.querySelector(".setlist-song-row.is-current-song");
+  return row ? row.dataset.songFile : null;
+};
+
+test("splitting a set above the open song keeps its pointer and highlight", () => {
+  const { view, ctx, entry, cleanup } = setup({
+    songs: [{ file: "a.abc" }, { file: "b.abc" }, { file: "c.abc" }],
+  });
+  try {
+    view.initControls();
+    view.renderOpen(entry.name, entry.songs, entry, "");
+    openSongAt(ctx, view, "c.abc", 2);
+    document.querySelectorAll(".setlist-split-btn")[0].click(); // new set before b
+    assert.equal(ctx.state.currentSetlistSongIndex, 3, "c moved from item 2 to item 3");
+    assert.equal(currentRowFile(), "c.abc");
+  } finally {
+    cleanup();
+  }
+});
+
+test("merging a set (removing its heading) keeps the open song's pointer", () => {
+  const { view, ctx, entry, cleanup } = setup({
+    songs: [{ file: "a.abc" }, { divider: "Two" }, { file: "b.abc" }, { file: "c.abc" }],
+  });
+  try {
+    view.initControls();
+    view.renderOpen(entry.name, entry.songs, entry, "");
+    openSongAt(ctx, view, "c.abc", 3);
+    document.querySelector(".setlist-set-merge").click();
+    assert.equal(ctx.state.currentSetlistSongIndex, 2);
+    assert.equal(currentRowFile(), "c.abc");
+  } finally {
+    cleanup();
+  }
+});
+
+test("removing a song above the open one keeps its pointer; removing the open one drops it", () => {
+  const { view, ctx, entry, cleanup } = setup({
+    songs: [{ file: "a.abc" }, { file: "b.abc" }, { file: "c.abc" }],
+  });
+  try {
+    view.initControls();
+    view.renderOpen(entry.name, entry.songs, entry, "");
+    openSongAt(ctx, view, "c.abc", 2);
+    document.querySelectorAll(REMOVE_SELECTOR)[0].click();
+    assert.equal(ctx.state.currentSetlistSongIndex, 1);
+    assert.equal(currentRowFile(), "c.abc");
+    document.querySelectorAll(REMOVE_SELECTOR)[1].click(); // the open one
+    assert.equal(ctx.state.currentSetlistSongIndex, null);
+  } finally {
+    cleanup();
+  }
+});
+
+test("adding a song into an earlier set keeps the open song's pointer", () => {
+  const { view, ctx, entry, cleanup } = setup({
+    songs: [{ file: "a.abc" }, { divider: "Two" }, { file: "c.abc" }],
+  });
+  try {
+    view.initControls();
+    view.renderOpen(entry.name, entry.songs, entry, "");
+    openSongAt(ctx, view, "c.abc", 2);
+    document.querySelector(".setlist-set-add").click(); // aim at the end of set 1
+    view.addSongByFile("x.abc");
+    assert.equal(ctx.state.currentSetlistSongIndex, 3);
+    assert.equal(currentRowFile(), "c.abc");
+  } finally {
+    cleanup();
+  }
+});
+
+test("naming set 1 (inserting a leading heading) keeps the open song's pointer", () => {
+  const { view, ctx, entry, cleanup } = setup({
+    songs: [{ file: "a.abc" }, { divider: "Two" }, { file: "c.abc" }],
+  });
+  try {
+    view.initControls();
+    view.renderOpen(entry.name, entry.songs, entry, "");
+    openSongAt(ctx, view, "c.abc", 2);
+    const input = document.querySelector(".setlist-set .setlist-divider-input");
+    input.value = "Opener";
+    input.dispatchEvent(new window.Event("change"));
+    assert.equal(ctx.state.currentSetlistSongIndex, 3);
+    assert.equal(currentRowFile(), "c.abc");
+  } finally {
+    cleanup();
   }
 });

@@ -50,7 +50,7 @@ function focusAdjacentOnEmptyArrow(key) {
   if (last) last.focus();
 }
 
-export function createAddSongTray(ctx, { refresh }) {
+export function createAddSongTray(ctx, { refresh, onInsert }) {
   let addSongQuery = "";
   let addSongActiveIndex = -1; // keyboard-highlighted add-song result, -1 = none
   let focusAfterRender = false;
@@ -70,6 +70,7 @@ export function createAddSongTray(ctx, { refresh }) {
       addSongToPersonalSetlist(ctx.storage(), ctx.state.currentPersonalId, song);
     } else {
       insertItemInPersonalSetlist(ctx.storage(), ctx.state.currentPersonalId, insertAt, song);
+      if (onInsert) onInsert(insertAt);
       insertAt += 1; // the next title typed goes right after this one
     }
     addSongQuery = "";

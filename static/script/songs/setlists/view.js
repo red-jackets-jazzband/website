@@ -171,7 +171,25 @@ export function createSetlistView(ctx) {
   const keys = createSetlistKeys(ctx);
   // Hoisted function declarations below, so these can be built up front.
   const rowDrag = createRowDrag({ onReorder: persistOrder });
-  const tray = createAddSongTray(ctx, { refresh: refreshOpenPersonal });
+  const tray = createAddSongTray(ctx, {
+    refresh: refreshOpenPersonal,
+    onInsert: (index) => shiftOpenIndex(index, 1),
+  });
+
+  // Inserting (`delta` 1) or removing (-1) the item at `index` shifts every
+  // item after it, so carry the open song's index pointer along — otherwise
+  // the highlight, Up/Down stepping and the Key stepper's write-back would all
+  // aim at whichever item now sits at the stale index. Removing the open song
+  // itself drops the pointer (the sheet keeps showing it).
+  function shiftOpenIndex(index, delta) {
+    const open = ctx.state.currentSetlistSongIndex;
+    if (open == null || !ctx.state.currentSongFile) return;
+    let next = open;
+    if (delta > 0 && open >= index) next = open + 1;
+    else if (delta < 0 && open === index) next = null;
+    else if (delta < 0 && open > index) next = open - 1;
+    if (next !== open) ctx.nav.selectSetlistSong(ctx.state.currentSongFile, next);
+  }
 
   // ---- opening -----------------------------------------------------
 
@@ -263,6 +281,7 @@ export function createSetlistView(ctx) {
             const value = e.target.value.trim();
             if (value && value !== "Set 1") {
               insertItemInPersonalSetlist(ctx.storage(), personalId, 0, { divider: value });
+              shiftOpenIndex(0, 1);
             }
             tray.clearTarget();
             refreshOpenPersonal();
@@ -288,6 +307,7 @@ export function createSetlistView(ctx) {
           const value = e.target.value.trim();
           if (setNumber === 1 && !value) {
             removeSongFromPersonalSetlist(ctx.storage(), personalEntry.id, index);
+            shiftOpenIndex(index, -1);
           } else {
             updateDividerLabelInPersonalSetlist(ctx.storage(), personalEntry.id, index, value);
           }
@@ -323,6 +343,7 @@ export function createSetlistView(ctx) {
         click: () => {
           tray.clearTarget();
           insertItemInPersonalSetlist(ctx.storage(), personalEntry.id, index, { divider: "" });
+          shiftOpenIndex(index, 1);
           refreshOpenPersonal();
         },
       },
@@ -523,10 +544,13 @@ export function createSetlistView(ctx) {
           endIndex = entry.index + 1;
         }
         prevWasSong = false;
-        const first = isPersonal ? firstSetHeading(entry.label) : setHeaderRow(entry.label);
-        target().append(entry.index === undefined
-          ? first
-          : dividerRow(entry.item, entry.index, personalEntry, entry.setNumber));
+        let heading;
+        if (entry.index !== undefined) {
+          heading = dividerRow(entry.item, entry.index, personalEntry, entry.setNumber);
+        } else {
+          heading = isPersonal ? firstSetHeading(entry.label) : setHeaderRow(entry.label);
+        }
+        target().append(heading);
       } else {
         if (isPersonal && prevWasSong) target().append(splitGap(entry.index, personalEntry));
         target().append(songRow(entry.item, entry.index, personalEntry, entry.displayNumber));
@@ -594,7 +618,9 @@ export function createSetlistView(ctx) {
     const rows = draggableRows();
     const pos = rows.indexOf(row);
     tray.clearTarget();
-    removeSongFromPersonalSetlist(ctx.storage(), personalId, Number(row.dataset.setlistIndex));
+    const removedIndex = Number(row.dataset.setlistIndex);
+    removeSongFromPersonalSetlist(ctx.storage(), personalId, removedIndex);
+    shiftOpenIndex(removedIndex, -1);
     if (pos !== -1) {
       if (rows.length > 1) {
         focusHandleAfterRender = Math.min(pos, rows.length - 2);
