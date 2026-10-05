@@ -3020,7 +3020,6 @@ body.rj-sheet-active .rj-sheet-empty {
 #openSetlistTools[hidden],
 #setlistsBackBtn[hidden],
 #setlistNameInput[hidden],
-#setlistRenameBtn[hidden],
 #setlistExportBtn[hidden] {
   display: none;
 }
@@ -3037,9 +3036,9 @@ body.rj-sheet-active .rj-sheet-empty {
   font: 500 12.5px "Montserrat", sans-serif;
 }
 /*
-  Open-setlist title: a plain heading (not a form field) with a pencil, plus
-  export as an icon button alongside — a double-click on the heading
-  or the pencil swaps in .rj-setlist-title-input. It's moved (in JS) to the
+  Open-setlist title: a plain heading (not a form field), dashed-underlined
+  when editable, plus an export icon button alongside — clicking or focusing
+  the heading swaps in .rj-setlist-title-input. It's moved (in JS) to the
   foot of the tools column, so it needs a little breathing room above the
   song list that follows.
 */
@@ -3061,6 +3060,25 @@ body.rj-sheet-active .rj-sheet-empty {
   color: #eceae6;
   font: 700 15px "Montserrat", sans-serif;
   cursor: text;
+}
+/* One dashed underline for every editable name (setlist title, set titles).
+   A border rather than text-decoration, so it also shows under an unnamed
+   set's placeholder text. */
+.rj-setlist-title.is-editable:hover,
+.rj-setlist-title.is-editable:focus-visible,
+.setlist-divider-input:hover,
+.setlist-divider-input:focus {
+  border-bottom-color: var(--rj-gold);
+}
+.rj-setlist-title.is-editable {
+  flex: 0 1 auto;
+  max-width: 100%;
+  border-bottom: 1px dashed rgba(226,157,15,.45);
+  outline: none;
+}
+/* export stays pinned to the row's right edge */
+#setlistExportBtn {
+  margin-left: auto;
 }
 .rj-setlist-title-input {
   flex: 1;
@@ -3371,7 +3389,7 @@ select.rj-modal-input {
 .rj-library-add-song-inputwrap {
   position: relative;
 }
-.rj-library-add-song-inputwrap > .fa-magnifying-glass {
+.rj-library-add-song-inputwrap > .fa-plus {
   position: absolute;
   left: 0;
   top: 0;
@@ -3601,6 +3619,7 @@ select.rj-modal-input {
   flex: 1 0 100%;
   box-sizing: border-box;
   padding-left: 16px;
+  order: 2; /* a full-width note (shown or being edited) wraps below the row's controls */
 }
 .setlist-song-note-text {
   display: block;
@@ -3626,7 +3645,19 @@ select.rj-modal-input {
 .setlist-song-note-text:hover {
   color: var(--rj-gold);
 }
+/* No note yet: "+ note" sits inline after the title, so showing it on hover
+   doesn't add a line to the row. Badge and buttons order after it. */
+.setlist-song-note-row.is-inline {
+  flex: none;
+  padding-left: 0;
+  order: 0;
+}
+.setlist-song-row > .setlist-song-key-badge,
+.setlist-song-row > .setlist-song-btn {
+  order: 1;
+}
 .setlist-song-note-add {
+  white-space: nowrap;
   background: none;
   border: none;
   padding: 2px 0;
@@ -3662,6 +3693,23 @@ select.rj-modal-input {
   color: #dedcd8;
   font: 400 12px/1.4 "Montserrat", sans-serif;
   resize: vertical;
+  /* A long note scrolls inside the field: a slim dark scrollbar instead of
+     the native light one. */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(226,157,15,.45) transparent;
+}
+.setlist-song-note-input::-webkit-scrollbar {
+  width: 8px;
+}
+.setlist-song-note-input::-webkit-scrollbar-track {
+  background: transparent;
+}
+.setlist-song-note-input::-webkit-scrollbar-thumb {
+  background: rgba(226,157,15,.45);
+  border-radius: 4px;
+}
+.setlist-song-note-input::-webkit-scrollbar-thumb:hover {
+  background: var(--rj-gold);
 }
 /* Same `[hidden]` override as .setlist-song-note-text just above. */
 .setlist-song-note-input[hidden] {
@@ -3810,33 +3858,171 @@ body.setlist-dragging {
   color: #eceae6;
   margin-bottom: 18px;
 }
-/* Set dividers ("break") inside an open setlist. A read-only band setlist
-   shows a plain "Set N" heading (reusing .song-list-letter); a personal one
-   shows an editable label plus the same drag/remove controls as a song. */
-.setlist-set-heading {
-  border-top: 1px solid rgba(255,255,255,.08);
-  margin-top: 6px;
-}
 .song-list-item.setlist-divider-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 4px;
-  border-top: 1px solid rgba(255,255,255,.08);
+  padding: 12px 8px 4px 14px;
+  border-top: 0;
+}
+/* A set is a subtle box: heading, songs, then its own "Add song" row. */
+.setlist-set {
+  position: relative;
+  margin: 0 0 14px;
+  background: #1b1b1b;
+  border: 1px solid #2f2f2f;
+  border-radius: 10px;
 }
 .setlist-divider-input {
-  flex: 1;
-  min-width: 0;
-  height: 26px;
+  /* sized to its text where field-sizing exists, so the dashed underline
+     only runs under the name */
+  flex: 0 1 auto;
+  field-sizing: content;
+  min-width: 4ch;
+  max-width: 100%;
+  height: 18px; /* hugs the text so the underline sits right under it */
   box-sizing: border-box;
-  padding: 0 8px;
-  background: #1f1f1f;
-  border: 1px solid rgba(255,255,255,.1);
-  border-radius: 6px;
+  padding: 0 2px 1px;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px dashed rgba(226,157,15,.45);
+  border-radius: 0;
+  cursor: text;
   color: var(--rj-gold);
   font: 700 10.5px "Montserrat", sans-serif;
   text-transform: uppercase;
   letter-spacing: .1em;
+}
+/* Idea 2a: sets read as subtle groups. A personal set's label is a heading
+   that only looks like a field on hover/focus (click to rename). */
+.setlist-set-label {
+  padding: 0 2px;
+  color: var(--rj-gold);
+  font: 700 10.5px "Montserrat", sans-serif;
+  line-height: 26px;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+}
+.setlist-divider-input::placeholder {
+  color: var(--rj-gold);
+  opacity: 1;
+}
+.setlist-divider-input:focus {
+  outline: none;
+  background: #1f1f1f;
+}
+/* Hover splitter between two songs: a scissors on the left edge. */
+.setlist-split-gap {
+  position: relative;
+  height: 0;
+  z-index: 2;
+}
+.setlist-split-btn {
+  position: absolute;
+  left: -11px;
+  top: -11px;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  font-size: 11px;
+  color: var(--rj-gold);
+  background: #1e1e1e;
+  border: 1px solid var(--rj-gold);
+  border-radius: 50%;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity .12s;
+}
+.setlist-split-gap:hover .setlist-split-btn,
+.setlist-split-btn:focus-visible,
+.setlist-split-btn.rj-tour-reveal-split, /* the guided tour's split step (revealDemoSplit) */
+.setlist-song-row:hover + .setlist-split-gap .setlist-split-btn {
+  opacity: 1;
+}
+/* Touch has no hover: the gap under the open (highlighted) song always shows
+   its scissors — tapping any other row would just open that song instead. */
+@media (hover: none) {
+  .setlist-song-row.is-current-song + .setlist-split-gap { height: 30px; }
+  .setlist-song-row.is-current-song + .setlist-split-gap .setlist-split-btn {
+    opacity: 1;
+    left: 4px;
+    top: 4px;
+    width: 34px;
+    height: 24px;
+    border-radius: 12px;
+    font-size: 13px;
+  }
+}
+.setlist-set-add {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 4px 8px 12px;
+  background: none;
+  border: 0;
+  color: rgba(230,228,224,.5);
+  font: 500 12px "Montserrat", sans-serif;
+  text-align: left;
+  cursor: pointer;
+}
+/* Inside a set box the add-song field is the "Add song to set N" row with a
+   cursor in it: same inset, type and resting colour, no field chrome until
+   it has focus. */
+.setlist-set > .rj-library-add-song-inline {
+  margin: 0;
+  padding: 0;
+  border-top: 0;
+}
+.setlist-set .rj-library-add-song-inline .rj-library-add-song-inputwrap > .fa-plus {
+  left: 0;
+  width: 24px;
+  font-size: 10px;
+  color: inherit;
+}
+.rj-library-list .setlist-set .rj-library-add-song-inline input[type="search"] {
+  height: auto;
+  padding: 8px 30px 8px 36px;
+  background: none;
+  border: 0;
+  border-radius: 0 0 10px 10px;
+  color: #dedcd8;
+  font: 500 12px "Montserrat", sans-serif;
+}
+.rj-library-list .setlist-set .rj-library-add-song-inline input[type="search"]::placeholder {
+  color: rgba(230,228,224,.5);
+}
+.setlist-set .rj-library-add-song-inline:focus-within .rj-library-add-song-inputwrap > .fa-plus {
+  color: var(--rj-gold);
+}
+/* Merge-up: a small, quiet badge on the set box's top-right edge. */
+.setlist-set-merge {
+  position: absolute;
+  top: -11px;
+  right: 14px;
+  z-index: 3;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  font-size: 10px;
+  color: rgba(230,228,224,.4);
+  background: #1e1e1e;
+  border: 1px solid #333;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: color .12s, background .12s, border-color .12s;
+}
+.setlist-set-merge:hover,
+.setlist-set-merge:focus-visible {
+  color: var(--rj-gold);
+  background: #1e1e1e;
+  border-color: var(--rj-gold);
+}
+.setlist-set-add:hover {
+  color: var(--rj-gold);
 }
 /* "Set N" heading between song blocks in the printed booklet. */
 .setlist-booklet-set-heading {
