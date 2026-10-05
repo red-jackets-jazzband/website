@@ -78,6 +78,8 @@ export function makeCtx(overrides = {}) {
       print: () => {},
       setListenChangeHandler: () => {},
       getListenUrl: () => null,
+      getListenSongs: () => [],
+      getListenTitle: () => "",
       ...overrides.setlistPrint,
     },
     setlistView: overrides.setlistView,
