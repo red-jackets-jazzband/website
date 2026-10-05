@@ -45,7 +45,9 @@ aliases: ["/setlists/", "/songbook/"]
         <span class="rj-library-print-label" id="rjListenLabel">Listen</span>
         <div class="rj-library-print-seg">
           <button type="button" id="listenYoutubeBtn" class="rj-library-print-btn" disabled title="No YouTube links in this setlist" aria-label="Open this setlist’s songs on YouTube"><span class="fa-brands fa-youtube" aria-hidden="true"></span> YouTube</button>
+          <button type="button" id="listenSpotifyBtn" class="rj-library-print-btn" disabled title="No songs in this setlist" aria-label="Save this setlist as a Spotify playlist (via Soundiiz)"><span class="fa-brands fa-spotify" aria-hidden="true"></span> Spotify</button>
         </div>
+        <p class="rj-library-print-status" id="listenStatus" role="status" aria-live="polite" hidden></p>
       </div>
     </div>
   </div>
