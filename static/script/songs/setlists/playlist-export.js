@@ -4,12 +4,14 @@ import {
 } from "../../lib/setlists/setlist-listen.js";
 
 /*
-  The Listen group's "Spotify" button: saves the open setlist as a playlist
-  on the visitor's own Spotify account, through Soundiiz's public Playlist
-  Import API (see lib/setlists/setlist-listen.js). The click POSTs the
-  tracklist — each song pinned to its own Spotify track, else YouTube video,
-  else SoundCloud track, else just its title — and sends the visitor to the
-  temporary import page Soundiiz answers with, where they sign in and save it.
+  The Listen group's "Export" button: saves the open setlist as a playlist
+  on the visitor's own streaming account (Spotify, Apple Music, YouTube
+  Music, Deezer, TIDAL, … — they pick on Soundiiz's side), through Soundiiz's
+  public Playlist Import API (see lib/setlists/setlist-listen.js). The click
+  POSTs the tracklist — each song pinned to its own Spotify track, else
+  YouTube video, else SoundCloud track, else just its title — and sends the
+  visitor to the temporary import page Soundiiz answers with, where they sign
+  in and save it.
 
   The new tab is opened synchronously inside the click, *before* the request,
   and only pointed at Soundiiz once the reply lands: a window.open() made
@@ -58,21 +60,21 @@ function openPendingTab() {
 // Called with print.js's listen-change payload; enabled once there's at
 // least one song to send (every song counts — one with no link still goes
 // over by title).
-export function updateSpotifyButton(songs) {
-  const btn = byId("listenSpotifyBtn");
+export function updateExportButton(songs) {
+  const btn = byId("listenExportBtn");
   if (!btn) return;
   const ready = songs.some((song) => song && song.title);
   btn.disabled = !ready;
-  btn.title = ready ? "Save this setlist as a Spotify playlist (via Soundiiz)" : "No songs in this setlist";
+  btn.title = ready ? "Export this setlist as a playlist to Spotify, Apple Music, YouTube Music… (via Soundiiz)" : "No songs in this setlist";
   setStatus(null);
 }
 
-export function createSpotifyExport(ctx) {
+export function createPlaylistExport(ctx) {
   let busy = false;
 
   function payload() {
     const print = ctx.setlistPrint;
-    return buildSoundiizPayload(print.getListenTitle(), print.getListenSongs(), "spotify");
+    return buildSoundiizPayload(print.getListenTitle(), print.getListenSongs());
   }
 
   function send() {
@@ -96,9 +98,9 @@ export function createSpotifyExport(ctx) {
   }
 
   function init() {
-    const btn = byId("listenSpotifyBtn");
+    const btn = byId("listenExportBtn");
     if (btn) btn.addEventListener("click", send);
   }
 
-  return { init, update: updateSpotifyButton, send };
+  return { init, update: updateExportButton, send };
 }

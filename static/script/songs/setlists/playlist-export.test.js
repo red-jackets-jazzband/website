@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mountPage } from "../../../../tests/helpers/dom.js";
 import { makeCtx } from "../../../../tests/helpers/ctx.js";
-import { createSpotifyExport } from "./spotify-export.js";
+import { createPlaylistExport } from "./playlist-export.js";
 import { SOUNDIIZ_ENDPOINT } from "../../lib/setlists/setlist-listen.js";
 
 const SHARE_URL = "https://soundiiz.com/go/import-playlist/abc123";
@@ -32,7 +32,7 @@ function setup({ reply, tab = { location: { replace(url) { this.url = url; } }, 
   const ctx = makeCtx({
     setlistPrint: { getListenSongs: () => SONGS, getListenTitle: () => "Gig 2026" },
   });
-  const exporter = createSpotifyExport(ctx);
+  const exporter = createPlaylistExport(ctx);
   exporter.init();
   exporter.update(SONGS);
   return {
@@ -45,10 +45,10 @@ function setup({ reply, tab = { location: { replace(url) { this.url = url; } }, 
   };
 }
 
-test("update enables the Spotify button once the setlist has songs", () => {
+test("update enables the Export button once the setlist has songs", () => {
   const { exporter, cleanup } = setup({ reply: {} });
   try {
-    const btn = document.getElementById("listenSpotifyBtn");
+    const btn = document.getElementById("listenExportBtn");
     assert.equal(btn.disabled, false);
     exporter.update([]);
     assert.equal(btn.disabled, true);
@@ -60,13 +60,15 @@ test("update enables the Spotify button once the setlist has songs", () => {
 test("a click POSTs the preferred-source tracklist and steers the pre-opened tab to Soundiiz", async () => {
   const { requests, tab, status, cleanup } = setup({ reply: { status: "success", shareUrl: SHARE_URL } });
   try {
-    document.getElementById("listenSpotifyBtn").click();
+    document.getElementById("listenExportBtn").click();
     assert.equal(status().hidden, false, "shows a busy line while waiting");
     await flush();
     assert.equal(requests.length, 1);
     assert.equal(requests[0].url, SOUNDIIZ_ENDPOINT);
     assert.equal(requests[0].init.method, "POST");
-    assert.deepEqual(JSON.parse(requests[0].init.body).tracklist, [
+    const body = JSON.parse(requests[0].init.body);
+    assert.equal(body.destination, undefined, "the visitor picks the service on Soundiiz");
+    assert.deepEqual(body.tracklist, [
       { title: "Bill Bailey", platform: "spotify", id: "sp" },
       { title: "Panama" },
     ]);
@@ -80,7 +82,7 @@ test("a click POSTs the preferred-source tracklist and steers the pre-opened tab
 test("with the tab blocked, the import link is offered in the status line instead", async () => {
   const { status, cleanup } = setup({ reply: { status: "success", shareUrl: SHARE_URL }, tab: null });
   try {
-    document.getElementById("listenSpotifyBtn").click();
+    document.getElementById("listenExportBtn").click();
     await flush();
     const link = status().querySelector("a");
     assert.equal(link.href, SHARE_URL);
@@ -96,7 +98,7 @@ test("a failed or untrusted reply closes the pending tab and says so", async () 
     for (const reply of [new Error("offline"), { status: "success", shareUrl: "https://evil.example/" }]) {
       const { tab, status, cleanup } = setup({ reply });
       try {
-        document.getElementById("listenSpotifyBtn").click();
+        document.getElementById("listenExportBtn").click();
         await flush();
         assert.equal(tab.closed, true);
         assert.match(status().textContent, /Couldn’t reach Soundiiz/);
