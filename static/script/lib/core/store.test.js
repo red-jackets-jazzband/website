@@ -132,3 +132,43 @@ test("a batched notification keeps the tag only when every write agreed", () => 
   });
   assert.deepEqual(metas, [["nav", { source: "render" }], ["mixer", {}]]);
 });
+
+test("set rejects a foreign or unknown key even when its value didn't change", () => {
+  const store = make();
+  // swing belongs to "mixer"; with an equal value it used to slip into "nav"
+  // unnoticed whenever another key in the same patch changed.
+  assert.throws(() => store.set("nav", { tab: "x", swing: 52 }), /isn't part of slice "nav"/);
+  assert.throws(() => store.set("nav", { tab: "x", typo: undefined }), /isn't part of slice "nav"/);
+  assert.equal(Object.prototype.hasOwnProperty.call(store.get("nav"), "swing"), false);
+  assert.equal(store.get("nav").tab, "library", "a rejected patch changes nothing");
+});
+
+test("a throwing subscriber doesn't stop the others; the error still surfaces", () => {
+  const store = make();
+  const seen = [];
+  store.subscribe("nav", () => {
+    seen.push("a");
+    throw new Error("boom");
+  });
+  store.subscribe("nav", () => seen.push("b"));
+  assert.throws(() => store.set("nav", { tab: "x" }), /boom/);
+  assert.deepEqual(seen, ["a", "b"]);
+  assert.equal(store.get("nav").tab, "x");
+});
+
+test("a throwing subscriber during a batch flush doesn't strand the other slices' notifications", () => {
+  const store = make();
+  const seen = [];
+  store.subscribe("nav", () => {
+    throw new Error("boom");
+  });
+  store.subscribe("mixer", () => seen.push("mixer"));
+  assert.throws(() => store.batch(() => {
+    store.set("nav", { tab: "x" });
+    store.set("mixer", { swing: 1 });
+  }), /boom/);
+  assert.deepEqual(seen, ["mixer"]);
+  // Nothing is left pending to leak into a later, unrelated batch.
+  store.batch(() => {});
+  assert.deepEqual(seen, ["mixer"]);
+});

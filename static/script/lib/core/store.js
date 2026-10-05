@@ -28,7 +28,9 @@
 
   Notification is synchronous. A subscriber that sets another slice simply
   notifies that slice's subscribers in turn; inside `batch`, every
-  notification waits until the outermost batch returns.
+  notification waits until the outermost batch returns. A subscriber that
+  throws doesn't stop the others: all of them run, then the first error is
+  rethrown to whoever made the write.
 
   Pure and DOM-free (and Safari-12-safe: no Proxy is needed for the flat
   view, only Object.defineProperty).
@@ -60,18 +62,37 @@ export function createStore(initialSlices) {
     if (!Object.prototype.hasOwnProperty.call(slices, name)) throw new Error(`store: unknown slice "${name}"`);
   }
 
-  function notify(name, keys, meta) {
+  // Every listener runs even when an earlier one throws — one feature's
+  // failure (say, a synth that can't start) mustn't stop the others from
+  // following the change. The first error is rethrown afterwards, so it still
+  // surfaces. Returns that error rather than throwing when `collect` is set.
+  function notify(name, keys, meta, collect = false) {
+    let firstError = null;
     // A copy: a listener that unsubscribes (or subscribes) mid-notify must not
     // shift the iteration under it.
-    listeners[name].slice().forEach((fn) => fn(slices[name], keys, meta));
+    listeners[name].slice().forEach((fn) => {
+      try {
+        fn(slices[name], keys, meta);
+      } catch (error) {
+        if (firstError === null) firstError = error;
+      }
+    });
+    if (collect) return firstError;
+    if (firstError !== null) throw firstError;
+    return null;
   }
 
+  // Deliver every pending notification, even past a throwing listener, so
+  // none is left behind to leak into a later, unrelated batch.
   function flush() {
+    let firstError = null;
     while (pending.size > 0) {
       const [name, entry] = pending.entries().next().value;
       pending.delete(name);
-      notify(name, [...entry.keys], entry.meta);
+      const error = notify(name, [...entry.keys], entry.meta, true);
+      if (firstError === null) firstError = error;
     }
+    if (firstError !== null) throw firstError;
   }
 
   function defer(name, keys, meta) {
@@ -86,10 +107,12 @@ export function createStore(initialSlices) {
 
   function set(name, patch, meta = {}) {
     assertSlice(name);
-    const keys = changedKeys(slices[name], patch);
-    keys.forEach((key) => {
+    // Every key, not just the changed ones: an equal or undefined value for a
+    // key that isn't this slice's would otherwise be merged in unnoticed.
+    Object.keys(patch).forEach((key) => {
       if (sliceOfKey[key] !== name) throw new Error(`store: key "${key}" isn't part of slice "${name}"`);
     });
+    const keys = changedKeys(slices[name], patch);
     if (keys.length === 0) return;
     slices[name] = { ...slices[name], ...patch };
     if (batchDepth > 0) {

@@ -233,8 +233,7 @@ function paint(plan, renderText, targets, { titlePrefix = "", voices = [] } = {}
   renderWordsTables(chordEl, plan.wordsTables);
 
   byId(targets.titleId).textContent = titlePrefix + plan.song.metaText.title;
-  extractLyrics(notationEl);
-  return { visualObj: visualObjs && visualObjs.length > 0 ? visualObjs[0] : null, chordEl };
+  return { visualObj: visualObjs && visualObjs.length > 0 ? visualObjs[0] : null, chordEl, notationEl };
 }
 
 /*
@@ -333,8 +332,12 @@ export function createSheet(ctx) {
     // must flip before ABCjs measures the container ("responsive: resize"
     // reads its width at render time; a display:none box measures 0).
     activateSheet();
-    const { visualObj, chordEl } = paint(plan, renderText, LIVE_TARGETS, { voices });
+    const { visualObj, chordEl, notationEl } = paint(plan, renderText, LIVE_TARGETS, { voices });
     fitLiveChordGrid(LIVE_TARGETS.chordId);
+    // Live sheet only: #lyrics belongs to it. A booklet song keeps its lyrics
+    // in its own print block (moving them here used to wipe the live song's
+    // lyrics and leave every booklet song without its own).
+    extractLyrics(notationEl);
 
     ctx.store.set("tune", {
       currentSongText: plan.abcText,
