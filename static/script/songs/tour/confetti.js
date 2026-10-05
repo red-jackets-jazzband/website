@@ -86,7 +86,8 @@ function fall(piece, flight) {
 }
 
 // Fire confetti out of the `card` element, inside the tour `root` and
-// underneath the card; the layer removes itself when done. No-op for visitors
+// underneath the card (replacing any burst still running); the layer removes
+// itself when done. No-op for visitors
 // who asked for reduced motion.
 export function launchConfetti(root, card) {
   if (prefersReducedMotion()) return;
@@ -102,6 +103,8 @@ export function launchConfetti(root, card) {
     shots.push({ piece, flight: planFlight(random, originY) });
     layer.append(piece);
   }
+  // A revisit of the last step must start a fresh burst, not stack on a running one.
+  root.querySelectorAll(".rj-confetti").forEach((old) => old.remove());
   root.insertBefore(layer, card);
   let longest = 0;
   window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
