@@ -19,9 +19,14 @@ function setup(overrides = {}) {
   const opened = [];
   const ctx = makeCtx({
     state: { allSongs: SONGS, activeTab: "library" },
-    openLibrarySong: (song) => opened.push(song),
     ...overrides,
   });
+  // Record each open, then let navigation do its real work (the nav state).
+  const realOpen = ctx.nav.openLibrarySong;
+  ctx.nav.openLibrarySong = (song, row) => {
+    opened.push(song);
+    realOpen(song, row);
+  };
   const tab = createLibraryTab(ctx);
   return { page, ctx, tab, opened, cleanup: page.cleanup };
 }

@@ -656,7 +656,6 @@ test("Alt+ArrowDown re-focuses the moved row's drag handle after re-render", () 
 test("a plain arrow key still steps the open sheet's song, not a reorder, off a focused title", () => {
   const { view, ctx, entry, rendered, cleanup } = openThreeSongSetlist();
   try {
-    ctx.setSheetBackLabel = () => {};
     ctx.readFile = (path, onLoad) => onLoad(MINIMAL_ABC);
     view.openSongInOpenSetlist("a");
     document.querySelectorAll(SONG_TITLE_SELECTOR)[0].dispatchEvent(
@@ -677,7 +676,6 @@ test("a plain arrow key still steps the open sheet's song, not a reorder, off a 
 test("stepping without Alt continues from the last moved item, not a stale index", () => {
   const { view, ctx, cleanup } = openThreeSongSetlist();
   try {
-    ctx.setSheetBackLabel = () => {};
     ctx.readFile = (path, onLoad) => onLoad(MINIMAL_ABC);
     // Open "a" (index 0), then move it down past "b" with Alt+ArrowDown —
     // it now sits at index 1, and its pointer should move with it.
@@ -705,7 +703,6 @@ test("arrow keys step to the next song even while a drag handle has focus", () =
     songs: [{ file: "a.abc", key: "" }, { file: "b.abc", key: "" }],
   });
   try {
-    ctx.setSheetBackLabel = () => {};
     ctx.readFile = (path, onLoad) => onLoad(MINIMAL_ABC);
     view.initControls();
     view.renderOpen(entry.name, entry.songs, entry, "");
@@ -732,7 +729,6 @@ test("arrow-down on the last song of a personal setlist hands off to the add-son
     songs: [{ file: "a.abc", key: "" }, { file: "b.abc", key: "" }],
   });
   try {
-    ctx.setSheetBackLabel = () => {};
     ctx.readFile = (path, onLoad) => onLoad(MINIMAL_ABC);
     view.initControls();
     view.renderOpen(entry.name, entry.songs, entry, "");
@@ -752,7 +748,6 @@ test("arrow-down on the last song of a personal setlist hands off to the add-son
 test("arrow-down on the last song of a read-only band setlist is a no-op (no add-song tray)", () => {
   const { view, ctx, cleanup } = setup({ personal: false });
   try {
-    ctx.setSheetBackLabel = () => {};
     ctx.readFile = (path, onLoad) => onLoad(MINIMAL_ABC);
     view.initControls();
     view.renderOpen("Band Night", [{ file: "a.abc", key: "" }, { file: "b.abc", key: "" }], null, "");
@@ -771,15 +766,15 @@ test("arrow-down on the last song of a read-only band setlist is a no-op (no add
 test("clicking a song title opens it in the sheet with the resolved transpose", () => {
   const { view, entry, ctx, rendered, cleanup } = setup({ songs: [{ file: "a.abc", key: "" }] });
   try {
-    const backLabels = [];
-    ctx.setSheetBackLabel = (label) => backLabels.push(label);
     ctx.readFile = (path, onLoad) => onLoad("X:1\nK:Bb\nB2|");
     view.renderOpen(entry.name, entry.songs, entry, "");
     document.querySelector(SONG_TITLE_SELECTOR).dispatchEvent(new window.Event("click"));
     assert.equal(rendered.length, 1);
     assert.equal(ctx.state.currentSongFile, "a.abc");
     assert.equal(ctx.state.currentSetlistSongIndex, 0);
-    assert.deepEqual(backLabels, ["Setlist"], "mobile back button points at the setlist");
+    assert.equal(
+      document.getElementById("sheetBackLabel").textContent, "Setlist", "mobile back button points at the setlist",
+    );
   } finally {
     cleanup();
   }

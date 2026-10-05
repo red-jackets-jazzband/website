@@ -117,9 +117,7 @@ export function createLibraryTab(ctx) {
           // The exact row, not the song file, is the source of truth: a song
           // can appear more than once in the index, so matching by file would
           // always resolve to its first occurrence.
-          ctx.state.currentLibraryIndex = libraryRows().indexOf(e.currentTarget);
-          ctx.state.currentLibrarySongName = song.name;
-          ctx.openLibrarySong(song);
+          ctx.nav.openLibrarySong(song, { index: libraryRows().indexOf(e.currentTarget), name: song.name });
           clearSearchIfActive();
         },
       },
@@ -196,8 +194,6 @@ export function createLibraryTab(ctx) {
     const rows = libraryRows();
     const next = libraryStepTarget(rows, dir);
     if (next === -1) return;
-    ctx.state.currentLibraryIndex = next;
-    ctx.state.currentLibrarySongName = rows[next].dataset.songName;
     rows[next].click();
     // On the narrow layout the sidebar (and this row with it) is display:none
     // once a sheet is open — scrollIntoView on an element with no box makes
@@ -241,7 +237,7 @@ export function createLibraryTab(ctx) {
       const addSong = ctx.state.activeTab === "setlists"
         && document.getElementById("setlistAddSongSearch");
       const field = addSong || searchInput;
-      if (!addSong && ctx.state.activeTab !== "library") ctx.switchTab("library");
+      if (!addSong && ctx.state.activeTab !== "library") ctx.nav.switchTab("library");
       e.preventDefault();
       field.focus();
       field.select();

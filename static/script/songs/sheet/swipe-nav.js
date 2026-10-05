@@ -21,20 +21,9 @@ function startedOnControl(target) {
 }
 
 export function createSwipeNav(ctx) {
-  function step(dir) {
-    if (ctx.state.activeTab === "setlists") {
-      if (ctx.state.setlistsView === "open") ctx.setlistView.stepSong(dir);
-      return;
-    }
-    ctx.library.stepLibrarySong(dir);
-  }
-
-  function canStep(dir) {
-    if (ctx.state.activeTab === "setlists") {
-      return ctx.state.setlistsView === "open" && ctx.setlistView.canStep(dir);
-    }
-    return ctx.library.canStepLibrary(dir);
-  }
+  // Which list a step walks (open setlist or library) is navigation's call.
+  const step = (dir) => ctx.nav.step(dir);
+  const canStep = (dir) => ctx.nav.canStep(dir);
 
   // Hide the pager's chevrons at the ends of the list: no previous song, no
   // left button; no next song, no right button.

@@ -41,7 +41,11 @@ test("swipe left opens the next library song, right the previous", () => {
   const { ctx, cleanup } = setup();
   try {
     const opened = [];
-    ctx.openLibrarySong = (song) => { opened.push(song.file); };
+    const realOpen = ctx.nav.openLibrarySong;
+    ctx.nav.openLibrarySong = (song, row) => {
+      opened.push(song.file);
+      realOpen(song, row);
+    };
     ctx.library.render("");
     ctx.state.currentSongFile = "basin_street.abc";
     const sheet = document.getElementById("notation");
@@ -61,7 +65,11 @@ test("swipe clamps at the ends of the library list", () => {
   const { ctx, cleanup } = setup();
   try {
     const opened = [];
-    ctx.openLibrarySong = (song) => { opened.push(song.file); };
+    const realOpen = ctx.nav.openLibrarySong;
+    ctx.nav.openLibrarySong = (song, row) => {
+      opened.push(song.file);
+      realOpen(song, row);
+    };
     ctx.library.render("");
     ctx.state.currentSongFile = "all_of_me.abc";
     swipe(document.getElementById("notation"), { x: 120, y: 100 }, { x: 240, y: 108 });

@@ -28,8 +28,8 @@ const RUNTIME_TARGETS = {
   "#compingSplitBtn": ["static/script/songs/sheet/selects.js", 'id: "compingSplitBtn"'],
   "#compingParts": ["static/script/songs/sheet/selects.js", 'id: "compingParts"'],
   ".rj-library-new-setlist-btn": ["static/script/songs/setlists/home.js", 'class: "rj-library-new-setlist-btn"'],
-  ".rj-library-add-song-field": ["static/script/songs/setlists/view.js", 'class: "rj-library-add-song-field"'],
-  ".rj-library-add-break": ["static/script/songs/setlists/view.js", 'class: "rj-library-add-break"'],
+  ".rj-library-add-song-field": ["static/script/songs/setlists/add-song.js", 'class: "rj-library-add-song-field"'],
+  ".rj-library-add-break": ["static/script/songs/setlists/add-song.js", 'class: "rj-library-add-break"'],
   ".setlist-divider-input": ["static/script/songs/setlists/view.js", 'class: "setlist-divider-input"'],
   ".setlist-song-note-add": ["static/script/songs/setlists/view.js", 'class: "setlist-song-note-add"'],
 };
