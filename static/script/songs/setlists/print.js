@@ -304,7 +304,9 @@ export function createSetlistPrint(ctx) {
     // a print doesn't fire with the title/name still sized off a fallback
     // font while Saniretro/AkuraPopo are still loading.
     pendingReads += 1;
-    fitTitlePage(titlePage).then(() => readSettled(seq));
+    // Settled either way: a print must never wait forever on the title fit.
+    const settleTitlePage = () => readSettled(seq);
+    fitTitlePage(titlePage).then(settleTitlePage, settleTitlePage);
     if (desc) container.append(coverPage(name, desc));
     container.append(frontMatter(name, songs));
 

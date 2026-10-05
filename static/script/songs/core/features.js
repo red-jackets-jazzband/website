@@ -69,7 +69,8 @@ function initSidebar(ctx) {
   ctx.library.init();
   ctx.setlistView.initControls();
   const layout = document.querySelector(".rj-songs-layout");
-  ctx.nav.switchTab((layout && layout.dataset.defaultTab) || "library");
+  // `?.` is a SyntaxError on Safari 12 (see CLAUDE.md's Browser support).
+  ctx.nav.switchTab((layout && layout.dataset.defaultTab) || "library"); // NOSONAR
 }
 
 export const FEATURES = [

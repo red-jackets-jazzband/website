@@ -118,7 +118,8 @@ export function bindPersisted(store, slice, schema, { read = readPref, write = w
   if (load) store.set(slice, loadPersisted(schema, read));
   return store.subscribe(slice, (state, keys) => {
     keys.forEach((key) => {
-      if (Object.prototype.hasOwnProperty.call(schema, key)) schema[key].save(state[key], write);
+      // Object.hasOwn is Safari 15.4+; this code must run on Safari 12.
+      if (Object.prototype.hasOwnProperty.call(schema, key)) schema[key].save(state[key], write); // NOSONAR
     });
   });
 }
