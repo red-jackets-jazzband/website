@@ -199,7 +199,7 @@ export function createInspiration(ctx) {
   // copy out of by hand.
   function copyShareLink() {
     const btn = byId("inspirationShareBtn");
-    const url = ctx && ctx.shareUrl ? ctx.shareUrl(loopBar.loopRange()) : "";
+    const url = ctx && ctx.nav.shareUrl ? ctx.nav.shareUrl(loopBar.loopRange()) : "";
     if (!url) return;
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(url).then(

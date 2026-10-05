@@ -29,15 +29,27 @@ function setup({ state = {}, sheetLoadMs = 10, storage = memoryStorage() } = {})
       isOpen: () => panelOpen.inspiration,
     },
     audio: { stop: () => calls.push("audio.stop") },
-    switchTab: (tab) => {
-      calls.push(`tab:${tab}`);
-      ctx.state.activeTab = tab;
-      ctx.state.setlistsView = "home";
-    },
-    openLibrarySong: (song) => {
-      calls.push(`song:${song.file}`);
-      ctx.state.currentSongFile = song.file;
-      setTimeout(() => { ctx.state.currentSongText = `X:1 ${song.file}`; }, sheetLoadMs);
+    nav: {
+      switchTab: (tab) => {
+        calls.push(`tab:${tab}`);
+        ctx.state.activeTab = tab;
+        ctx.state.setlistsView = "home";
+      },
+      openLibrarySong: (song) => {
+        calls.push(`song:${song.file}`);
+        ctx.state.currentSongFile = song.file;
+        setTimeout(() => { ctx.state.currentSongText = `X:1 ${song.file}`; }, sheetLoadMs);
+      },
+      // Mirrors navigation's openSetlistById: reopening a setlist by id, then `then`.
+      openSetlistById: (id, then, onMissing) => {
+        calls.push(`openById:${id}`);
+        if (id === "gone") { onMissing(); return; }
+        ctx.state.setlistsView = "open";
+        ctx.state.currentSetlistId = id;
+        ctx.state.currentSongFile = null;
+        ctx.state.currentSetlistSongIndex = null;
+        then();
+      },
     },
     storage: () => storage,
   });
@@ -79,16 +91,6 @@ function setup({ state = {}, sheetLoadMs = 10, storage = memoryStorage() } = {})
       calls.push(`addSong:${file}`);
       addSongToPersonalSetlist(storage, ctx.state.currentPersonalId, { file, key: "" });
     },
-  };
-  // Mirrors app.js's openSetlistById: reopening a setlist by id, then `then`.
-  ctx.openSetlistById = (id, then, onMissing) => {
-    calls.push(`openById:${id}`);
-    if (id === "gone") { onMissing(); return; }
-    ctx.state.setlistsView = "open";
-    ctx.state.currentSetlistId = id;
-    ctx.state.currentSongFile = null;
-    ctx.state.currentSetlistSongIndex = null;
-    then();
   };
   // Stands in for the sheet: a comping pick shows up as an active comping
   // staff once it's rendered.

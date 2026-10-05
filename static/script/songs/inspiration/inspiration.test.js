@@ -1116,7 +1116,7 @@ test("dragging the timeline's played bar scrubs playback, following the pointer 
   }
 });
 
-test("the share button copies the link ctx.shareUrl builds from the markers", () => {
+test("the share button copies the link ctx.nav.shareUrl builds from the markers", () => {
   inDom(({ window }) => {
     const copied = [];
     Object.defineProperty(window.navigator, "clipboard", {
@@ -1124,13 +1124,14 @@ test("the share button copies the link ctx.shareUrl builds from the markers", ()
       configurable: true,
     });
     const seen = [];
-    const ctx = {
-      ...makeCtx(),
-      shareUrl: (markers) => {
-        seen.push(markers);
-        return "https://red-jackets.example/songs/#s=basin_street&i=1";
+    const ctx = makeCtx({
+      nav: {
+        shareUrl: (markers) => {
+          seen.push(markers);
+          return "https://red-jackets.example/songs/#s=basin_street&i=1";
+        },
       },
-    };
+    });
     const insp = createInspiration(ctx);
     insp.init();
 
@@ -1151,7 +1152,7 @@ test("a rejected clipboard write falls back to a prompt and shows no success tic
     });
     let prompted = null;
     window.prompt = (_label, value) => { prompted = value; return value; };
-    const insp = createInspiration({ ...makeCtx(), shareUrl: () => "https://x/songs/#s=y&i=1" });
+    const insp = createInspiration(makeCtx({ nav: { shareUrl: () => "https://x/songs/#s=y&i=1" } }));
     insp.init();
 
     window.document.getElementById("inspirationShareBtn").dispatchEvent(new window.Event("click"));

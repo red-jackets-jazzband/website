@@ -1,5 +1,6 @@
 import { createAppStore, bindAppPrefs } from "../../static/script/songs/core/state.js";
 import { subscribeRerender } from "../../static/script/songs/sheet/sheet.js";
+import { createNavigation } from "../../static/script/songs/core/navigation.js";
 
 /*
   A minimal stand-in for the app's shared `ctx`, for testing songs/ modules in
@@ -34,9 +35,6 @@ export function makeCtx(overrides = {}) {
     readFile: overrides.readFile || (() => {}),
     storage: overrides.storage || (() => null),
     songName: overrides.songName || ((file) => file),
-    openLibrarySong: overrides.openLibrarySong || (() => {}),
-    setSheetBackLabel: overrides.setSheetBackLabel || (() => {}),
-    switchTab: overrides.switchTab || (() => {}),
     sheet: {
       render: () => {},
       rerender: () => {},
@@ -85,6 +83,11 @@ export function makeCtx(overrides = {}) {
     setlistView: overrides.setlistView,
     library: overrides.library,
   };
+  // The real navigation service (it only touches the store and the page —
+  // so only when there is a page: a DOM-less test gets no-op stand-ins),
+  // with any of its methods swapped for a test's spies via `overrides.nav`.
+  const nav = globalThis.document ? createNavigation(ctx) : {};
+  ctx.nav = { ...nav, ...overrides.nav };
   // Like the real sheet, the stand-in re-renders on any store change that
   // needs it — so a test's `sheet.rerender` spy sees what the app would do.
   subscribeRerender(store, () => ctx.sheet.rerender());

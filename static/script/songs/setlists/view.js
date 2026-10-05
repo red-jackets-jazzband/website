@@ -1,26 +1,23 @@
 import {
-  byId, el, qsa, clear, on, downloadBlob,
+  byId, el, clear, on, downloadBlob,
 } from "../../lib/core/dom.js";
 import { isSetlistDivider } from "../../lib/setlists/setlist-format.js";
 import { walkSetlist } from "../../lib/setlists/setlist-walk.js";
-import { filterSongsByQuery } from "../../lib/core/song-index.js";
-import {
-  extractKeyFromAbc, setlistTransposeSteps, formatSetlistKeyLabel,
-  resolvedSetlistKeyName, tempoBpmFromAbc,
-} from "../../lib/music/music-theory.js";
+import { extractKeyFromAbc, setlistTransposeSteps } from "../../lib/music/music-theory.js";
 import {
   getPersonalSetlist,
   renamePersonalSetlist,
-  addSongToPersonalSetlist,
   removeSongFromPersonalSetlist,
   updateSongKeyInPersonalSetlist,
   updateSongNoteInPersonalSetlist,
-  addDividerToPersonalSetlist,
   updateDividerLabelInPersonalSetlist,
   setPersonalSetlistOrder,
   exportPersonalSetlistText,
 } from "../../lib/setlists/setlists-store.js";
 import { isRenderWrite } from "../core/state.js";
+import { createSetlistKeys } from "./keys.js";
+import { createRowDrag, draggableRows, renumberOpen } from "./row-drag.js";
+import { createAddSongTray } from "./add-song.js";
 
 const emptyRow = (text) => el("div", { class: "song-list-empty", text });
 const setHeaderRow = (text) => el("div", { class: "song-list-letter setlist-set-heading", text });
@@ -53,17 +50,6 @@ function applyOpenChrome(name, isPersonal) {
   show("setlistNameInput", true);
   show("setlistRenameBtn", !isPersonal);
   show("setlistExportBtn", !isPersonal);
-}
-
-function setRowDragTranslate(row, y) {
-  row.style.transform = y === 0 ? "" : `translateY(${y}px)`;
-}
-
-function draggableRows() {
-  const listEl = byId("songList");
-  return listEl
-    ? Array.from(listEl.querySelectorAll(".setlist-song-row, .setlist-divider-row"))
-    : [];
 }
 
 // A row control that can plausibly be a note field's blur destination (the
@@ -117,52 +103,6 @@ function restoreDescribedFocus(listEl, described) {
   return Boolean(target);
 }
 
-// Rewrite the number badges / "Set N" placeholders straight from current DOM
-// order — used mid-drag, before any re-render. Mirrors walkSetlist: numbers
-// restart each set when the list has any dividers, else run 1..n.
-function renumberOpen() {
-  const listEl = byId("songList");
-  if (!listEl) return;
-  const rows = qsa(".setlist-song-row, .setlist-divider-row, .setlist-set-heading", listEl);
-  const hasDividers = listEl.querySelector(".setlist-divider-row, .setlist-set-heading") != null;
-  let n = 0;
-  let songInSet = 0;
-  let setNumber = 1;
-  rows.forEach((row) => {
-    if (row.classList.contains("setlist-song-row")) {
-      n += 1;
-      songInSet += 1;
-      const numEl = row.querySelector(".setlist-song-number");
-      if (numEl) numEl.textContent = String(hasDividers ? songInSet : n);
-      return;
-    }
-    songInSet = 0;
-    if (row.classList.contains("setlist-divider-row")) {
-      setNumber += 1;
-      const input = row.querySelector(".setlist-divider-input");
-      if (input) input.placeholder = `Set ${setNumber}`;
-    }
-  });
-}
-
-function showAddSongError() {
-  const resultsEl = byId("setlistAddSongResults");
-  if (!resultsEl) return;
-  clear(resultsEl);
-  resultsEl.classList.add("is-open");
-  resultsEl.append(el("div", {
-    class: "rj-library-add-song-empty",
-    text: "Couldn’t load the song list — try again in a moment.",
-  }));
-}
-
-function addSongResultButtons() {
-  const resultsEl = byId("setlistAddSongResults");
-  return resultsEl
-    ? Array.from(resultsEl.querySelectorAll(".rj-library-add-song-result"))
-    : [];
-}
-
 // A field that wants the arrow keys for itself. Drag handles don't — reorder
 // is a pointer-drag-only gesture, so the arrow keys always step through songs
 // even when a handle has focus (see initArrowNav below).
@@ -181,129 +121,19 @@ function ownsArrowKeys(target) {
   dump.
 */
 export function createSetlistView(ctx) {
-  let addSongQuery = "";
-  let addSongActiveIndex = -1; // keyboard-highlighted add-song result, -1 = none
-  let focusAddSongAfterRender = false;
   let focusHandleAfterRender = null; // draggable-row index to re-focus after a keyboard nudge
   let noteFocusAfterRender = null; // describeFocusTarget() result to re-focus after a note commit
-  let rowDrag = null;
   let songLoadSeq = 0; // bumped per song open; a stale XHR callback checks it before rendering
-
-  // ---- per-song key resolution -----------------------------------
-
-  // A song's own written key (its K: field) and native tempo (its Q: field),
-  // fetched once per file (one XHR covers both) and kept for the life of
-  // this view — every open setlist's key display (band badge or personal key
-  // picker) reads off the cached key rather than the raw override, so
-  // "F, +2" shows as the real resulting key ("G") instead of a semitone
-  // count. undefined = not yet requested, null = fetched but no K:/Q: found.
-  const nativeKeyCache = {};
-  const nativeBpmCache = {};
-  const pendingKeyFetches = new Set();
-
-  function resolveNativeKey(file) {
-    if (Object.prototype.hasOwnProperty.call(nativeKeyCache, file) || pendingKeyFetches.has(file)) return;
-    pendingKeyFetches.add(file);
-    const settle = (key, bpm) => {
-      nativeKeyCache[file] = key;
-      nativeBpmCache[file] = bpm;
-      pendingKeyFetches.delete(file);
-      updateKeyDisplays();
-    };
-    ctx.readFile(
-      `/songs/${file}`,
-      (text) => settle(extractKeyFromAbc(text), tempoBpmFromAbc(text)),
-      () => settle(null, null),
-    );
-  }
-
-  // What a row's key control should currently show, given what's known about
-  // the song's own key so far. `disabled` covers both "still loading" and
-  // "the tune's key couldn't be read at all" — a personal setlist's picker
-  // can't offer a meaningful palette without a native key to diff against.
-  function keyDisplayInfo(song) {
-    const known = Object.prototype.hasOwnProperty.call(nativeKeyCache, song.file);
-    const nativeKey = known ? nativeKeyCache[song.file] : undefined;
-    if (!known) return { disabled: true, text: "", isTransposed: false };
-    if (!nativeKey) {
-      const fallback = formatSetlistKeyLabel(song.key);
-      return { disabled: true, text: fallback, isTransposed: Boolean(fallback) };
-    }
-    return {
-      disabled: false,
-      text: resolvedSetlistKeyName(song.key, nativeKey),
-      isTransposed: setlistTransposeSteps(song.key, nativeKey) !== 0,
-    };
-  }
-
-  // Refresh every currently-rendered row's key control from the cache/song
-  // data, without a full re-render — called once a fetch settles, and safe to
-  // call any other time too (e.g. nothing to do if nothing's changed).
-  function updateKeyDisplays() {
-    const listEl = byId("songList");
-    if (!listEl) return;
-    qsa(".setlist-song-row", listEl).forEach((row) => {
-      const song = ctx.state.currentOpenSongs
-        && ctx.state.currentOpenSongs[Number(row.dataset.setlistIndex)];
-      if (song) applyKeyDisplay(row, song);
-    });
-  }
-
-  function applyBadgeDisplay(badge, song) {
-    const info = keyDisplayInfo(song);
-    const keyEl = badge.querySelector(".setlist-song-key-badge-key");
-    keyEl.textContent = info.text;
-    badge.classList.toggle("is-transposed", info.isTransposed);
-
-    // The tune's own native bpm (Q: field) — read-only everywhere, same as
-    // the key, since a setlist has no per-song tempo override to resolve.
-    const bpmEl = badge.querySelector(".setlist-song-key-badge-bpm");
-    const bpm = Object.prototype.hasOwnProperty.call(nativeBpmCache, song.file)
-      ? nativeBpmCache[song.file]
-      : null;
-    bpmEl.textContent = bpm ? String(bpm) : "";
-    bpmEl.hidden = !bpm;
-  }
-
-  function applyKeyDisplay(row, song) {
-    const badge = row.querySelector(".setlist-song-key-badge");
-    if (badge) applyBadgeDisplay(badge, song);
-  }
-
-  // Every row's key is read-only here, band setlist or personal — the same
-  // badge either way, so a personal setlist's list looks and reads like a
-  // band one. A personal setlist's per-song override is still editable, but
-  // only via the Key stepper above the sheet while that song is open
-  // (initTransposeWriteBack below), not from the list itself. The tune's
-  // native bpm sits just underneath, small, the same caption treatment the
-  // Inspiration panel's A/B loop-marker buttons use for their own timestamp.
-  function keyBadge(song) {
-    const badge = el("span", { class: "setlist-song-key-badge" }, [
-      el("span", { class: "setlist-song-key-badge-key" }),
-      el("span", { class: "setlist-song-key-badge-bpm", hidden: true }),
-    ]);
-    resolveNativeKey(song.file);
-    applyBadgeDisplay(badge, song);
-    return badge;
-  }
+  const keys = createSetlistKeys(ctx);
+  // Hoisted function declarations below, so these can be built up front.
+  const rowDrag = createRowDrag({ onReorder: persistOrder });
+  const tray = createAddSongTray(ctx, { refresh: refreshOpenPersonal });
 
   // ---- opening -----------------------------------------------------
 
-  // Opening a *different* setlist drops the pointer to whatever song was last
-  // on the sheet — otherwise a stale currentSongFile / currentSetlistSongIndex
-  // gets serialised into the hash and can spuriously highlight a row in the
-  // new list. A caller that means to open a specific song sets them again
-  // right after (via its afterRender hook).
-  function clearOpenSongPointer() {
-    ctx.state.currentSongFile = null;
-    ctx.state.currentSetlistSongIndex = null;
-  }
-
   function openBand(file, fallbackName, afterRender) {
     ctx.setlistData.loadBand(file, (setlist) => {
-      ctx.state.currentPersonalId = null;
-      ctx.state.currentSetlistId = String(file).replace(/\.txt$/, "");
-      clearOpenSongPointer();
+      ctx.nav.enterSetlist({ id: String(file).replace(/\.txt$/, "") });
       renderOpen(setlist.name || fallbackName, setlist.songs, null, setlist.desc);
       if (afterRender) afterRender();
     }, (status) => {
@@ -314,9 +144,7 @@ export function createSetlistView(ctx) {
   function openPersonal(id, afterRender) {
     const entry = getPersonalSetlist(ctx.storage(), id);
     if (!entry) return;
-    ctx.state.currentPersonalId = id;
-    ctx.state.currentSetlistId = id;
-    clearOpenSongPointer();
+    ctx.nav.enterSetlist({ id, personalId: id });
     const open = () => {
       renderOpen(entry.name, entry.songs, entry, entry.desc);
       if (afterRender) afterRender();
@@ -350,7 +178,7 @@ export function createSetlistView(ctx) {
       html: '<span class="fa-solid fa-grip-vertical" aria-hidden="true"></span>',
       attrs: { "aria-label": "Drag to reorder" },
       on: {
-        pointerdown: (e) => beginRowDrag(e, handle, row, personalEntry.id),
+        pointerdown: (e) => rowDrag.begin(e, handle, row, personalEntry.id),
         keydown: (e) => {
           if (e.key === "Delete" || e.key === "Backspace") {
             e.preventDefault();
@@ -516,7 +344,7 @@ export function createSetlistView(ctx) {
       }),
     ]);
 
-    row.append(keyBadge(song));
+    row.append(keys.keyBadge(song));
     if (personalEntry) appendRowControls(row, personalEntry);
 
     const note = noteBlock(song, index, personalEntry);
@@ -528,13 +356,10 @@ export function createSetlistView(ctx) {
   // ---- render ------------------------------------------------
 
   function renderOpen(name, songs, personalEntry, desc) {
-    ctx.state.setlistsView = "open";
-    ctx.state.currentOpenSongs = songs;
-    ctx.state.currentOpenSetlistName = name;
-    ctx.state.currentOpenSetlistDesc = desc || "";
+    ctx.nav.showSetlistContents({ songs, name, desc: desc || "" });
 
     const isPersonal = Boolean(personalEntry);
-    if (!isPersonal) addSongQuery = "";
+    if (!isPersonal) tray.reset();
 
     applyOpenChrome(name, isPersonal);
 
@@ -558,29 +383,16 @@ export function createSetlistView(ctx) {
     }
 
     if (isPersonal) {
-      listEl.append(buildAddSongRow());
+      listEl.append(tray.build());
       restoreFocusAfterRender(listEl);
     }
 
     ctx.setlistPrint.buildBooklet(name, songs, desc);
     highlightCurrent();
-    if (ctx.syncHash) ctx.syncHash();
   }
 
   function restoreFocusAfterRender(listEl) {
-    if (focusAddSongAfterRender) {
-      focusAddSongAfterRender = false;
-      const addSearch = byId("setlistAddSongSearch");
-      if (addSearch) {
-        addSearch.value = addSongQuery;
-        addSearch.focus();
-        if (addSongQuery) {
-          ctx.setlistData.ensureSongsLoaded(
-            () => renderAddSongResults(addSongQuery), showAddSongError,
-          );
-        }
-      }
-    }
+    tray.restoreFocus();
     if (focusHandleAfterRender != null) {
       const handles = listEl.querySelectorAll(".setlist-drag-handle");
       if (handles[focusHandleAfterRender]) handles[focusHandleAfterRender].focus();
@@ -611,7 +423,7 @@ export function createSetlistView(ctx) {
       if (rows.length > 1) {
         focusHandleAfterRender = Math.min(pos, rows.length - 2);
       } else {
-        focusAddSongAfterRender = true;
+        tray.focusAfterRender();
       }
     }
     refreshOpenPersonal();
@@ -635,86 +447,15 @@ export function createSetlistView(ctx) {
     // step from the now-stale pre-move index instead of continuing from
     // where the song just landed.
     if (row.dataset.songFile && row.dataset.songFile === ctx.state.currentSongFile) {
-      ctx.state.currentSetlistSongIndex = target;
+      ctx.nav.selectSetlistSong(row.dataset.songFile, target);
     }
     persistOrder(personalId, draggableRows().map((r) => Number(r.dataset.setlistIndex)));
-  }
-
-  function beginRowDrag(e, handle, row, personalId) {
-    if (e.button != null && e.button !== 0) return;
-    e.preventDefault();
-    rowDrag = { personalId, row, moved: false, pointerStartY: e.clientY, translateY: 0 };
-    row.classList.add("setlist-row-dragging");
-    document.body.classList.add("setlist-dragging");
-    setRowDragTranslate(row, 0);
-    try {
-      handle.setPointerCapture(e.pointerId);
-    } catch {
-      // pointer capture is a nice-to-have; the window listeners still fire.
-    }
-    window.addEventListener("pointermove", onRowDragMove);
-    window.addEventListener("pointerup", endRowDrag, { once: true });
-    window.addEventListener("pointercancel", endRowDrag, { once: true });
-  }
-
-  function onRowDragMove(e) {
-    if (!rowDrag) return;
-    const dragged = rowDrag.row;
-    rowDrag.translateY = e.clientY - rowDrag.pointerStartY;
-    setRowDragTranslate(dragged, rowDrag.translateY);
-
-    const others = draggableRows().filter((r) => r !== dragged);
-    if (others.length === 0) return;
-
-    let before = null;
-    for (const other of others) {
-      const box = other.getBoundingClientRect();
-      if (e.clientY < box.top + box.height / 2) {
-        before = other;
-        break;
-      }
-    }
-    const anchor = before || others[others.length - 1].nextSibling;
-    if (anchor !== dragged && dragged.nextSibling !== anchor) {
-      // Reordering relocates the row within its parent, which would otherwise
-      // make it jump by a row's height (its untransformed layout position
-      // moves, but the pointer-following translateY doesn't know that yet).
-      // Re-anchor the translate to the row's new resting spot so it keeps
-      // reading as "still under the pointer" instead of snapping.
-      const visualTop = dragged.getBoundingClientRect().top;
-      setRowDragTranslate(dragged, 0);
-      dragged.parentNode.insertBefore(dragged, anchor);
-      const restingTop = dragged.getBoundingClientRect().top;
-      rowDrag.translateY = visualTop - restingTop;
-      rowDrag.pointerStartY = e.clientY;
-      setRowDragTranslate(dragged, rowDrag.translateY);
-      rowDrag.moved = true;
-      renumberOpen();
-    }
-  }
-
-  function endRowDrag() {
-    window.removeEventListener("pointermove", onRowDragMove);
-    if (!rowDrag) return;
-    const drag = rowDrag;
-    rowDrag = null;
-    drag.row.classList.remove("setlist-row-dragging");
-    document.body.classList.remove("setlist-dragging");
-    setRowDragTranslate(drag.row, 0);
-    if (!drag.moved) return;
-    persistOrder(
-      drag.personalId,
-      draggableRows().map((r) => Number(r.dataset.setlistIndex)),
-    );
   }
 
   // ---- opening a song from the list -------------------------
 
   function openSetlistSong(song, index) {
-    ctx.state.currentSongFile = song.file;
-    ctx.state.currentSetlistSongIndex = index == null ? null : Number(index);
-    ctx.setSheetBackLabel("Setlist");
-    if (ctx.syncHash) ctx.syncHash();
+    ctx.nav.selectSetlistSong(song.file, index);
     highlightCurrent();
     songLoadSeq += 1;
     const seq = songLoadSeq;
@@ -809,167 +550,6 @@ export function createSetlistView(ctx) {
       if (isCurrent) row.setAttribute("aria-current", "true");
       else row.removeAttribute("aria-current");
     });
-  }
-
-  // ---- add-song / add-break tray --------------------------
-
-  // Top matches for an add-song query (empty query -> no matches).
-  function addSongMatches(query) {
-    return query ? filterSongsByQuery(ctx.state.allSongs, query).slice(0, 8) : [];
-  }
-
-  // Append one song to the open personal setlist, then clear the search and
-  // keep it focused so the next title can be typed straight away.
-  function addSongByFile(file) {
-    if (!ctx.state.currentPersonalId) return false;
-    addSongToPersonalSetlist(ctx.storage(), ctx.state.currentPersonalId, { file, key: "" });
-    addSongQuery = "";
-    focusAddSongAfterRender = true;
-    refreshOpenPersonal();
-    return true;
-  }
-
-  // Paint the keyboard highlight on the active result and scroll it into view.
-  function highlightAddSongActive() {
-    const buttons = addSongResultButtons();
-    buttons.forEach((btn, i) => btn.classList.toggle("is-active", i === addSongActiveIndex));
-    const active = buttons[addSongActiveIndex];
-    if (active) active.scrollIntoView({ block: "nearest" });
-  }
-
-  // Step the highlight through the results with the Up/Down arrows, wrapping
-  // at both ends; the first press from "nothing selected" lands on an end.
-  function moveAddSongActive(dir) {
-    const count = addSongResultButtons().length;
-    if (!count) return;
-    if (addSongActiveIndex === -1) addSongActiveIndex = dir > 0 ? 0 : count - 1;
-    else addSongActiveIndex = (addSongActiveIndex + dir + count) % count;
-    highlightAddSongActive();
-  }
-
-  function renderAddSongResults(query) {
-    const resultsEl = byId("setlistAddSongResults");
-    if (!resultsEl) return;
-    addSongActiveIndex = -1;
-    clear(resultsEl);
-    resultsEl.classList.toggle("is-open", Boolean(query));
-    if (!query) return;
-
-    const matches = addSongMatches(query);
-    if (matches.length === 0) {
-      resultsEl.append(el("div", {
-        class: "rj-library-add-song-empty",
-        text: `No songs match “${query}”`,
-      }));
-      return;
-    }
-    matches.forEach((song) => {
-      resultsEl.append(el("button", {
-        type: "button",
-        class: "rj-library-add-song-result",
-        html: '<span class="fa-solid fa-plus" aria-hidden="true"></span>',
-        on: { click: () => addSongByFile(song.file) },
-      }, el("span", { class: "rj-library-add-song-result-name", text: song.name })));
-    });
-  }
-
-  // Enter adds the arrow-highlighted result, or — mirroring the library
-  // search — the lone match when nothing is highlighted, then clears the
-  // field. Always clears, match or not.
-  function submitAddSong(inputEl) {
-    const matches = addSongMatches(addSongQuery);
-    let chosen = null;
-    if (addSongActiveIndex >= 0) chosen = matches[addSongActiveIndex];
-    else if (matches.length === 1) chosen = matches[0];
-    addSongQuery = "";
-    inputEl.value = "";
-    renderAddSongResults("");
-    if (chosen) addSongByFile(chosen.file);
-  }
-
-  function buildAddSongRow() {
-    // With the field empty there are no results to walk, so the arrows leave
-    // the tray: Up jumps back into the setlist (its last row's title — never
-    // the drag handle, which is a pointer-drag target only, not an arrow-key
-    // stop), Down drops onto the "Add a set break" button.
-    function focusAdjacentOnEmptyArrow(key) {
-      if (key === "ArrowDown") {
-        breakBtn.focus();
-        return;
-      }
-      const rows = qsa(".setlist-song-title, .setlist-divider-input", byId("songList"));
-      const last = rows[rows.length - 1];
-      if (last) last.focus();
-    }
-
-    function handleAddSongArrowKey(e) {
-      e.preventDefault();
-      if (!e.target.value.trim()) {
-        focusAdjacentOnEmptyArrow(e.key);
-        return;
-      }
-      const move = () => moveAddSongActive(e.key === "ArrowDown" ? 1 : -1);
-      ctx.setlistData.ensureSongsLoaded(move, move);
-    }
-
-    const search = el("input", {
-      type: "search",
-      id: "setlistAddSongSearch",
-      placeholder: "Search songs to add…",
-      autocomplete: "off",
-      on: {
-        input: (e) => {
-          addSongQuery = e.target.value.trim();
-          ctx.setlistData.ensureSongsLoaded(
-            () => renderAddSongResults(addSongQuery), showAddSongError,
-          );
-        },
-        keydown: (e) => {
-          if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-            handleAddSongArrowKey(e);
-            return;
-          }
-          if (e.key !== "Enter") return;
-          e.preventDefault();
-          const submit = () => submitAddSong(e.target);
-          ctx.setlistData.ensureSongsLoaded(submit, submit);
-        },
-      },
-    });
-
-    const inputWrap = el("div", {
-      class: "rj-library-add-song-inputwrap",
-      html: '<span class="fa-solid fa-magnifying-glass" aria-hidden="true"></span>',
-    });
-    inputWrap.append(search);
-    inputWrap.append(el("kbd", {
-      class: "rj-search-hint", text: "/", attrs: { "aria-hidden": "true" },
-    }));
-
-    const results = el("div", {
-      id: "setlistAddSongResults",
-      class: "rj-library-add-song-results",
-    });
-
-    const breakBtn = el("button", {
-      type: "button",
-      class: "rj-library-add-break",
-      html: '<span class="fa-solid fa-plus" aria-hidden="true"></span>'
-        + '<span class="rj-library-add-break-label">Add a set break</span>',
-      on: {
-        click: () => {
-          if (!ctx.state.currentPersonalId) return;
-          addDividerToPersonalSetlist(ctx.storage(), ctx.state.currentPersonalId);
-          refreshOpenPersonal();
-        },
-      },
-    });
-
-    return el("div", { class: "rj-library-add-song rj-library-add-song-inline" }, [
-      el("div", { class: "rj-library-add-label", text: "Add to setlist" }),
-      el("div", { class: "rj-library-add-song-field" }, [inputWrap, results]),
-      breakBtn,
-    ]);
   }
 
   // ---- controls (wired once) -----------------------------
@@ -1136,6 +716,7 @@ export function createSetlistView(ctx) {
 
   return {
     openBand, openPersonal, refreshOpenPersonal, renderOpen,
-    highlightCurrent, stepSong, canStep, openSongInOpenSetlist, openSongAtIndex, addSongByFile, initControls,
+    highlightCurrent, stepSong, canStep, openSongInOpenSetlist, openSongAtIndex, initControls,
+    addSongByFile: (file) => tray.addSongByFile(file),
   };
 }

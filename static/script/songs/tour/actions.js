@@ -163,12 +163,12 @@ export function createTourActions(ctx) {
 
   async function showLibrary() {
     leaveSheetIfStacked();
-    if (ctx.state.activeTab !== "library") ctx.switchTab("library");
+    if (ctx.state.activeTab !== "library") ctx.nav.switchTab("library");
   }
 
   async function showSetlists() {
     leaveSheetIfStacked();
-    if (ctx.state.activeTab !== "setlists" || ctx.state.setlistsView !== "home") ctx.switchTab("setlists");
+    if (ctx.state.activeTab !== "setlists" || ctx.state.setlistsView !== "home") ctx.nav.switchTab("setlists");
   }
 
   async function openDemoSong() {
@@ -177,9 +177,9 @@ export function createTourActions(ctx) {
       document.body.classList.add(SHEET_ACTIVE_CLASS);
       return;
     }
-    if (ctx.state.activeTab !== "library") ctx.switchTab("library");
+    if (ctx.state.activeTab !== "library") ctx.nav.switchTab("library");
     const before = ctx.state.currentSongText;
-    ctx.openLibrarySong({ file: DEMO_SONG_FILE });
+    ctx.nav.openLibrarySong({ file: DEMO_SONG_FILE });
     demoShown = true;
     await waitUntil(
       () => ctx.state.currentSongText && ctx.state.currentSongText !== before,
@@ -192,7 +192,7 @@ export function createTourActions(ctx) {
     const id = DEMO_SETLIST_FILE.replace(/\.txt$/, "");
     const { state } = ctx;
     if (state.activeTab === "setlists" && state.setlistsView === "open" && state.currentSetlistId === id) return;
-    if (state.activeTab !== "setlists") ctx.switchTab("setlists");
+    if (state.activeTab !== "setlists") ctx.nav.switchTab("setlists");
     await waitUntil(() => state.setlistIndex.length > 0, { timeout: SETLIST_WAIT_MS });
     const entry = state.setlistIndex.find((e) => e.file === DEMO_SETLIST_FILE);
     if (!entry) return;
@@ -231,7 +231,7 @@ export function createTourActions(ctx) {
         name: DEMO_SETLIST_NAME, desc: DEMO_SETLIST_MARKER, songs: [],
       }).id;
     }
-    if (state.activeTab !== "setlists") ctx.switchTab("setlists");
+    if (state.activeTab !== "setlists") ctx.nav.switchTab("setlists");
     if (state.setlistsView === "open" && state.currentPersonalId === demoSetlistId) return;
     await withTimeout(
       new Promise((resolve) => { ctx.setlistView.openPersonal(demoSetlistId, resolve); }),
@@ -365,10 +365,10 @@ export function createTourActions(ctx) {
     const stillOpen = state.activeTab === "setlists" && state.setlistsView === "open"
       && state.currentSetlistId === snap.setlistId;
     if (!stillOpen) {
-      if (state.activeTab !== "setlists") ctx.switchTab("setlists");
+      if (state.activeTab !== "setlists") ctx.nav.switchTab("setlists");
       const opened = await withTimeout(
         new Promise((resolve) => {
-          ctx.openSetlistById(snap.setlistId, () => resolve(true), () => resolve(false));
+          ctx.nav.openSetlistById(snap.setlistId, () => resolve(true), () => resolve(false));
         }),
         SETLIST_WAIT_MS,
       );
@@ -392,10 +392,10 @@ export function createTourActions(ctx) {
       reopened = await restoreSetlist(snap);
     } else {
       if (snap.songFile && demoShown && snap.songFile !== DEMO_SONG_FILE) {
-        ctx.openLibrarySong({ file: snap.songFile });
+        ctx.nav.openLibrarySong({ file: snap.songFile });
         reopened = true;
       }
-      if (ctx.state.activeTab !== snap.tab) ctx.switchTab(snap.tab);
+      if (ctx.state.activeTab !== snap.tab) ctx.nav.switchTab(snap.tab);
     }
     if (!snap.sheetActive) leaveSheetIfStacked();
     if (reopened && !sameSong) await waitForSheet(before);
