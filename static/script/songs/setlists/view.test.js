@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mountPage } from "../../../../tests/helpers/dom.js";
+import { RENDER } from "../core/state.js";
 import { makeCtx, memoryStorage } from "../../../../tests/helpers/ctx.js";
 import {
   createPersonalSetlist, addSongToPersonalSetlist, addDividerToPersonalSetlist,
@@ -340,9 +341,13 @@ test("the Key stepper writes a per-song key override back to the open personal s
     ctx.state.currentSongFile = "a.abc";
     ctx.state.currentSetlistSongIndex = 0;
 
-    const transpose = document.getElementById("transpose");
-    transpose.value = "2";
-    transpose.dispatchEvent(new window.Event("input"));
+    // A render seeding the stepper for the newly opened song isn't the
+    // listener's own change, so it's never written back.
+    ctx.store.set("settings", { transpose: 5 }, RENDER);
+    assert.equal(getPersonalSetlist(storage, entry.id).songs[0].key, "");
+
+    // The listener nudging the Key stepper (controls.js writes the store).
+    ctx.state.transpose = 2;
 
     assert.equal(getPersonalSetlist(storage, entry.id).songs[0].key, "2");
     const badge = document.querySelector(KEY_BADGE_SELECTOR);

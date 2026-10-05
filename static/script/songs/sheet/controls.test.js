@@ -36,18 +36,21 @@ function pressSpace(target) {
   );
 }
 
-test("the Key stepper buttons clamp #transpose and fire an input event", () => {
-  const { calls, cleanup } = setup();
+test("the Key stepper buttons clamp #transpose and write ctx.state.transpose", () => {
+  const { ctx, calls, cleanup } = setup();
   try {
     const input = document.getElementById("transpose");
     input.value = "11";
     document.getElementById("keyUpBtn").dispatchEvent(new window.Event("click"));
     assert.equal(input.value, "12");
+    assert.equal(ctx.state.transpose, 12);
     document.getElementById("keyUpBtn").dispatchEvent(new window.Event("click"));
     assert.equal(input.value, "12"); // clamped at max
     document.getElementById("keyDownBtn").dispatchEvent(new window.Event("click"));
     assert.equal(input.value, "11");
-    assert.ok(calls.rerender >= 3); // the "input" listener re-renders each time
+    assert.equal(ctx.state.transpose, 11);
+    // A re-render per actual change; the clamped click changed nothing.
+    assert.equal(calls.rerender, 2);
   } finally {
     cleanup();
   }

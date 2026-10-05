@@ -1,8 +1,8 @@
 import { byId, el } from "../../lib/core/dom.js";
-import { readPref, writePref, PREF_KEYS } from "../../lib/core/preferences.js";
 import { INSTRUMENTS } from "../../lib/music/instruments.js";
 import { COMPING_PATTERNS } from "../../lib/music/comping.js";
 import { SOLO_STYLES } from "../../lib/music/solo.js";
+import { COMPING_PARTS } from "./state.js";
 
 function dropdown(select) {
   return el("div", { class: "dropdown" }, select);
@@ -11,8 +11,9 @@ function dropdown(select) {
 /*
   The Instrument <select> (#instrument): the chart is transposed and clef-set
   for whichever instrument is chosen. Lives in the sheet's button bar (#sheetStatus,
-  falling back to #sheetmenu) right next to Key / Tempo / Play. The choice is
-  sticky across songs; changing it re-renders the sheet.
+  falling back to #sheetmenu) right next to Key / Tempo / Play. A view of
+  ctx.state.instrument (songs/sheet/state.js, sticky across songs): a pick
+  writes the store, and the select redraws from it.
 */
 export function createInstrumentDropdown(ctx) {
   const select = el("select", {
@@ -26,14 +27,14 @@ export function createInstrumentDropdown(ctx) {
     text: instrument.label.toUpperCase(),
   })));
 
-  const stored = readPref(PREF_KEYS.instrument);
-  if (stored && INSTRUMENTS.some((instrument) => instrument.value === stored)) {
-    select.value = stored;
-  }
+  const draw = () => {
+    if (select.value !== ctx.state.instrument) select.value = ctx.state.instrument;
+  };
+  draw();
+  ctx.store.subscribe("settings", draw);
 
   select.addEventListener("change", () => {
-    writePref(PREF_KEYS.instrument, select.value);
-    ctx.sheet.rerender();
+    ctx.state.instrument = select.value;
   });
 
   const mount = byId("sheetStatus") || byId("sheetmenu");
@@ -42,9 +43,9 @@ export function createInstrumentDropdown(ctx) {
 
 /*
   The comping-pattern <select> (#comping): an "OFF" entry plus the 15
-  predefined patterns from lib/comping.js, grouped into optgroups. Changing it
-  re-renders the current song, where sheet.js turns the pattern into the
-  coloured block-chord comping staff. Sticky across songs.
+  predefined patterns from lib/comping.js, grouped into optgroups. A view of
+  ctx.state.comping (sticky across songs); sheet.js turns the pattern into
+  the coloured block-chord comping staff.
 */
 export function createCompingDropdown(ctx) {
   const slot = byId("compingSlot");
@@ -65,22 +66,20 @@ export function createCompingDropdown(ctx) {
     );
   }
 
-  const stored = readPref(PREF_KEYS.comping);
-  const known = stored === "off" || COMPING_PATTERNS.some((p) => p.value === stored);
-  if (stored && known) select.value = stored;
-
-  const split = createCompingSplit(ctx, select);
+  const split = createCompingSplit(ctx);
+  const draw = () => {
+    if (select.value !== ctx.state.comping) select.value = ctx.state.comping;
+    split.draw();
+  };
   select.addEventListener("change", () => {
-    writePref(PREF_KEYS.comping, select.value);
-    split.sync();
-    ctx.sheet.rerender();
+    ctx.state.comping = select.value;
   });
 
   slot.append(dropdown(select), ...split.nodes);
-  split.sync();
+  draw();
+  ctx.store.subscribe("settings", draw);
 }
 
-const COMPING_PARTS = ["R", "3", "5"];
 const ARIA_PRESSED = "aria-pressed";
 
 /*
@@ -88,17 +87,15 @@ const ARIA_PRESSED = "aria-pressed";
   R / 3 / 5 toggles (.comping-part-btn) it reveals: split replaces the one
   block-chord staff with a single-note staff per chord tone, and the toggles
   pick which of those staves are drawn — e.g. just the 3 and the 5 to print.
-  State lives in aria-pressed (sheet.js reads it from there) and is sticky
-  across songs. At least one tone always stays selected. Both are hidden
-  while comping is off; the toggles also while it isn't split.
+  Views of ctx.state.compingSplit / compingParts (sticky across songs). At
+  least one tone always stays selected. Both are hidden while comping is
+  off; the toggles also while it isn't split.
 */
-function createCompingSplit(ctx, select) {
-  const validStored = (readPref(PREF_KEYS.compingParts) || "").split(",").filter((p) => COMPING_PARTS.includes(p));
-  const storedParts = validStored.length > 0 ? validStored : COMPING_PARTS;
+function createCompingSplit(ctx) {
   const splitBtn = el("button", {
     type: "button", class: "sheet-icon-btn", id: "compingSplitBtn",
     attrs: {
-      [ARIA_PRESSED]: readPref(PREF_KEYS.compingSplit) === "1" ? "true" : "false",
+      [ARIA_PRESSED]: "false",
       title: "Split comping into R / 3 / 5 voices",
       "aria-label": "Split comping into separate R, 3 and 5 voices",
     },
@@ -110,52 +107,45 @@ function createCompingSplit(ctx, select) {
     type: "button", class: "comping-part-btn", text: name,
     attrs: {
       "data-part": String(index),
-      [ARIA_PRESSED]: storedParts.includes(name) ? "true" : "false",
+      [ARIA_PRESSED]: "false",
       title: `Show the ${name} voice`,
     },
   }));
   group.append(...partBtns);
 
-  function sync() {
-    const on = select.value !== "off";
-    const split = splitBtn.getAttribute(ARIA_PRESSED) === "true";
+  function draw() {
+    const { comping, compingSplit, compingParts } = ctx.state;
+    const on = comping !== "off";
+    splitBtn.setAttribute(ARIA_PRESSED, String(compingSplit));
     splitBtn.hidden = !on;
-    splitBtn.classList.toggle("active", split);
-    group.hidden = !(on && split);
-  }
-  function changed() {
-    sync();
-    ctx.sheet.rerender();
+    splitBtn.classList.toggle("active", compingSplit);
+    group.hidden = !(on && compingSplit);
+    partBtns.forEach((btn, index) => btn.setAttribute(ARIA_PRESSED, String(compingParts.includes(index))));
   }
 
   splitBtn.addEventListener("click", () => {
-    const next = splitBtn.getAttribute(ARIA_PRESSED) !== "true";
-    splitBtn.setAttribute(ARIA_PRESSED, String(next));
-    writePref(PREF_KEYS.compingSplit, next ? "1" : "0");
-    changed();
+    ctx.state.compingSplit = !ctx.state.compingSplit;
   });
-  partBtns.forEach((btn) => {
+  partBtns.forEach((btn, index) => {
     btn.addEventListener("click", () => {
-      const pressed = btn.getAttribute(ARIA_PRESSED) === "true";
-      const stillOn = partBtns.filter((b) => b !== btn && b.getAttribute(ARIA_PRESSED) === "true");
-      if (pressed && stillOn.length === 0) return;
-      btn.setAttribute(ARIA_PRESSED, String(!pressed));
-      writePref(
-        PREF_KEYS.compingParts,
-        partBtns.filter((b) => b.getAttribute(ARIA_PRESSED) === "true").map((b) => b.textContent).join(","),
-      );
-      changed();
+      const parts = ctx.state.compingParts;
+      const pressed = parts.includes(index);
+      if (pressed && parts.length === 1) return;
+      ctx.state.compingParts = pressed
+        ? parts.filter((p) => p !== index)
+        : [...parts, index].sort((a, b) => a - b);
     });
   });
 
-  return { nodes: [splitBtn, group], sync };
+  return { nodes: [splitBtn, group], draw };
 }
 
 /*
   The solo <select> (#solo), built the same way as the comping one: an "OFF"
-  entry plus one entry per solo style from lib/solo.js. Changing it re-renders
-  the current song, where sheet.js evolves the line and adds it as another
-  staff (and the Mixer mutes the lead while it plays). Sticky across songs.
+  entry plus one entry per solo style from lib/solo.js — a view of
+  ctx.state.solo. Creating it switches ctx.state.soloEnabled on (until then
+  sheet.js ignores the stored pick); sheet.js evolves the line and adds it as
+  another staff (and the Mixer mutes the lead while it plays).
 */
 export function createSoloDropdown(ctx) {
   const slot = byId("soloSlot");
@@ -167,14 +157,15 @@ export function createSoloDropdown(ctx) {
     select.append(el("option", { value: style.value, text: style.label.toUpperCase() }));
   }
 
-  const stored = readPref(PREF_KEYS.solo);
-  if (stored && (stored === "off" || SOLO_STYLES.some((s) => s.value === stored))) {
-    select.value = stored;
-  }
+  ctx.state.soloEnabled = true;
+  const draw = () => {
+    if (select.value !== ctx.state.solo) select.value = ctx.state.solo;
+  };
+  draw();
+  ctx.store.subscribe("settings", draw);
 
   select.addEventListener("change", () => {
-    writePref(PREF_KEYS.solo, select.value);
-    ctx.sheet.rerender();
+    ctx.state.solo = select.value;
   });
 
   // Progress of the background composing (written by sheet.js).

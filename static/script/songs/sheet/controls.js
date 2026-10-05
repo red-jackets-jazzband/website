@@ -1,5 +1,4 @@
 import { byId, on } from "../../lib/core/dom.js";
-import { readPref, writePref, PREF_KEYS } from "../../lib/core/preferences.js";
 import { TEMPO_STEP } from "../../lib/music/tempo.js";
 
 /*
@@ -58,28 +57,48 @@ function stepNumericField(id, delta, fallback) {
   input.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
-// The double-chevron button that reveals the "advanced" controls (currently
-// just the comping dropdown). State lives as `.show-advanced` on #sheetmenu and
-// is persisted; toggling re-renders so the comping staff appears with it.
+// The double-chevron button that reveals the "advanced" controls (the
+// comping dropdown, the Repeat stepper). A view of ctx.state.advancedOpen
+// (sticky), drawn as `.show-advanced` on #sheetmenu; toggling re-renders so
+// the comping staff appears with it.
 function initAdvancedToggle(ctx) {
   const btn = byId("advancedToggleBtn");
   const menu = byId("sheetmenu");
   if (!btn || !menu) return;
 
-  const apply = (open) => {
+  const draw = () => {
+    const open = ctx.state.advancedOpen;
     menu.classList.toggle("show-advanced", open);
     btn.setAttribute("aria-expanded", open ? "true" : "false");
     btn.title = open ? "Fewer controls" : "More controls";
   };
-
-  apply(readPref(PREF_KEYS.sheetAdvanced) === "1");
+  draw();
+  ctx.store.subscribe("settings", draw);
 
   btn.addEventListener("click", () => {
-    const open = !menu.classList.contains("show-advanced");
-    apply(open);
-    writePref(PREF_KEYS.sheetAdvanced, open ? "1" : "0");
-    ctx.sheet.rerender();
+    ctx.state.advancedOpen = !ctx.state.advancedOpen;
   });
+}
+
+// The Key stepper (#transpose): a view of ctx.state.transpose, in semitones.
+// Typing into it or the -/+ buttons (which nudge it and dispatch "input",
+// see stepNumericField) write the store; a newly opened song seeds the
+// store, and the field follows.
+function initKeyStepper(ctx) {
+  const input = byId("transpose");
+  if (!input) return;
+  const draw = () => {
+    if (Number(input.value) !== ctx.state.transpose) input.value = String(ctx.state.transpose);
+  };
+  draw();
+  ctx.store.subscribe("settings", draw);
+  input.addEventListener("input", () => {
+    const n = Number(input.value);
+    if (!Number.isFinite(n)) return; // mid-typing ("-")
+    ctx.state.transpose = Math.round(n);
+  });
+  on("keyUpBtn", "click", () => stepNumericField("transpose", 1, 0));
+  on("keyDownBtn", "click", () => stepNumericField("transpose", -1, 0));
 }
 
 function initPrintLink() {
@@ -130,9 +149,7 @@ function initSpacebarPlayPause(ctx) {
   instrument / comping <select>s are built and wired in selects.js.
 */
 export function initSheetControls(ctx) {
-  on("transpose", "input", () => ctx.sheet.rerender());
-  on("keyUpBtn", "click", () => stepNumericField("transpose", 1, 0));
-  on("keyDownBtn", "click", () => stepNumericField("transpose", -1, 0));
+  initKeyStepper(ctx);
   on("tempoUpBtn", "click", () => ctx.audio.stepTempo(TEMPO_STEP));
   on("tempoDownBtn", "click", () => ctx.audio.stepTempo(-TEMPO_STEP));
   const repeatCountInput = byId("repeatCount");

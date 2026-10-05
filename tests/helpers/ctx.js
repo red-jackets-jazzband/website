@@ -1,47 +1,36 @@
+import { createAppStore, bindAppPrefs } from "../../static/script/songs/core/state.js";
+import { subscribeRerender } from "../../static/script/songs/sheet/sheet.js";
+
 /*
   A minimal stand-in for the app's shared `ctx`, for testing songs/ modules in
   isolation. Pass overrides to swap in spies or seed state.
 */
 export function makeCtx(overrides = {}) {
-  const ctx = {
-    state: {
-      allSongs: [],
-      allSongsLoaded: true,
-      setlistIndex: [],
-      activeTab: "library",
-      setlistsView: "home",
-      currentPersonalId: null,
-      currentSetlistId: null,
-      currentOpenSongs: null,
-      currentOpenSetlistName: "",
-      currentOpenSetlistDesc: "",
-      currentSongFile: null,
-      currentSetlistSongIndex: null,
-      currentLibraryIndex: null,
-      currentLibrarySongName: undefined,
-      currentSongText: undefined,
-      compingActive: false,
-      hasChords: false,
-      instrumentVoices: [],
-      // A single implicit "Melody" voice, same as lib/audio-mix.js's
-      // resolveMixerVoices would produce for an ordinary tune with no V:
-      // declaration of its own and Comping off.
-      mixerVoices: [{
-        id: "1", index: 0, label: "Melody", slug: "melody", muted: false, program: null, volume: 100,
-      }],
-      tempoOverrideBpm: null,
-      repeatCount: 1,
-      mixer: {
-        bassVolume: 100, chordsVolume: 100,
-        bassMuted: true, chordsMuted: true,
-        bassProgram: null, chordsProgram: null,
-      },
-      gchordPattern: "jazz",
-      metronomeEnabled: false,
-      highQualityAudio: false,
-      swing: 0,
-      ...overrides.state,
+  // A real app store (songs/core/state.js), seeded with test-friendly
+  // defaults; `overrides.state` is a flat { key: value } map on top of them.
+  const store = createAppStore({
+    allSongsLoaded: true,
+    // A single implicit "Melody" voice, same as lib/audio-mix.js's
+    // resolveMixerVoices would produce for an ordinary tune with no V:
+    // declaration of its own and Comping off.
+    mixerVoices: [{
+      id: "1", index: 0, label: "Melody", slug: "melody", muted: false, program: null, volume: 100,
+    }],
+    mixer: {
+      bassVolume: 100, chordsVolume: 100,
+      bassMuted: true, chordsMuted: true,
+      bassProgram: null, chordsProgram: null,
     },
+    gchordPattern: "jazz",
+    highQualityAudio: false,
+    swing: 0,
+    ...overrides.state,
+  });
+  // Persist changes the way the app does, without loading over the seed.
+  bindAppPrefs(store, { load: false });
+  const ctx = {
+    store,
+    state: store.state,
     readFile: overrides.readFile || (() => {}),
     storage: overrides.storage || (() => null),
     songName: overrides.songName || ((file) => file),
@@ -96,6 +85,9 @@ export function makeCtx(overrides = {}) {
     setlistView: overrides.setlistView,
     library: overrides.library,
   };
+  // Like the real sheet, the stand-in re-renders on any store change that
+  // needs it — so a test's `sheet.rerender` spy sees what the app would do.
+  subscribeRerender(store, () => ctx.sheet.rerender());
   return ctx;
 }
 

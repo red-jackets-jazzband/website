@@ -1,21 +1,18 @@
 import { byId, el, qsa } from "../../lib/core/dom.js";
-import { extractWordsTables, extractPartOrderRows, parseFormStep } from "../../lib/music/words-table.js";
-import { offsetForInstrument, changeClefForInstrument } from "../../lib/music/instruments.js";
-import { parseChordScheme, computeChordOffset } from "../../lib/music/chords.js";
-import { convertChordsToRoman } from "../../lib/music/music-theory.js";
-import { buildCompingTune } from "../../lib/music/comping.js";
+import { extractWordsTables, parseFormStep } from "../../lib/music/words-table.js";
+import { findInstrument } from "../../lib/music/instruments.js";
+import {
+  buildRenderPlan, effectiveSheetSettings, mixRenderText,
+} from "../../lib/music/render-plan.js";
 import {
   buildSoloTune, cancelSolo, composeSolo, hasSoloTake, SOLO_PROGRAMS,
 } from "../../lib/music/solo.js";
-import {
-  injectMixerAudio, resolveGchordPattern, parseVoiceList, resolveMixerVoices, isCompingLabel,
-} from "../../lib/audio/audio-mix.js";
-import { defaultVoiceProgram } from "../../lib/audio/gm-voices.js";
+import { parseVoiceList, resolveMixerVoices, isCompingLabel } from "../../lib/audio/audio-mix.js";
+import { parseInspirationLinks } from "../../lib/media/inspiration-links.js";
 import { renderChordTable, scanRepeatBoundaries, fitChordTable, fitSongForms } from "./chord-table.js";
 import { stylePartMarkers, applyCompingColors, applySplitCompingColors } from "./decorations.js";
 import { updateIrealProLink } from "./irealpro-link.js";
-import { updateInspirationExtLinks } from "../inspiration/links.js";
-import { parseInspirationLinks, firstYoutubeUrl, firstSpotifyUrl, firstSoundcloudUrl } from "../../lib/media/inspiration-links.js";
+import { RENDER, isRenderWrite } from "../core/state.js";
 
 const LIVE_TARGETS = { notationId: "notation", chordId: "chordtable", titleId: "songtitle" };
 
@@ -88,91 +85,12 @@ function stylePartMarkersWhenReady(notationEl) {
   }
 }
 
-function updateInstrumentFooter() {
-  const select = byId("instrument");
+// The instrument's name under the chart (printed, so a part reads as e.g.
+// "trumpet").
+function updateInstrumentFooter(instrument) {
   const footer = byId("instrumentText");
-  if (select && footer) {
-    footer.innerHTML = select.options[select.selectedIndex].text.toLowerCase();
-  }
-}
-
-// Voices that carry their own clef/transpose/name are left untouched — the
-// instrument's clef and offset must not be applied on top.
-function hasInstrumentVoices(text) {
-  return text.split("\n").some((line) => {
-    if (!/^V:\d+/.test(line)) return false;
-    return line.includes("clef=") || line.includes("transpose=") || line.includes("name=");
-  });
-}
-
-function buildComping(abcText, compingValue, parts) {
-  const concertSong = parseTune(abcText, 0);
-  // Unlike the chord table's scheme, this must have one entry per physical
-  // bar exactly as printed — including a second-ending's own bars — or the
-  // comping voice runs out of bars (and falls silent) the moment the melody
-  // reaches such an ending. See parseChordScheme's doc comment.
-  const concertChords = parseChordScheme(concertSong, { includeAlternateEndings: true });
-  return buildCompingTune(abcText, concertChords, concertSong, compingValue, parts);
-}
-
-// The advanced drawer's pick in `selectId` ("comping" / "solo"), or "off" for a
-// booklet, a chordless tune or a closed drawer.
-function advancedRequest(selectId, isBooklet, chords) {
-  if (isBooklet || chords.length === 0) return "off";
-  const menu = byId("sheetmenu");
-  if (!menu || !menu.classList.contains("show-advanced")) return "off";
-  const select = byId(selectId);
-  return select ? select.value : "off";
-}
-
-/*
-  Resolve the transposition. `visual` shifts both the printed notation and
-  (folded with the instrument's own offset) is what ABCjs engraves; `audio`
-  is the pre-instrument value handed to the synth as midiTranspose so every
-  instrument's part still sounds at the same concert pitch. Also stamps the
-  K: line's clef for a bass-clef instrument. A booklet render ignores the
-  Key stepper — its transposition comes only from the setlist's own override.
-*/
-function resolveTranspose(text, instrumentValue, extraTransposeSteps, isBooklet) {
-  const stepper = byId("transpose");
-  const stepperSteps = !isBooklet && stepper !== null ? Number(stepper.value) : 0;
-  const audio = stepperSteps + extraTransposeSteps;
-  if (hasInstrumentVoices(text)) return { abcText: text, visual: audio, audio };
-  return {
-    abcText: changeClefForInstrument(instrumentValue, text),
-    visual: audio + offsetForInstrument(instrumentValue),
-    audio,
-  };
-}
-
-/*
-  Live sheet only: when a comping pattern is picked, generate a second
-  block-chord staff from the tune in concert pitch and inject it, so the one
-  visualTranspose below moves melody + comping together. Returns the (maybe
-  augmented) ABC, the notehead colour palette and whether it took.
-*/
-function applyComping(abcText, chords, isBooklet) {
-  const compingValue = advancedRequest("comping", isBooklet, chords);
-  if (compingValue !== "off") {
-    const comping = buildComping(abcText, compingValue, splitCompingParts());
-    if (comping) {
-      return { renderText: comping.abc, palette: comping.palette, parts: comping.parts || null, active: true };
-    }
-  }
-  return { renderText: abcText, palette: null, parts: null, active: false };
-}
-
-// The chord tones (indices into R / 3 / 5) the Split button left selected, or
-// null while Comping is one block-chord staff. The state lives on the
-// buttons next to the Comping dropdown (songs/selects.js).
-function splitCompingParts() {
-  const split = byId("compingSplitBtn");
-  if (!split || split.getAttribute("aria-pressed") !== "true") return null;
-  const parts = [];
-  document.querySelectorAll(".comping-part-btn").forEach((btn) => {
-    if (btn.getAttribute("aria-pressed") === "true") parts.push(Number(btn.dataset.part));
-  });
-  return parts.length ? parts : null;
+  const found = findInstrument(instrument);
+  if (footer && found) footer.textContent = found.label.toLowerCase();
 }
 
 /*
@@ -180,27 +98,24 @@ function splitCompingParts() {
   concert-pitch chords and append it as one more staff after Comping (when
   that is on), so the one visualTranspose still moves everything together.
   Returns the render text, and `program` (the style's General MIDI
-  instrument) when it took, null otherwise. A take that hasn't been evolved yet
-  isn't waited for: `compose` starts it in the background and the sheet shows
-  without the solo until it's ready (then re-renders).
+  instrument) when it took, null otherwise. A take that hasn't been evolved
+  yet isn't waited for: `compose` starts it in the background and the sheet
+  shows without the solo until it's ready (then re-renders).
 */
-function applySolo(renderText, abcText, chords, isBooklet, compose) {
-  if (isBooklet) return { renderText, program: null }; // never touches the live job
-  const style = advancedRequest("solo", isBooklet, chords);
+function applySolo(renderText, plan, style, compose) {
   if (style === "off") {
     cancelSolo();
     compose(null);
     return { renderText, program: null };
   }
-  const concertSong = parseTune(abcText, 0);
-  const concertChords = parseChordScheme(concertSong, { includeAlternateEndings: true });
-  if (!hasSoloTake(concertChords, concertSong, style)) {
-    compose({ chords: concertChords, song: concertSong, style });
+  const { song, chords } = plan.concert;
+  if (!hasSoloTake(chords, song, style)) {
+    compose({ chords, song, style });
     return { renderText, program: null };
   }
   cancelSolo(); // a job for the previous song must not re-render over this one
   compose(null);
-  const solo = buildSoloTune(renderText, concertChords, concertSong, style);
+  const solo = buildSoloTune(renderText, chords, song, style);
   return solo ? { renderText: solo.abc, program: SOLO_PROGRAMS[style] } : { renderText, program: null };
 }
 
@@ -284,133 +199,92 @@ function extractLyrics(notationEl) {
   lyricsEl.style.display = moved ? "" : "none";
 }
 
+// Colour the comping staff's noteheads. The comping voice is the "Comping"
+// entry resolveMixerVoices resolved (Solo, when on, comes after it); its
+// `index` is its ABCjs voice number.
+function colorComping(notationEl, comping, voices) {
+  if (!comping.active) return;
+  const voiceIndex = voices.find((v) => isCompingLabel(v.label)).index;
+  if (comping.parts) applySplitCompingColors(notationEl, comping.parts, voiceIndex);
+  else applyCompingColors(notationEl, comping.palette, voiceIndex);
+}
+
+// Engrave `renderText` (the plan's tune, maybe augmented) plus the chord
+// table, form strip and title into `targets`. Shared by live and booklet.
+function paint(plan, renderText, targets, { titlePrefix = "", voices = [] } = {}) {
+  const notationEl = byId(targets.notationId);
+  notationEl.classList.toggle("comping-active", plan.comping.active);
+
+  const { abcText: renderTextNoTables } = extractWordsTables(renderText);
+  const visualObjs = ABCJS.renderAbc(
+    targets.notationId, TIGHT_HEADER_SPACING + renderTextNoTables, abcParams(plan.visualTranspose),
+  );
+
+  colorComping(notationEl, plan.comping, voices);
+
+  notationEl.querySelectorAll(".abcjs-title, .abcjs-part-order").forEach((node) => {
+    node.setAttribute("display", "none");
+  });
+  stylePartMarkersWhenReady(notationEl);
+
+  const chordEl = byId(targets.chordId);
+  renderChordTable(plan.displayChords, chordEl);
+  // The form strip stands in for the header's printed part order.
+  renderWordsTables(chordEl, plan.wordsTables);
+
+  byId(targets.titleId).textContent = titlePrefix + plan.song.metaText.title;
+  extractLyrics(notationEl);
+  return { visualObj: visualObjs && visualObjs.length > 0 ? visualObjs[0] : null, chordEl };
+}
+
 /*
   The sheet: the on-screen lead-sheet reader, and the same engraving pipeline
-  reused to fill each song block of a print booklet.
+  reused to fill each song block of a print booklet. The transformation itself
+  is lib/music/render-plan.js; this file draws a plan and, for the live
+  sheet, publishes what it drew to the store's `tune` slice
+  (songs/sheet/state.js) — audio, the Mixer, Inspiration and the tour react
+  to that, the sheet never calls them.
 
-  render(text, { transposeSemitones })   open a song fresh (resets tempo,
-                                         seeds the Key stepper — the mixer's
-                                         levels are sticky across songs)
+  render(text, { transposeSemitones })   open a song fresh (a new song: the
+                                         Key stepper is seeded, the tempo
+                                         resets — the Mixer is sticky)
   rerender()                             re-engrave the current song in place
-                                         (instrument / key / tempo / comping
-                                         change) — reads the Key stepper live
   renderFromFile(path)                   fetch an .abc then render() it
   renderIntoBooklet(text, targets)       engrave one song into booklet cells
-                                         (fixed width, no audio, no links)
+                                         (fixed width, no audio, no links,
+                                         never touches the store)
+
+  rerender() also runs by itself whenever a setting that changes the drawing
+  or the synth's input changes in the store (the `settings` slice, or the
+  Mixer's render-affecting keys) — so a control only has to write the store.
 */
+// Mixer keys that change the render text or the synth's construction
+// (soundfont, swing, voicesOff), i.e. need a re-engrave. mixerVoices is
+// written by the render itself (syncVoices) as well as by the Mixer.
+const MIXER_RENDER_KEYS = ["mixer", "gchordPattern", "swing", "highQualityAudio", "mixerVoices"];
+
+/*
+  Call `rerender` whenever a store change needs the live sheet re-engraved:
+  any `settings` change, or a render-affecting Mixer key — except writes a
+  render makes itself (tagged RENDER: the Key stepper seeded by render(), the
+  Mixer's voice list), which must not loop back. Exported so a test double of
+  the sheet re-renders on exactly the same changes (tests/helpers/ctx.js).
+*/
+export function subscribeRerender(store, rerender) {
+  const offSettings = store.subscribe("settings", (_settings, _changed, _name, meta) => {
+    if (!isRenderWrite(meta)) rerender();
+  });
+  const offMixer = store.subscribe("mixer", (_mixer, changed, _name, meta) => {
+    if (!isRenderWrite(meta) && changed.some((key) => MIXER_RENDER_KEYS.includes(key))) rerender();
+  });
+  return () => {
+    offSettings();
+    offMixer();
+  };
+}
+
 export function createSheet(ctx) {
-  // A muted Bass/Chords channel is just its fader forced to 0 — see
-  // lib/audio-mix.js. (Every other voice's mute goes through computeVoicesOff
-  // in audio-player.js instead — see lib/audio-mix.js's own doc comment for
-  // why Bass/Chords aren't handled the same way.)
-  function effectiveMixerPercent(channel) {
-    const m = ctx.state.mixer;
-    return m[`${channel}Muted`] ? 0 : m[`${channel}Volume`];
-  }
-
-  // null (the Voice picker left un-overridden) has to become undefined, not
-  // pass through as null — injectMixerAudio's own default parameters only
-  // kick in for undefined, so a stored null would otherwise reach ABCjs as
-  // a literal "%%MIDI program null".
-  function mixerProgram(channel) {
-    const value = ctx.state.mixer[`${channel}Program`];
-    return value === null ? undefined : value;
-  }
-
-  // Builds the id -> program map injectMixerAudio needs to stamp each of the
-  // tune's resolved voices (lib/audio-mix.js's resolveMixerVoices — always
-  // at least one). A null program in ctx.state.mixerVoices (the Voice picker
-  // left un-overridden) resolves to a guess from the voice's own name
-  // (lib/gm-voices.js's guessGmProgram) rather than one flat default, since a
-  // chart can mix several different real instruments on one page.
-  function voiceProgramMap() {
-    const map = new Map();
-    ctx.state.mixerVoices.forEach((v) => {
-      map.set(v.id, v.program === null ? defaultVoiceProgram(v) : v.program);
-    });
-    return map;
-  }
-
-  // Builds the id -> 0-100 volume percent map injectMixerAudio needs to stamp
-  // each resolved voice's %%MIDI beat line (lib/audio-mix.js's
-  // beatStressLine) — the fader's real, working per-voice volume control.
-  // Every voice in ctx.state.mixerVoices already carries a numeric `volume`
-  // (songs/mixer.js's syncVoices seeds it at 100 for a voice with no
-  // persisted level yet), so there's no null-coalescing needed here the way
-  // voiceProgramMap needs for its own null sentinel.
-  function voiceVolumeMap() {
-    const map = new Map();
-    ctx.state.mixerVoices.forEach((v) => {
-      map.set(v.id, v.volume);
-    });
-    return map;
-  }
-
-  // Live sheet only (kept out of engrave() itself so its own branches don't
-  // push engrave's cyclomatic complexity over the lint gate): resolve the
-  // tune's own voice declarations (lib/audio-mix.js's parseVoiceList) plus
-  // whether Comping is on into the Mixer's one flat voice list
-  // (resolveMixerVoices) and hand it to the Mixer. Reads the raw `text`
-  // param, never the transpose-adjusted `abcText`, so a prior comping/
-  // instrument pass can't be mistaken for a second declaration of a voice.
-  function syncInstrumentVoices(text, comping, soloProgram, isBooklet) {
-    if (isBooklet) return;
-    ctx.state.instrumentVoices = resolveMixerVoices(parseVoiceList(text), comping.active, soloProgram, comping.parts);
-    ctx.mixer.syncVoices(ctx.state.instrumentVoices);
-  }
-
-  // The comping voice is the "Comping" entry resolveMixerVoices resolved
-  // (Solo, when on, comes after it) -- its own `index` is that voice's 0-indexed ABCjs voice number
-  // (V:2 for an ordinary tune, or one past however many voices a chart like
-  // honky_tonk_town_riffs.abc already declares). Only called once comping is
-  // known active and syncInstrumentVoices has run, so
-  // ctx.state.instrumentVoices reflects this same render.
-  function compingVoiceIndex() {
-    return ctx.state.instrumentVoices.find((v) => isCompingLabel(v.label)).index;
-  }
-
-  function colorComping(notationEl, comping) {
-    if (!comping.active) return;
-    if (comping.parts) applySplitCompingColors(notationEl, comping.parts, compingVoiceIndex());
-    else applyCompingColors(notationEl, comping.palette, compingVoiceIndex());
-  }
-
-  // Live sheet only: stamp the mixer's Bass/Chords levels and every
-  // resolved voice's Voice + Volume into the ABC text before it's parsed, so
-  // the one visualObj that gets rendered is exactly what plays — see
-  // lib/audio-mix.js.
-  function resolveRenderText(comping, hasChords, isBooklet) {
-    if (isBooklet) return comping.renderText;
-    return injectMixerAudio(comping.renderText, {
-      hasChords,
-      bassPercent: effectiveMixerPercent("bass"),
-      bassProgram: mixerProgram("bass"),
-      chordsPercent: effectiveMixerPercent("chords"),
-      chordsProgram: mixerProgram("chords"),
-      gchordPattern: resolveGchordPattern(ctx.state.gchordPattern),
-      voicePrograms: voiceProgramMap(),
-      voiceVolumes: voiceVolumeMap(),
-    });
-  }
-
-  // What the live sheet is showing, for everything that reacts to it (audio,
-  // Mixer, rerender()). Booklet renders — a setlist's print pages, built in the
-  // background as soon as a setlist opens — must never write these: rerender()
-  // re-engraves currentSongText, so a booklet write would swap the last booklet
-  // song onto the live sheet the next time the drawer, comping or instrument
-  // changed.
-  function recordLiveText(isBooklet, abcText, audioTranspose) {
-    if (isBooklet) return;
-    ctx.audio.transposeSemitones = audioTranspose;
-    ctx.state.currentSongText = abcText;
-  }
-
-  function recordLiveTune(isBooklet, song, comping, solo) {
-    if (isBooklet) return;
-    ctx.audio.chordOffset = computeChordOffset(song);
-    ctx.state.compingActive = comping.active;
-    ctx.state.soloActive = solo.program !== null;
-  }
+  let songSerial = 0;
 
   // Start (or keep running) the background evolution of the solo take the
   // render just asked for; null clears the readout. When it's done the sheet
@@ -424,7 +298,7 @@ export function createSheet(ctx) {
       onProgress: showSoloStatus,
       onDone: () => {
         showSoloStatus(null);
-        ctx.sheet.rerender();
+        rerender();
       },
     });
   }
@@ -435,91 +309,61 @@ export function createSheet(ctx) {
     if (ctx.swipeNav) ctx.swipeNav.updateButtons();
   }
 
-  function engrave(text, opts) {
-    const {
-      notationId, chordId, titleId,
-      titlePrefix = "", addLink = false, isBooklet = false, extraTransposeSteps = 0,
-    } = opts;
+  function renderLive(text, { fresh = false } = {}) {
+    const settingsState = ctx.store.get("settings");
+    updateInstrumentFooter(settingsState.instrument);
+    const settings = effectiveSheetSettings(settingsState);
+    const plan = buildRenderPlan(text, settings, { parse: parseTune });
 
-    updateInstrumentFooter();
+    // Like comping, a solo needs chords to play over.
+    const soloStyle = plan.hasChords ? settings.solo : "off";
+    const solo = applySolo(plan.comping.renderText, plan, soloStyle, composeSoloTake);
+    // The Mixer's voice list is an input to this very render: the tune's
+    // own voices (read from the raw text, never the transposed/augmented
+    // one) plus Comping/Solo, materialised by the Mixer with each voice's
+    // persisted Mute/Voice/Volume before the levels are stamped in.
+    const voices = resolveMixerVoices(parseVoiceList(text), plan.comping.active, solo.program, plan.comping.parts);
+    ctx.mixer.syncVoices(voices);
+    const renderText = mixRenderText(solo.renderText, ctx.store.get("mixer"), plan.hasChords);
 
-    const instrumentValue = byId("instrument").value;
-    const { abcText, visual, audio } = resolveTranspose(
-      text, instrumentValue, extraTransposeSteps, isBooklet,
-    );
-    recordLiveText(isBooklet, abcText, audio);
+    if (fresh) songSerial += 1;
+    updateIrealProLink(plan.song, plan.chords);
 
-    const song = parseTune(abcText, visual);
-    const chords = parseChordScheme(song);
-    const displayChords = instrumentValue === "concert_+_roman"
-      ? convertChordsToRoman(chords)
-      : chords;
-    const comping = applyComping(abcText, chords, isBooklet);
-    const solo = applySolo(comping.renderText, abcText, chords, isBooklet, composeSoloTake);
-    recordLiveTune(isBooklet, song, comping, solo);
-    syncInstrumentVoices(text, comping, solo.program, isBooklet);
+    // #rjSheet / #notation start display:none until a song is active; that
+    // must flip before ABCjs measures the container ("responsive: resize"
+    // reads its width at render time; a display:none box measures 0).
+    activateSheet();
+    const { visualObj, chordEl } = paint(plan, renderText, LIVE_TARGETS, { voices });
+    fitLiveChordGrid(LIVE_TARGETS.chordId);
 
-    const renderText = resolveRenderText({ ...comping, renderText: solo.renderText }, chords.length > 0, isBooklet);
-
-    if (addLink) {
-      const inspirationLinks = parseInspirationLinks(song.metaText.url);
-      ctx.inspiration.updateLink({
-        youtube: firstYoutubeUrl(inspirationLinks),
-        spotify: firstSpotifyUrl(inspirationLinks),
-        soundcloud: firstSoundcloudUrl(inspirationLinks),
-      }, song.metaText.title);
-      updateInspirationExtLinks(inspirationLinks);
-      updateIrealProLink(song, chords);
-    }
-
-    // #rjSheet / #notation start display:none until a song is active; that must
-    // flip before ABCjs measures the container ("responsive: resize" reads its
-    // width at render time; a display:none box measures 0).
-    if (!isBooklet) activateSheet();
-
-    const notationEl = byId(notationId);
-    notationEl.classList.toggle("comping-active", comping.active);
-
-    const { abcText: renderTextNoTables } = extractWordsTables(renderText);
-    const visualObjs = ABCJS.renderAbc(notationId, TIGHT_HEADER_SPACING + renderTextNoTables, abcParams(visual));
-
-    colorComping(notationEl, comping);
-
-    notationEl.querySelectorAll(".abcjs-title, .abcjs-part-order").forEach((node) => {
-      node.setAttribute("display", "none");
+    ctx.store.set("tune", {
+      currentSongText: plan.abcText,
+      songSerial,
+      title: plan.song.metaText.title,
+      inspirationLinks: parseInspirationLinks(plan.song.metaText.url),
+      hasChords: plan.hasChords,
+      compingActive: plan.comping.active,
+      soloActive: solo.program !== null,
+      instrumentVoices: voices,
+      audioTranspose: plan.audioTranspose,
+      chordOffset: plan.chordOffset,
+      repeatBoundaries: scanRepeatBoundaries(chordEl),
+      visualObj,
     });
-    stylePartMarkersWhenReady(notationEl);
+  }
 
-    const chordEl = byId(chordId);
-    renderChordTable(displayChords, chordEl);
-    // The form strip stands in for the header's printed part order: a W: table wins, else the P: order becomes the strip.
-    const { tables } = extractWordsTables(abcText);
-    const orderRows = extractPartOrderRows(abcText);
-    renderWordsTables(chordEl, tables.length === 0 && orderRows ? [{ header: null, rows: orderRows }] : tables);
-    if (!isBooklet) {
-      fitLiveChordGrid(chordId);
-      ctx.audio.setRepeatBoundaries(scanRepeatBoundaries(chordEl));
-      ctx.state.hasChords = chords.length > 0;
-      ctx.mixer.refresh();
-    }
-
-    byId(titleId).textContent = titlePrefix + song.metaText.title;
-
-    if (!isBooklet && visualObjs && visualObjs.length > 0) {
-      ctx.audio.initForTune(visualObjs[0]);
-      ctx.audio.setupNotationClickHandler();
-      ctx.audio.updateTempoLabel();
-    }
-
-    extractLyrics(notationEl);
+  function rerender() {
+    if (ctx.state.currentSongText !== undefined) renderLive(ctx.state.currentSongText);
   }
 
   function render(text, { transposeSemitones = 0 } = {}) {
-    const stepper = byId("transpose");
-    if (stepper) stepper.value = transposeSemitones || 0;
-    ctx.state.tempoOverrideBpm = null;
-    engrave(text, { ...LIVE_TARGETS, addLink: true });
+    ctx.store.set("settings", { transpose: transposeSemitones || 0 }, RENDER);
+    renderLive(text, { fresh: true });
   }
+
+  // A control only writes the store; anything that changes what's drawn or
+  // played re-engraves here.
+  subscribeRerender(ctx.store, rerender);
 
   // Rotating a phone (or any resize) changes the space the grid has; re-fit the
   // live chord table so it scales back up when it now fits, or further down when
@@ -535,16 +379,15 @@ export function createSheet(ctx) {
 
   return {
     render,
-    rerender() {
-      if (ctx.state.currentSongText !== undefined) {
-        engrave(ctx.state.currentSongText, { ...LIVE_TARGETS, addLink: true });
-      }
-    },
+    rerender,
     renderFromFile(path) {
       ctx.readFile(`/songs/${path}`, (text) => render(text));
     },
     renderIntoBooklet(text, targets) {
-      engrave(text, { ...targets, isBooklet: true });
+      const { titlePrefix = "", extraTransposeSteps = 0, ...ids } = targets;
+      const settings = effectiveSheetSettings(ctx.store.get("settings"), { booklet: true });
+      const plan = buildRenderPlan(text, settings, { parse: parseTune, extraTransposeSteps });
+      paint(plan, plan.abcText, ids, { titlePrefix });
     },
   };
 }

@@ -4,35 +4,19 @@ import { mountPage } from "../../../../tests/helpers/dom.js";
 import { makeCtx } from "../../../../tests/helpers/ctx.js";
 import { createAbcjsStub, withAbcjs } from "../../../../tests/helpers/stubs.js";
 import { createSheet } from "./sheet.js";
+import { RENDER } from "../core/state.js";
 
 function setup() {
   const page = mountPage();
   const abcjs = createAbcjsStub();
-  const audioCalls = { transpose: [], repeats: [], tunes: [] };
-  const ctx = makeCtx({
-    audio: {
-      set transposeSemitones(v) { audioCalls.transpose.push(v); },
-      set chordOffset(_v) {},
-      setRepeatBoundaries: (b) => audioCalls.repeats.push(b),
-      initForTune: (t) => audioCalls.tunes.push(t),
-      setupNotationClickHandler: () => {},
-      updateTempoLabel: () => {},
-      stepTempo: () => {},
-      playPause: () => {},
-      stop: () => {},
-    },
+  const ctx = makeCtx();
+  // What the sheet publishes for the player (the `tune` slice).
+  const audioCalls = { transpose: [], tunes: [] };
+  ctx.store.subscribe("tune", (tune, changed) => {
+    if (!changed.includes("visualObj")) return;
+    audioCalls.tunes.push(tune.visualObj);
+    audioCalls.transpose.push(tune.audioTranspose);
   });
-  // #instrument is built at runtime by selects.js — add the option the tests need.
-  const sel = document.createElement("select");
-  sel.id = "instrument";
-  ["concert_pitch", "trumpet", "trombone", "concert_+_roman"].forEach((v) => {
-    const o = document.createElement("option");
-    o.value = v;
-    o.text = v;
-    sel.append(o);
-  });
-  document.getElementById("sheetStatus").append(sel);
-
   const sheet = createSheet(ctx);
   return { page, ctx, abcjs, audioCalls, sheet, cleanup: page.cleanup };
 }
@@ -57,26 +41,35 @@ test("render engraves the live sheet with the expected ABCjs params", () => {
   }
 });
 
-test("render seeds the Key stepper and clears the tempo override", () => {
+test("render seeds the Key stepper and marks a newly opened song; rerender doesn't", () => {
   const { ctx, abcjs, sheet, cleanup } = setup();
   try {
-    ctx.state.tempoOverrideBpm = 150;
+    const renders = () => abcjs.calls.renderAbc.length;
     withAbcjs(abcjs, () => sheet.render(TUNE, { transposeSemitones: 3 }));
-    assert.equal(document.getElementById("transpose").value, "3");
-    assert.equal(ctx.state.tempoOverrideBpm, null);
+    assert.equal(ctx.state.transpose, 3);
+    assert.equal(renders(), 1, "seeding the Key stepper doesn't trigger a second render");
     assert.equal(abcjs.calls.renderAbc.at(-1).params.visualTranspose, 3);
+    // The player resets the Tempo stepper whenever songSerial moves.
+    const serial = ctx.state.songSerial;
+    withAbcjs(abcjs, () => sheet.rerender());
+    assert.equal(ctx.state.songSerial, serial);
+    withAbcjs(abcjs, () => sheet.render(TUNE));
+    assert.equal(ctx.state.songSerial, serial + 1);
   } finally {
     cleanup();
   }
 });
 
 test("the instrument offset shifts the notation but not the audio transpose", () => {
-  const { abcjs, audioCalls, sheet, cleanup } = setup();
+  const {
+    ctx, abcjs, audioCalls, sheet, cleanup,
+  } = setup();
   try {
-    withAbcjs(abcjs, () => sheet.render(TUNE));
-    document.getElementById("instrument").value = "trumpet"; // +2
-    document.getElementById("transpose").value = "1";
-    withAbcjs(abcjs, () => sheet.rerender());
+    withAbcjs(abcjs, () => {
+      sheet.render(TUNE);
+      // One store write, one re-render (the sheet follows the settings).
+      ctx.store.set("settings", { instrument: "trumpet", transpose: 1 }); // trumpet: +2
+    });
     // audio gets the pre-instrument value (stepper only)
     assert.equal(audioCalls.transpose.at(-1), 1);
     // notation gets stepper + instrument offset
@@ -94,7 +87,7 @@ test("the instrument offset shifts the notation but not the audio transpose", ()
 test("a booklet render's ABC text is untouched by the mixer (isBooklet skips injection)", () => {
   const { ctx, abcjs, sheet, cleanup } = setup();
   try {
-    ctx.state.mixer.bassVolume = 50;
+    ctx.state.mixer = { ...ctx.state.mixer, bassVolume: 50 };
     document.getElementById("notation").insertAdjacentHTML(
       "afterend",
       "<div id='bk-n2'></div><div id='bk-c2'></div><div id='bk-t2'></div>",
@@ -134,9 +127,11 @@ test("a booklet render leaves the live sheet's state alone, so rerender() keeps 
 });
 
 test("a booklet render ignores the Key stepper and never touches audio", () => {
-  const { abcjs, audioCalls, sheet, cleanup } = setup();
+  const {
+    ctx, abcjs, audioCalls, sheet, cleanup,
+  } = setup();
   try {
-    document.getElementById("transpose").value = "5";
+    ctx.state.transpose = 5;
     document.getElementById("notation").insertAdjacentHTML(
       "afterend",
       "<div id='bk-n'></div><div id='bk-c'></div><div id='bk-t'></div>",
@@ -177,9 +172,11 @@ function withSyncedMixerVoices(ctx) {
     const sig = voices.map((v) => `${v.id}:${v.label}`).join("|");
     if (sig === lastSig) return; // same rebuild-skip behaviour as the real mixer.js
     lastSig = sig;
-    ctx.state.mixerVoices = voices.map((v) => ({
-      ...v, muted: false, program: null, volume: 100,
-    }));
+    ctx.store.set("mixer", {
+      mixerVoices: voices.map((v) => ({
+        ...v, slug: v.label.toLowerCase(), muted: false, program: null, volume: 100,
+      })),
+    }, RENDER);
   };
 }
 
@@ -202,8 +199,11 @@ test("a voice's chosen (non-Default) program wins over the name-based guess", ()
   try {
     withSyncedMixerVoices(ctx);
     withAbcjs(abcjs, () => sheet.render(MULTI_VOICE_TUNE));
-    ctx.state.mixerVoices[1].program = 0; // Sousaphone -> Piano, overriding the Tuba guess
-    withAbcjs(abcjs, () => sheet.rerender());
+    // Sousaphone -> Piano, overriding the Tuba guess; the sheet re-engraves
+    // by itself on the Mixer change.
+    withAbcjs(abcjs, () => {
+      ctx.state.mixerVoices = ctx.state.mixerVoices.map((v, i) => (i === 1 ? { ...v, program: 0 } : v));
+    });
     assert.match(abcjs.calls.renderAbc.at(-1).abc, /name="Sousaphone"\n%%MIDI program 0\n/);
   } finally {
     cleanup();

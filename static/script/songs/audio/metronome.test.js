@@ -3,7 +3,12 @@ import assert from "node:assert/strict";
 import { mountPage } from "../../../../tests/helpers/dom.js";
 import { makeCtx } from "../../../../tests/helpers/ctx.js";
 import { createAudioContextStub, withAudioContext } from "../../../../tests/helpers/stubs.js";
-import { createMetronome, loadMetronomeState } from "./metronome.js";
+import { createMetronome } from "./metronome.js";
+import { loadPersisted } from "../../lib/core/persisted.js";
+import { PLAYBACK_SLICE } from "./state.js";
+
+// The persisted default the app store seeds metronomeEnabled from (songs/audio/state.js).
+const loadMetronomeState = () => loadPersisted(PLAYBACK_SLICE.prefs).metronomeEnabled;
 
 function setup(audioOverrides = {}) {
   const page = mountPage();

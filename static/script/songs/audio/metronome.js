@@ -1,5 +1,4 @@
 import { byId, on } from "../../lib/core/dom.js";
-import { readPref, writePref, PREF_KEYS } from "../../lib/core/preferences.js";
 import { resolveBpm } from "../../lib/music/tempo.js";
 import {
   hasBackbeat, introDelaySeconds, pickupStartBeatIndex, scheduleClicks,
@@ -305,7 +304,6 @@ export function createMetronome(ctx) {
     updateToggleVisual();
     on("mixerMetronomeToggleBtn", "click", () => {
       ctx.state.metronomeEnabled = !ctx.state.metronomeEnabled;
-      writePref(PREF_KEYS.metronomeEnabled, ctx.state.metronomeEnabled ? "1" : "0");
       updateToggleVisual();
       syncRunning();
     });
@@ -322,12 +320,4 @@ export function createMetronome(ctx) {
     },
     onBarStart,
   };
-}
-
-// ctx.state.metronomeEnabled's initial value, seeded from the persisted
-// pref (default off) — built here for the same reason loadMixerState lives
-// in mixer.js: the persistence/defaulting logic sits next to the module
-// that owns the rest of this state.
-export function loadMetronomeState() {
-  return readPref(PREF_KEYS.metronomeEnabled) === "1";
 }

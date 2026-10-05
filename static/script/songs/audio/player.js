@@ -4,14 +4,7 @@ import {
 } from "../../lib/music/tempo.js";
 import { computeVoicesOff, percentToAbcjsSwing } from "../../lib/audio/audio-mix.js";
 import { beatsPerMeasure } from "../../lib/audio/metronome.js";
-import { readPref, writePref, PREF_KEYS } from "../../lib/core/preferences.js";
-
-// The Repeat stepper's bounds: at least one playthrough (no repeat), capped
-// at 20 — enough for real practice loops without a runaway value ticking
-// away in the background if someone mistypes into the number field.
-export const REPEAT_COUNT_MIN = 1;
-export const REPEAT_COUNT_MAX = 20;
-const REPEAT_COUNT_DEFAULT = 1;
+import { REPEAT_COUNT_MIN, REPEAT_COUNT_MAX, REPEAT_COUNT_DEFAULT } from "./state.js";
 
 // Two of the three classic MIDI.js soundfont sets (see lib/gm-voices.js's
 // doc comment for the third, MusyngKite's own sibling FluidR3_GM, not
@@ -100,7 +93,8 @@ function tryCall(fn) {
   Owns the sheet's audio: the ABCjs SynthController lifecycle, the transport
   buttons' visual state, note/chord-cell highlighting during playback, the
   click-to-seek timing map, and the Tempo stepper's effect (SynthController
-  warp). sheet.js calls initForTune() after each live render; sheet-controls.js
+  warp). It follows the sheet through the store's `tune` slice (see the
+  subscription at the end of createAudioPlayer); sheet/controls.js
   wires the buttons to playPause / stop / stepTempo. The Mixer panel
   (songs/mixer.js) reaches this file only for *mute*: ctx.state.mixerVoices
   (the tune's resolved voice list — lib/audio-mix.js's resolveMixerVoices,
@@ -874,8 +868,9 @@ export function createAudioPlayer(ctx) {
     }
   }
 
-  // Called from the Repeat stepper (sheet-controls.js): clamps and persists
-  // the chosen playthrough count, and syncs the field back to the clamped
+  // Called from the Repeat stepper (sheet-controls.js): clamps the chosen
+  // playthrough count into the store (which persists it — see
+  // songs/audio/state.js), and syncs the field back to the clamped
   // value (a manually typed out-of-range number is otherwise left showing
   // whatever was typed, not what actually took effect).
   function setRepeatCount(value) {
@@ -884,19 +879,34 @@ export function createAudioPlayer(ctx) {
       ? Math.min(REPEAT_COUNT_MAX, Math.max(REPEAT_COUNT_MIN, Math.round(parsed)))
       : REPEAT_COUNT_DEFAULT;
     ctx.state.repeatCount = count;
-    writePref(PREF_KEYS.repeatCount, String(count));
     const input = byId("repeatCount");
     if (input) input.value = String(count);
     updateRepeatLabel();
   }
 
+  /*
+    The sheet publishes every live render to the store's `tune` slice
+    (songs/sheet/state.js) and the player follows it: the audio transpose,
+    the chord table's alignment and repeat span, a new song resetting the
+    Tempo stepper to the tune's own tempo, and a fresh SynthController for
+    every freshly engraved tune object.
+  */
+  ctx.store.subscribe("tune", (tune, changed) => {
+    state.transposeSemitones = tune.audioTranspose;
+    state.chordOffset = tune.chordOffset;
+    if (tune.repeatBoundaries) {
+      state.repeatStart = tune.repeatBoundaries.start;
+      state.repeatEnd = tune.repeatBoundaries.end;
+    }
+    if (changed.includes("songSerial")) ctx.state.tempoOverrideBpm = null;
+    if (changed.includes("visualObj") && tune.visualObj) {
+      initForTune(tune.visualObj);
+      setupNotationClickHandler();
+      updateTempoLabel();
+    }
+  });
+
   return {
-    set transposeSemitones(value) {
-      state.transposeSemitones = value;
-    },
-    set chordOffset(value) {
-      state.chordOffset = value;
-    },
     get isPlaying() {
       return state.isPlaying;
     },
@@ -928,10 +938,6 @@ export function createAudioPlayer(ctx) {
     get renderGeneration() {
       return state.renderGeneration;
     },
-    setRepeatBoundaries({ start, end }) {
-      state.repeatStart = start;
-      state.repeatEnd = end;
-    },
     buildExportOptions: exportSynthOptions,
     setRepeatCount,
     initForTune,
@@ -943,15 +949,4 @@ export function createAudioPlayer(ctx) {
     stop,
     TEMPO_BOUNDS: { min: TEMPO_MIN_BPM, max: TEMPO_MAX_BPM },
   };
-}
-
-// ctx.state.repeatCount's initial value, seeded from the persisted pref
-// (default 1 — no repeat) — built here for the same reason loadMetronomeState
-// lives in metronome.js: the persistence/defaulting logic sits next to the
-// module that owns the rest of this state.
-export function loadRepeatCountState() {
-  const raw = Number(readPref(PREF_KEYS.repeatCount));
-  return Number.isInteger(raw) && raw >= REPEAT_COUNT_MIN && raw <= REPEAT_COUNT_MAX
-    ? raw
-    : REPEAT_COUNT_DEFAULT;
 }

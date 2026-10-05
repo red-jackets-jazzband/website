@@ -18,16 +18,10 @@ const ABC = {
 
 function setup(instrument = "concert_pitch") {
   const page = mountPage();
-  const sel = document.createElement("select");
-  sel.id = "instrument";
-  const o = document.createElement("option");
-  o.value = instrument;
-  sel.append(o);
-  document.getElementById("sheetStatus").append(sel);
-
   const bookletRenders = [];
   const pending = [];
   const ctx = makeCtx({
+    state: { instrument },
     songName: (f) => f.replace(".abc", "").toUpperCase(),
     // async like the real XHR helper — the stage list is appended before these
     // callbacks fire, so per-song meta lands in cells that already exist.

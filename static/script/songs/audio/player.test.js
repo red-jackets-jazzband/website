@@ -3,7 +3,12 @@ import assert from "node:assert/strict";
 import { mountPage } from "../../../../tests/helpers/dom.js";
 import { makeCtx } from "../../../../tests/helpers/ctx.js";
 import { createAbcjsStub, withAbcjs } from "../../../../tests/helpers/stubs.js";
-import { createAudioPlayer, loadRepeatCountState } from "./player.js";
+import { createAudioPlayer } from "./player.js";
+import { loadPersisted } from "../../lib/core/persisted.js";
+import { PLAYBACK_SLICE } from "./state.js";
+
+// The persisted value the app store seeds repeatCount from (songs/audio/state.js).
+const loadRepeatCountState = () => loadPersisted(PLAYBACK_SLICE.prefs).repeatCount;
 
 const flush = () => new Promise((resolve) => { setTimeout(resolve, 0); });
 const SPINNER_SELECTOR = ".fa-spinner";
@@ -36,7 +41,7 @@ const PICKUP_SHAPED_TIMINGS = [
 // SynthController stub each time it's called, since a Stop + fresh Play
 // swaps in a new one.
 async function setupPlayingTune(stateOverrides = {}, { visualObj = { metaText: {} }, noteTimings } = {}) {
-  const { audio, cleanup } = setup(stateOverrides);
+  const { ctx, audio, cleanup } = setup(stateOverrides);
   const abcjs = createAbcjsStub({ audioSupported: true });
   if (noteTimings) abcjs._noteTimings = noteTimings;
   withAbcjs(abcjs, () => audio.initForTune(visualObj));
@@ -47,7 +52,7 @@ async function setupPlayingTune(stateOverrides = {}, { visualObj = { metaText: {
     return abcjs.calls.synthControllers.at(-1);
   }
   return {
-    audio, abcjs, cleanup, play,
+    ctx, audio, abcjs, cleanup, play,
   };
 }
 
@@ -517,7 +522,9 @@ test("clicking a note on a never-played tune primes it, then seeks and plays fro
 });
 
 test("clicking a chord cell seeks to its offset measure", async () => {
-  const { audio, abcjs, cleanup } = await setupPlayingTune({}, {
+  const {
+    ctx, audio, abcjs, cleanup,
+  } = await setupPlayingTune({}, {
     noteTimings: [
       { type: "event", elements: [[{}]], milliseconds: 0 },
       { type: "event", elements: [[{}]], milliseconds: 500, measureStart: true },
@@ -526,7 +533,8 @@ test("clicking a chord cell seeks to its offset measure", async () => {
     ],
   });
   try {
-    audio.chordOffset = 1;
+    // One leading chordless bar, as the sheet publishes it.
+    ctx.store.set("tune", { chordOffset: 1 });
     const cell = document.createElement("div");
     cell.className = "chordCell";
     document.getElementById("chordtable").append(cell);
@@ -1119,11 +1127,27 @@ test("setRepeatCount clamps to [1, 20], persists, and syncs the field", async ()
   }
 });
 
-test("setRepeatBoundaries is accepted (shape from scanRepeatBoundaries)", () => {
-  const { audio, cleanup } = setup();
+test("the player takes the chord table's repeat span from the tune slice (shape from scanRepeatBoundaries)", () => {
+  const { ctx, cleanup } = setup();
   try {
-    assert.doesNotThrow(() => audio.setRepeatBoundaries({ start: 1, end: 4 }));
-    assert.doesNotThrow(() => audio.setRepeatBoundaries({ start: undefined, end: undefined }));
+    assert.doesNotThrow(() => ctx.store.set("tune", { repeatBoundaries: { start: 1, end: 4 } }));
+    assert.doesNotThrow(() => ctx.store.set("tune", { repeatBoundaries: { start: undefined, end: undefined } }));
+  } finally {
+    cleanup();
+  }
+});
+
+test("the player follows the tune slice: a newly opened song resets the tempo, a new tune object loads", async () => {
+  const { ctx, cleanup } = setup({ tempoOverrideBpm: 150 });
+  const abcjs = createAbcjsStub({ audioSupported: true });
+  try {
+    withAbcjs(abcjs, () => ctx.store.set("tune", { chordOffset: 2 }));
+    assert.equal(ctx.state.tempoOverrideBpm, 150, "a re-render of the same song keeps the tempo");
+    assert.equal(abcjs.calls.synthControllers.length, 0);
+    withAbcjs(abcjs, () => ctx.store.set("tune", { songSerial: 1, visualObj: { metaText: {} } }));
+    assert.equal(ctx.state.tempoOverrideBpm, null);
+    assert.equal(abcjs.calls.synthControllers.length, 1);
+    await flush(); // let the new controller's setTune settle before the DOM goes
   } finally {
     cleanup();
   }

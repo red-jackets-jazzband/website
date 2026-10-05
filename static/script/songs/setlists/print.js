@@ -17,7 +17,6 @@ const PRINT_MODE_LABELS = { setlist: "Setlist", chordbook: "Chordbook", songbook
 const bookletSetHeading = (text) =>
   el("div", { class: "setlist-booklet-set-heading pageBreakBefore", text });
 
-const instrument = () => (byId("instrument") ? byId("instrument").value : "concert_pitch");
 const noop = () => {};
 
 function setTextContent(id, value) {
@@ -61,6 +60,8 @@ function coverPage(name, desc) {
   Chordbook and songbook share the exact same stacked DOM.
 */
 export function createSetlistPrint(ctx) {
+  // The booklet is engraved for whichever instrument the sheet is on.
+  const instrument = () => ctx.state.instrument;
   // Each buildBooklet() clears #setlistPrintBooklet and recreates its per-song
   // ids, while the .abc reads that fill them are async. `bookletSeq` lets a
   // callback from a superseded build bail instead of writing stale content
