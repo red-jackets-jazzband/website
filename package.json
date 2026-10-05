@@ -28,7 +28,7 @@
     "eslint-plugin-sonarjs": "^4.2.2",
     "eslint-plugin-unicorn": "^76.0.0",
     "globals": "^17.12.0",
-    "jscpd": "^5.3.3",
+    "jscpd": "^5.4.0",
     "jsdom": "^30.1.1",
     "stylelint": "^17.15.0",
     "stylelint-config-recommended": "^18.0.0",
