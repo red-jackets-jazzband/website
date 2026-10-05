@@ -100,7 +100,8 @@ test("buildSoundiizPayload keeps setlist order, skips holes and folds repeats", 
     tracklist: [{ title: "One", platform: "youtube", id: "yt" }, { title: "Two" }],
   });
   assert.equal(buildSoundiizPayload("Gig", [], "spotify"), null);
-  assert.equal(Object.keys(buildSoundiizPayload("Gig", songs)).includes("destination"), false);
+  const open = buildSoundiizPayload("Gig", songs);
+  assert.equal(Object.hasOwn(open, "destination"), false);
 });
 
 test("buildSoundiizPayload caps the tracklist at the API's limit", () => {
@@ -113,6 +114,11 @@ test("soundiizShareUrl only accepts a successful reply pointing at a soundiiz.co
   assert.equal(soundiizShareUrl({ status: "success", shareUrl: ok }), ok);
   assert.equal(soundiizShareUrl({ status: "error", shareUrl: ok }), null);
   assert.equal(soundiizShareUrl({ status: "success", shareUrl: "https://evil.example/go/import-playlist/x" }), null);
+  assert.equal(soundiizShareUrl({ status: "success", shareUrl: "https://notsoundiiz.com/go/import-playlist/x" }), null);
+  assert.equal(
+    soundiizShareUrl({ status: "success", shareUrl: "https://www.soundiiz.com/go/import-playlist/x" }),
+    "https://www.soundiiz.com/go/import-playlist/x",
+  );
   assert.equal(soundiizShareUrl({ status: "success", shareUrl: "wss://soundiiz.com/go/import-playlist/x" }), null);
   assert.equal(soundiizShareUrl({ status: "success", shareUrl: "https://soundiiz.com/login" }), null);
   assert.equal(soundiizShareUrl({ status: "success", shareUrl: "not a url" }), null);
