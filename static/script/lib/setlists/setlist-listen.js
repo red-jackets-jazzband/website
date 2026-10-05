@@ -137,21 +137,24 @@ export function buildSoundiizPayload(name, songs, destination) {
   };
 }
 
+function parseUrl(value) {
+  try {
+    return new URL(value);
+  } catch {
+    return null;
+  }
+}
+
 // Soundiiz's reply carries the link to send the visitor to. Only ever
 // navigate to a real https soundiiz.com import page, never to whatever URL a
 // reply happens to contain. Returns the validated URL, or null.
 export function soundiizShareUrl(reply) {
   if (!reply || reply.status !== "success" || typeof reply.shareUrl !== "string") return null;
-  let url;
-  try {
-    url = new URL(reply.shareUrl);
-  } catch {
-    return null;
-  }
-  const host = url.hostname.toLowerCase();
-  const isSoundiiz = host === "soundiiz.com" || host.endsWith(".soundiiz.com");
-  if (url.protocol !== "https:" || !isSoundiiz || url.pathname.indexOf("/go/import-playlist/") !== 0) {
-    return null;
-  }
+  const url = parseUrl(reply.shareUrl);
+  if (!url || url.protocol !== "https:") return null;
+  // soundiiz.com itself or any subdomain of it ("." + host makes the bare
+  // domain match the same suffix test).
+  const isSoundiiz = `.${url.hostname.toLowerCase()}`.endsWith(".soundiiz.com");
+  if (!isSoundiiz || url.pathname.indexOf("/go/import-playlist/") !== 0) return null;
   return url.toString();
 }
