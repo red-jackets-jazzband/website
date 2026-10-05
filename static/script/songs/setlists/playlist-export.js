@@ -22,6 +22,10 @@ import {
 const BUSY_TEXT = "Sending the setlist to Soundiiz…";
 const FAIL_TEXT = "Couldn’t reach Soundiiz — try again in a moment.";
 
+// How long to wait for Soundiiz before giving up: a request that never
+// settles would otherwise leave the button busy and the blank tab open.
+const REQUEST_TIMEOUT_MS = 15000;
+
 function setStatus(children) {
   const node = byId("listenStatus");
   if (!node) return;
@@ -32,6 +36,24 @@ function setStatus(children) {
   }
   node.append(...[children].flat());
   node.hidden = false;
+}
+
+// Rejects if `promise` hasn't settled within `ms`. A plain race against a
+// timer rather than an AbortController, which Safari 12.0 doesn't have; the
+// abandoned request is simply ignored.
+function withDeadline(promise, ms) {
+  let timer;
+  const deadline = new Promise((_resolve, reject) => {
+    timer = setTimeout(() => { reject(new Error(`No reply from Soundiiz within ${ms} ms`)); }, ms);
+  });
+  const settle = () => { clearTimeout(timer); };
+  return Promise.race([promise, deadline]).then((value) => {
+    settle();
+    return value;
+  }, (err) => {
+    settle();
+    throw err;
+  });
 }
 
 function requestShareUrl(payload) {
@@ -69,7 +91,8 @@ export function updateExportButton(songs) {
   setStatus(null);
 }
 
-export function createPlaylistExport(ctx) {
+export function createPlaylistExport(ctx, options = {}) {
+  const timeoutMs = options.timeoutMs || REQUEST_TIMEOUT_MS;
   let busy = false;
 
   function payload() {
@@ -84,7 +107,7 @@ export function createPlaylistExport(ctx) {
     const tab = openPendingTab();
     setStatus(BUSY_TEXT);
     const done = () => { busy = false; };
-    requestShareUrl(body)
+    withDeadline(requestShareUrl(body), timeoutMs)
       .then((url) => {
         if (tab) {
           tab.location.replace(url);

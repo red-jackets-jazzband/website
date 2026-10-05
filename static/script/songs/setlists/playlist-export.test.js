@@ -5,6 +5,7 @@ import { makeCtx } from "../../../../tests/helpers/ctx.js";
 import { createPlaylistExport } from "./playlist-export.js";
 import { SOUNDIIZ_ENDPOINT } from "../../lib/setlists/setlist-listen.js";
 
+const NEVER = Symbol("never settles");
 const SHARE_URL = "https://soundiiz.com/go/import-playlist/abc123";
 const SONGS = [
   { title: "Bill Bailey", sources: { spotifyTrackId: "sp", youtubeId: "yt", soundcloudId: null } },
@@ -18,12 +19,13 @@ function flush() {
 // Mounts the page with fetch and window.open stubbed: `reply` is what the
 // fake Soundiiz answers (or an Error to reject with), `tab` what window.open
 // returns (null = blocked by a popup blocker).
-function setup({ reply, tab = { location: { replace(url) { this.url = url; } }, close() { this.closed = true; } } }) {
+function setup({ reply, timeoutMs, tab = { location: { replace(url) { this.url = url; } }, close() { this.closed = true; } } }) {
   const page = mountPage();
   const originalFetch = globalThis.fetch;
   const requests = [];
   globalThis.fetch = (url, init) => {
     requests.push({ url, init });
+    if (reply === NEVER) return new Promise(() => {});
     return reply instanceof Error
       ? Promise.reject(reply)
       : Promise.resolve({ json: () => Promise.resolve(reply) });
@@ -32,7 +34,7 @@ function setup({ reply, tab = { location: { replace(url) { this.url = url; } }, 
   const ctx = makeCtx({
     setlistPrint: { getListenSongs: () => SONGS, getListenTitle: () => "Gig 2026" },
   });
-  const exporter = createPlaylistExport(ctx);
+  const exporter = createPlaylistExport(ctx, { timeoutMs });
   exporter.init();
   exporter.update(SONGS);
   return {
@@ -122,6 +124,21 @@ test("an error steering the tab still reports failure and lets the button be use
     document.getElementById("listenExportBtn").click();
     await flush();
     assert.equal(requests.length, 2, "not stuck busy after the failure");
+  } finally {
+    cleanup();
+  }
+});
+
+test("a request that never settles times out: tab closed, failure shown, retry possible", async (t) => {
+  t.mock.method(console, "warn", () => {});
+  const { requests, tab, status, cleanup } = setup({ reply: NEVER, timeoutMs: 5 });
+  try {
+    document.getElementById("listenExportBtn").click();
+    await new Promise((resolve) => { setTimeout(resolve, 30); });
+    assert.equal(tab.closed, true);
+    assert.match(status().textContent, /Couldn’t reach Soundiiz/);
+    document.getElementById("listenExportBtn").click();
+    assert.equal(requests.length, 2, "not stuck busy after the timeout");
   } finally {
     cleanup();
   }
