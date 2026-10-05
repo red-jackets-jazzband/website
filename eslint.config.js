@@ -224,7 +224,7 @@ export default [
           // grounds, with no idea this project targets Safari 12 — it's
           // ES2022 (Safari 15.4+), so applying that suggestion here would be
           // a real regression, not a cleanup. hasOwnProperty.call(...) stays
-          // the intentional spelling in static/script/songs/setlist-view.js
+          // the intentional spelling in static/script/songs/setlists/view.js
           // and elsewhere; this rule is what makes that a build error instead
           // of a silent one the next time SonarCloud flags it.
           selector: "CallExpression[callee.object.name='Object'][callee.property.name='hasOwn']",
@@ -243,9 +243,9 @@ export default [
     // tokenizer) is a flat dictionary of literal alternatives, not a
     // backtracking risk — no paired super-linear-regex flag on it.
     files: [
-      "static/script/lib/chords.js",
-      "static/script/lib/comping.js",
-      "static/script/lib/music-theory.js",
+      "static/script/lib/music/chords.js",
+      "static/script/lib/music/comping.js",
+      "static/script/lib/music/music-theory.js",
     ],
     rules: {
       complexity: "off",

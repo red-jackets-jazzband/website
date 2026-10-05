@@ -11,10 +11,10 @@
 // Module service workers aren't universally supported yet (notably older
 // Safari) — on a browser that can't load this file at all, /songs/ simply
 // works the same as it always did, online-only, same as before this existed.
-import { classifyRequest } from "./script/lib/sw-routing.js";
+import { classifyRequest } from "./script/lib/platform/sw-routing.js";
 import {
   findStylesheetHrefs, findCssUrls, findScriptSrcs, findModuleImports,
-} from "./script/lib/precache-scan.js";
+} from "./script/lib/platform/precache-scan.js";
 
 // Bump on any change to this file or to what it should cache, so activate()
 // clears out whatever the previous version left behind instead of it

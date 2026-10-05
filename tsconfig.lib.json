@@ -12,8 +12,8 @@
   },
   "include": ["static/script/lib/**/*.js", "static/script/lib/**/*.d.ts"],
   "exclude": [
-    "static/script/lib/comping.js",
-    "static/script/lib/comping.test.js",
-    "static/script/lib/setlist-walk.test.js"
+    "static/script/lib/music/comping.js",
+    "static/script/lib/music/comping.test.js",
+    "static/script/lib/setlists/setlist-walk.test.js"
   ]
 }

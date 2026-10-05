@@ -15,7 +15,7 @@
     "lint:catalog": "node scripts/lint-catalog.js",
     "lint:seo": "node scripts/lint-seo.js",
     "audit": "node scripts/audit.js",
-    "test": "node --test \"static/script/lib/*.test.js\" \"static/script/songs/*.test.js\" \"tests/**/*.test.js\""
+    "test": "node --test \"static/script/**/*.test.js\" \"tests/**/*.test.js\""
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
