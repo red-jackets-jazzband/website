@@ -14,9 +14,9 @@ import { RENDER } from "../core/state.js";
 const APPLY_DEBOUNCE_MS = 220;
 const REPOSITION_MARGIN = 8;
 
-// Bass/Chords and every voice channel need the tune to have chord symbols
-// at all to do anything (Bass/Chords) — read from ctx.state.hasChords, which
-// sheet.js publishes on every live render.
+// Bass/Chords (ABCjs's auto-accompaniment) only play anything when the tune
+// has chord symbols — read from ctx.state.hasChords, which sheet.js publishes
+// on every live render. The tune's own voice channels aren't gated.
 const GATE_STATE_KEY = { bass: "hasChords", chords: "hasChords" };
 
 function clampPercent(value) {

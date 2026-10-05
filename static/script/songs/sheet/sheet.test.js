@@ -269,3 +269,71 @@ test("two W: tables render below the chord table in their source order", () => {
     cleanup();
   }
 });
+
+test("an audio failure while loading a new tune doesn't stop the Mixer and Inspiration following it", () => {
+  const page = mountPage();
+  try {
+    const abcjs = createAbcjsStub();
+    const ctx = makeCtx();
+    // The player subscribes first (it's created before the Mixer and
+    // Inspiration) — make its tune handler fail, as a synth that can't start
+    // on some browser would.
+    ctx.store.subscribe("tune", () => {
+      throw new Error("synth failed");
+    });
+    const followed = [];
+    ctx.store.subscribe("tune", (tune) => followed.push(tune.title));
+    const sheet = createSheet(ctx);
+    assert.throws(() => withAbcjs(abcjs, () => sheet.render(TUNE)), /synth failed/);
+    assert.deepEqual(followed, ["Stub Tune"], "later subscribers still hear about the new tune");
+  } finally {
+    page.cleanup();
+  }
+});
+
+// Like ABCjs: a tune's free-standing W: words are drawn as their own SVG
+// (.abcjs-unaligned-words) inside the target element.
+function withLyricsSvgs(abcjs) {
+  const renderAbc = abcjs.renderAbc.bind(abcjs);
+  abcjs.renderAbc = (target, abc, params) => {
+    const result = renderAbc(target, abc, params);
+    const words = abc.split("\n").filter((l) => l.startsWith("W:") && !l.startsWith("W:|"));
+    if (words.length > 0) {
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      text.setAttribute("class", "abcjs-unaligned-words");
+      text.textContent = words.map((l) => l.slice(2)).join(" ");
+      svg.append(text);
+      document.getElementById(target).append(svg);
+    }
+    return result;
+  };
+  return abcjs;
+}
+
+test("building a booklet song keeps the live sheet's lyrics, and the booklet keeps its own", () => {
+  const { abcjs, sheet, cleanup } = setup();
+  try {
+    withLyricsSvgs(abcjs);
+    document.getElementById("notation").insertAdjacentHTML(
+      "afterend",
+      "<div id='bk-nl'></div><div id='bk-cl'></div><div id='bk-tl'></div>",
+    );
+    const live = TUNE.replace("K:C", "W:Live words\nK:C");
+    const booklet = TUNE.replace("K:C", "W:Booklet words\nK:C");
+    withAbcjs(abcjs, () => sheet.render(live));
+    const lyricsText = () => document.getElementById("lyrics").textContent;
+    assert.match(lyricsText(), /Live words/);
+
+    withAbcjs(abcjs, () => sheet.renderIntoBooklet(booklet, {
+      notationId: "bk-nl", chordId: "bk-cl", titleId: "bk-tl",
+    }));
+    assert.match(lyricsText(), /Live words/, "the live sheet's lyrics are untouched");
+    assert.doesNotMatch(lyricsText(), /Booklet words/);
+    assert.match(
+      document.getElementById("bk-nl").textContent, /Booklet words/, "the booklet song prints its own lyrics",
+    );
+  } finally {
+    cleanup();
+  }
+});
