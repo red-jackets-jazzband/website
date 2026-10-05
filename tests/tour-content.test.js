@@ -31,6 +31,8 @@ const RUNTIME_TARGETS = {
   ".rj-library-add-song-field": ["static/script/songs/setlists/add-song.js", 'class: "rj-library-add-song-field"'],
   ".rj-library-add-break": ["static/script/songs/setlists/add-song.js", 'class: "rj-library-add-break"'],
   ".setlist-divider-input": ["static/script/songs/setlists/view.js", 'class: "setlist-divider-input"'],
+  ".setlist-split-btn": ["static/script/songs/setlists/view.js", 'class: "setlist-split-btn"'],
+  ".setlist-set-merge": ["static/script/songs/setlists/view.js", 'class: "setlist-set-merge"'],
   ".setlist-song-note-add": ["static/script/songs/setlists/view.js", 'class: "setlist-song-note-add"'],
 };
 

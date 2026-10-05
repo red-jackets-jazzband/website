@@ -17,6 +17,33 @@ const SONG_TITLE_SELECTOR = ".setlist-song-title";
 const KEY_SELECT_SELECTOR = ".setlist-song-key-select";
 const KEY_BADGE_SELECTOR = ".setlist-song-key-badge";
 const IS_TRANSPOSED_CLASS = "is-transposed";
+function altArrow(handleIndex, key) {
+  document.querySelectorAll(DRAG_HANDLE_SELECTOR)[handleIndex].dispatchEvent(
+    new window.KeyboardEvent("keydown", { key, altKey: true, bubbles: true }),
+  );
+}
+
+test("Alt+ArrowDown on a set's last song moves it into the next set, then past that set's first song", () => {
+  const { view, entry, storage, cleanup } = setup({
+    songs: [{ file: "a.abc" }, { file: "b.abc" }, { divider: "Two" }, { file: "c.abc" }],
+  });
+  try {
+    view.initControls();
+    view.renderOpen(entry.name, entry.songs, entry, "");
+    altArrow(1, "ArrowDown"); // b: last of set 1 -> top of set 2
+    const files = () => getPersonalSetlist(storage, entry.id).songs
+      .map((s) => s.file || `[${s.divider}]`);
+    assert.deepEqual(files(), ["a.abc", "[Two]", "b.abc", "c.abc"]);
+    assert.deepEqual(rowNumbers(), ["1", "1", "2"]);
+    altArrow(1, "ArrowDown"); // b again: past c, still in set 2
+    assert.deepEqual(files(), ["a.abc", "[Two]", "c.abc", "b.abc"]);
+    altArrow(0, "ArrowDown"); // a: only song of set 1 -> top of set 2
+    assert.deepEqual(files(), ["[Two]", "a.abc", "c.abc", "b.abc"]);
+  } finally {
+    cleanup();
+  }
+});
+
 const BASIN_STREET_FILE = "basin_street.abc";
 const BASIN_STREET_NAME = "Basin Street Blues";
 const ADD_SONG_SEARCH_ID = "setlistAddSongSearch";
@@ -106,11 +133,16 @@ test("Enter in the add-song search adds a lone match and clears the field", () =
   assert.equal(result.value, "");
 });
 
-test("Enter with no single match just clears the add-song field", () => {
+test("Enter with several matches and none highlighted adds the top one", () => {
   const result = enterAddSong([
     { file: BASIN_STREET_FILE, name: BASIN_STREET_NAME },
     { file: "basin_two.abc", name: "Basin Two" },
   ], "basin");
+  assert.deepEqual(result.files, ["a.abc", BASIN_STREET_FILE]);
+});
+
+test("Enter with no matches just clears the add-song field", () => {
+  const result = enterAddSong([{ file: BASIN_STREET_FILE, name: BASIN_STREET_NAME }], "zzz");
   assert.deepEqual(result.files, ["a.abc"]);
   assert.equal(result.value, "");
 });
@@ -237,11 +269,14 @@ test("renderOpen restarts numbering per set and shows headings", () => {
   try {
     view.renderOpen(entry.name, entry.songs, entry, "");
     assert.deepEqual(rowNumbers(), ["1", "2", "1"]);
-    assert.equal(
-      document.querySelector(".setlist-set-heading").textContent, "Set 1",
-    );
-    assert.equal(
-      document.querySelector(".setlist-divider-row .setlist-divider-input").value, "Encore",
+    const headings = Array.from(document.querySelectorAll(".setlist-set > .setlist-divider-row"));
+    assert.deepEqual(
+      headings.map((h) => {
+        const input = h.querySelector(".setlist-divider-input");
+        return input.value || input.placeholder;
+      }),
+      ["Set 1", "Encore"],
+      "every set box opens with the same kind of heading row",
     );
   } finally {
     cleanup();
@@ -639,15 +674,13 @@ test("Alt+ArrowDown on the focused song title (not the drag handle) also reorder
   assertAltArrowReorder(SONG_TITLE_SELECTOR, 0, "ArrowDown", ["b.abc", "a.abc", "c.abc"]);
 });
 
-test("Alt+ArrowDown re-focuses the moved row's drag handle after re-render", () => {
+test("Alt+ArrowDown doesn't leave focus on a drag handle after re-render", () => {
   const { cleanup } = openThreeSongSetlist();
   try {
     document.querySelectorAll(DRAG_HANDLE_SELECTOR)[0].dispatchEvent(
       new window.KeyboardEvent("keydown", { key: "ArrowDown", altKey: true, bubbles: true }),
     );
-    const handles = document.querySelectorAll(DRAG_HANDLE_SELECTOR);
-    assert.equal(document.activeElement, handles[1]);
-    assert.equal(document.activeElement.closest(".setlist-song-row").dataset.songFile, "a.abc");
+    assert.equal(document.activeElement.closest(".setlist-drag-handle"), null);
   } finally {
     cleanup();
   }
