@@ -38,8 +38,7 @@ export function createSetlistData(ctx) {
         return;
       }
       ctx.readFile("/songs/index_of_songs.txt", (data) => {
-        ctx.state.allSongs = parseSongIndex(data);
-        ctx.state.allSongsLoaded = true;
+        ctx.store.set("catalog", { allSongs: parseSongIndex(data), allSongsLoaded: true });
         callback();
       }, (status) => {
         if (onError) onError(status);
