@@ -89,7 +89,7 @@ export function createSetlistPrint(ctx) {
   }
 
   function recomputeListenUrl() {
-    listenUrl = buildYoutubePlaylistUrl(listenSongs.map((song) => song && song.sources.youtubeId));
+    listenUrl = buildYoutubePlaylistUrl(listenSongs.map((song) => song && song.sources.youtubeId)); // NOSONAR: `?.` is a SyntaxError on Safari 12 (see Browser support)
     onListenChange(listenUrl, listenSongs);
   }
 
