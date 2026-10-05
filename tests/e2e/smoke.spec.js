@@ -111,3 +111,40 @@ test("the instrument <select> drops native styling (WebKit ignores author styles
   // supported; either way the UA's native menulist chrome is off.
   expect(["none", "base-select"]).toContain(appearance);
 });
+
+test("a worker upgrade drops the old shell cache but keeps downloaded soundfonts", async ({ page }) => {
+  // First visit with the worker blocked: seed the caches an earlier worker
+  // version left behind — a shell full of since-moved module paths, and the
+  // soundfont samples a visitor downloaded for offline use.
+  await page.route("**/sw.js", (route) => route.abort());
+  await page.goto(SONGS_URL);
+  await page.evaluate(async () => {
+    const shell = await caches.open("rj-songs-shell-v1");
+    await shell.put("/script/songs/app.js", new Response("old"));
+    const samples = await caches.open("rj-songs-soundfont-v1");
+    await samples.put("https://gleitz.github.io/midi-js-soundfonts/FatBoy/trumpet-mp3/C4.mp3", new Response("sample"));
+  });
+
+  // Now let the current worker install and activate (activate() cleans up,
+  // then claims the page).
+  await page.unroute("**/sw.js");
+  await page.reload();
+  const names = await page.evaluate(async () => {
+    await navigator.serviceWorker.ready;
+    if (!navigator.serviceWorker.controller) {
+      await new Promise((resolve) => {
+        navigator.serviceWorker.addEventListener("controllerchange", resolve, { once: true });
+      });
+    }
+    return caches.keys();
+  });
+
+  expect(names).not.toContain("rj-songs-shell-v1");
+  expect(names.some((n) => n.startsWith("rj-songs-shell-"))).toBe(true);
+  expect(names).toContain("rj-songs-soundfont-v1");
+  const sampleKept = await page.evaluate(async () => {
+    const samples = await caches.open("rj-songs-soundfont-v1");
+    return (await samples.keys()).length;
+  });
+  expect(sampleKept).toBe(1);
+});
