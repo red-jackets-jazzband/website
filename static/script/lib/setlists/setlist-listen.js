@@ -56,7 +56,7 @@ export function listenSourcesFromAbc(abcText) {
   const soundcloudUrl = firstSoundcloudUrl(links);
   return {
     youtubeId: youtubeUrl ? extractYouTubeId(youtubeUrl) : null,
-    spotifyTrackId: spotifyItem && spotifyItem.type === "track" ? spotifyItem.id : null,
+    spotifyTrackId: spotifyItem && spotifyItem.type === "track" ? spotifyItem.id : null, // NOSONAR: `?.` is a SyntaxError on Safari 12 (see Browser support)
     soundcloudId: soundcloudUrl ? soundcloudPermalink(soundcloudUrl) : null,
   };
 }
@@ -121,7 +121,7 @@ export function buildSoundiizPayload(name, songs, destination) {
   const seen = new Set();
   const tracklist = [];
   for (const song of songs) {
-    if (!song || !song.title) continue;
+    if (!song || !song.title) continue; // NOSONAR: `?.` is a SyntaxError on Safari 12 (see Browser support)
     const track = soundiizTrack(song.title, song.sources);
     const key = track.platform ? `${track.platform}:${track.id}` : `title:${track.title}`;
     if (seen.has(key)) continue;
@@ -149,12 +149,12 @@ function parseUrl(value) {
 // navigate to a real https soundiiz.com import page, never to whatever URL a
 // reply happens to contain. Returns the validated URL, or null.
 export function soundiizShareUrl(reply) {
-  if (!reply || reply.status !== "success" || typeof reply.shareUrl !== "string") return null;
+  if (!reply || reply.status !== "success" || typeof reply.shareUrl !== "string") return null; // NOSONAR: `?.` is a SyntaxError on Safari 12 (see Browser support)
   const url = parseUrl(reply.shareUrl);
-  if (!url || url.protocol !== "https:") return null;
+  if (!url || url.protocol !== "https:") return null; // NOSONAR: `?.` is a SyntaxError on Safari 12 (see Browser support)
   // soundiiz.com itself or any subdomain of it ("." + host makes the bare
   // domain match the same suffix test).
   const isSoundiiz = `.${url.hostname.toLowerCase()}`.endsWith(".soundiiz.com");
-  if (!isSoundiiz || url.pathname.indexOf("/go/import-playlist/") !== 0) return null;
+  if (!isSoundiiz || !url.pathname.startsWith("/go/import-playlist/")) return null;
   return url.toString();
 }

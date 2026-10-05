@@ -30,7 +30,7 @@ function setStatus(children) {
     node.hidden = true;
     return;
   }
-  node.append(...[].concat(children));
+  node.append(...[children].flat());
   node.hidden = false;
 }
 
@@ -63,7 +63,7 @@ function openPendingTab() {
 export function updateExportButton(songs) {
   const btn = byId("listenExportBtn");
   if (!btn) return;
-  const ready = songs.some((song) => song && song.title);
+  const ready = songs.some((song) => song && song.title); // NOSONAR: `?.` is a SyntaxError on Safari 12 (see Browser support)
   btn.disabled = !ready;
   btn.title = ready ? "Export this setlist as a playlist to Spotify, Apple Music, YouTube Music… (via Soundiiz)" : "No songs in this setlist";
   setStatus(null);
