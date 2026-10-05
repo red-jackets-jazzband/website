@@ -90,7 +90,7 @@ test("the service worker installs and precaches the shell, stylesheet, module gr
   expect(cached).toContain("/manifest.webmanifest");
   expect(cached).toContain("/script/lamejs-1.2.1-min.js");
   expect(cached).toContain("/script/songs-page.js");
-  expect(cached).toContain("/script/songs/app.js");
+  expect(cached).toContain("/script/songs/core/app.js");
   expect(cached.some((u) => /^\/css\/split\.min\..+\.css$/.test(u))).toBe(true);
 });
 

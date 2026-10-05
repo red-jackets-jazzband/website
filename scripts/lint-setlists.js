@@ -8,7 +8,7 @@
 
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { parseSetlistFile } from "../static/script/lib/setlist-format.js";
+import { parseSetlistFile } from "../static/script/lib/setlists/setlist-format.js";
 
 const SETLISTS_DIR = join(import.meta.dirname, "..", "static", "setlists");
 const INDEX_FILE = "index_of_setlists.txt";

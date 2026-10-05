@@ -2,8 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { TOUR_LANGS, parseTourMarkdown, tourStructureProblems } from "../static/script/lib/tour-content.js";
-import { TOUR_ACTION_NAMES } from "../static/script/songs/tour-actions.js";
+import { TOUR_LANGS, parseTourMarkdown, tourStructureProblems } from "../static/script/lib/tour/tour-content.js";
+import { TOUR_ACTION_NAMES } from "../static/script/songs/tour/actions.js";
 import { mountPage } from "./helpers/dom.js";
 
 /*
@@ -21,17 +21,17 @@ const songsPage = read("content/songs.md");
 // runtime, by the module (and string) named here.
 const RUNTIME_TARGETS = {
   "#tourBtn": ["layouts/partials/intro.html", 'id="tourBtn"'],
-  ".songForm": ["static/script/songs/sheet.js", 'class: "songForm"'],
-  "#instrument": ["static/script/songs/selects.js", 'id: "instrument"'],
-  "#iRealPro": ["static/script/songs/irealpro-link.js", 'id: "iRealPro"'],
-  "#inspirationLink": ["static/script/songs/inspiration.js", 'btn.id = "inspirationLink"'],
-  "#compingSplitBtn": ["static/script/songs/selects.js", 'id: "compingSplitBtn"'],
-  "#compingParts": ["static/script/songs/selects.js", 'id: "compingParts"'],
-  ".rj-library-new-setlist-btn": ["static/script/songs/setlist-home.js", 'class: "rj-library-new-setlist-btn"'],
-  ".rj-library-add-song-field": ["static/script/songs/setlist-view.js", 'class: "rj-library-add-song-field"'],
-  ".rj-library-add-break": ["static/script/songs/setlist-view.js", 'class: "rj-library-add-break"'],
-  ".setlist-divider-input": ["static/script/songs/setlist-view.js", 'class: "setlist-divider-input"'],
-  ".setlist-song-note-add": ["static/script/songs/setlist-view.js", 'class: "setlist-song-note-add"'],
+  ".songForm": ["static/script/songs/sheet/sheet.js", 'class: "songForm"'],
+  "#instrument": ["static/script/songs/sheet/selects.js", 'id: "instrument"'],
+  "#iRealPro": ["static/script/songs/sheet/irealpro-link.js", 'id: "iRealPro"'],
+  "#inspirationLink": ["static/script/songs/inspiration/inspiration.js", 'btn.id = "inspirationLink"'],
+  "#compingSplitBtn": ["static/script/songs/sheet/selects.js", 'id: "compingSplitBtn"'],
+  "#compingParts": ["static/script/songs/sheet/selects.js", 'id: "compingParts"'],
+  ".rj-library-new-setlist-btn": ["static/script/songs/setlists/home.js", 'class: "rj-library-new-setlist-btn"'],
+  ".rj-library-add-song-field": ["static/script/songs/setlists/view.js", 'class: "rj-library-add-song-field"'],
+  ".rj-library-add-break": ["static/script/songs/setlists/view.js", 'class: "rj-library-add-break"'],
+  ".setlist-divider-input": ["static/script/songs/setlists/view.js", 'class: "setlist-divider-input"'],
+  ".setlist-song-note-add": ["static/script/songs/setlists/view.js", 'class: "setlist-song-note-add"'],
 };
 
 const allSteps = english.chapters.flatMap((chapter) => chapter.steps.map((step) => ({ chapter, step })));
