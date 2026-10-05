@@ -35,7 +35,7 @@ Type part of a title and the list gets shorter as you go. Click this box, then u
 
 ## open: Your lead sheet
 setup: openDemoSong
-target: .rj-sheet-paper
+target: #sheetBackBtn, .rj-sheet-paper
 Picking a song opens it here. For the tour we've opened *Bill Bailey*. The chord table comes first, with the full notation below it. On a phone the sheet fills the screen, and the **‹ Songs** button at the top takes you back to the list.
 
 ## form: Follow the form
