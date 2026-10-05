@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mountPage } from "../../../../tests/helpers/dom.js";
+import { makeCtx } from "../../../../tests/helpers/ctx.js";
 import { createInspiration } from "./inspiration.js";
 
 const SAMPLE_URL = "https://youtu.be/abcdefghijk";
@@ -56,7 +57,7 @@ function mockYouTubePlayer(window, overrides = {}) {
 // the player's onStateChange (e.g. `fireState(YT_PLAYING)`).
 async function openLoopPanel(window, overrides = {}) {
   const events = mockYouTubePlayer(window, overrides);
-  const insp = createInspiration();
+  const insp = createInspiration(makeCtx());
   insp.init();
   insp.updateLink({ youtube: SAMPLE_URL }, "X");
   document.getElementById("inspirationLink").dispatchEvent(new window.Event("click"));
@@ -100,7 +101,7 @@ async function openZoomedOverview(window) {
 // which differ only in where the pointer moves to next.
 function startResizeDrag(window) {
   window.localStorage.clear();
-  const insp = createInspiration();
+  const insp = createInspiration(makeCtx());
   insp.init();
   const panel = document.getElementById("inspirationPanel");
   const handle = document.getElementById("inspirationResizeHandle");
@@ -111,7 +112,7 @@ function startResizeDrag(window) {
 
 test("updateLink creates the Inspiration button for a tune with a reference", () => {
   inDom(() => {
-    const insp = createInspiration();
+    const insp = createInspiration(makeCtx());
     insp.updateLink({ youtube: SAMPLE_URL }, "Louis Armstrong");
     const btn = document.getElementById("inspirationLink");
     assert.ok(btn);
@@ -124,7 +125,7 @@ test("updateLink creates the Inspiration button for a tune with a reference", ()
 
 test("updateLink updates the existing button in place, without duplicating it", () => {
   inDom(() => {
-    const insp = createInspiration();
+    const insp = createInspiration(makeCtx());
     insp.updateLink({ youtube: "https://youtu.be/one11111111" }, "One");
     insp.updateLink({ youtube: "https://youtu.be/two22222222" }, "Two");
     assert.equal(document.querySelectorAll("#inspirationLink").length, 1);
@@ -134,7 +135,7 @@ test("updateLink updates the existing button in place, without duplicating it", 
 
 test("updateLink(undefined) removes the button for a tune without a reference", () => {
   inDom(() => {
-    const insp = createInspiration();
+    const insp = createInspiration(makeCtx());
     insp.updateLink({ youtube: SAMPLE_URL }, "X");
     insp.updateLink(undefined);
     assert.equal(document.getElementById("inspirationLink"), null);
@@ -143,7 +144,7 @@ test("updateLink(undefined) removes the button for a tune without a reference", 
 
 test("updateLink with only a Spotify source creates the button and opens straight to the Spotify tab, switcher hidden", () => {
   inDom(() => {
-    const insp = createInspiration();
+    const insp = createInspiration(makeCtx());
     insp.init();
     insp.updateLink({ spotify: SPOTIFY_URL }, "X");
     const btn = document.getElementById("inspirationLink");
@@ -168,7 +169,7 @@ test("updateLink with only a Spotify source creates the button and opens straigh
 
 test("updateLink(undefined) removes the button even for a Spotify-only tune", () => {
   inDom(() => {
-    const insp = createInspiration();
+    const insp = createInspiration(makeCtx());
     insp.updateLink({ spotify: SPOTIFY_URL }, "X");
     insp.updateLink(undefined);
     assert.equal(document.getElementById("inspirationLink"), null);
@@ -177,7 +178,7 @@ test("updateLink(undefined) removes the button even for a Spotify-only tune", ()
 
 test("updateLink with only a SoundCloud source creates the button and opens straight to the SoundCloud tab, switcher shown to identify the source", () => {
   inDom(() => {
-    const insp = createInspiration();
+    const insp = createInspiration(makeCtx());
     insp.init();
     insp.updateLink({ soundcloud: SOUNDCLOUD_URL }, "X");
     const btn = document.getElementById("inspirationLink");
@@ -210,7 +211,7 @@ test("updateLink with only a YouTube source opens the panel with the tab switche
   const { window } = page;
   try {
     const events = mockYouTubePlayer(window);
-    const insp = createInspiration();
+    const insp = createInspiration(makeCtx());
     insp.init();
     insp.updateLink({ youtube: SAMPLE_URL }, "X");
     document.getElementById("inspirationLink").dispatchEvent(new window.Event("click"));
@@ -233,7 +234,7 @@ test("updateLink with only a YouTube source opens the panel with the tab switche
 
 test("updateLink(undefined) removes the button even for a SoundCloud-only tune", () => {
   inDom(() => {
-    const insp = createInspiration();
+    const insp = createInspiration(makeCtx());
     insp.updateLink({ soundcloud: SOUNDCLOUD_URL }, "X");
     insp.updateLink(undefined);
     assert.equal(document.getElementById("inspirationLink"), null);
@@ -245,7 +246,7 @@ test("a tune with all three sources shows the tab switcher and can cycle through
   const { window } = page;
   try {
     const events = mockYouTubePlayer(window);
-    const insp = createInspiration();
+    const insp = createInspiration(makeCtx());
     insp.init();
     insp.updateLink({ youtube: SAMPLE_URL, spotify: SPOTIFY_URL, soundcloud: SOUNDCLOUD_URL }, "X");
     document.getElementById("inspirationLink").dispatchEvent(new window.Event("click"));
@@ -276,7 +277,7 @@ test("closing the panel stops a loaded SoundCloud embed too", async () => {
   const page = mountPage();
   const { window } = page;
   try {
-    const insp = createInspiration();
+    const insp = createInspiration(makeCtx());
     insp.init();
     insp.updateLink({ soundcloud: SOUNDCLOUD_URL }, "X");
     document.getElementById("inspirationLink").dispatchEvent(new window.Event("click"));
@@ -295,7 +296,7 @@ test("a tune with both YouTube and Spotify shows the tab switcher, defaulting to
   const { window } = page;
   try {
     const events = mockYouTubePlayer(window);
-    const insp = createInspiration();
+    const insp = createInspiration(makeCtx());
     insp.init();
     insp.updateLink({ youtube: SAMPLE_URL, spotify: SPOTIFY_URL }, "X");
     document.getElementById("inspirationLink").dispatchEvent(new window.Event("click"));
@@ -333,7 +334,7 @@ test("a pointerdown on a tab button doesn't start dragging the panel header", as
   const { window } = page;
   try {
     const events = mockYouTubePlayer(window);
-    const insp = createInspiration();
+    const insp = createInspiration(makeCtx());
     insp.init();
     insp.updateLink({ youtube: SAMPLE_URL, spotify: SPOTIFY_URL }, "X");
     document.getElementById("inspirationLink").dispatchEvent(new window.Event("click"));
@@ -362,7 +363,7 @@ test("switching to the Spotify tab pauses YouTube and hides the LoopTube toolbar
       loadVideoById: (id) => loaded.push(id),
       pauseVideo: () => paused.push(true),
     });
-    const insp = createInspiration();
+    const insp = createInspiration(makeCtx());
     insp.init();
     insp.updateLink({ youtube: SAMPLE_URL, spotify: SPOTIFY_URL }, "X");
     document.getElementById("inspirationLink").dispatchEvent(new window.Event("click"));
@@ -407,7 +408,7 @@ test("switching to the Spotify tab pauses YouTube even before a PLAYING state ev
     const events = mockYouTubePlayer(window, {
       pauseVideo: () => paused.push(true),
     });
-    const insp = createInspiration();
+    const insp = createInspiration(makeCtx());
     insp.init();
     insp.updateLink({ youtube: SAMPLE_URL, spotify: SPOTIFY_URL }, "X");
     document.getElementById("inspirationLink").dispatchEvent(new window.Event("click"));
@@ -438,7 +439,7 @@ test("the play/pause button pauses a video that's already playing before its PLA
       pauseVideo: () => calls.push("pause"),
       getPlayerState: () => 1, // already PLAYING, even though onStateChange hasn't fired
     });
-    const insp = createInspiration();
+    const insp = createInspiration(makeCtx());
     insp.init();
     insp.updateLink({ youtube: SAMPLE_URL }, "X");
     document.getElementById("inspirationLink").dispatchEvent(new window.Event("click"));
@@ -460,7 +461,7 @@ test("closing the panel stops both a playing YouTube video and a loaded Spotify 
   try {
     const stopped = [];
     const events = mockYouTubePlayer(window, { stopVideo: () => stopped.push(true) });
-    const insp = createInspiration();
+    const insp = createInspiration(makeCtx());
     insp.init();
     insp.updateLink({ youtube: SAMPLE_URL, spotify: SPOTIFY_URL }, "X");
     document.getElementById("inspirationLink").dispatchEvent(new window.Event("click"));
@@ -480,7 +481,7 @@ test("closing the panel stops both a playing YouTube video and a loaded Spotify 
 
 test("opening the panel marks the Inspiration button active, closing it clears that", () => {
   inDom(() => {
-    const insp = createInspiration();
+    const insp = createInspiration(makeCtx());
     insp.init();
     insp.updateLink({ youtube: SAMPLE_URL }, "X");
     const btn = document.getElementById("inspirationLink");
@@ -497,7 +498,7 @@ test("opening the panel marks the Inspiration button active, closing it clears t
 
 test("updateLink recreating the button while the panel is already open marks it active immediately", () => {
   inDom(() => {
-    const insp = createInspiration();
+    const insp = createInspiration(makeCtx());
     insp.init();
     insp.updateLink({ youtube: SAMPLE_URL }, "X");
     document.getElementById("inspirationLink").dispatchEvent(new window.Event("click"));
@@ -514,7 +515,7 @@ test("updateLink recreating the button while the panel is already open marks it 
 
 test("init wires the close button without a player attached", () => {
   inDom(() => {
-    const insp = createInspiration();
+    const insp = createInspiration(makeCtx());
     insp.init();
     const panel = document.getElementById("inspirationPanel");
     panel.hidden = false;
@@ -539,7 +540,7 @@ test("closePanel drops a pending video id so a late onReady can't play into a hi
       },
       PlayerState: { PLAYING: 1 },
     };
-    const insp = createInspiration();
+    const insp = createInspiration(makeCtx());
     insp.init();
     insp.updateLink({ youtube: "https://youtu.be/aaaaaaaaaaa" }, "A");
     const btn = document.getElementById("inspirationLink");
@@ -570,7 +571,7 @@ test("closePanel drops a pending video id so a late onReady can't play into a hi
 test("the size button steps the panel width and wraps back round", () => {
   inDom(({ window }) => {
     window.localStorage.clear();
-    const insp = createInspiration();
+    const insp = createInspiration(makeCtx());
     insp.init();
     const panel = document.getElementById("inspirationPanel");
     const btn = document.getElementById("inspirationSizeBtn");
@@ -588,7 +589,7 @@ test("the size button steps the panel width and wraps back round", () => {
 test("init restores a persisted panel width", () => {
   inDom(({ window }) => {
     window.localStorage.setItem("rj.inspirationWidth", "540");
-    const insp = createInspiration();
+    const insp = createInspiration(makeCtx());
     insp.init();
     assert.equal(document.getElementById("inspirationPanel").style.width, "540px");
     window.localStorage.clear();
@@ -612,7 +613,7 @@ test("a shared A/B link opens the video with the loop already set", async () => 
   try {
     const seeks = [];
     const events = mockYouTubePlayer(window, { seekTo: (t) => seeks.push(t) });
-    const insp = createInspiration();
+    const insp = createInspiration(makeCtx());
     insp.init();
     insp.applyShareState({ a: 12, b: 30 });
     insp.updateLink({ youtube: SAMPLE_URL }, "X");
@@ -1124,6 +1125,7 @@ test("the share button copies the link ctx.shareUrl builds from the markers", ()
     });
     const seen = [];
     const ctx = {
+      ...makeCtx(),
       shareUrl: (markers) => {
         seen.push(markers);
         return "https://red-jackets.example/songs/#s=basin_street&i=1";
@@ -1149,7 +1151,7 @@ test("a rejected clipboard write falls back to a prompt and shows no success tic
     });
     let prompted = null;
     window.prompt = (_label, value) => { prompted = value; return value; };
-    const insp = createInspiration({ shareUrl: () => "https://x/songs/#s=y&i=1" });
+    const insp = createInspiration({ ...makeCtx(), shareUrl: () => "https://x/songs/#s=y&i=1" });
     insp.init();
 
     window.document.getElementById("inspirationShareBtn").dispatchEvent(new window.Event("click"));

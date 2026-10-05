@@ -8,6 +8,10 @@ import {
 } from "./embeds.js";
 import { initDrag, createPanelSizer } from "./panel.js";
 import { createLoopBar } from "./loopbar.js";
+import { updateInspirationExtLinks } from "./links.js";
+import {
+  firstYoutubeUrl, firstSpotifyUrl, firstSoundcloudUrl,
+} from "../../lib/media/inspiration-links.js";
 
 /*
   The Inspiration picture-in-picture panel: a docked, draggable player that
@@ -402,6 +406,20 @@ export function createInspiration(ctx) {
     const btn = byId("inspirationLink");
     if (btn) btn.click();
   }
+
+  // Follow the live sheet (the store's `tune` slice, published on every
+  // render): its F: links decide the Inspiration button and the panel's
+  // sources, plus the plain "open in a new tab" link buttons beside it.
+  ctx.store.subscribe("tune", (tune, changed) => {
+    if (!changed.includes("inspirationLinks")) return;
+    const links = tune.inspirationLinks;
+    updateLink({
+      youtube: firstYoutubeUrl(links),
+      spotify: firstSpotifyUrl(links),
+      soundcloud: firstSoundcloudUrl(links),
+    }, tune.title);
+    updateInspirationExtLinks(links);
+  });
 
   return { updateLink, applyShareState, init, setOpen, isOpen };
 }

@@ -20,6 +20,7 @@ import {
   setPersonalSetlistOrder,
   exportPersonalSetlistText,
 } from "../../lib/setlists/setlists-store.js";
+import { isRenderWrite } from "../core/state.js";
 
 const emptyRow = (text) => el("div", { class: "song-list-empty", text });
 const setHeaderRow = (text) => el("div", { class: "song-list-letter setlist-set-heading", text });
@@ -1054,14 +1055,18 @@ export function createSetlistView(ctx) {
     });
   }
 
+  // The listener nudging the Key stepper while a personal setlist's song is
+  // open writes that row's override back. A render seeding the stepper for a
+  // newly opened song changes ctx.state.transpose too, but is tagged RENDER.
   function initTransposeWriteBack() {
-    on("transpose", "input", () => {
+    ctx.store.subscribe("settings", (settings, changed, _name, meta) => {
+      if (!changed.includes("transpose") || isRenderWrite(meta)) return;
       const { currentPersonalId, currentSetlistSongIndex, currentOpenSongs } = ctx.state;
       if (ctx.state.setlistsView !== "open" || !currentPersonalId) return;
       if (currentSetlistSongIndex == null || !currentOpenSongs) return;
       const song = currentOpenSongs[currentSetlistSongIndex];
       if (!song || isSetlistDivider(song) || song.file !== ctx.state.currentSongFile) return;
-      const n = Number.parseInt(byId("transpose").value, 10);
+      const n = settings.transpose;
       const stored = Number.isFinite(n) && n !== 0 ? String(n) : "";
       if (stored === String(song.key == null ? "" : song.key)) return;
       updateSongKeyInPersonalSetlist(ctx.storage(), currentPersonalId, currentSetlistSongIndex, stored);
@@ -1114,7 +1119,8 @@ export function createSetlistView(ctx) {
 
     // The booklet is engraved for whichever instrument the sheet is on; rebuild
     // it off-screen when the instrument changes so a later "Print …" is current.
-    on("instrument", "change", () => {
+    ctx.store.subscribe("settings", (_settings, changed) => {
+      if (!changed.includes("instrument")) return;
       if (ctx.state.setlistsView === "open" && ctx.state.currentOpenSongs) {
         ctx.setlistPrint.buildBooklet(
           ctx.state.currentOpenSetlistName,

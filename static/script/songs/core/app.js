@@ -5,12 +5,10 @@ import { parseSongsParams, buildSongsHash } from "../../lib/core/song-hash.js";
 import { getPersonalSetlist } from "../../lib/setlists/setlists-store.js";
 import { humanizeSongFile } from "../../lib/core/filename.js";
 import { readFile } from "./read-file.js";
-import { createAudioPlayer, loadRepeatCountState } from "../audio/player.js";
+import { createAudioPlayer } from "../audio/player.js";
 import { createSheet } from "../sheet/sheet.js";
-import {
-  createMixer, loadMixerState, loadGchordPatternState, loadHighQualityAudioState, loadSwingState,
-} from "../audio/mixer.js";
-import { createMetronome, loadMetronomeState } from "../audio/metronome.js";
+import { createMixer } from "../audio/mixer.js";
+import { createMetronome } from "../audio/metronome.js";
 import { createInspiration } from "../inspiration/inspiration.js";
 import { initSheetControls } from "../sheet/controls.js";
 import { initMp3Export } from "../audio/mp3-export.js";
@@ -25,6 +23,7 @@ import { createSetlistView } from "../setlists/view.js";
 import { createSwipeNav } from "../sheet/swipe-nav.js";
 import { createTour } from "../tour/tour.js";
 import { createOffline } from "../offline/offline.js";
+import { createAppStore, bindAppPrefs } from "./state.js";
 
 // The `.abc` filename -> its slug (basename), used in the `s=` hash param.
 function songSlug(file) {
@@ -38,35 +37,11 @@ function songSlug(file) {
   one another, so the wiring order below is the whole dependency graph.
 */
 function createApp() {
+  const store = createAppStore();
+  bindAppPrefs(store);
   const ctx = {
-    state: {
-      allSongs: [],
-      allSongsLoaded: false,
-      setlistIndex: [],
-      activeTab: "library", // "library" | "setlists"
-      setlistsView: "home", // "home" | "open"
-      currentPersonalId: null,
-      currentSetlistId: null, // the `sl=` hash value for the open setlist
-      currentOpenSongs: null,
-      currentOpenSetlistName: "",
-      currentOpenSetlistDesc: "",
-      currentSongFile: null,
-      currentSetlistSongIndex: null,
-      currentLibraryIndex: null,
-      currentLibrarySongName: undefined, // name of the row currentLibraryIndex was set from, to tell apart duplicate aliases sharing a file
-      currentSongText: undefined, // clef-adjusted ABC currently on the sheet
-      compingActive: false,
-      soloActive: false,
-      instrumentVoices: [], // this tune's fully resolved Mixer voice list — see lib/audio-mix.js's resolveMixerVoices
-      mixerVoices: [], // per-voice Mixer channel state, materialised from instrumentVoices — see mixer.js's syncVoices
-      tempoOverrideBpm: null,
-      mixer: loadMixerState(),
-      gchordPattern: loadGchordPatternState(),
-      metronomeEnabled: loadMetronomeState(),
-      highQualityAudio: loadHighQualityAudioState(),
-      swing: loadSwingState(),
-      repeatCount: loadRepeatCountState(),
-    },
+    store,
+    state: store.state,
     readFile,
     storage: safeStorage,
   };

@@ -29,14 +29,16 @@ test("createInstrumentDropdown builds every instrument option into #sheetStatus"
   }
 });
 
-test("createInstrumentDropdown preselects a valid stored instrument", () => {
+test("createInstrumentDropdown shows ctx.state.instrument and follows the store", () => {
   const page = mountPage();
   try {
-    window.localStorage.setItem("rj.instrument", "alto_saxophone");
-    createInstrumentDropdown(makeCtx());
-    assert.equal(document.getElementById("instrument").value, "alto_saxophone");
+    const ctx = makeCtx({ state: { instrument: "alto_saxophone" } });
+    createInstrumentDropdown(ctx);
+    const select = document.getElementById("instrument");
+    assert.equal(select.value, "alto_saxophone");
+    ctx.state.instrument = "trumpet"; // e.g. the tour restoring a snapshot
+    assert.equal(select.value, "trumpet");
   } finally {
-    window.localStorage.clear();
     page.cleanup();
   }
 });
@@ -70,7 +72,10 @@ test("createSoloDropdown builds an OFF entry plus one per style and re-renders o
   const page = mountPage();
   try {
     const rerenders = [];
-    createSoloDropdown(makeCtx({ sheet: { rerender: () => rerenders.push(1) } }));
+    const ctx = makeCtx({ sheet: { rerender: () => rerenders.push(1) } });
+    createSoloDropdown(ctx);
+    assert.equal(ctx.state.soloEnabled, true, "the picker switches Solo on");
+    rerenders.length = 0;
     const select = document.getElementById("solo");
     assert.ok(document.getElementById("soloSlot").contains(select));
     assert.deepEqual(

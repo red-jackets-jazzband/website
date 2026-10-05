@@ -1,37 +1,23 @@
 import {
   byId, el, on, clear,
 } from "../../lib/core/dom.js";
-import { readPref, writePref, PREF_KEYS } from "../../lib/core/preferences.js";
+import { readPref, writePref } from "../../lib/core/preferences.js";
 import { GM_VOICES, defaultVoiceProgram } from "../../lib/audio/gm-voices.js";
-import { GCHORD_PATTERNS, DEFAULT_GCHORD_PATTERN_VALUE, DEFAULT_PROGRAM, isCompingLabel } from "../../lib/audio/audio-mix.js";
+import { GCHORD_PATTERNS, DEFAULT_PROGRAM, isCompingLabel } from "../../lib/audio/audio-mix.js";
+import { CHANNELS } from "./state.js";
+import { RENDER } from "../core/state.js";
 
-// Full re-engrave (the only way to change what plays — see sheet.js /
-// lib/audio-mix.js) is too heavy to run on every "input" tick of a dragged
-// slider, so it's debounced; a mute click or a slider release applies at once.
+// A fader drag is committed to the store — and so re-engraved by the sheet,
+// the only way to change what plays (see lib/audio/audio-mix.js) — only once
+// it settles: too heavy to run on every "input" tick. A mute click or a
+// slider release applies at once.
 const APPLY_DEBOUNCE_MS = 220;
 const REPOSITION_MARGIN = 8;
 
-// Bass/Chords are the only fixed channels left — ABCjs's own auto-
-// accompaniment, generated from the tune's chord symbols, with a real
-// working volume fader (see lib/audio-mix.js's file doc comment for why
-// they're different from every other voice below). Muted by default so no
-// song suddenly grows a new backing band the first time this ships.
-const CHANNELS = ["bass", "chords"];
-const DEFAULT_MUTED = { bass: false, chords: false };
-const DEFAULT_VOLUME = { bass: 100, chords: 88 };
-
-// Both remaining fixed channels need the tune to have chord symbols at all
-// to do anything — read from ctx.state, kept in sync by sheet.js on every
-// render.
+// Bass/Chords and every voice channel need the tune to have chord symbols
+// at all to do anything (Bass/Chords) — read from ctx.state.hasChords, which
+// sheet.js publishes on every live render.
 const GATE_STATE_KEY = { bass: "hasChords", chords: "hasChords" };
-
-// Swing isn't a channel either (no mute/Voice, no CHANNELS entry) — a single
-// tune-wide fader next to Pattern, feeding ABCjs's own `swing` synth option
-// (see lib/audio-mix.js's percentToAbcjsSwing doc comment) rather than
-// anything baked into the ABC text. No gate: it's audible on any tune with
-// eighth notes, chords or not. Defaults on (a moderate 40%, not full) rather
-// than off, since most of this band's repertoire is swung, not straight.
-const SWING_DEFAULT_PERCENT = 52;
 
 function clampPercent(value) {
   const n = Number(value);
@@ -53,16 +39,6 @@ function elementIds(channel) {
     strip: `mixerStrip${c}`,
     voiceSelect: `mixer${c}VoiceSelect`,
   };
-}
-
-function volumeKey(channel) {
-  return PREF_KEYS[`mixer${cap(channel)}Volume`];
-}
-function mutedKey(channel) {
-  return PREF_KEYS[`mixer${cap(channel)}Muted`];
-}
-function programKey(channel) {
-  return PREF_KEYS[`mixer${cap(channel)}Program`];
 }
 
 // One <option> per GM_VOICES entry, grouped into <optgroup>s in the order
@@ -323,52 +299,69 @@ export function createMixer(ctx) {
   let open = false;
   let applyTimer = null;
 
-  // Persists *every* currently-known mixer control — both channels and every
-  // resolved voice — rather than just whichever one's drag triggered this
-  // call. All of them debounce through the one shared applyTimer below (so a
-  // rapid run of adjustments across different faders collapses into a single
-  // write), which only stays correct if every trigger flushes the full,
-  // current state: a version that persisted only the triggering control could
-  // silently drop an earlier, still-pending control's change whenever a
-  // second fader interrupts the first's debounce window before it fires
-  // (e.g. two faders dragged via multi-touch on the mobile bottom-sheet
-  // layout) — each control's own live state (ctx.state.mixer*/mixerVoices) is
-  // already up to date by the time persist() runs regardless of which
-  // control scheduled it, so writing all of it is both correct and cheap.
-  function persist() {
-    const m = ctx.state.mixer;
-    CHANNELS.forEach((channel) => {
-      writePref(volumeKey(channel), String(m[`${channel}Volume`]));
-      writePref(mutedKey(channel), m[`${channel}Muted`] ? "1" : "0");
-      const program = m[`${channel}Program`];
-      writePref(programKey(channel), program === null ? "" : String(program));
+  // Fader positions still being dragged, not yet committed to the store:
+  // channel -> percent, "swing" -> percent, voice slug -> percent. A drag
+  // only redraws its own strip (from the draft) while it moves; once it
+  // settles (debounced) or is released, commitDrafts() writes every pending
+  // draft to the store at once — so two faders dragged together (multi-touch
+  // on the mobile bottom sheet) both land, and everything downstream of the
+  // store (persistence, the re-engrave) runs once per gesture, not per tick.
+  const drafts = new Map();
+
+  const mixerState = () => ctx.state.mixer;
+  const channelVolume = (channel) => (drafts.has(channel) ? drafts.get(channel) : mixerState()[`${channel}Volume`]);
+  const swingValue = () => (drafts.has("swing") ? drafts.get("swing") : ctx.state.swing);
+  const voiceWithDraft = (v) => (drafts.has(`voice:${v.slug}`) ? { ...v, volume: drafts.get(`voice:${v.slug}`) } : v);
+
+  function setChannel(patch, meta) {
+    ctx.store.set("mixer", { mixer: { ...mixerState(), ...patch } }, meta);
+  }
+
+  // Replace one voice's entry (by slug) in ctx.state.mixerVoices; voice
+  // channels persist per voice name (dynamic keys, so outside the slice's
+  // own pref schema) and are written here.
+  function setVoice(slug, patch, meta) {
+    const voices = ctx.state.mixerVoices.map((v) => (v.slug === slug ? { ...v, ...patch } : v));
+    ctx.store.set("mixer", { mixerVoices: voices }, meta);
+    const updated = voices.find((v) => v.slug === slug);
+    if (updated) persistVoiceState(updated);
+  }
+
+  // `meta` tags the writes — RENDER when flushed from inside a render
+  // (syncVoices), so they don't trigger a second one.
+  function commitDrafts(meta) {
+    if (drafts.size === 0) return;
+    const pending = new Map(drafts);
+    drafts.clear();
+    ctx.store.batch(() => {
+      const channelPatch = {};
+      CHANNELS.forEach((channel) => {
+        if (pending.has(channel)) channelPatch[`${channel}Volume`] = pending.get(channel);
+      });
+      if (Object.keys(channelPatch).length > 0) setChannel(channelPatch, meta);
+      if (pending.has("swing")) ctx.store.set("mixer", { swing: pending.get("swing") }, meta);
+      ctx.state.mixerVoices.forEach((v) => {
+        const key = `voice:${v.slug}`;
+        if (pending.has(key)) setVoice(v.slug, { volume: pending.get(key) }, meta);
+      });
     });
-    writePref(PREF_KEYS.mixerSwing, String(ctx.state.swing));
-    ctx.state.mixerVoices.forEach(persistVoiceState);
-  }
-
-  function commit() {
-    applyTimer = null;
-    persist();
-    ctx.sheet.rerender();
-  }
-
-  function scheduleApply() {
-    clearTimeout(applyTimer);
-    applyTimer = setTimeout(commit, APPLY_DEBOUNCE_MS);
   }
 
   function applyNow() {
     clearTimeout(applyTimer);
     applyTimer = null;
-    persist();
-    ctx.sheet.rerender();
+    commitDrafts();
   }
 
-  // { v, readout, muteBtn, muteIcon, select } per row currently in
-  // #mixerVoicesList, in the same order as ctx.state.mixerVoices (whose
-  // entries these closures share by reference — mutating v.muted/v.program
-  // below mutates the exact object sheet.js reads back out of ctx.state).
+  function scheduleApply() {
+    clearTimeout(applyTimer);
+    applyTimer = setTimeout(applyNow, APPLY_DEBOUNCE_MS);
+  }
+
+  // { slug, strip, fill, readout, muteBtn, muteIcon, select } per row in
+  // #mixerVoicesList, in the same order as ctx.state.mixerVoices. Rows look
+  // their voice up by slug at event time: the store replaces voice objects
+  // on every change, so a captured one would go stale.
   let voiceRows = [];
   let voiceListSig = "";
   // The listener brought the lead back while Solo plays. Kept here (not on the
@@ -377,75 +370,73 @@ export function createMixer(ctx) {
   let leadUnmuted = false;
   let ownVoicesSig = "";
 
+  const voiceBySlug = (slug) => ctx.state.mixerVoices.find((v) => v.slug === slug);
+
+  function drawVoiceRow(row) {
+    const v = voiceBySlug(row.slug);
+    if (v) updateVoiceRowVisual({ ...row, v: voiceWithDraft(v) });
+  }
+
   function rebuildVoiceStrips() {
     const container = byId("mixerVoicesList");
     if (!container) return;
     clear(container);
     voiceRows = ctx.state.mixerVoices.map((v) => {
-      const row = buildVoiceStrip(v);
+      const row = { slug: v.slug, ...buildVoiceStrip(v) };
       container.append(row.strip);
       row.select.value = String(resolveEffectiveProgram(v.program, defaultVoiceProgram(v)));
       row.select.addEventListener("change", () => {
-        v.program = Number(row.select.value);
-        persistVoiceState(v);
-        ctx.sheet.rerender();
+        setVoice(v.slug, { program: Number(row.select.value) });
       });
       row.range.addEventListener("input", () => {
-        v.volume = clampPercent(row.range.value);
-        updateVoiceRowVisual({ v, ...row });
+        drafts.set(`voice:${v.slug}`, clampPercent(row.range.value));
+        drawVoiceRow(row);
         scheduleApply();
       });
       row.range.addEventListener("change", applyNow);
       on(row.muteBtn, "click", () => {
+        const current = voiceBySlug(v.slug);
+        if (!current) return;
         // Un-muting a lead that Solo silenced is a one-off override (this
         // song, until Solo changes); the persisted mute choice stays as it was.
-        if (v.autoMuted) {
-          v.autoMuted = false;
+        if (current.autoMuted) {
           leadUnmuted = true;
+          setVoice(v.slug, { autoMuted: false });
         } else {
-          v.muted = !v.muted;
+          setVoice(v.slug, { muted: !current.muted });
         }
-        updateVoiceRowVisual({ v, ...row });
-        persistVoiceState(v);
-        ctx.sheet.rerender();
+        drawVoiceRow(row);
       });
-      const built = { v, ...row };
       // A voice can start pre-muted (a persisted rj.mixerVoice.<slug>.muted
       // pref from an earlier song) — reflect that on the freshly built row
       // immediately, rather than leaving it looking unmuted until the next
       // refresh() call happens to run.
-      updateVoiceRowVisual(built);
-      return built;
+      drawVoiceRow(row);
+      return row;
     });
   }
 
-  // Called by sheet.js on every render with the tune's fully resolved voice
-  // list (lib/audio-mix.js's resolveMixerVoices — always at least one entry:
-  // an ordinary tune's own implicit Melody, a chart's own named voices, plus
-  // Comping appended when it's on). Skips the rebuild below when the voice
-  // set is unchanged from last time (a mute/Voice/Key/Tempo change
+  // Called by sheet.js on every live render with the tune's fully resolved
+  // voice list (lib/audio-mix.js's resolveMixerVoices — always at least one
+  // entry: an ordinary tune's own implicit Melody, a chart's own named
+  // voices, plus Comping appended when it's on) — this materialises it into
+  // ctx.state.mixerVoices with each voice's persisted Mute/Voice/Volume, as
+  // an input to the very render that called it. Skips the rebuild when the
+  // voice set is unchanged from last time (a mute/Voice/Key/Tempo change
   // re-renders the same song repeatedly) so a mute click doesn't wipe out
   // its own strip's mid-interaction focus.
   function syncVoices(voices) {
     const sig = voiceListSignature(voices);
     if (sig === voiceListSig) return;
     voiceListSig = sig;
-    // A voice fader/channel drag still mid-debounce (applyTimer pending) has
-    // its live change sitting only in ctx.state.mixer*/mixerVoices, not yet
-    // written to localStorage — persist() reads those fresh at commit time
-    // (see its own doc comment), so replacing ctx.state.mixerVoices below
-    // (a different song opened, or Comping toggled, mid-drag) before that
-    // timer fires would drop the pending change: persist() would run
-    // afterwards against the *new* voice list instead of the one the drag
-    // actually changed. Flush it now instead. No rerender() here — this
-    // already runs inside sheet.js's own render flow (engrave() ->
-    // syncInstrumentVoices() -> here), and scheduleApply/applyNow's
-    // rerender() is only for a standalone Mixer interaction to re-engrave on
-    // its own.
+    // A fader still mid-debounce has its value only in `drafts`: commit it
+    // against the voice list it belongs to before that list is replaced (a
+    // different song opened, or Comping toggled, mid-drag). Tagged RENDER:
+    // this already runs inside sheet.js's own render, which picks them up.
     if (applyTimer !== null) {
       clearTimeout(applyTimer);
       applyTimer = null;
-      persist();
+      commitDrafts(RENDER);
     }
     const withSlugs = dedupeVoiceSlugs(voices);
     // While Solo plays, the first voice (typically the lead) steps aside.
@@ -453,23 +444,24 @@ export function createMixer(ctx) {
     const ownSig = voiceListSignature(voices.filter((v) => v.label !== "Solo" && !isCompingLabel(v.label)));
     if (!soloOn || ownSig !== ownVoicesSig) leadUnmuted = false;
     ownVoicesSig = ownSig;
-    ctx.state.mixerVoices = withSlugs.map((v) => {
-      const muted = readPref(voiceMutedKey(v.slug)) === "1";
-      const storedProgram = readPref(voiceProgramKey(v.slug));
-      const program = storedProgram === null || storedProgram === "" ? null : Number(storedProgram);
-      const storedVolume = readPref(voiceVolumeKey(v.slug));
-      const volume = storedVolume === null ? 100 : clampPercent(storedVolume);
-      return {
-        ...v, muted, program, volume, autoMuted: soloOn && v.index === 0 && !leadUnmuted,
-      };
-    });
+    ctx.store.set("mixer", {
+      mixerVoices: withSlugs.map((v) => {
+        const muted = readPref(voiceMutedKey(v.slug)) === "1";
+        const storedProgram = readPref(voiceProgramKey(v.slug));
+        const program = storedProgram === null || storedProgram === "" ? null : Number(storedProgram);
+        const storedVolume = readPref(voiceVolumeKey(v.slug));
+        const volume = storedVolume === null ? 100 : clampPercent(storedVolume);
+        return {
+          ...v, muted, program, volume, autoMuted: soloOn && v.index === 0 && !leadUnmuted,
+        };
+      }),
+    }, RENDER);
     rebuildVoiceStrips();
   }
 
   function updateStripVisual(channel) {
-    const m = ctx.state.mixer;
-    const percent = m[`${channel}Volume`];
-    const muted = m[`${channel}Muted`];
+    const percent = channelVolume(channel);
+    const muted = mixerState()[`${channel}Muted`];
     const ids = elementIds(channel);
 
     // .is-muted on the whole strip (not just the mute button) so the fader
@@ -557,7 +549,7 @@ export function createMixer(ctx) {
   // Swing's own fader/readout, mirroring updateStripVisual's fill+readout
   // pair but without a channel's mute/gate concerns.
   function updateSwingVisual() {
-    const percent = ctx.state.swing;
+    const percent = swingValue();
     const fill = byId("mixerSwingFill");
     if (fill) fill.style.width = `${percent}%`;
     const readout = byId("mixerSwingReadout");
@@ -573,16 +565,16 @@ export function createMixer(ctx) {
     updateAccompanimentSectionGate();
     updateQualityToggleVisual();
     updateSwingVisual();
-    voiceRows.forEach(updateVoiceRowVisual);
+    voiceRows.forEach(drawVoiceRow);
   }
 
   function wireStrip(channel) {
     const ids = elementIds(channel);
     const range = byId(ids.range);
     if (range) {
-      range.value = String(ctx.state.mixer[`${channel}Volume`]);
+      range.value = String(mixerState()[`${channel}Volume`]);
       range.addEventListener("input", () => {
-        ctx.state.mixer[`${channel}Volume`] = clampPercent(range.value);
+        drafts.set(channel, clampPercent(range.value));
         updateStripVisual(channel);
         scheduleApply();
       });
@@ -590,7 +582,7 @@ export function createMixer(ctx) {
     }
     on(ids.muteBtn, "click", () => {
       const key = `${channel}Muted`;
-      ctx.state.mixer[key] = !ctx.state.mixer[key];
+      setChannel({ [key]: !mixerState()[key] });
       updateStripVisual(channel);
       applyNow();
     });
@@ -598,10 +590,10 @@ export function createMixer(ctx) {
     const select = byId(ids.voiceSelect);
     if (select) {
       buildVoiceOptions(select);
-      const program = ctx.state.mixer[`${channel}Program`];
+      const program = mixerState()[`${channel}Program`];
       select.value = String(resolveEffectiveProgram(program, DEFAULT_PROGRAM[channel]));
       select.addEventListener("change", () => {
-        ctx.state.mixer[`${channel}Program`] = Number(select.value);
+        setChannel({ [`${channel}Program`]: Number(select.value) });
         applyNow();
       });
     }
@@ -658,20 +650,18 @@ export function createMixer(ctx) {
     select.value = ctx.state.gchordPattern;
     select.addEventListener("change", () => {
       ctx.state.gchordPattern = select.value;
-      writePref(PREF_KEYS.mixerGchordPattern, select.value);
-      ctx.sheet.rerender();
     });
   }
 
-  // Same drag-to-adjust shape as a channel fader (scheduleApply while
-  // dragging, applyNow on release) — reuses clampPercent since Swing shares
+  // Same drag-to-adjust shape as a channel fader (a draft while dragging,
+  // committed on settle/release) — reuses clampPercent since Swing shares
   // the same 0-100 domain as a volume fader.
   function wireSwing() {
     const range = byId("mixerSwingRange");
     if (!range) return;
     range.value = String(ctx.state.swing);
     range.addEventListener("input", () => {
-      ctx.state.swing = clampPercent(range.value);
+      drafts.set("swing", clampPercent(range.value));
       updateSwingVisual();
       scheduleApply();
     });
@@ -684,9 +674,7 @@ export function createMixer(ctx) {
   function wireQuality() {
     on("mixerHighQualityToggleBtn", "click", () => {
       ctx.state.highQualityAudio = !ctx.state.highQualityAudio;
-      writePref(PREF_KEYS.highQualityAudio, ctx.state.highQualityAudio ? "1" : "0");
       updateQualityToggleVisual();
-      ctx.sheet.rerender();
     });
   }
 
@@ -715,6 +703,9 @@ export function createMixer(ctx) {
     refresh();
   }
 
+  // The gates (hasChords) and the voice rows follow the live sheet.
+  ctx.store.subscribe("tune", refresh);
+
   return {
     init,
     refresh,
@@ -725,51 +716,4 @@ export function createMixer(ctx) {
       setOpen(!open);
     },
   };
-}
-
-// The mixer's initial ctx.state.mixer slice, seeded from persisted prefs —
-// built here (not inline in app.js) so the persistence/defaulting logic
-// lives next to the module that owns the rest of this state.
-export function loadMixerState() {
-  const state = {};
-  CHANNELS.forEach((channel) => {
-    const storedVolume = readPref(volumeKey(channel));
-    state[`${channel}Volume`] = storedVolume === null ? DEFAULT_VOLUME[channel] : clampPercent(storedVolume);
-    const storedMuted = readPref(mutedKey(channel));
-    state[`${channel}Muted`] = storedMuted === null ? DEFAULT_MUTED[channel] : storedMuted === "1";
-    const storedProgram = readPref(programKey(channel));
-    state[`${channel}Program`] = storedProgram === null || storedProgram === "" ? null : Number(storedProgram);
-  });
-  return state;
-}
-
-// ctx.state.gchordPattern's initial value, seeded from the persisted pref —
-// falls back to DEFAULT_GCHORD_PATTERN_VALUE both when nothing's stored yet
-// and when a stored value no longer matches a GCHORD_PATTERNS entry (a
-// pattern renamed/removed since it was saved).
-export function loadGchordPatternState() {
-  const stored = readPref(PREF_KEYS.mixerGchordPattern);
-  const isValid = GCHORD_PATTERNS.some((p) => p.value === stored);
-  return isValid ? stored : DEFAULT_GCHORD_PATTERN_VALUE;
-}
-
-// ctx.state.highQualityAudio's initial value, seeded from the persisted
-// pref — off by default, same reasoning as DEFAULT_MUTED's Bass/Chords:
-// nothing should suddenly start fetching ~5x-bigger soundfont files the
-// first time this ships.
-export function loadHighQualityAudioState() {
-  const stored = readPref(PREF_KEYS.highQualityAudio);
-  return stored === null ? true : stored === "1";
-}
-
-// ctx.state.swing's initial value, seeded from the persisted pref — defaults
-// to SWING_DEFAULT_PERCENT (see its own doc comment) rather than 0, since a
-// first-time listener should hear this band's own feel, not straight eighths.
-export function loadSwingState() {
-  const stored = readPref(PREF_KEYS.mixerSwing);
-  const n = Number(stored);
-  // clampPercent's own not-a-number fallback is 100 — right for a volume
-  // fader's "missing means full volume" default, wrong here: a corrupted
-  // rj.mixerSwing value should fall back to the default swing, not maximum.
-  return stored === null || !Number.isFinite(n) ? SWING_DEFAULT_PERCENT : clampPercent(n);
 }

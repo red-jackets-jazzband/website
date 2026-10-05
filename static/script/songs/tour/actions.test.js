@@ -11,11 +11,9 @@ import {
   TOUR_ACTION_NAMES, createTourActions, isShown, waitUntil,
 } from "./actions.js";
 
-const DRAWER_CLASS = "show-advanced";
 const CREATE_DEMO_SETLIST = "createDemoSetlist";
 const ADD_DEMO_SONG_1 = "addDemoSong1";
 const ADD_DEMO_SONG_2 = "addDemoSong2";
-const ARIA_PRESSED = "aria-pressed";
 const OWN_SONG_FILE = "all_of_me.abc";
 
 // A ctx whose collaborators just record what the actions asked of them.
@@ -92,21 +90,15 @@ function setup({ state = {}, sheetLoadMs = 10, storage = memoryStorage() } = {})
     ctx.state.currentSetlistSongIndex = null;
     then();
   };
-  // The drawer button flips .show-advanced the way sheet-controls.js does.
-  const sheetmenu = document.getElementById("sheetmenu");
-  document.getElementById("advancedToggleBtn").addEventListener("click", () => {
-    sheetmenu.classList.toggle(DRAWER_CLASS);
+  // Stands in for the sheet: a comping pick shows up as an active comping
+  // staff once it's rendered.
+  ctx.store.subscribe("settings", (settings, changed) => {
+    if (!changed.includes("comping")) return;
+    calls.push(`comping:${settings.comping}`);
+    ctx.state.compingActive = settings.comping !== "off";
   });
-  const select = document.createElement("select");
-  select.id = "comping";
-  select.innerHTML = '<option value="off">off</option><option value="on_2_and_4">on 2 and 4</option>';
-  select.addEventListener("change", () => {
-    calls.push(`comping:${select.value}`);
-    ctx.state.compingActive = select.value !== "off";
-  });
-  document.getElementById("compingSlot").append(select);
   return {
-    ctx, calls, select, sheetmenu, storage, actions: createTourActions(ctx), cleanup: page.cleanup,
+    ctx, calls, storage, actions: createTourActions(ctx), cleanup: page.cleanup,
   };
 }
 
@@ -145,17 +137,16 @@ test("isShown is false for [hidden] and for anything under a hidden ancestor", (
 });
 
 test("apply() shuts every panel the step doesn't ask for, and keeps the ones it does", async () => {
-  const { actions, calls, sheetmenu, cleanup } = setup();
+  const { actions, calls, ctx, cleanup } = setup({ state: { advancedOpen: true } });
   try {
-    sheetmenu.classList.add(DRAWER_CLASS);
     await actions.apply([]);
     assert.deepEqual(calls, ["mixer:false", "inspiration:false"]);
-    assert.equal(sheetmenu.classList.contains(DRAWER_CLASS), false);
+    assert.equal(ctx.state.advancedOpen, false);
 
     calls.length = 0;
     await actions.apply(["openDrawer", "openMixer"]);
     assert.deepEqual(calls, ["inspiration:false", "mixer:true"]);
-    assert.equal(sheetmenu.classList.contains(DRAWER_CLASS), true);
+    assert.equal(ctx.state.advancedOpen, true);
   } finally {
     cleanup();
   }
@@ -239,10 +230,10 @@ test("on a stacked (phone) layout, showLibrary leaves the sheet through its own 
 });
 
 test("compingOn picks the demo pattern only when comping was off", async () => {
-  const { actions, calls, select, cleanup } = setup();
+  const { actions, calls, ctx, cleanup } = setup();
   try {
     await actions.apply(["compingOn"]);
-    assert.equal(select.value, "on_2_and_4");
+    assert.equal(ctx.state.comping, "on_2_and_4");
     assert.deepEqual(calls.filter((c) => c.startsWith("comping:")), ["comping:on_2_and_4"]);
 
     calls.length = 0;
@@ -254,58 +245,49 @@ test("compingOn picks the demo pattern only when comping was off", async () => {
 });
 
 test("compingOn keeps a pattern the visitor picked themselves rather than swapping in the demo's", async () => {
-  const { actions, calls, select, cleanup } = setup();
+  const { actions, calls, ctx, cleanup } = setup({ state: { comping: "charleston" } });
   try {
-    select.insertAdjacentHTML("beforeend", '<option value="charleston">charleston</option>');
-    select.value = "charleston";
     await actions.apply(["compingOn"]);
-    assert.equal(select.value, "charleston");
+    assert.equal(ctx.state.comping, "charleston");
     assert.deepEqual(calls.filter((c) => c.startsWith("comping:")), []);
   } finally {
     cleanup();
   }
 });
 
-test("compingSplit presses the Split button once, and end() puts it back", async () => {
-  const { actions, cleanup } = setup();
+test("compingSplit turns Split on (idempotently), and end() puts it back", async () => {
+  const { actions, ctx, cleanup } = setup();
   try {
-    const btn = document.createElement("button");
-    btn.id = "compingSplitBtn";
-    btn.setAttribute(ARIA_PRESSED, "false");
-    btn.addEventListener("click", () => btn.setAttribute(ARIA_PRESSED, String(btn.getAttribute(ARIA_PRESSED) !== "true")));
-    document.body.append(btn);
-
     actions.begin();
     await actions.apply(["compingSplit"]);
-    assert.equal(btn.getAttribute(ARIA_PRESSED), "true");
+    assert.equal(ctx.state.compingSplit, true);
     await actions.apply(["compingSplit"]);
-    assert.equal(btn.getAttribute(ARIA_PRESSED), "true");
+    assert.equal(ctx.state.compingSplit, true);
 
     actions.end();
-    assert.equal(btn.getAttribute(ARIA_PRESSED), "false");
+    assert.equal(ctx.state.compingSplit, false);
   } finally {
     cleanup();
   }
 });
 
 test("begin() silences playback; end() puts back the drawer, comping and the visitor's own song", async () => {
-  const { actions, calls, ctx, select, sheetmenu, cleanup } = setup({
+  const { actions, calls, ctx, cleanup } = setup({
     state: { currentSongFile: OWN_SONG_FILE, activeTab: "library" },
   });
   try {
-    select.value = "off";
     actions.begin();
     assert.ok(calls.includes("audio.stop"));
 
     await actions.apply(["openDemoSong", "openDrawer", "compingOn"]);
     assert.equal(ctx.state.currentSongFile, DEMO_SONG_FILE);
-    assert.equal(select.value, "on_2_and_4");
-    assert.equal(sheetmenu.classList.contains(DRAWER_CLASS), true);
+    assert.equal(ctx.state.comping, "on_2_and_4");
+    assert.equal(ctx.state.advancedOpen, true);
 
     calls.length = 0;
     actions.end();
-    assert.equal(select.value, "off");
-    assert.equal(sheetmenu.classList.contains(DRAWER_CLASS), false);
+    assert.equal(ctx.state.comping, "off");
+    assert.equal(ctx.state.advancedOpen, false);
     assert.equal(ctx.state.currentSongFile, OWN_SONG_FILE);
     assert.ok(calls.includes("mixer:false") && calls.includes("inspiration:false"));
 

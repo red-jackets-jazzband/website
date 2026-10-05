@@ -2,9 +2,16 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mountPage } from "../../../../tests/helpers/dom.js";
 import { makeCtx } from "../../../../tests/helpers/ctx.js";
-import {
-  createMixer, loadMixerState, loadGchordPatternState, loadHighQualityAudioState, loadSwingState,
-} from "./mixer.js";
+import { createMixer } from "./mixer.js";
+import { loadPersisted } from "../../lib/core/persisted.js";
+import { MIXER_SLICE } from "./state.js";
+
+// The persisted values the app store seeds the mixer slice from
+// (songs/audio/state.js's MIXER_SLICE.prefs).
+const loadMixerState = () => loadPersisted(MIXER_SLICE.prefs).mixer;
+const loadGchordPatternState = () => loadPersisted(MIXER_SLICE.prefs).gchordPattern;
+const loadHighQualityAudioState = () => loadPersisted(MIXER_SLICE.prefs).highQualityAudio;
+const loadSwingState = () => loadPersisted(MIXER_SLICE.prefs).swing;
 import { GM_VOICES, guessGmProgram } from "../../lib/audio/gm-voices.js";
 import { GCHORD_PATTERNS, DEFAULT_PROGRAM } from "../../lib/audio/audio-mix.js";
 
@@ -165,14 +172,18 @@ function dragFaderDebounces(t, {
   try {
     const range = document.getElementById(rangeId);
     range.value = String(value);
+    const before = getValue(ctx);
     range.dispatchEvent(new window.Event("input"));
 
-    assert.equal(getValue(ctx), value);
+    // The strip redraws live from the drag, but the store only takes the
+    // value once the drag settles.
+    assert.equal(getValue(ctx), before);
     assert.equal(document.getElementById(readoutId).textContent, `${value}%`);
     assert.equal(document.getElementById(fillId).style.width, `${value}%`);
     assert.equal(rerenders.length, 0); // debounced, not yet applied
 
     t.mock.timers.tick(300);
+    assert.equal(getValue(ctx), value);
     assert.equal(rerenders.length, 1);
     assert.equal(window.localStorage.getItem(storageKey), String(value));
   } finally {
@@ -851,12 +862,13 @@ test("a voice row's volume fader updates its readout/fill live, debounces the re
     range.value = "30";
     range.dispatchEvent(new window.Event("input"));
 
-    assert.equal(ctx.state.mixerVoices[1].volume, 30);
+    assert.equal(ctx.state.mixerVoices[1].volume, 100, "committed only once the drag settles");
     assert.equal(document.querySelector(`#${SOUSAPHONE_STRIP_ID} .mixer-readout`).textContent, "30%");
     assert.equal(document.querySelector(`#${SOUSAPHONE_STRIP_ID} .mixer-fader-fill`).style.width, "30%");
     assert.equal(rerenders.length, 0); // debounced, not yet applied
 
     t.mock.timers.tick(300);
+    assert.equal(ctx.state.mixerVoices[1].volume, 30);
     assert.equal(rerenders.length, 1);
     assert.equal(window.localStorage.getItem(SOUSAPHONE_VOLUME_KEY), "30");
 
