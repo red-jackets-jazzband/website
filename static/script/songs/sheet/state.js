@@ -28,8 +28,8 @@ const ALL_COMPING_PARTS = COMPING_PARTS.map((_name, index) => index);
 // means all three.
 const compingPartsPref = {
   load(read) {
-    const names = (read(PREF_KEYS.compingParts) || "").split(",");
-    const parts = ALL_COMPING_PARTS.filter((index) => names.includes(COMPING_PARTS[index]));
+    const names = new Set((read(PREF_KEYS.compingParts) || "").split(","));
+    const parts = ALL_COMPING_PARTS.filter((index) => names.has(COMPING_PARTS[index]));
     return parts.length > 0 ? parts : ALL_COMPING_PARTS;
   },
   save(parts, write) {

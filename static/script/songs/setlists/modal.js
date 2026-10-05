@@ -92,7 +92,8 @@ export function createSetlistModal(ctx) {
     }
     const reader = new FileReader();
     reader.onload = () => {
-      const parsed = parseSetlistFile(String(reader.result));
+      // readAsText() below always yields a string; anything else reads as empty.
+      const parsed = parseSetlistFile(typeof reader.result === "string" ? reader.result : "");
       openCreated(copyBandSetlistToPersonal(ctx.storage(), {
         name: name || parsed.name || file.name.replace(/\.txt$/i, ""),
         desc: parsed.desc,

@@ -260,7 +260,7 @@ function paint(plan, renderText, targets, { titlePrefix = "", voices = [] } = {}
 // Mixer keys that change the render text or the synth's construction
 // (soundfont, swing, voicesOff), i.e. need a re-engrave. mixerVoices is
 // written by the render itself (syncVoices) as well as by the Mixer.
-const MIXER_RENDER_KEYS = ["mixer", "gchordPattern", "swing", "highQualityAudio", "mixerVoices"];
+const MIXER_RENDER_KEYS = new Set(["mixer", "gchordPattern", "swing", "highQualityAudio", "mixerVoices"]);
 
 /*
   Call `rerender` whenever a store change needs the live sheet re-engraved:
@@ -274,7 +274,7 @@ export function subscribeRerender(store, rerender) {
     if (!isRenderWrite(meta)) rerender();
   });
   const offMixer = store.subscribe("mixer", (_mixer, changed, _name, meta) => {
-    if (!isRenderWrite(meta) && changed.some((key) => MIXER_RENDER_KEYS.includes(key))) rerender();
+    if (!isRenderWrite(meta) && changed.some((key) => MIXER_RENDER_KEYS.has(key))) rerender();
   });
   return () => {
     offSettings();

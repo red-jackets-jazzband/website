@@ -51,7 +51,8 @@ export function createStore(initialSlices) {
     slices[name] = { ...initialSlices[name] };
     listeners[name] = [];
     Object.keys(slices[name]).forEach((key) => {
-      if (Object.prototype.hasOwnProperty.call(sliceOfKey, key)) {
+      // Object.hasOwn is Safari 15.4+; this code must run on Safari 12.
+      if (Object.prototype.hasOwnProperty.call(sliceOfKey, key)) { // NOSONAR
         throw new Error(`store: key "${key}" is in both "${sliceOfKey[key]}" and "${name}"`);
       }
       sliceOfKey[key] = name;
@@ -59,7 +60,10 @@ export function createStore(initialSlices) {
   });
 
   function assertSlice(name) {
-    if (!Object.prototype.hasOwnProperty.call(slices, name)) throw new Error(`store: unknown slice "${name}"`);
+    // Object.hasOwn is Safari 15.4+ (see above).
+    if (!Object.prototype.hasOwnProperty.call(slices, name)) { // NOSONAR
+      throw new Error(`store: unknown slice "${name}"`);
+    }
   }
 
   // Every listener runs even when an earlier one throws — one feature's
