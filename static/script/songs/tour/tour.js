@@ -19,6 +19,7 @@ import {
   spotlightClipPath,
   tightenBox,
 } from "../../lib/tour/tour-layout.js";
+import { launchConfetti } from "./confetti.js";
 import { createTourActions, isShown, waitUntil } from "./actions.js";
 
 /*
@@ -45,6 +46,12 @@ const SETTLE_STILL_FRAMES = 6;
 const SETTLE_MAX_FRAMES = 90;
 const SWALLOWED_KEYS = new Set([" ", "Spacebar", "/", "ArrowUp", "ArrowDown", "Enter"]);
 const INLINE_TAGS = { strong: "strong", em: "em", code: "code" };
+// `gold:word` / `magenta:word` in the copy: a bold word in that note colour.
+const COLOUR_WORD = /^(gold|magenta):(.+)$/;
+// `btn:A` in the copy draws a text-labelled button (the loop bar's A and B).
+const BUTTON_WORD = /^btn:(.+)$/;
+const KEY_WORD = /^key:(.+)$/;
+const TAB_WORD = /^tab:(.+)$/;
 const BUTTON = "button";
 const CONTROL_SELECTOR = "button, a, select, input, textarea";
 const LANG_NAMES = {
@@ -144,10 +151,33 @@ function firstShown(selectors) {
   return null;
 }
 
+// A "..." part marker is dashed, like the form strip's .songForm-part--more.
+function inlineAttrs(token) {
+  return token.type === "code" && token.text === "..."
+    ? { text: token.text, class: "rj-tour-more" }
+    : { text: token.text };
+}
+
+// `fa-drum` in the copy draws that Font Awesome icon, as on the real button.
+function renderToken(token) {
+  if (token.type === "text") return token.text;
+  if (token.type === "code" && token.text.startsWith("fa-")) {
+    const icon = el("span", { class: `fa-solid ${token.text}`, attrs: { "aria-hidden": "true" } });
+    return el("span", { class: "rj-tour-keyicon" }, [icon]);
+  }
+  const button = token.type === "code" ? BUTTON_WORD.exec(token.text) : null;
+  if (button) return el("span", { class: "rj-tour-keyicon", text: button[1] });
+  const key = token.type === "code" ? KEY_WORD.exec(token.text) : null;
+  if (key) return el("kbd", { text: key[1], class: "rj-tour-key" });
+  const tab = token.type === "code" ? TAB_WORD.exec(token.text) : null;
+  if (tab) return el("span", { class: "rj-tour-tab", text: tab[1] });
+  const colour = token.type === "code" ? COLOUR_WORD.exec(token.text) : null;
+  if (colour) return el("strong", { text: colour[2], class: `rj-tour-${colour[1]}` });
+  return el(INLINE_TAGS[token.type], inlineAttrs(token));
+}
+
 function renderInline(tokens) {
-  return tokens.map((token) => (
-    token.type === "text" ? token.text : el(INLINE_TAGS[token.type], { text: token.text })
-  ));
+  return tokens.map(renderToken);
 }
 
 // Paragraph / bullet blocks → <p> and <ul>, consecutive bullets sharing a list.
@@ -330,6 +360,19 @@ export function createTour(ctx) {
     }));
   }
 
+  // On a "chapter done" card the next chapter's row can sit below the fold of
+  // the card's own scroll area; bring it into view (scrollTop, not
+  // scrollIntoView, so only that area moves — never the page behind).
+  function revealNextTopic() {
+    const row = refs.body.querySelector(".rj-tour-topic.is-next");
+    const area = row && row.closest(".rj-tour-scroll");
+    if (!area) return;
+    const areaBox = area.getBoundingClientRect();
+    const rowBox = row.getBoundingClientRect();
+    if (rowBox.bottom > areaBox.bottom) area.scrollTop += rowBox.bottom - areaBox.bottom + 8;
+    else if (rowBox.top < areaBox.top) area.scrollTop -= areaBox.top - rowBox.top + 8;
+  }
+
   // Everything textual in the card, for the current step and language.
   function renderCard() {
     const step = flat[index];
@@ -486,8 +529,10 @@ export function createTour(ctx) {
     renderCard();
     layout(target);
     settleLayout(token);
+    revealNextTopic();
     refs.root.classList.remove("is-busy");
     refs.next.focus({ preventScroll: true });
+    if (nextStepIndex(flat, index, 1, isAvailable) < 0) launchConfetti(refs.root, refs.card);
   }
 
   // `to` is the next index in direction `dir`, or -1 when that way is exhausted.

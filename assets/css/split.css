@@ -5967,6 +5967,13 @@ body.rj-sheet-fullscreen #sheetmenu {
      horizontal scrollbar. */
   margin: 0 -14px;
   padding: 0 14px;
+  /* Still scrollable (wheel, touch, keys), just without the bar drawn over
+     the chapter list. */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.rj-tour-scroll::-webkit-scrollbar {
+  display: none;
 }
 .rj-tour-progress {
   flex: 1;
@@ -6003,9 +6010,9 @@ body.rj-sheet-fullscreen #sheetmenu {
 }
 .rj-tour-title {
   margin: 0 0 12px;
-  color: #f6f0e6;
-  font: 400 25px/1.2 "Lora", serif;
-  letter-spacing: 0;
+  color: #CCCCCC;
+  font: 600 26px/1.15 "Montserrat", sans-serif;
+  letter-spacing: -0.8px;
   text-transform: none;
 }
 .rj-tour-body {
@@ -6023,11 +6030,75 @@ body.rj-sheet-fullscreen #sheetmenu {
   color: #f6f0e6;
   font-weight: 700;
 }
+.rj-tour-body strong.rj-tour-gold {
+  color: #e29d0f;
+}
+.rj-tour-body strong.rj-tour-magenta {
+  color: #ca486d;
+}
+/* Inline `code` is a part marker: the same white box with a black capital
+   letter as the form strip's .songForm-part. */
 .rj-tour-body code {
-  padding: 1px 5px;
+  padding: 0 4px;
+  background: #ffffff;
+  border: 1px solid #000000;
+  color: #000000;
+  font: 600 12px/15px "Montserrat", sans-serif;
+}
+.rj-tour-body code.rj-tour-more {
+  border-style: dashed;
+}
+/* A key named in the copy (`key:Enter`) is drawn as a keycap. */
+.rj-tour-body kbd.rj-tour-key {
+  display: inline-block;
+  min-width: 22px;
+  margin: 0 1px;
+  padding: 2px 6px 3px;
+  box-sizing: border-box;
+  vertical-align: baseline;
+  text-align: center;
   background: #2f2f2f;
-  border-radius: 4px;
-  font-size: 12px;
+  border: 1px solid rgba(255,255,255,.18);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  color: #f6f0e6;
+  font: 600 11px/1.2 "Montserrat", sans-serif;
+}
+/* The back button named in the copy (`tab:‹ Songs`) is drawn like the real
+   #sheetBackBtn: bare gold uppercase Montserrat, no face. */
+.rj-tour-tab {
+  display: inline-block;
+  color: var(--rj-gold);
+  font: 600 12px/1 "Montserrat", sans-serif;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+/* A button named in the copy is drawn as a little button, coloured like the real
+   .sheet-icon-btn: dark grey face, hairline border, muted icon. */
+.rj-tour-keyicon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  margin: 0 1px;
+  padding: 0 4px;
+  box-sizing: border-box;
+  vertical-align: middle;
+  background: #2f2f2f;
+  border: 1px solid rgba(255,255,255,.11);
+  border-radius: 6px;
+  color: rgba(236,234,230,.72);
+  font: 600 12px/1 "Montserrat", sans-serif;
+}
+/* The ? button is a bare gold circle, so the chip doesn't box it. */
+.rj-tour-keyicon:has(.fa-circle-question) {
+  min-width: 0;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--rj-gold);
+  font-size: 18px;
 }
 .rj-tour-tip {
   margin: 4px 0 0;
@@ -6166,11 +6237,11 @@ body.rj-sheet-fullscreen #sheetmenu {
 .rj-tour-btn {
   height: 40px;
   padding: 0 18px;
-  background: #36312c;
-  border: none;
-  border-radius: 999px;
+  background: #2f2f2f;
+  border: 1px solid rgba(255,255,255,.11);
+  border-radius: 8px;
   color: #f6f0e6;
-  font: 600 14px "Montserrat", sans-serif;
+  font: 600 13px "Montserrat", sans-serif;
   cursor: pointer;
 }
 .rj-tour-btn:disabled {
@@ -6179,10 +6250,12 @@ body.rj-sheet-fullscreen #sheetmenu {
 }
 .rj-tour-btn--primary {
   background: var(--rj-gold);
+  border-color: var(--rj-gold);
   color: #1b1b1b;
 }
 .rj-tour-btn--quiet {
   background: none;
+  border-color: transparent;
   padding: 0 4px;
   color: #a39b8f;
   font-weight: 500;
@@ -6199,7 +6272,34 @@ body.rj-sheet-fullscreen #sheetmenu {
     animation: none;
   }
 }
+/* Tour finale: confetti burst from the last card (see songs/tour/confetti.js).
+   A transition from here to an inline end transform; colour, size, origin and
+   duration are set inline. */
+.rj-confetti {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+}
+.rj-confetti-piece {
+  position: absolute;
+  border-radius: 1px;
+  transform: translate3d(0, 0, 0) rotate(0deg);
+  transition-property: transform;
+  transition-timing-function: cubic-bezier(0.1, 0.7, 0.4, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .rj-confetti {
+    display: none;
+  }
+}
 @media print {
+  .rj-confetti {
+    display: none !important;
+  }
   .rj-tour {
     display: none !important;
   }
