@@ -2,7 +2,7 @@
 // song's own ABC (its F: field(s), same source inspiration-links.js reads for
 // the single-song Inspiration button) into either one ad-hoc YouTube playlist
 // for the whole setlist, or a Soundiiz import that saves the setlist as a
-// playlist on the visitor's own Spotify account.
+// playlist on the visitor's own streaming account.
 import {
   parseInspirationLinks, firstYoutubeUrl, firstSpotifyUrl, firstSoundcloudUrl,
 } from "../media/inspiration-links.js";
@@ -74,21 +74,23 @@ export function buildYoutubePlaylistUrl(ids) {
     : null;
 }
 
-// ---- Soundiiz: the setlist as a playlist on the visitor's own Spotify ----
+// ---- Soundiiz: the setlist as a playlist on the visitor's own account ----
 //
-// Spotify has no unauthenticated "ad-hoc playlist" URL the way YouTube's
-// watch_videos is, and this static site can't hold an OAuth token. Soundiiz's
+// Spotify, Apple Music & co. have no unauthenticated "ad-hoc playlist" URL
+// the way YouTube's watch_videos is, and this static site can't hold an
+// OAuth token for any of them. Soundiiz's
 // public Playlist Import API fills that gap without an API key: POST it a
 // tracklist and it answers with a temporary share link where the visitor
-// signs in to their own streaming account and saves the playlist there.
+// picks a streaming service, signs in and saves the playlist there.
 // https://support.soundiiz.com/hc/en-us/articles/36613501259922
 export const SOUNDIIZ_ENDPOINT = "https://soundiiz.com/go/import-playlist";
 export const SOUNDIIZ_MAX_TRACKS = 200;
 
 // One Soundiiz tracklist entry for a song. A platform/id pair pins the exact
 // recording the band's chart points at, picked in order of preference — the
-// Spotify track itself (the playlist is going to Spotify, so no matching
-// needed at all), else its YouTube video, else its SoundCloud track. The
+// Spotify track (the most widely matched catalogue id, and an exact hit when
+// the playlist is saved to Spotify), else its YouTube video, else its
+// SoundCloud track. The
 // title always rides along so Soundiiz can still fall back to a plain search
 // (and has something to show) when a song has none of the three, or the id
 // can't be resolved on the destination.
@@ -112,7 +114,9 @@ export function soundiizTrack(title, sources) {
 // `songs` is [{ title, sources }] in setlist order (holes from a song file
 // that failed to load are skipped); a song repeated in the setlist is folded
 // to its first occurrence, same as buildYoutubePlaylistUrl, and the list is
-// capped at the API's own track limit.
+// capped at the API's own track limit. `destination` (a Soundiiz service
+// slug such as "spotify") is optional; left out, the visitor picks the
+// service on Soundiiz's own import page.
 export function buildSoundiizPayload(name, songs, destination) {
   const seen = new Set();
   const tracklist = [];
@@ -128,7 +132,7 @@ export function buildSoundiizPayload(name, songs, destination) {
   return {
     title: name || "Red Jackets setlist",
     sourceName: "Red Jackets Jazzband",
-    destination,
+    ...(destination ? { destination } : {}),
     tracklist: tracklist.slice(0, SOUNDIIZ_MAX_TRACKS),
   };
 }
