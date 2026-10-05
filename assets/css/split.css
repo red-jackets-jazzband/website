@@ -3171,6 +3171,11 @@ body.rj-sheet-active .rj-sheet-empty {
   color: var(--rj-gold);
   font: 600 11px "Montserrat", sans-serif;
 }
+/* The Listen status line is an <output> (implicit role="status"), inline by
+   default; :not([hidden]) keeps the hidden attribute in charge. */
+output.rj-library-print-status:not([hidden]) {
+  display: block;
+}
 /*
   A single "New setlist" button at the foot of the Yours list, inside the
   scrolling #songList — set off from the setlist rows above by a hairline
