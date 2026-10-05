@@ -1,7 +1,7 @@
 # ui
 next: Weiter
 back: Zurück
-skip: Tour überspringen
+skip: Vielleicht später
 done: Fertig
 progress: {chapter} · {n}/{total}
 chapters: Kapitel
@@ -10,36 +10,48 @@ close: Tour schließen
 loading: Lädt…
 helpLabel: Tour starten
 chapterDone: {chapter}: geschafft ✓
-chapterNext: Als Nächstes: **{next}**. Drück auf **Weiter**, wenn du so weit bist.
+chapterNext: Als Nächstes: **{next}**.
 topicBasics: Einen Song finden, sein Leadsheet öffnen, abspielen und drucken.
 topicAdjust: Tonart und Tempo ändern, eine Stelle wiederholen, ein MP3 exportieren.
 topicInspiration: Aufnahmen neben dem Leadsheet anhören und eine Phrase wiederholen.
 topicMixer: Die Lautstärke von Bass, Akkorden und jeder Stimme einstellen.
 topicSetlists: Setlists für einen Gig erstellen, ordnen und drucken.
 topicComping: Eine ausgeschriebene Begleitstimme hinzufügen.
-topicsIntro: Die Tour hat sechs Themen, die du nacheinander durchgehst. Jedes wird abgehakt, wenn du damit fertig bist, und die Punkte unten zeigen, wo du gerade bist. Du kannst auf ein Thema klicken, um direkt dorthin zu springen:
+topicsIntro: Sechs kurze Stationen. Tipp auf eine, um hinzuspringen:
+railComping: Comping
+railSetlists: Sets
+railMixer: Mix
+railInspiration: Mitspielen
+railAdjust: Dein Weg
+railBasics: Finden
+nextChapter: Weiter zum nächsten
+start: Zeig mir alles
 
 # basics: Die Grundlagen
 
 ## welcome: Willkommen auf der Songs-Seite
-Hier stehen die Songs, die die Red Jackets spielen (oder gespielt haben oder vielleicht spielen werden). Du kannst sie suchen, drucken und transponieren.
+Alle Songs der Red Jackets stehen hier. Such einen aus, spiel ihn in deiner Tonart, drucke ihn für den Notenständer.
 
-Nutze **Weiter** und **Zurück** oder die Tasten **←** und **→**. Mit **Esc** beendest du die Tour jederzeit, und mit dem **?**-Knopf startest du sie neu.
+> Verloren? Der **?**-Knopf startet die Tour neu. Pfeiltasten blättern, Esc schließt.
 
 ## search: Einen Song finden
-Tipp einen Teil des Titels ein, dann wird die Liste beim Tippen kürzer. Klick in dieses Feld. Mit **↑** **↓** und **Enter** öffnest du dann einen Song. Die **A–Z**-Leiste neben der Liste springt zu einem Buchstaben.
+Fang an zu tippen, und die Liste wird beim Tippen kürzer. Wähl einen Song, um sein Leadsheet zu öffnen. Die Buchstaben neben der Liste springen direkt zu A, B, C…
+
+> Es geht auch ohne Maus: **↑** **↓** und **Enter** öffnen einen Song.
 
 ## open: Dein Leadsheet
 Wenn du einen Song auswählst, öffnet er sich hier. Für die Tour haben wir *Bill Bailey* geöffnet. Zuerst kommt die Akkordtabelle, darunter die vollständige Notation. Auf einem Handy füllt das Leadsheet den ganzen Bildschirm, und mit dem **‹ Songs**-Knopf oben kommst du zurück zur Liste.
 
 ## form: Der Form folgen
-Die Pfeilreihe unter der Akkordtabelle ist die **Form** des Stücks: die Reihenfolge, in der die Teile gespielt werden. Jeder Pfeil ist ein Schritt, mit seiner Nummer und dem Teil, der dabei erklingt. Schritte mit demselben Teil haben dieselbe Farbe, und ein Hinweis wie *2x* sagt, wie oft wiederholt wird. Darunter steht, wer spielt: hier eröffnet die Trompete, dann spielen alle zusammen, danach Gesang und Soli. Ein abschließendes **...** (wie in *A B ...* bei den Soli) heißt: Der Teil wird so oft wiederholt, wie es Solisten gibt – wer ein Solo spielen will, kommt an die Reihe. Stücke ohne aufgeschriebene Form zeigen ihre Teilereihenfolge (Intro, Strophe, ...) auf dieselbe Weise. Ein **...** nach einem Teil, etwa *A B ...* bei den Soli, bedeutet: die Teilereihenfolge geht so viele Runden weiter, wie es Solisten gibt. Wer ein Solo möchte, bekommt eines, und die Form wiederholt sich, bis alle dran waren.
+Die Pfeile unter der Akkordtabelle zeigen die **Form**: die Reihenfolge der Teile. Gleiche Farbe, gleicher Teil. *2x* heißt wiederholt. Ein **...** am Ende (wie *A B ...* bei den Soli) wiederholt so oft, wie es Solisten gibt.
 
 ## instrument: Lies deine eigene Stimme
-Wähl dein Instrument, dann wird das ganze Leadsheet dafür transponiert. Zur Auswahl stehen Konzerttonhöhe, Concert + Roman (Konzerttonhöhe mit römischen Ziffern in der Akkordtabelle), Altsaxofon, B-Klarinette oder -Trompete, Tenorsaxofon, Posaune (Bassschlüssel) oder Sousaphon (Bassschlüssel). Die Seite merkt sich deine Wahl. Die Wiedergabe klingt immer in Konzerttonhöhe, egal welche Stimme angezeigt wird.
+Wähl dein Instrument, und das Leadsheet wird dafür transponiert: Konzerttonart, Concert + römische Ziffern, Altsax, B♭-Klarinette oder -Trompete, Tenorsax, Posaune oder Sousafon (Bassschlüssel). Wiedergabe klingt immer in Konzerttonart.
 
 ## play: Hör es dir an
-Es hilft, einen Song zu hören, bevor man ihn spielt. Mit **Play** startest du ihn, und die Noten leuchten im Leadsheet auf, während sie erklingen. **Stop** beendet die Wiedergabe. Solange ein Leadsheet offen ist, kannst du auch mit der **Leertaste** abspielen und pausieren.
+Es hilft, einen Song zu hören, bevor man ihn spielt. **Play** startet ihn, und die Noten leuchten im Leadsheet auf, während sie erklingen. **Stop** beendet die Wiedergabe.
+
+> Die **Leertaste** spielt und pausiert ebenfalls, solange ein Leadsheet offen ist.
 
 ## print: Nimm es mit zum Gig
 **Print** macht aus dem Leadsheet eine saubere Seite für den Notenständer oder die Mappe. Im Druckdialog kannst du *Als PDF speichern* wählen, wenn du lieber eine digitale Kopie willst. Setlists haben eigene Druckknöpfe, die kommen später in der Tour.
@@ -119,7 +131,9 @@ Such unten in der Liste nach einem Titel und drück **Enter** oder klick auf ein
 Füg auf die gleiche Weise einen zweiten Song hinzu. Die Liste wächst nach unten, mit einer Zeile pro Song.
 
 ## reorder: Die Reihenfolge festlegen
-Zieh den **⋮⋮**-Griff eines Songs nach oben oder unten, um ihn zu verschieben. Bei einer ausgewählten Zeile verschiebst du sie mit **Alt** + **↑** **↓** per Tastatur um jeweils einen Platz.
+Zieh den **⋮⋮**-Griff eines Songs nach oben oder unten, um ihn an die richtige Stelle zu bringen.
+
+> Per Tastatur verschiebt **Alt** + **↑** **↓** eine ausgewählte Zeile um einen Platz.
 
 ## break: In Sets aufteilen
 **Add a set break** beginnt ein neues Set, zum Beispiel um einen Gig in Set 1 und Set 2 zu teilen. Tipp eine Bezeichnung ein oder lass das Feld leer, dann heißt es automatisch „Set 2“.
@@ -156,4 +170,5 @@ Mit den Knöpfen **R**, **3** und **5** wählst du, welche der geteilten Zeilen 
 Ist das Comping an, erscheint es im Mixer als eigene **Comping**-Stimme. Du kannst es stummschalten, die Lautstärke ändern oder ihm ein anderes Instrument geben. Wenn du es teilst, bekommt jeder Akkordton einen eigenen Kanal (**Comping R**, **Comping 3**, **Comping 5**), sodass du die Terz stummschalten oder der Quinte ein anderes Instrument geben kannst.
 
 ## done: Das war die Tour
-Das war das Ende der Tour. Mit diesem **?**-Knopf startest du sie neu, und in der Ecke der Tour kannst du eine andere Sprache wählen.
+Das war die Tour. Der **?**-Knopf holt sie zurück, und das Menü oben auf der Karte wechselt die Sprache.
+

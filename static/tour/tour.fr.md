@@ -1,7 +1,7 @@
 # ui
 next: Suivant
 back: Retour
-skip: Passer la visite
+skip: Peut-être plus tard
 done: Terminé
 progress: {chapter} · {n}/{total}
 chapters: Chapitres
@@ -10,36 +10,48 @@ close: Fermer la visite
 loading: Chargement…
 helpLabel: Lancer la visite
 chapterDone: {chapter} : terminé ✓
-chapterNext: Ensuite : **{next}**. Appuyez sur **Suivant** quand vous êtes prêt.
+chapterNext: Ensuite : **{next}**.
 topicBasics: Trouver un morceau, ouvrir sa grille, l'écouter et l'imprimer.
 topicAdjust: Changer la tonalité et le tempo, boucler un passage, exporter un MP3.
 topicInspiration: Écouter des enregistrements à côté de la grille et boucler une phrase.
 topicMixer: Régler le volume de la basse, des accords et de chaque partie.
 topicSetlists: Créer, ordonner et imprimer des setlists pour un concert.
 topicComping: Ajouter une portée d'accompagnement écrite.
-topicsIntro: La visite compte six thèmes, que vous parcourez un par un. Chacun est coché quand vous l'avez terminé, et les points en bas indiquent où vous en êtes. Vous pouvez cliquer sur un thème pour y aller directement :
+topicsIntro: Six petites étapes. Touchez-en une pour y aller :
+railComping: Comping
+railSetlists: Sets
+railMixer: Mix
+railInspiration: Jouer avec
+railAdjust: À votre façon
+railBasics: Trouver
+nextChapter: Passons au suivant
+start: Faites-moi visiter
 
 # basics: Les bases
 
 ## welcome: Bienvenue sur la page Songs
-Vous trouverez ici les morceaux que les Red Jackets jouent (ou ont joués, ou joueront peut-être). Vous pouvez les chercher, les imprimer et les transposer.
+Tous les morceaux des Red Jackets sont ici. Trouvez-en un, jouez-le dans votre tonalité, imprimez-le pour le pupitre.
 
-Utilisez **Suivant** et **Retour**, ou les touches **←** et **→**. **Échap** ferme la visite à tout moment, et le bouton **?** la relance.
+> Perdu ? Le bouton **?** relance la visite. Les flèches avancent, Échap ferme.
 
 ## search: Trouver un morceau
-Tapez une partie du titre et la liste se réduit au fil de la frappe. Cliquez dans ce champ, puis utilisez **↑** **↓** et **Entrée** pour ouvrir un morceau. La barre **A–Z** à côté de la liste mène directement à une lettre.
+Commencez à taper un titre et la liste se réduit au fil de la frappe. Choisissez un morceau pour ouvrir sa grille. Les lettres à côté de la liste mènent directement à A, B, C…
+
+> Pas besoin de souris : **↑** **↓** et **Entrée** ouvrent un morceau.
 
 ## open: Votre grille
 Quand vous choisissez un morceau, il s'ouvre ici. Pour la visite, nous avons ouvert *Bill Bailey*. Le tableau d'accords vient d'abord, avec la partition complète en dessous. Sur téléphone, la grille occupe tout l'écran, et le bouton **‹ Songs** en haut ramène à la liste.
 
 ## form: Suivre la forme
-La rangée de flèches sous le tableau d'accords est la **forme** du morceau : l'ordre dans lequel les parties sont jouées. Chaque flèche est une étape, avec son numéro et la partie jouée. Les étapes qui jouent la même partie ont la même couleur, et une mention comme *2x* indique combien de fois elle se répète. En dessous figure qui joue : ici la trompette ouvre, puis tout le monde joue ensemble, puis le chant et les solos. Un **...** à la fin (comme dans *A B ...* pour les solos) signifie que la partie se répète autant de fois qu'il y a de solistes : chacun qui veut un solo a son tour. Les morceaux sans forme écrite montrent l'ordre de leurs parties (intro, couplet, ...) de la même façon. Un **...** après une partie, comme *A B ...* sur les solos, signifie que l'ordre des parties continue pour autant de chorus qu'il y a de solistes : chacun qui veut un solo en obtient un, et la forme se répète jusqu'à ce que tout le monde soit passé.
+Les flèches sous le tableau d'accords montrent la **forme** : l'ordre des parties. Même couleur, même partie. *2x* veut dire répété. Un **...** final (comme *A B ...* aux solos) se répète autant de fois qu'il y a de solistes.
 
 ## instrument: Lisez votre propre partie
-Choisissez votre instrument et toute la grille est transposée pour lui. Les choix sont : hauteur réelle, Concert + Roman (hauteur réelle avec des chiffres romains dans le tableau d'accords), saxophone alto, clarinette ou trompette en si bémol, saxophone ténor, trombone (clé de fa) ou soubassophone (clé de fa). La page retient votre choix. La lecture sonne toujours à la hauteur réelle, quelle que soit la partie affichée.
+Choisissez votre instrument et la grille est transposée : concert, Concert + chiffres romains, sax alto, clarinette ou trompette en si♭, sax ténor, trombone ou sousaphone (clé de fa). La lecture sonne toujours en concert.
 
 ## play: Écoutez le morceau
-Il est utile d'entendre un morceau avant de le jouer. **Play** le lance, et les notes s'illuminent sur la grille pendant qu'elles sonnent. **Stop** l'arrête. Tant qu'une grille est ouverte, la **barre d'espace** permet aussi de lancer et de mettre en pause.
+Il est utile d'entendre un morceau avant de le jouer. **Play** le lance, et les notes s'illuminent sur la grille pendant qu'elles sonnent. **Stop** l'arrête.
+
+> La **barre d'espace** lance et met aussi en pause tant qu'une grille est ouverte.
 
 ## print: Emportez-le au concert
 **Print** transforme la grille en une page propre pour le pupitre ou le classeur. Dans la boîte de dialogue d'impression, vous pouvez choisir *Enregistrer au format PDF* si vous préférez une copie numérique. Les setlists ont leurs propres boutons d'impression, qui viennent plus loin dans la visite.
@@ -119,7 +131,9 @@ Cherchez un titre dans le champ en bas de la liste, puis appuyez sur **Entrée**
 Ajoutez un second morceau de la même façon. La liste s'allonge vers le bas, avec une ligne par morceau.
 
 ## reorder: Définir l'ordre de passage
-Faites glisser la poignée **⋮⋮** d'un morceau vers le haut ou le bas pour le déplacer. Avec une ligne sélectionnée, **Alt** + **↑** **↓** la déplace d'une place à la fois au clavier.
+Faites glisser la poignée **⋮⋮** d'un morceau vers le haut ou le bas pour le placer où vous voulez.
+
+> Au clavier, **Alt** + **↑** **↓** déplace d'une place la ligne sélectionnée.
 
 ## break: Découper en sets
 **Add a set break** démarre un nouveau set, par exemple pour diviser un concert en Set 1 et Set 2. Tapez un intitulé, ou laissez le champ vide pour obtenir un « Set 2 » automatique.
@@ -156,4 +170,5 @@ Les boutons **R**, **3** et **5** choisissent quelles portées séparées sont d
 Quand le comping est activé, il apparaît dans le mixeur comme une voix **Comping** à part. Vous pouvez la couper, changer son volume ou lui donner un autre instrument. Si vous la séparez, chaque note d'accord a sa propre piste (**Comping R**, **Comping 3**, **Comping 5**), ce qui permet de couper la tierce ou de confier la quinte à un autre instrument.
 
 ## done: Fin de la visite
-La visite est terminée. Vous pouvez la relancer avec ce bouton **?**, et choisir une autre langue dans le coin de la visite.
+Voilà la visite. Le bouton **?** la ramène, et le menu en haut de la carte change la langue.
+
