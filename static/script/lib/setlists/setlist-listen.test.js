@@ -100,7 +100,7 @@ test("buildSoundiizPayload keeps setlist order, skips holes and folds repeats", 
     tracklist: [{ title: "One", platform: "youtube", id: "yt" }, { title: "Two" }],
   });
   assert.equal(buildSoundiizPayload("Gig", [], "spotify"), null);
-  assert.equal("destination" in buildSoundiizPayload("Gig", songs), false);
+  assert.equal(Object.keys(buildSoundiizPayload("Gig", songs)).includes("destination"), false);
 });
 
 test("buildSoundiizPayload caps the tracklist at the API's limit", () => {
