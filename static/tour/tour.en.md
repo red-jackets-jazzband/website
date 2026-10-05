@@ -41,7 +41,7 @@ Picking a song opens it here. For the tour we've opened *Bill Bailey*. The chord
 ## form: Follow the form
 setup: openDemoSong
 target: .songForm
-The strip of arrows under the chord table is the **form** of the tune: the order in which the parts are played. Each arrow is one step, with its number and the part it plays. Steps that play the same part share a colour, and a note such as *2x* says how often it repeats. Underneath it says who plays: here the trumpet opens, then everybody plays together, then the vocals and the solos. Tunes without a written form show their part order (intro, verse, ...) the same way.
+The strip of arrows under the chord table is the **form** of the tune: the order in which the parts are played. Each arrow is one step, with its number and the part it plays. Steps that play the same part share a colour, and a note such as *2x* says how often it repeats. Underneath it says who plays: here the trumpet opens, then everybody plays together, then the vocals and the solos. A trailing **...** (as in *A B ...* for the solos) means the part goes on for as many repeats as there are soloists: everyone who wants a solo takes a turn. Tunes without a written form show their part order (intro, verse, ...) the same way.
 
 ## instrument: Read your own part
 setup: openDemoSong
