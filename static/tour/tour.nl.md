@@ -1,7 +1,7 @@
 # ui
 next: Volgende
 back: Terug
-skip: Rondleiding overslaan
+skip: Misschien later
 done: Klaar
 progress: {chapter} · {n}/{total}
 chapters: Hoofdstukken
@@ -10,36 +10,48 @@ close: Rondleiding sluiten
 loading: Laden…
 helpLabel: Volg de rondleiding
 chapterDone: {chapter}: klaar ✓
-chapterNext: Hierna: **{next}**. Druk op **Volgende** als je eraan toe bent.
+chapterNext: Hierna: **{next}**.
 topicBasics: Zoek een nummer, open het leadsheet, speel het af en druk het af.
 topicAdjust: Verander toonsoort en tempo, herhaal een passage, exporteer een MP3.
 topicInspiration: Luister naar opnames naast het leadsheet en herhaal een frase.
 topicMixer: Stel het volume van bas, akkoorden en elke partij in.
 topicSetlists: Maak, orden en print setlists voor een optreden.
 topicComping: Voeg een uitgeschreven begeleidingsbalk toe.
-topicsIntro: De rondleiding heeft zes onderwerpen, die je een voor een doorloopt. Elk onderwerp wordt afgevinkt als je klaar bent, en de puntjes onderaan laten zien waar je zit. Je kunt op een onderwerp klikken om er meteen naartoe te gaan:
+topicsIntro: Zes korte stops. Tik er een aan om erheen te gaan:
+railComping: Comping
+railSetlists: Sets
+railMixer: Mixen
+railInspiration: Meespelen
+railAdjust: Jouw manier
+railBasics: Vinden
+nextChapter: Door naar het volgende
+start: Laat maar zien
 
 # basics: De basis
 
 ## welcome: Welkom op de songs-pagina
-Hier staan de nummers die de Red Jackets spelen (of speelden, of misschien gaan spelen). Je kunt ze zoeken, printen en transponeren.
+Alle nummers van de Red Jackets staan hier. Zoek er een, speel het in jouw toonsoort, print het voor de lessenaar.
 
-Gebruik **Volgende** en **Terug**, of de toetsen **←** en **→**. Met **Esc** sluit je de rondleiding op elk moment, en met de **?**-knop start je hem opnieuw.
+> Kwijt? De **?**-knop start deze rondleiding opnieuw. Pijltjestoetsen bladeren, Esc sluit.
 
 ## search: Zoek een nummer
-Typ een deel van een titel en de lijst wordt korter terwijl je typt. Klik op dit vak en gebruik daarna **↑** **↓** en **Enter** om een nummer te openen. De **A–Z**-balk naast de lijst springt naar een letter.
+Begin met typen en de lijst wordt vanzelf korter. Kies een nummer om het leadsheet te openen. De letters naast de lijst springen meteen naar A, B, C…
+
+> Zonder muis kan ook: **↑** **↓** en **Enter** openen een nummer.
 
 ## open: Je leadsheet
 Als je een nummer kiest, opent het hier. Voor de rondleiding hebben we *Bill Bailey* geopend. Eerst komt de akkoordentabel, met de volledige notatie eronder. Op een telefoon vult het leadsheet het hele scherm, en met de **‹ Songs**-knop bovenaan ga je terug naar de lijst.
 
 ## form: Volg de vorm
-De rij pijlen onder de akkoordentabel is de **vorm** van het nummer: de volgorde waarin de delen gespeeld worden. Elke pijl is één stap, met zijn nummer en het deel dat erin klinkt. Stappen met hetzelfde deel hebben dezelfde kleur, en een aanduiding als *2x* zegt hoe vaak het herhaald wordt. Eronder staat wie speelt: hier opent de trompet, daarna speelt iedereen samen, dan de zang en de solo's. Een **...** aan het eind (zoals in *A B ...* bij de solo's) betekent dat het deel zo vaak herhaald wordt als er solisten zijn: iedereen die een solo wil, krijgt een beurt. Nummers zonder opgeschreven vorm tonen hun volgorde van delen (intro, couplet, ...) op dezelfde manier. Een **...** na een deel, zoals *A B ...* bij de solo's, betekent dat de volgorde van delen doorgaat voor zoveel rondes als er solisten zijn: iedereen die een solo wil krijgt er een, en de vorm herhaalt zich tot iedereen aan de beurt is geweest.
+De pijlen onder de akkoordentabel tonen de **vorm**: de volgorde van de delen. Zelfde kleur, zelfde deel. *2x* betekent herhaald. Een **...** aan het eind (zoals *A B ...* bij de solo's) herhaalt zo vaak als er solisten zijn.
 
 ## instrument: Lees je eigen partij
-Kies je instrument en het hele leadsheet wordt ervoor getransponeerd. De keuzes zijn concertstemming (C), Concert + Roman (concertstemming met Romeinse cijfers in de akkoordentabel), altsax, Bb-klarinet of -trompet, tenorsax, trombone (bassleutel) of sousafoon (bassleutel). De pagina onthoudt je keuze. Het geluid klinkt altijd in concertstemming, welke partij er ook op het scherm staat.
+Kies je instrument en het leadsheet wordt ervoor getransponeerd: concertstemming, Concert + Romeinse cijfers, altsax, Bb-klarinet of -trompet, tenorsax, trombone of sousafoon (bassleutel). Het geluid klinkt altijd in concertstemming.
 
 ## play: Luister mee
-Het helpt om een nummer te horen voor je het speelt. Met **Play** start je het, en de noten lichten op in het leadsheet terwijl ze klinken. **Stop** stopt het. Zolang er een leadsheet open staat, kun je ook met de **spatiebalk** afspelen en pauzeren.
+Het helpt om een nummer te horen voordat je het speelt. **Play** start het en de noten lichten op in het leadsheet terwijl ze klinken. **Stop** beëindigt het.
+
+> De **spatiebalk** start en pauzeert ook, zolang een leadsheet open staat.
 
 ## print: Neem het mee naar het optreden
 **Print** maakt van het leadsheet een nette pagina voor op de lessenaar of in de map. In het afdrukvenster kun je *Opslaan als pdf* kiezen als je liever een digitale kopie wilt. Setlists hebben eigen printknoppen, die komen verderop in de rondleiding.
@@ -119,7 +131,9 @@ Zoek een titel in het vak onderaan de lijst en druk op **Enter** of klik op een 
 Voeg op dezelfde manier een tweede nummer toe. De lijst groeit naar beneden, met één regel per nummer.
 
 ## reorder: Bepaal de volgorde
-Sleep het **⋮⋮**-handvat van een nummer omhoog of omlaag om het te verplaatsen. Met een regel geselecteerd verplaats je hem met **Alt** + **↑** **↓** één plek per keer via het toetsenbord.
+Sleep de **⋮⋮**-greep van een nummer omhoog of omlaag om het te verplaatsen.
+
+> Met het toetsenbord verplaatst **Alt** + **↑** **↓** een geselecteerde rij één plek.
 
 ## break: Splits op in sets
 **Add a set break** begint een nieuwe set, bijvoorbeeld om een optreden op te delen in Set 1 en Set 2. Typ een label, of laat het leeg voor een automatisch “Set 2”.
@@ -156,4 +170,5 @@ Met de knoppen **R**, **3** en **5** kies je welke van de gesplitste balken gete
 Staat comping aan, dan komt het in de mixer als eigen **Comping**-stem. Je kunt het dempen, het volume veranderen of er een ander instrument voor kiezen. Splits je het, dan krijgt elke akkoordtoon een eigen kanaal (**Comping R**, **Comping 3**, **Comping 5**), zodat je de terts kunt dempen of de kwint een ander instrument kunt geven.
 
 ## done: Dat was de rondleiding
-Dat was het einde van de rondleiding. Je start hem opnieuw met deze **?**-knop, en in de hoek van de rondleiding kies je een andere taal.
+Dat was de rondleiding. De **?**-knop haalt hem terug, en het menu bovenaan de kaart wisselt van taal.
+

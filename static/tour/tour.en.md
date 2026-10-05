@@ -1,7 +1,7 @@
 # ui
 next: Next
 back: Back
-skip: Skip tour
+skip: Maybe later
 done: Done
 progress: {chapter} · {n}/{total}
 chapters: Chapters
@@ -10,28 +10,38 @@ close: Close the tour
 loading: Loading…
 helpLabel: Take the tour
 chapterDone: {chapter}: done ✓
-chapterNext: Next up: **{next}**. Press **Next** when you're ready.
+chapterNext: Next up: **{next}**.
 topicBasics: Find a song, open its lead sheet, play it and print it.
 topicAdjust: Change the key and tempo, loop a passage, export an MP3.
 topicInspiration: Listen to recordings alongside the sheet and loop a phrase.
 topicMixer: Set the level of bass, chords and each part.
 topicSetlists: Build, order and print setlists for a gig.
 topicComping: Add a written-out accompaniment staff.
-topicsIntro: The tour has six topics, taken one at a time. Each one is ticked off when you finish it, and the dots at the bottom show where you are. You can click a topic to jump straight to it:
+topicsIntro: Six short stops. Tap one to jump there:
+railComping: Comp
+railSetlists: Sets
+railMixer: Mix
+railInspiration: Play along
+railAdjust: Your way
+railBasics: Find it
+nextChapter: On to the next
+start: Show me around
 
 # basics: The basics
 
 ## welcome: Welcome to the songs page
 setup: showLibrary
-This is where the tunes the Red Jackets play (or have played, or might play) are kept. You can search them, print them and transpose them.
+Every tune the Red Jackets play lives here. Find one, play it in your key, print it for the stand.
 
-Use **Next** and **Back**, or the **←** and **→** keys. **Esc** closes the tour at any point, and the **?** button starts it again.
+> Lost? The **?** button restarts this tour. Arrow keys step, Esc closes.
 
 ## search: Find a song
 setup: showLibrary
 target: #songSearch
 interactive: true
-Type part of a title and the list gets shorter as you go. Click this box, then use **↑** **↓** and **Enter** to open a song. The **A–Z** strip beside the list jumps to a letter.
+Start typing a title and the list narrows as you go. Pick a tune to open its lead sheet. The letters beside the list jump straight to A, B, C…
+
+> No mouse needed: **↑** **↓** and **Enter** open a song.
 
 ## open: Your lead sheet
 setup: openDemoSong
@@ -41,19 +51,21 @@ Picking a song opens it here. For the tour we've opened *Bill Bailey*. The chord
 ## form: Follow the form
 setup: openDemoSong
 target: .songForm
-The strip of arrows under the chord table is the **form** of the tune: the order in which the parts are played. Each arrow is one step, with its number and the part it plays. Steps that play the same part share a colour, and a note such as *2x* says how often it repeats. Underneath it says who plays: here the trumpet opens, then everybody plays together, then the vocals and the solos. A trailing **...** (as in *A B ...* for the solos) means the part goes on for as many repeats as there are soloists: everyone who wants a solo takes a turn. Tunes without a written form show their part order (intro, verse, ...) the same way. A **...** after a part, like *A B ...* on the solos step, means the part order continues for as many choruses as there are soloists: everyone who wants a solo gets one, and the form repeats until they have all had their turn.
+The arrows under the chord table show the **form**: the order the parts are played. Same colour, same part. *2x* means repeated. A trailing **...** (as in *A B ...* on the solos) repeats for as many choruses as there are soloists.
 
 ## instrument: Read your own part
 setup: openDemoSong
 target: #instrument
 interactive: true
-Pick your instrument and the whole sheet is transposed for it. The choices are concert pitch, Concert + Roman (concert pitch with Roman numerals added to the chord table), alto sax, B♭ clarinet or trumpet, tenor sax, trombone (bass clef) or sousaphone (bass clef). The page remembers your choice. Playback always sounds at concert pitch, whichever part is on screen.
+Pick your instrument and the sheet is transposed for it: concert, Concert + Roman numerals, alto sax, B♭ clarinet or trumpet, tenor sax, trombone or sousaphone (bass clef). Playback always sounds at concert pitch.
 
 ## play: Listen along
 setup: openDemoSong
 target: .sheet-transport
 interactive: true
-It helps to hear a tune before you play it. **Play** starts it and the notes light up on the sheet as they sound. **Stop** ends it. While a sheet is open, the **Spacebar** also toggles play and pause.
+It helps to hear a tune before you play it. **Play** starts it and the notes light up on the sheet as they sound. **Stop** ends it.
+
+> The **Spacebar** also plays and pauses while a sheet is open.
 
 ## print: Take it to the gig
 setup: openDemoSong
@@ -195,7 +207,9 @@ Add a second song the same way. The list grows downward, with one row per song.
 setup: createDemoSetlist, addDemoSong1, addDemoSong2
 target: #songList
 interactive: true
-Drag a song's **⋮⋮** handle up or down to move it. With a row focused, **Alt** + **↑** **↓** moves it one place at a time from the keyboard.
+Drag a song's **⋮⋮** handle up or down to move it where you want it.
+
+> From the keyboard, **Alt** + **↑** **↓** moves a focused row one place.
 
 ## break: Split into sets
 setup: createDemoSetlist, addDemoSong1, addDemoSong2
@@ -262,4 +276,5 @@ With comping on, it appears in the mixer as its own **Comping** voice. You can m
 ## done: That's the tour
 setup: showLibrary
 target: #tourBtn
-That's the end of the tour. You can run it again with this **?** button, and the tour's corner lets you pick another language.
+That's the tour. The **?** button brings it back, and the menu at the top of the card changes language.
+
