@@ -25,7 +25,7 @@
     "@stylistic/eslint-plugin": "^5.10.0",
     "@types/node": "^26.6.4",
     "abcjs": "^6.7.1",
-    "eslint": "^10.11.0",
+    "eslint": "^10.12.0",
     "eslint-plugin-promise": "^7.3.0",
     "eslint-plugin-regexp": "^3.3.1",
     "eslint-plugin-sonarjs": "^4.2.2",
