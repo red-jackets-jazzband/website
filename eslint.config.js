@@ -3,6 +3,7 @@ import stylistic from "@stylistic/eslint-plugin";
 import sonarjs from "eslint-plugin-sonarjs";
 import regexpPlugin from "eslint-plugin-regexp";
 import unicornPlugin from "eslint-plugin-unicorn";
+import promisePlugin from "eslint-plugin-promise";
 import globals from "globals";
 
 // Strict, project-wide config for the site's authored JavaScript: the pure
@@ -63,6 +64,22 @@ const STRICT_RULES = {
   "no-array-constructor": "error",
   "no-new-wrappers": "error",
   "no-unused-expressions": "error",
+  // Each of these reproduces a SonarCloud finding that used to surface only
+  // after a PR was scanned. All are plain ES2015-era APIs (Safari 10 or older),
+  // so none conflicts with the Safari-12 floor in the browser block below.
+  "prefer-spread": "error",
+  "default-param-last": "error",
+  "unicorn/prefer-math-trunc": "error",
+  "unicorn/prefer-array-find": "error",
+  "unicorn/prefer-array-some": "error",
+  "unicorn/prefer-dom-node-remove": "error",
+  "unicorn/prefer-string-starts-ends-with": "error",
+  "unicorn/prefer-number-properties": "error",
+  "unicorn/prefer-single-call": "error",
+  "unicorn/no-for-loop": "error",
+  "unicorn/prefer-modern-dom-apis": "error",
+  // SonarCloud's "Avoid nesting promises" (eslint-plugin-promise's own rule).
+  "promise/no-nesting": "error",
   "no-restricted-globals": [
     "error",
     { name: "parseInt", message: "Use Number.parseInt instead." },
@@ -122,6 +139,7 @@ export default [
       sonarjs: sonarjs.configs.recommended.plugins.sonarjs,
       regexp: regexpPlugin,
       unicorn: unicornPlugin,
+      promise: promisePlugin,
     },
     rules: {
       ...sonarjs.configs.recommended.rules,
@@ -180,8 +198,22 @@ export default [
     // same reason: `&&=`/`||=`/`??=` are Safari 14+.
     files: ["static/script/lib/**/*.js", "static/script/songs/**/*.js", "static/script/*.js"],
     ignores: ["**/*.test.js"],
+    languageOptions: {
+      // Parse-time Safari 12 guard: Safari 12.1 implements ES2019 syntax, so
+      // anything newer (class fields / #private, static blocks, BigInt
+      // literals, numeric separators, import.meta, `export * as`, top-level
+      // await, ...) is a parse error here instead of a blank page there.
+      // `?.` / `??` are ES2020 and would be caught by this too; the
+      // no-restricted-syntax entries below stay because their messages say
+      // what to write instead.
+      ecmaVersion: 2019,
+    },
     rules: {
       "logical-assignment-operators": ["error", "never"],
+      // Production code only (tests may await in a loop freely). Where a loop
+      // is sequential on purpose, say so with a disable comment + NOSONAR.
+      "no-await-in-loop": "error",
+      "unicorn/prefer-set-has": "error",
       "no-restricted-syntax": [
         "error",
         {
@@ -219,6 +251,33 @@ export default [
             + "(see lib/setlists-store.js's generateId).",
         },
         {
+          // Parses in any engine, but throws a SyntaxError the moment the
+          // regex is built on Safari < 16.4 — no parser floor can catch it.
+          selector: "Literal[regex.pattern=/\\(\\?<[=!]/]",
+          message: "Regex lookbehind ((?<=...) / (?<!...)) is Safari 16.4+ — restructure with a capture group or a manual scan.",
+        },
+        {
+          selector: "CallExpression[callee.object.name='Promise'][callee.property.name=/^(allSettled|any)$/]",
+          message: "Promise.allSettled/any are Safari 13+/14+ — use Promise.all over promises that catch their own failure.",
+        },
+        {
+          selector: "CallExpression[callee.name='structuredClone']",
+          message: "structuredClone() is Safari 15.4+ — copy by hand (spread / Array#map) or via JSON.",
+        },
+        {
+          selector: "CallExpression[callee.property.name=/^(findLast|findLastIndex|toSorted|toReversed|toSpliced)$/]",
+          message: "findLast/findLastIndex (Safari 15.4+) and toSorted/toReversed/toSpliced (Safari 16+) don't exist on "
+            + "Safari 12 — copy first ([...arr].sort()) or walk the array from the end.",
+        },
+        {
+          selector: "CallExpression[callee.object.name='URL'][callee.property.name='canParse']",
+          message: "URL.canParse is Safari 17+ — wrap `new URL(...)` in try/catch (see the parse-in-a-helper note in CLAUDE.md).",
+        },
+        {
+          selector: "CallExpression[callee.object.name='AbortSignal'][callee.property.name='timeout']",
+          message: "AbortSignal.timeout is Safari 16+ — use an AbortController plus setTimeout(controller.abort).",
+        },
+        {
           // SonarCloud's javascript:S6653 suggests this over
           // Object.prototype.hasOwnProperty.call(...) on general-modernity
           // grounds, with no idea this project targets Safari 12 — it's
@@ -236,12 +295,13 @@ export default [
   },
   {
     // Dense but heavily unit-tested pure parsers (ABC chord scheme, comping
-    // rhythm generation, chord -> Roman-numeral). The branch-count metrics
-    // flag them, but splitting a single-pass parser mid-loop tends to make it
-    // harder to follow, not easier — the tests are the guard rail here. The
-    // one remaining sonarjs/regex-complexity hit (comping.js's BARLINE
-    // tokenizer) is a flat dictionary of literal alternatives, not a
-    // backtracking risk — no paired super-linear-regex flag on it.
+    // rhythm generation, chord -> Roman-numeral). Cyclomatic complexity, nesting
+    // depth and parameter count stay relaxed here — splitting a single-pass
+    // parser mid-loop tends to make it harder to follow, not easier, and the
+    // tests are the guard rail. Cognitive complexity and regex complexity are
+    // NOT relaxed: SonarCloud gates both (javascript:S3776 / S5843) and the
+    // functions here have been split until they pass, so a new one that
+    // doesn't fails the build instead of surfacing on the next scan.
     files: [
       "static/script/lib/music/chords.js",
       "static/script/lib/music/comping.js",
@@ -251,8 +311,6 @@ export default [
       complexity: "off",
       "max-depth": "off",
       "max-params": "off",
-      "sonarjs/cognitive-complexity": "off",
-      "sonarjs/regex-complexity": "off",
     },
   },
   {
@@ -283,6 +341,7 @@ export default [
       sonarjs: sonarjs.configs.recommended.plugins.sonarjs,
       regexp: regexpPlugin,
       unicorn: unicornPlugin,
+      promise: promisePlugin,
     },
     rules: {
       ...sonarjs.configs.recommended.rules,
@@ -305,6 +364,7 @@ export default [
       sonarjs: sonarjs.configs.recommended.plugins.sonarjs,
       regexp: regexpPlugin,
       unicorn: unicornPlugin,
+      promise: promisePlugin,
     },
     rules: {
       ...sonarjs.configs.recommended.rules,
