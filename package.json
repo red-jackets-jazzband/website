@@ -4,8 +4,9 @@
   "type": "module",
   "description": "Dev tooling (lint + unit tests) for the Red Jackets Jazzband Hugo site's vanilla JS. Not part of the Hugo build or the GitHub Pages deploy.",
   "scripts": {
-    "lint": "npm run lint:js && npm run lint:css && npm run lint:dup && npm run lint:types && npm run lint:abc && npm run lint:setlists && npm run lint:catalog",
+    "lint": "npm run lint:js && npm run lint:typed && npm run lint:css && npm run lint:dup && npm run lint:types && npm run lint:abc && npm run lint:setlists && npm run lint:catalog && npm run lint:py",
     "lint:js": "eslint --max-warnings 0 static/script static/sw.js scripts tests eslint.config.js",
+    "lint:typed": "eslint --max-warnings 0 -c eslint.typed.config.js static/script",
     "lint:css": "stylelint \"assets/css/**/*.css\"",
     "lint:dup": "jscpd --config jscpd.config.json",
     "lint:types": "tsc -p tsconfig.lib.json",
@@ -13,6 +14,7 @@
     "lint:setlists": "node scripts/lint-setlists.js",
     "test:e2e": "playwright test",
     "lint:catalog": "node scripts/lint-catalog.js",
+    "lint:py": "node scripts/lint-python.js",
     "lint:seo": "node scripts/lint-seo.js",
     "audit": "node scripts/audit.js",
     "test": "node --test \"static/script/**/*.test.js\" \"tests/**/*.test.js\""
@@ -24,6 +26,7 @@
     "@types/node": "^26.6.4",
     "abcjs": "^6.7.1",
     "eslint": "^10.11.0",
+    "eslint-plugin-promise": "^7.3.0",
     "eslint-plugin-regexp": "^3.3.1",
     "eslint-plugin-sonarjs": "^4.2.2",
     "eslint-plugin-unicorn": "^76.0.0",
@@ -32,6 +35,7 @@
     "jsdom": "^30.1.1",
     "stylelint": "^17.16.0",
     "stylelint-config-recommended": "^18.0.0",
-    "typescript": "6.0.3"
+    "typescript": "6.0.3",
+    "typescript-eslint": "^8.71.1"
   }
 }

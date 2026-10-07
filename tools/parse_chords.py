@@ -131,6 +131,35 @@ def extract_key_from_abc(abc_path: Path) -> tuple[str, bool]:
     return "C", False
 
 
+def _body_lines(lines: list[str]) -> list[str]:
+    """The lines after the first K: field (the tune header's last line)."""
+    for i, line in enumerate(lines):
+        if re.match(r"^K:", line.strip()):
+            return lines[i + 1:]
+    return []
+
+
+def _bare_voice_switch(stripped: str) -> str | None:
+    """The voice id of a bare "V: 1" / "V:2 name=..." line, else None."""
+    m_bare = re.match(r"^V:\s*(\S+)", stripped)
+    return m_bare.group(1).split()[0] if m_bare else None
+
+
+def _is_other_info_field(stripped: str) -> bool:
+    """w:, N:, P:, F:, R:, Q:, T:, … — fields that carry no chords."""
+    return bool(re.match(r"^[A-Za-z]:", stripped)) and not stripped.startswith("[")
+
+
+def _chords_in_line(stripped: str) -> list[str]:
+    """Valid chord symbols among a line's "quoted" strings."""
+    found = []
+    for raw in re.findall(r'"([^"]+)"', stripped):
+        raw = raw.strip()
+        if raw and raw[0] not in ("^", "@", "_") and CHORD_RE.match(raw):
+            found.append(raw)
+    return found
+
+
 def extract_chords_from_abc(abc_path: Path) -> list[str]:
     """
     Return all valid chord symbol strings from the ABC body in order.
@@ -141,45 +170,27 @@ def extract_chords_from_abc(abc_path: Path) -> list[str]:
       - No voice declarations → everything is voice 1
     """
     lines = abc_path.read_text(encoding="utf-8").splitlines()
-    in_body = False
     current_voice = "1"
     chords: list[str] = []
 
-    for line in lines:
+    for line in _body_lines(lines):
         stripped = line.strip()
-
-        if not in_body:
-            if re.match(r"^K:", stripped):
-                in_body = True
-            continue
-
         if not stripped or stripped.startswith("%"):
             continue
 
-        # Bare voice-switch line: "V: 1", "V:2 name=..."
-        m_bare = re.match(r"^V:\s*(\S+)", stripped)
-        if m_bare:
-            current_voice = m_bare.group(1).split()[0]
+        switched_to = _bare_voice_switch(stripped)
+        if switched_to is not None:
+            current_voice = switched_to
             continue
 
-        # Other information fields (w:, N:, P:, F:, R:, Q:, T:, …) — skip
-        if re.match(r"^[A-Za-z]:", stripped) and not stripped.startswith("["):
+        if _is_other_info_field(stripped):
             continue
 
         # Inline voice prefix [V:N] at start of line
         m_inline = re.match(r"^\[V:(\S+?)\]", stripped)
         effective_voice = m_inline.group(1) if m_inline else current_voice
-
-        if effective_voice != "1":
-            continue
-
-        # Extract quoted strings and filter to valid chords
-        for raw in re.findall(r'"([^"]+)"', stripped):
-            raw = raw.strip()
-            if not raw or raw[0] in ("^", "@", "_"):
-                continue
-            if CHORD_RE.match(raw):
-                chords.append(raw)
+        if effective_voice == "1":
+            chords.extend(_chords_in_line(stripped))
 
     return chords
 

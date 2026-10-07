@@ -13,7 +13,7 @@ const SHARP_PC = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B
 const LETTER_CHROMA = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
 
 function pcChroma(pc) {
-  const m = String(pc).match(/^([A-G])([#b]*)/);
+  const m = /^([A-G])([#b]*)/.exec(String(pc));
   let acc = 0;
   for (const c of m[2]) acc += c === "#" ? 1 : -1;
   return (((LETTER_CHROMA[m[1]] + acc) % 12) + 12) % 12;
@@ -24,7 +24,7 @@ function pcAdd(pc, semis) {
 }
 
 export function nameToMidi(name) {
-  const m = String(name).match(/^([A-G])([#b]*)(-?\d+)$/);
+  const m = /^([A-G])([#b]*)(-?\d+)$/.exec(String(name));
   if (!m) return null;
   return (Number.parseInt(m[3], 10) + 1) * 12 + pcChroma(m[1] + m[2]);
 }
@@ -63,8 +63,8 @@ export const tonalStub = {
   },
   AbcNotation: {
     scientificToAbcNotation(sci) {
-      const m = sci.match(/^([A-G])([#b]*)(-?\d+)$/);
-      const acc = m[2].replace(/#/g, "^").replace(/b/g, "_");
+      const m = /^([A-G])([#b]*)(-?\d+)$/.exec(sci);
+      const acc = m[2].replaceAll("#", "^").replaceAll("b", "_");
       const oct = Number.parseInt(m[3], 10);
       const body = oct >= 5
         ? m[1].toLowerCase() + "'".repeat(oct - 5)
@@ -72,9 +72,9 @@ export const tonalStub = {
       return acc + body;
     },
     abcToScientificNotation(abc) {
-      const m = abc.match(/^([_^=]*)([A-Ga-g])([,']*)$/);
+      const m = /^([_^=]*)([A-Ga-g])([,']*)$/.exec(abc);
       if (!m) return null;
-      const acc = m[1].replace(/\^/g, "#").replace(/_/g, "b").replace(/=/g, "");
+      const acc = m[1].replaceAll("^", "#").replaceAll("_", "b").replaceAll("=", "");
       let oct = m[2] === m[2].toLowerCase() ? 5 : 4;
       for (const c of m[3]) oct += c === "'" ? 1 : -1;
       return m[2].toUpperCase() + acc + oct;

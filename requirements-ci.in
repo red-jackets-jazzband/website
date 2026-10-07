@@ -1,0 +1,4 @@
+# Python tooling used by CI (linkchecker, ruff). Regenerate the lock with:
+#   pip-compile --generate-hashes --allow-unsafe --output-file requirements-ci.txt requirements-ci.in
+linkchecker
+ruff

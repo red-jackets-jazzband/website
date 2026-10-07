@@ -113,12 +113,12 @@ Description: Split is a centrally-divided layout for a professional online prese
   --rj-body: #848d96;
   --rj-hover: #CA486d;
 }
-html, body, div, span, applet, object, iframe,
+html, body, div, span, object, iframe,
 h1, h2, h3, h4, h5, h6, p, blockquote, pre,
-a, abbr, acronym, address, big, cite, code,
+a, abbr, address, cite, code,
 del, dfn, em, img, ins, kbd, q, s, samp,
-small, strike, strong, sub, sup, tt, var,
-b, u, i, center,
+small, strong, sub, sup, var,
+b, u, i,
 dl, dt, dd, ol, ul, li,
 fieldset, form, label, legend,
 table, caption, tbody, tfoot, thead, tr, th, td,
@@ -3595,13 +3595,13 @@ select.rj-modal-input {
   background: none;
   border: none;
   border-left: 1px solid rgba(255,255,255,.06);
-  color: rgba(236,234,230,.25);
+  color: rgba(236,234,230,.55);
   font-size: 12px;
   cursor: pointer;
   transition: color .15s, background-color .15s;
 }
 .setlist-row:hover .setlist-row-delete {
-  color: rgba(236,234,230,.5);
+  color: rgba(236,234,230,.8);
 }
 .setlist-row-delete:hover {
   color: #ca486d;
@@ -4318,7 +4318,7 @@ body:has(#rjLibrary) .split-bio {
   background: rgba(255,255,255,.08);
   border: 1px solid rgba(255,255,255,.12);
   border-radius: 4px;
-  color: rgba(230,228,224,.5);
+  color: rgba(230,228,224,.7);
   font: 600 11px "Montserrat", sans-serif;
   pointer-events: none;
 }
@@ -5332,9 +5332,7 @@ body:not(.rj-sheet-active) .rj-sheet-pager .rj-sheet-step {
 
 @media print {
 
-  @page { size: A4 portrait;
-          /* margin: 0mm; */
-  }
+  @page { size: A4 portrait; }
 
   /* Re-declared here, AFTER the unnamed `@page { size: A4 portrait }` above:
      Chromium resolves conflicting @page size by source order rather than page-

@@ -1,0 +1,12 @@
+# Lints the one Python script (tools/). SonarCloud's Python analyzer gates
+# cognitive complexity at 15 (python:S3776); ruff has no cognitive-complexity
+# rule, so cyclomatic complexity (C901) at a stricter threshold is the local
+# stand-in — a function that passes this is very unlikely to trip Sonar's.
+target-version = "py311"
+
+[lint]
+select = ["E", "F", "W", "B", "C901", "SIM", "UP"]
+ignore = ["E501"]
+
+[lint.mccabe]
+max-complexity = 10
