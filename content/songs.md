@@ -121,6 +121,7 @@ aliases: ["/setlists/", "/songbook/"]
   </div>
   <div id="compingSlot" class="sheet-comping"></div>
   <div id="soloSlot" class="sheet-comping"></div>
+  <button id="historyBtn" class="sheet-icon-btn" type="button" hidden title="History" aria-label="Show this tune's history" aria-expanded="false" aria-controls="songHistory"><span class="fa-solid fa-book-open" aria-hidden="true"></span></button>
   </div>
   <dialog id="mixerPanel" class="mixer-panel" aria-label="Mixer">
     <div id="mixerSectionAccompaniment" class="mixer-section">
@@ -190,6 +191,7 @@ aliases: ["/setlists/", "/songbook/"]
 </div>
 <button id="sheetFullscreenBtn" class="rj-sheet-fullscreen-btn hideOnprint" type="button" title="Full screen" aria-label="Full screen" aria-pressed="false"><span class="fa-solid fa-expand" aria-hidden="true"></span></button>
 <div class="rj-sheet-pager"><button id="sheetPrevBtn" class="rj-sheet-step hideOnprint" type="button" title="Previous song" aria-label="Previous song"><span class="fa-solid fa-chevron-left" aria-hidden="true"></span></button><div id="songtitle" class="songtitle"></div><button id="sheetNextBtn" class="rj-sheet-step hideOnprint" type="button" title="Next song" aria-label="Next song"><span class="fa-solid fa-chevron-right" aria-hidden="true"></span></button></div>
+<div id="songHistory" class="song-history" hidden></div>
 <div id="chordtable" class="chordtable"></div>
 <div id="notation" class="notation"></div>
 <div id="lyrics" class="lyrics"></div>

@@ -5677,6 +5677,36 @@ body:not(.rj-sheet-active) .rj-sheet-pager .rj-sheet-step {
   flex-wrap: wrap;
   gap: 10px;
 }
+/* The History button (sheet/history.js) sits at the end of the drawer row;
+   only shown for a tune with H: text. .sheet-icon-btn's display:grid beats
+   the UA [hidden] rule, so restate it. */
+#historyBtn[hidden] {
+  display: none;
+}
+/* The tune's H: text, opened from #historyBtn: a quiet note on the sheet
+   paper between the title and the chord grid. */
+.song-history {
+  width: 90%;
+  box-sizing: border-box;
+  margin: 0 auto 14px;
+  padding: 10px 14px;
+  border-left: 3px solid var(--rj-gold);
+  background: #f6f3ec;
+  font-family: 'Lora', serif;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #222222;
+}
+.song-history[hidden] {
+  display: none;
+}
+.split-bio .song-history p {
+  margin: 0 0 .6em;
+  color: #222222;
+}
+.split-bio .song-history p:last-child {
+  margin-bottom: 0;
+}
 /* The comping controls (pattern dropdown, Split, R / 3 / 5 toggles) are one
    pill with the same shell as .sheet-transport / .sheet-actions: flush
    fields divided by hairlines, the pill's own border carrying the outline. */
