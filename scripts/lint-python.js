@@ -5,7 +5,8 @@
 // still works on a machine with no Python tooling.
 import { spawnSync } from "node:child_process";
 
-const CANDIDATES = [["ruff"], ["python3", "-m", "ruff"], ["python", "-m", "ruff"]];
+// .venv/bin/ruff first: the repo-local venv (gitignored) is the usual home for it.
+const CANDIDATES = [[".venv/bin/ruff"], ["ruff"], ["python3", "-m", "ruff"], ["python", "-m", "ruff"]];
 
 function tryRuff([command, ...prefix]) {
   const result = spawnSync(command, [...prefix, "check", "tools"], { stdio: "inherit" });
