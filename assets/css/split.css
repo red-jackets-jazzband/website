@@ -3162,6 +3162,10 @@ body.rj-sheet-active .rj-sheet-empty {
   opacity: .35;
   cursor: not-allowed;
 }
+/* The button sets display:flex, which beats the UA [hidden] rule. */
+.rj-library-print-btn[hidden] {
+  display: none;
+}
 /*
   Progress line shown while a "Print …" click waits for every song's .abc to
   load and engrave — a multi-song songbook can take a few seconds.
