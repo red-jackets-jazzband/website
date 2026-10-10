@@ -169,6 +169,7 @@ export function createLoopBar({ getPlayer }) {
       const fb = timeToFraction(viewEnd, dur);
       win.style.left = `${fa * 100}%`;
       win.style.width = `${(fb - fa) * 100}%`;
+      byId("inspirationLoopOverview").setAttribute("aria-valuenow", String(Math.round(fa * 100)));
     }
     positionOverviewTick(byId("inspirationOverviewTickA"), loopA, dur);
     positionOverviewTick(byId("inspirationOverviewTickB"), loopB, dur);
