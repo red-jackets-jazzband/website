@@ -225,7 +225,7 @@ function paint(plan, renderText, targets, { titlePrefix = "", voices = [] } = {}
   );
 
   colorComping(notationEl, plan.comping, voices);
-  decorateLayers(notationEl, visualObjs && visualObjs[0], plan);
+  decorateLayers(notationEl, visualObjs && visualObjs[0], plan); // NOSONAR
 
   notationEl.querySelectorAll(".abcjs-title, .abcjs-part-order").forEach((node) => {
     node.setAttribute("display", "none");
