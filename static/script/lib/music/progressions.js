@@ -8,8 +8,9 @@
     Salty Dog    VI7 | II7 | V7 | I      Post 92
     Georgia      I | III7 | VI7          Post 139 (usually carries on into
                                           a Salty Dog: II7 V7 I)
-    Sunshine     IV | IVm | I            Post 565 (the last eight bars of
-                                          so many 32-bar tunes)
+    Sunshine     IV | IVm | I | VI7 |    Post 565 (the last eight bars of
+                 II7 | V7 | I | I         so many 32-bar tunes; IVm may be
+                                          #IV dim, II7 may be IIm7)
     Apple Tree   I | IV | I              Post 41 — an opening pattern, so
                                           only matched where a part starts
 
@@ -21,19 +22,39 @@
   offset of the match's first note on every printed line it covers.
 
   Matching is deliberately strict, so a label means what it says: each
-  chord of the pattern must last at least a bar (the closing I may be
-  shorter), in a major key. A short chromatic approach chord (half a bar or
+  chord of the pattern must last at least a bar (half a bar for Sunshine;
+  the closing I may be shorter), in a major key. A short chromatic approach chord (half a bar or
   less, like the A♭7 in Basin Street's G7 | A♭7 G7 | C7) is stepped over.
   Two progressions may share a chord — Georgia hands its VI7 straight on to
   a Salty Dog — and then the earlier one's band ends where the next starts.
 */
 
+// The chords the patterns are made of: [semitones above the tonic, quality].
+const I = [0, "maj"];
+const II7 = [2, "dom"];
+const IIm = [2, "min"];
+const III7 = [4, "dom"];
+const IV = [5, "majOrDom"];
+const IVm = [5, "min"];
+const SHARP_IV_DIM = [6, "dim"];
+const IV_DIM = [5, "dim"];
+const V7 = [7, "dom"];
+const VI7 = [9, "dom"];
+
+/*
+  Each step lists the chords that may stand there. `minBars` is how long
+  each chord must last (in bars): Sunshine's seven-chord shape is distinctive
+  enough to be recognised even "compressed into half-bars" (Post 565, e.g.
+  At the Jazzband Ball), the short patterns are not.
+*/
 const PROGRESSIONS = [
-  { id: "salty-dog", name: "Salty Dog", steps: [[9, "dom"], [2, "dom"], [7, "dom"], [0, "maj"]] },
-  { id: "four-leaf", name: "Four-Leaf", steps: [[0, "maj"], [2, "dom"], [7, "dom"], [0, "maj"]] },
-  { id: "georgia", name: "Georgia", steps: [[0, "maj"], [4, "dom"], [9, "dom"]] },
-  { id: "sunshine", name: "Sunshine", steps: [[5, "majOrDom"], [5, "min"], [0, "maj"]] },
-  { id: "apple-tree", name: "Apple Tree", steps: [[0, "maj"], [5, "majOrDom"], [0, "maj"]], opening: true },
+  // Post 565: IV | IVm (or #IV dim) | I | VI7 | II7 (or IIm7) | V7 | I | I.
+  // A IV dim in bar 2 (I'm Looking Over a Four-Leaf Clover) counts too.
+  { id: "sunshine", name: "Sunshine", steps: [[IV], [IVm, SHARP_IV_DIM, IV_DIM], [I], [VI7], [II7, IIm], [V7], [I]], minBars: 0.5 },
+  { id: "salty-dog", name: "Salty Dog", steps: [[VI7], [II7], [V7], [I]] },
+  { id: "four-leaf", name: "Four-Leaf", steps: [[I], [II7], [V7], [I]] },
+  { id: "georgia", name: "Georgia", steps: [[I], [III7], [VI7]] },
+  { id: "apple-tree", name: "Apple Tree", steps: [[I], [IV], [I]], opening: true },
 ];
 
 export const PROGRESSION_NAMES = PROGRESSIONS.map((p) => p.name);
@@ -164,8 +185,18 @@ function readElement(el, lineIndex, state) {
 
 function fitsStep(segment, step) {
   if (segment.tonic === null) return false;
-  return (segment.root - segment.tonic + 12) % 12 === step[0] && qualityFits(step[1], segment.quality);
+  const degree = (segment.root - segment.tonic + 12) % 12;
+  return step.some(([d, quality]) => sameDegree(degree, d, quality) && qualityFits(quality, segment.quality));
 }
+
+// A diminished (seventh) chord is symmetrical: F°7 is B°7 respelled, so in
+// F major "Fdim" is the #IV dim of the pattern. Any root a minor third
+// apart names the same chord.
+function sameDegree(degree, wanted, quality) {
+  return quality === "dim" ? (degree - wanted + 12) % 3 === 0 : degree === wanted;
+}
+
+const isTonicStep = (step) => step.some(([d]) => d === 0);
 
 const EPS = 1e-9;
 
@@ -177,7 +208,9 @@ const EPS = 1e-9;
   segment used, the first segment of its closing chord, and when the match ends (at most a bar into its last chord),
   or null.
 */
-function matchAt(segments, i, steps, bar) {
+function matchAt(segments, i, progression, bar) {
+  const { steps } = progression;
+  const minLength = bar * (progression.minBars || 1);
   let at = i;
   for (let s = 0; s < steps.length; s++) {
     if (at >= segments.length || !fitsStep(segments[at], steps[s])) return null;
@@ -186,12 +219,18 @@ function matchAt(segments, i, steps, bar) {
     while (at + 2 < segments.length && isPassing(segments[at + 1], bar) && fitsStep(segments[at + 2], steps[s])) at += 2;
     const stepEnd = segments[at].end;
     const closing = s === steps.length - 1;
-    if (stepEnd - stepStart < bar - EPS && !(closing && steps[s][0] === 0)) return null;
+    if (stepEnd - stepStart < minLength - EPS && !(closing && isTonicStep(steps[s]))) return null;
     if (closing) return { last: at, closingFirst: stepFirst, end: Math.min(stepEnd, stepStart + bar) };
     at += 1;
-    if (at + 1 < segments.length && isPassing(segments[at], bar) && fitsStep(segments[at + 1], steps[s + 1])) at += 1;
+    if (approachChord(segments, at, steps[s + 1], bar)) at += 1;
   }
   return null;
+}
+
+// Is segment `at` a short approach chord into one that fits `next`?
+function approachChord(segments, at, next, bar) {
+  return at + 1 < segments.length && isPassing(segments[at], bar)
+    && !fitsStep(segments[at], next) && fitsStep(segments[at + 1], next);
 }
 
 function isPassing(segment, bar) {
@@ -218,7 +257,7 @@ function lineStartsWithin(notes, startTime, endTime) {
 // The first progression (in PROGRESSIONS order) that matches from segment i.
 function firstMatchAt(segments, i, bar) {
   for (const p of PROGRESSIONS) {
-    const m = p.opening && !segments[i].partStart ? null : matchAt(segments, i, p.steps, bar);
+    const m = p.opening && !segments[i].partStart ? null : matchAt(segments, i, p, bar);
     if (m) return { progression: p, first: i, ...m };
   }
   return null;

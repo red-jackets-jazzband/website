@@ -6933,6 +6933,38 @@ body.rj-layers-open #layersTab.rj-layers-tab {
   font-weight: 700;
   font-style: normal;
 }
+/* One warm, subtle shade per progression name on the page (overlays.js's
+   progressionShades), like the form strip's greys: amber (the default
+   above), apricot, rose, butter, clay. Each label stays dark on its own
+   tint, and the tints differ in lightness as well as hue. */
+.notation .rj-layer-prog-band.rj-layer-prog--1 {
+  fill: #fbd9c2;
+  stroke: #d9692b;
+}
+.notation text.rj-layer-prog-label.rj-layer-prog--1 {
+  fill: #7a3410;
+}
+.notation .rj-layer-prog-band.rj-layer-prog--2 {
+  fill: #f6d3df;
+  stroke: #ca486d;
+}
+.notation text.rj-layer-prog-label.rj-layer-prog--2 {
+  fill: #7a1f3d;
+}
+.notation .rj-layer-prog-band.rj-layer-prog--3 {
+  fill: #fbf0bf;
+  stroke: #c9a400;
+}
+.notation text.rj-layer-prog-label.rj-layer-prog--3 {
+  fill: #5e4a00;
+}
+.notation .rj-layer-prog-band.rj-layer-prog--4 {
+  fill: #ecd6c8;
+  stroke: #a0583a;
+}
+.notation text.rj-layer-prog-label.rj-layer-prog--4 {
+  fill: #5c2a17;
+}
 .notation text.rj-layer-fingering {
   font-style: normal;
   font-weight: 700;
