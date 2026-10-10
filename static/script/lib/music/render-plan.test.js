@@ -58,7 +58,7 @@ test("buildRenderPlan: layer annotations reach the engraved text, never abcText"
   };
   const plan = buildRenderPlan(tune, settings, { parse });
   assert.equal(plan.abcText.includes('"_'), false, "rerender() re-reads the plain text");
-  assert.match(plan.comping.renderText, /"_\u00B7\\n2\\n\u00B7""_Salty Dog"/, "F#4 written: valve 2, then the label");
+  assert.match(plan.comping.renderText, /"_\u00B7\\n2\\n\u00B7""_Salty Dog progression"/, "F#4 written: valve 2, then the label");
   assert.deepEqual(plan.progressions.map((p) => p.name), ["Salty Dog"]);
   assert.deepEqual(plan.layersApplied, ["progressions", "fingerings"]);
   const plain = buildRenderPlan(tune, effectiveSheetSettings(SETTINGS), { parse });

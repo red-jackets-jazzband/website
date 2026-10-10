@@ -6939,15 +6939,15 @@ body.rj-layers-open #layersTab.rj-layers-tab {
   }
 }
 
-/* On the sheet: a named progression's label sits in an amber highlighter
-   band over its bars; fingerings are set upright and bold (annotations are
+/* On the sheet: a named progression's chord symbols and label sit in amber
+   highlighter pills; fingerings are set upright and bold (annotations are
    italic otherwise). Both print as shown. */
 .notation .rj-layer-prog-band {
   fill: #f8e2b3;
   stroke: #c98500;
   stroke-width: 1;
 }
-.notation text.rj-layer-prog-label {
+.notation text.rj-layer-prog-text {
   fill: #6b4300;
   font-weight: 700;
   font-style: normal;
@@ -6960,28 +6960,28 @@ body.rj-layers-open #layersTab.rj-layers-tab {
   fill: #fbd9c2;
   stroke: #d9692b;
 }
-.notation text.rj-layer-prog-label.rj-layer-prog--1 {
+.notation text.rj-layer-prog-text.rj-layer-prog--1 {
   fill: #7a3410;
 }
 .notation .rj-layer-prog-band.rj-layer-prog--2 {
   fill: #f6d3df;
   stroke: #ca486d;
 }
-.notation text.rj-layer-prog-label.rj-layer-prog--2 {
+.notation text.rj-layer-prog-text.rj-layer-prog--2 {
   fill: #7a1f3d;
 }
 .notation .rj-layer-prog-band.rj-layer-prog--3 {
   fill: #fbf0bf;
   stroke: #c9a400;
 }
-.notation text.rj-layer-prog-label.rj-layer-prog--3 {
+.notation text.rj-layer-prog-text.rj-layer-prog--3 {
   fill: #5e4a00;
 }
 .notation .rj-layer-prog-band.rj-layer-prog--4 {
   fill: #ecd6c8;
   stroke: #a0583a;
 }
-.notation text.rj-layer-prog-label.rj-layer-prog--4 {
+.notation text.rj-layer-prog-text.rj-layer-prog--4 {
   fill: #5c2a17;
 }
 .notation text.rj-layer-fingering {

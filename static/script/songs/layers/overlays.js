@@ -3,10 +3,11 @@
   annotations lib/music/layers.js already put into the text (ABCjs places
   and spaces those itself):
 
-  - a named progression's label ("Salty Dog") gets a highlighter band behind
-    it, running over every bar of the progression on that line, so you see
-    at a glance where it starts and stops — each name in its own warm
-    shade;
+  - a named progression ("Salty Dog") is marked by its own chords: the
+    pattern's chord symbols sit on one continuous highlighter bar per
+    printed line, and its name is written in the same bar just before the
+    first chord, over two lines ("Salty Dog" / "progression") — each name
+    in its own warm shade;
   - fingering numbers get their own class, so split.css sets them upright
     and bold instead of the italic annotation face, and are centred under
     their notehead (ABCjs starts an annotation at the note's left edge).
@@ -14,7 +15,8 @@
   Called by sheet.js's paint() right after ABCjs draws, for the live sheet
   and a booklet alike (a booklet's plan simply has no layers on).
 */
-import { CONTINUED } from "../../lib/music/layers.js";
+
+import { PROGRESSION_WORD, progressionLabel } from "../../lib/music/progressions.js";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 const FINGERING_TEXT = /^(?:[0-7]{1,3}|\u00B7)$/;
@@ -58,29 +60,159 @@ function bboxOf(node) {
   }
 }
 
-// One line's stretch of a progression: a rounded band behind its label,
-// from the first note's left edge to the last note's right edge.
-function drawBand(run, label, shade) {
-  const first = run[0].el;
-  const last = run[run.length - 1].el;
-  const text = labelText(first, label);
-  if (!text) return;
-  text.classList.add("rj-layer-prog-label", shade);
-  if (typeof text.getBBox !== "function") return;
-  const box = bboxOf(text);
-  const svg = text.ownerSVGElement;
-  if (!box || !svg || !first.abselem || !last.abselem) return;
-  const x1 = Math.min(first.abselem.x, box.x) - BAND_PAD_X;
-  const x2 = Math.max(last.abselem.x + (last.abselem.w || 0), box.x + box.width) + BAND_PAD_X;
-  const band = document.createElementNS(SVG_NS, "rect");
-  band.setAttribute("class", `rj-layer-prog-band ${shade}`);
-  band.setAttribute("x", String(x1));
-  band.setAttribute("y", String(box.y - BAND_PAD_Y));
-  band.setAttribute("width", String(x2 - x1));
-  band.setAttribute("height", String(box.height + 2 * BAND_PAD_Y));
-  band.setAttribute("rx", "4");
-  // First in the svg, so the notation draws over it.
-  svg.insertBefore(band, svg.firstChild);
+const BAR_RADIUS = 4;
+const LABEL_PAD_X = 6;
+const LABEL_GAP = 5;
+// The two-line name is small so both lines fit the height of the chord row.
+const LABEL_FONT_SIZE = 8;
+
+// The union of `boxes` as { x1, y1, x2, y2 }.
+function unionOf(boxes) {
+  return {
+    x1: Math.min(...boxes.map((box) => box.x)),
+    y1: Math.min(...boxes.map((box) => box.y)),
+    x2: Math.max(...boxes.map((box) => box.x + box.width)),
+    y2: Math.max(...boxes.map((box) => box.y + box.height)),
+  };
+}
+
+/*
+  The outline of a bar from (x1, y1) to (x2, y2), rounded at its corners. A
+  side that is `open` (the progression carries on past the line's end, or
+  came in from before its start) has square corners and no edge there.
+  Returns the closed outline to fill and the visible edge to stroke (several
+  subpaths when a side is open), so an open side has colour but no border.
+*/
+function barPath({ x1, y1, x2, y2 }, open) {
+  const r = BAR_RADIUS;
+  const rl = open.left ? 0 : r;
+  const rr = open.right ? 0 : r;
+  // [command, visible]; every command ends at its last pair of numbers.
+  const segs = [[`L${x2 - rr} ${y2}`, true]];
+  if (rr > 0) segs.push([`Q${x2} ${y2} ${x2} ${y2 - rr}`, true]);
+  segs.push([`L${x2} ${y1 + rr}`, !open.right]);
+  if (rr > 0) segs.push([`Q${x2} ${y1} ${x2 - rr} ${y1}`, true]);
+  segs.push([`L${x1 + rl} ${y1}`, true]);
+  if (rl > 0) segs.push([`Q${x1} ${y1} ${x1} ${y1 + rl}`, true]);
+  segs.push([`L${x1} ${y2 - rl}`, !open.left]);
+  if (rl > 0) segs.push([`Q${x1} ${y2} ${x1 + rl} ${y2}`, true]);
+  return outlinePaths(`${x1 + rl} ${y2}`, segs);
+}
+
+// The same segments as a closed outline and as a stroke that skips the
+// invisible ones (starting a new subpath after each gap).
+function outlinePaths(start, segs) {
+  const fill = `M${start} ${segs.map(([cmd]) => cmd).join(" ")} Z`;
+  const edge = [];
+  let from = start;
+  let drawing = false;
+  segs.forEach(([cmd, visible]) => {
+    const to = cmd.slice(1).trim().split(/\s+/).slice(-2).join(" ");
+    if (visible && !drawing) edge.push(`M${from}`);
+    if (visible) edge.push(cmd);
+    drawing = visible;
+    from = to;
+  });
+  return { fill, edge: edge.join(" ") };
+}
+
+/*
+  Write the name inside the bar, just left of its first chord, over two lines
+  ("Sunshine" / "progression"): the label annotation (moved up out of its slot
+  under the staff) keeps the name, a copy carries the word. The bar grows to
+  the left to hold them (and in height, if the chord row is shorter than the
+  two lines). Returns false when the text can't be measured (jsdom, a hidden
+  container), leaving the label where ABCjs put it.
+*/
+function placeLabel(label, bar, name) {
+  label.textContent = name;
+  label.setAttribute("font-size", String(LABEL_FONT_SIZE));
+  const second = label.cloneNode(false);
+  second.textContent = PROGRESSION_WORD;
+  label.after(second);
+  const first = bboxOf(label);
+  const word = bboxOf(second);
+  if (!first || !word) {
+    second.remove();
+    label.textContent = progressionLabel(name);
+    return false;
+  }
+  const lineHeight = first.height;
+  const need = 2 * lineHeight + 2;
+  const deficit = Math.max(0, need - (bar.y2 - bar.y1));
+  bar.y1 -= deficit / 2;
+  bar.y2 += deficit / 2;
+  const top = (bar.y1 + bar.y2) / 2 - lineHeight;
+  const left = bar.x1 - LABEL_GAP - Math.max(first.width, word.width) - LABEL_PAD_X;
+  bar.x1 = left;
+  [label, second].forEach((line, i) => {
+    line.setAttribute("text-anchor", "start");
+    line.setAttribute("x", String(left + LABEL_PAD_X));
+    line.setAttribute("y", String(top + lineHeight * (0.78 + i)));
+  });
+  return true;
+}
+
+// The bar's extent behind `chords` (or, with none, behind the label), padded.
+function barBehind(chords, label) {
+  const boxes = (chords.length > 0 ? chords : [label]).map(bboxOf).filter(Boolean);
+  if (boxes.length === 0) return null;
+  const { x1, y1, x2, y2 } = unionOf(boxes);
+  return { x1: x1 - BAND_PAD_X, y1: y1 - BAND_PAD_Y, x2: x2 + BAND_PAD_X, y2: y2 + BAND_PAD_Y };
+}
+
+// The printed line's staff, left to right, as { x1, x2 } (or null).
+function staffExtent(svg) {
+  const boxes = [...svg.querySelectorAll(".abcjs-staff")].map(bboxOf).filter(Boolean);
+  if (boxes.length === 0) return null;
+  const { x1, x2 } = unionOf(boxes);
+  return { x1, x2 };
+}
+
+// Run the bar's open sides out to the staff's edge; returns the sides that
+// are open after all (none when the staff can't be measured).
+function runOut(svg, bar, open) {
+  const staff = open.left || open.right ? staffExtent(svg) : null;
+  if (!staff) return { left: false, right: false };
+  if (open.left) bar.x1 = staff.x1;
+  if (open.right) bar.x2 = staff.x2;
+  return open;
+}
+
+function pathEl(d, shade, fill) {
+  const path = document.createElementNS(SVG_NS, "path");
+  path.setAttribute("class", `rj-layer-prog-band ${shade}`);
+  path.setAttribute("d", d);
+  // The outline carries the colour, the edge the border (inline wins over
+  // the stylesheet's one rule that sets both).
+  path.style[fill ? "stroke" : "fill"] = "none";
+  return path;
+}
+
+/*
+  One progression's stretch of one printed line: its chord symbols on a
+  single continuous highlighter bar, with the name written in the bar just
+  before the first chord (the label annotation, moved up out of its slot under
+  the staff). With no chord symbols to sit behind, the label gets a plain
+  one-line pill. `open` says the progression carries on past the line's end /
+  came in from before its start: that side runs out to the staff's edge with
+  no border.
+*/
+function drawMarking(chords, label, shade, open, name) {
+  const texts = chords.concat(label ? [label] : []);
+  texts.forEach((text) => text.classList.add("rj-layer-prog-text", shade));
+  const anchor = chords[0] || label;
+  const svg = anchor && anchor.ownerSVGElement;
+  if (!svg || typeof anchor.getBBox !== "function") return;
+  const bar = barBehind(chords, label);
+  if (!bar) return;
+  const sides = runOut(svg, bar, open);
+  // The label's copy for the second line inherits its classes.
+  if (label && chords.length > 0) placeLabel(label, bar, name);
+  const { fill, edge } = barPath(bar, sides);
+  // First in the svg, so the notation draws over them.
+  svg.insertBefore(pathEl(edge, shade, false), svg.firstChild);
+  svg.insertBefore(pathEl(fill, shade, true), svg.firstChild);
 }
 
 /*
@@ -96,17 +228,39 @@ export function progressionShades(progressions) {
   });
 }
 
-function drawProgressionBands(visualObj, progressions) {
+// The chord symbols drawn with `el`.
+function chordTexts(el) {
+  const group = noteGroup(el);
+  return group ? [...group.querySelectorAll(".abcjs-chord")] : [];
+}
+
+// A progression is shown on each printed line it runs over by its own chords
+// on one continuous bar, carrying its name before the first chord on the
+// first line.
+function drawProgressions(visualObj, progressions) {
   const notes = melodyNotes(visualObj);
   const shades = progressionShades(progressions);
   progressions.forEach((match, k) => {
-    const runs = [];
-    notes.slice(match.startNote, match.endNote).forEach((note) => {
-      const run = runs[runs.length - 1];
-      if (run && run[0].line === note.line) run.push(note);
-      else runs.push([note]);
+    const lines = new Map();
+    const stretch = (line) => {
+      if (!lines.has(line)) lines.set(line, { chords: [], label: null });
+      return lines.get(line);
+    };
+    match.chordNotes.forEach((index) => {
+      const note = notes[index];
+      if (note) stretch(note.line).chords.push(...chordTexts(note.el));
     });
-    runs.forEach((run, i) => drawBand(run, i === 0 ? match.name : CONTINUED + match.name, shades[k]));
+    // The name is written once, on the progression's first note; a line it
+    // runs onto is marked by its open bar alone.
+    const first = notes[match.startNote];
+    const nameLabel = first ? labelText(first.el, progressionLabel(match.name)) : null;
+    if (nameLabel) stretch(first.line).label = nameLabel;
+    const order = [...lines.keys()].sort((a, b) => a - b);
+    order.forEach((line, i) => {
+      const { chords, label } = lines.get(line);
+      if (chords.length === 0 && !label) return;
+      drawMarking(chords, label, shades[k], { left: i > 0, right: i < order.length - 1 }, match.name);
+    });
   });
 }
 
@@ -185,6 +339,6 @@ function styleFingerings(notationEl) {
 
 export function decorateLayers(notationEl, visualObj, plan) {
   if (!notationEl || !visualObj) return;
-  if (plan.progressions && plan.progressions.length > 0) drawProgressionBands(visualObj, plan.progressions);
+  if (plan.progressions && plan.progressions.length > 0) drawProgressions(visualObj, plan.progressions);
   if (plan.layersApplied && plan.layersApplied.includes("fingerings")) styleFingerings(notationEl);
 }

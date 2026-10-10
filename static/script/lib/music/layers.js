@@ -21,27 +21,22 @@
   hand-written one, and a printed sheet carries them too.
 */
 import { fingeringGlyphs, instrumentHasFingerings, melodyFingerings } from "./fingerings.js";
-import { findNamedProgressions } from "./progressions.js";
-
-// The marker a continued progression's label carries on each later line.
-export const CONTINUED = "… ";
+import { findNamedProgressions, progressionLabel } from "./progressions.js";
 
 export const LAYERS = [
   {
     id: "progressions",
     group: "Harmony",
     label: "Named progressions",
-    hint: "Labels the stock trad-jazz chord patterns (Salty Dog, Four-Leaf, Georgia, Sunshine, Apple Tree) and shades each bar they span.",
+    hint: "Labels the stock trad-jazz chord patterns (Salty Dog, Four-Leaf, Georgia, Sunshine, Apple Tree) and highlights the chords that make them up in one bar.",
     credit: { prefix: "Names from Pops Coffee's blog ", text: "Playing Traditional Jazz", href: "https://playing-traditional-jazz.blogspot.com/" },
     availableFor: () => true,
     annotate(song, context) {
-      const out = [];
-      context.progressions.forEach((match) => {
-        match.lineStarts.forEach((startChar, i) => {
-          out.push({ startChar, text: `_${i === 0 ? "" : CONTINUED}${match.name}` });
-        });
-      });
-      return out;
+      // One label, where the progression starts; a line it runs onto is
+      // marked by the open bar alone (overlays.js).
+      return context.progressions
+        .filter((match) => match.lineStarts.length > 0)
+        .map((match) => ({ startChar: match.lineStarts[0], text: `_${progressionLabel(match.name)}` }));
     },
   },
   {
