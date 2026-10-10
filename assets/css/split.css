@@ -7045,6 +7045,21 @@ body.rj-layers-open #layersTab.rj-layers-tab {
   fill: #1b1b1b;
 }
 
+/* Chord skeleton (chord-skeleton.js): the chord's notes as faint ghosts
+   behind the melody. Shapes only; nothing here is played. */
+.notation .rj-layer-skeleton-note {
+  fill: #d4d4d4;
+  stroke: none;
+}
+.notation .rj-layer-skeleton-ledger {
+  stroke: #d4d4d4;
+  stroke-width: 1;
+}
+.notation text.rj-layer-skeleton-accidental {
+  font-family: MuseJazzText, Georgia, serif;
+  fill: #c4c4c4;
+}
+
 /* Scale degrees (overlays.js's styleDegrees): after Improvise for Real, a
    note that belongs to the chord under it has its number in a magenta circle;
    any other note is the bare number. */
