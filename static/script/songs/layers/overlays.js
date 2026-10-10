@@ -116,6 +116,21 @@ function outlinePaths(start, segs) {
   return { fill, edge: edge.join(" ") };
 }
 
+// The printed line's svg clips whatever sits above its viewBox, and a chord
+// row can sit within a few pixels of it: slide the bar's top down to `minY`
+// and let the bottom take the height that would otherwise be cut off.
+function keepBelow(bar, minY) {
+  if (bar.y1 >= minY) return;
+  bar.y2 += minY - bar.y1;
+  bar.y1 = minY;
+}
+
+// Where the svg's visible area starts (-Infinity when it can't be read).
+function viewTop(svg) {
+  const box = svg.viewBox && svg.viewBox.baseVal;
+  return box ? box.y : -Infinity;
+}
+
 /*
   Write the name inside the bar, just left of its first chord, over two lines
   ("Sunshine" / "progression"): the label annotation (moved up out of its slot
@@ -124,7 +139,7 @@ function outlinePaths(start, segs) {
   two lines). Returns false when the text can't be measured (jsdom, a hidden
   container), leaving the label where ABCjs put it.
 */
-function placeLabel(label, bar, name) {
+function placeLabel(label, bar, name, minY) {
   label.textContent = name;
   label.setAttribute("font-size", String(LABEL_FONT_SIZE));
   const second = label.cloneNode(false);
@@ -142,6 +157,7 @@ function placeLabel(label, bar, name) {
   const deficit = Math.max(0, need - (bar.y2 - bar.y1));
   bar.y1 -= deficit / 2;
   bar.y2 += deficit / 2;
+  keepBelow(bar, minY);
   const top = (bar.y1 + bar.y2) / 2 - lineHeight;
   const left = bar.x1 - LABEL_GAP - Math.max(first.width, word.width) - LABEL_PAD_X;
   bar.x1 = left;
@@ -200,15 +216,17 @@ function pathEl(d, shade, fill) {
 */
 function drawMarking(chords, label, shade, open, name) {
   const texts = chords.concat(label ? [label] : []);
-  texts.forEach((text) => text.classList.add("rj-layer-prog-text", shade));
+  texts.forEach((text) => text.classList.add("rj-layer-prog-text", ...shade.split(" ")));
   const anchor = chords[0] || label;
   const svg = anchor && anchor.ownerSVGElement;
   if (!svg || typeof anchor.getBBox !== "function") return;
   const bar = barBehind(chords, label);
   if (!bar) return;
   const sides = runOut(svg, bar, open);
+  const minY = viewTop(svg);
+  keepBelow(bar, minY);
   // The label's copy for the second line inherits its classes.
-  if (label && chords.length > 0) placeLabel(label, bar, name);
+  if (label && chords.length > 0) placeLabel(label, bar, name, minY);
   const { fill, edge } = barPath(bar, sides);
   // First in the svg, so the notation draws over them.
   svg.insertBefore(pathEl(edge, shade, false), svg.firstChild);
@@ -219,12 +237,22 @@ function drawMarking(chords, label, shade, open, name) {
   One shade per progression *name*, in order of first appearance — the same
   idea as the form strip's arrows (sheet.js's stepShades): every Salty Dog
   on the page wears the same tone, a Georgia next to it a different one.
+  The same progression twice in a row (Honky Tonk Town's two eight-bar
+  choruses of Four-Leaf, with no chord between) would read as one long
+  band, so every second one of such a run gets the `rj-layer-prog-alt`
+  tint — lighter, same hue — to show where one ends and the next begins.
 */
 export function progressionShades(progressions) {
   const names = [];
+  let previous = null;
+  let alt = false;
   return progressions.map((match) => {
     if (!names.includes(match.name)) names.push(match.name);
-    return `rj-layer-prog--${names.indexOf(match.name) % BAND_SHADES}`;
+    const touches = previous !== null && previous.name === match.name && previous.endNote >= match.startNote;
+    alt = touches && !alt;
+    previous = match;
+    const shade = `rj-layer-prog--${names.indexOf(match.name) % BAND_SHADES}`;
+    return alt ? `${shade} rj-layer-prog-alt` : shade;
   });
 }
 
