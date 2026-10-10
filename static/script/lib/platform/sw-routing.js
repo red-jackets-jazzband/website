@@ -20,7 +20,7 @@ const FONT_AWESOME_ORIGIN = "https://cdnjs.cloudflare.com";
 // share these data/asset paths), matching its manifest's start_url/scope.
 const CACHEABLE_PATH_PREFIXES = [
   "/songs/", "/script/", "/setlists/", "/tour/", "/css/", "/fonts/",
-  "/images/icons/", "/manifest.webmanifest",
+  "/images/icons/", "/manifest.",
 ];
 
 function isCacheablePath(pathname) {

@@ -53,7 +53,8 @@ test("the tab opens the panel and collapses it again; so does Escape", () => {
     assert.equal(panel.hidden, false);
     assert.equal(tab.getAttribute("aria-expanded"), "true");
     assert.ok(document.body.classList.contains("rj-layers-open"));
-    assert.equal(tab.getAttribute("aria-label"), "Close layers");
+    assert.equal(tab.getAttribute("aria-label"), "Layers");
+    assert.equal(tab.title, "Close layers");
     click(tab);
     assert.equal(panel.hidden, true);
     click(tab);

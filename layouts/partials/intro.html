@@ -4,7 +4,7 @@
          else to that language's home page. */}}
     {{ $to := dict "en" "/" "nl" "/nl" "de" "/de" "fr" "/fr" }}
     {{ range .AllTranslations }}{{ $to = merge $to (dict .Language.Lang .RelPermalink) }}{{ end }}
-    <span class="rj-intro-nav-lang"><a href="/"><img src="/images/Home_Icon.svg" height=19px alt="{{ .Site.Title }}"></a> <a href="{{ index $to "en" }}">en</a> | <a href="{{ index $to "nl" }}">nl</a> | <a href="{{ index $to "de" }}">de</a> | <a href="{{ index $to "fr" }}">fr</a></span>
+    <span class="rj-intro-nav-lang"><a href="/"><img src="/images/Home_Icon.svg" height=19px alt="{{ .Site.Title }}"></a> <a href="{{ index $to "en" }}" data-lang="en">en</a> | <a href="{{ index $to "nl" }}" data-lang="nl">nl</a> | <a href="{{ index $to "de" }}" data-lang="de">de</a> | <a href="{{ index $to "fr" }}" data-lang="fr">fr</a></span>
     {{ if and .File (eq .File.TranslationBaseName "songs") }}
     <span class="rj-intro-nav-tools">
       <button type="button" id="tourBtn" class="rj-intro-nav-btn" hidden><span class="fa-solid fa-circle-question" aria-hidden="true"></span></button>
