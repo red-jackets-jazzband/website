@@ -6624,8 +6624,24 @@ body.rj-sheet-active #layersTab.rj-layers-tab {
 .rj-layers-count[hidden] {
   display: none;
 }
-body.rj-layers-open #layersTab.rj-layers-tab {
+/* Open: the tab stays, riding the panel's outer edge as the collapse marker
+   (a chevron, like the More-controls drawer's pull) instead of an X. */
+.rj-layers-tab-chevron {
   display: none;
+  font-size: 12px;
+}
+body.rj-sheet-active.rj-layers-open #layersTab.rj-layers-tab {
+  right: calc(312px + var(--rj-layers-edge, 0px));
+  z-index: 19;
+  padding: 12px 0;
+}
+body.rj-layers-open #layersTab .rj-layers-icon,
+body.rj-layers-open #layersTab .rj-layers-tab-label,
+body.rj-layers-open #layersTab .rj-layers-count {
+  display: none;
+}
+body.rj-layers-open #layersTab .rj-layers-tab-chevron {
+  display: block;
 }
 
 #layersPanel.rj-layers-panel {
@@ -6654,7 +6670,7 @@ body.rj-layers-open #layersTab.rj-layers-tab {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 8px 4px 16px;
+  padding: 10px 16px 4px;
 }
 .rj-layers-head .rj-layers-icon {
   color: var(--rj-gold);
@@ -6681,25 +6697,9 @@ body.rj-layers-open #layersTab.rj-layers-tab {
   text-underline-offset: 3px;
   cursor: pointer;
 }
-.rj-layers-close {
-  width: 44px;
-  height: 44px;
-  display: grid;
-  place-items: center;
-  border: 0;
-  border-radius: 10px;
-  background: transparent;
-  color: #dedcd6;
-  font-size: 18px;
-  cursor: pointer;
-}
 @media (hover: hover) {
   .rj-layers-reset:hover {
     color: var(--rj-hover);
-  }
-  .rj-layers-close:hover {
-    background: #2f2f2f;
-    color: var(--rj-gold);
   }
 }
 #layersPanel .rj-layers-intro {
@@ -6895,6 +6895,17 @@ body.rj-layers-open #layersTab.rj-layers-tab {
     background: #2a2a2a;
     color: rgba(236,234,230,.5);
     box-shadow: none;
+  }
+  /* Open: the pill rides the sheet's top edge, chevron pointing down. */
+  body.rj-sheet-active.rj-layers-open #layersTab.rj-layers-tab {
+    right: calc(16px + var(--rj-layers-edge, 0px));
+    bottom: min(65vh, 560px);
+    height: 26px;
+    padding: 0 18px;
+    z-index: 19;
+  }
+  body.rj-layers-open #layersTab .rj-layers-tab-chevron {
+    transform: rotate(90deg);
   }
   #layersTab.rj-layers-tab .rj-layers-icon {
     width: 14px;
