@@ -1,10 +1,14 @@
 <div class="split-intro hideOnprint">
   <div class="split-intro-nav">
-    <span class="rj-intro-nav-lang"><a href="/"><img src="/images/Home_Icon.svg" height=19px alt="{{ .Site.Title }}"></a> <a href="/">en</a> | <a href="/nl">nl</a> | <a href="/de">de</a> | <a href="/fr">fr</a></span>
-    {{ if and .File (eq .File.BaseFileName "songs") }}
+    {{/* A language link goes to this page in that language when it exists,
+         else to that language's home page. */}}
+    {{ $to := dict "en" "/" "nl" "/nl" "de" "/de" "fr" "/fr" }}
+    {{ range .AllTranslations }}{{ $to = merge $to (dict .Language.Lang .RelPermalink) }}{{ end }}
+    <span class="rj-intro-nav-lang"><a href="/"><img src="/images/Home_Icon.svg" height=19px alt="{{ .Site.Title }}"></a> <a href="{{ index $to "en" }}">en</a> | <a href="{{ index $to "nl" }}">nl</a> | <a href="{{ index $to "de" }}">de</a> | <a href="{{ index $to "fr" }}">fr</a></span>
+    {{ if and .File (eq .File.TranslationBaseName "songs") }}
     <span class="rj-intro-nav-tools">
       <button type="button" id="tourBtn" class="rj-intro-nav-btn" hidden><span class="fa-solid fa-circle-question" aria-hidden="true"></span></button>
-      <button type="button" id="offlineBtn" class="rj-intro-nav-btn" title="Download for offline" aria-label="Download for offline"><span class="fa-solid fa-cloud-arrow-down" aria-hidden="true"></span></button>
+      <button type="button" id="offlineBtn" class="rj-intro-nav-btn" title="{{ i18n "js_offline_download" }}" aria-label="{{ i18n "js_offline_download" }}"><span class="fa-solid fa-cloud-arrow-down" aria-hidden="true"></span></button>
     </span>
     {{ end }}
   </div>

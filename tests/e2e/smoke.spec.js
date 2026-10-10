@@ -46,6 +46,24 @@ test("picking a song renders its title, chord grid and notation", async ({ page 
   expect(errors).toEqual([]);
 });
 
+test("the translated songs pages render their own language, markup and script alike", async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto("/nl/songs/");
+  await expect(page.locator("html")).toHaveAttribute("lang", "nl-NL");
+  await expect(page.locator("#songSearch")).toHaveAttribute("placeholder", "Zoek leadsheets");
+  await expect(page.locator(SONG_ITEM).first()).toBeVisible();
+
+  // Strings JS builds come out in Dutch too: an instrument/Comping dropdown
+  // option and a search with no match.
+  await expect(page.locator("#comping option").first()).toHaveText("COMPING: UIT");
+  await page.locator("#songSearch").fill("zzzzzzzz");
+  await expect(page.locator(".song-list-empty")).toHaveText("Geen songs gevonden voor je zoekopdracht.");
+
+  // The language switcher keeps you on the same page.
+  await expect(page.locator(".rj-intro-nav-lang a", { hasText: "de" })).toHaveAttribute("href", "/de/songs/");
+  expect(errors).toEqual([]);
+});
+
 test("the Mixer <dialog> is hidden until its button is clicked, then toggles", async ({ page }) => {
   await page.goto(SONGS_URL);
   await page.locator("#songSearch").fill("Bourbon Street");
