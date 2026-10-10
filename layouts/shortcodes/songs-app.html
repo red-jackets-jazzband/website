@@ -28,7 +28,7 @@
     <button type="button" class="rj-library-tab" data-tab="library">{{ i18n "songs_tabSongs" }}</button>
     <button type="button" class="rj-library-tab" data-tab="setlists">{{ i18n "songs_tabSetlists" }}</button>
   </div>
-  <div id="offlineStatus" class="rj-offline-status" role="status" aria-live="polite" hidden></div>
+  <output id="offlineStatus" class="rj-offline-status" aria-live="polite" hidden></output>
 
   <div class="rj-library-search" id="librarySearchRow">
     <input type="search" id="songSearch" placeholder="{{ i18n "songs_songSearch_placeholder" }}" autocomplete="off" aria-label="{{ i18n "songs_songSearch_placeholder" }}" />
@@ -43,16 +43,16 @@
         <input type="text" id="setlistNameInput" class="rj-setlist-title-input" aria-label="{{ i18n "songs_setlistNameInput_aria" }}" hidden>
         <button type="button" id="setlistExportBtn" class="rj-setlist-title-btn" title="{{ i18n "songs_setlistExportBtn_title" }}" aria-label="{{ i18n "songs_setlistExportBtn_aria" }}" hidden><span class="fa-solid fa-file-arrow-down" aria-hidden="true"></span></button>
       </div>
-      <div class="rj-library-print-group" role="group" aria-labelledby="rjPrintLabel">
+      <div class="rj-library-print-group" role="group" aria-labelledby="rjPrintLabel"> <!-- NOSONAR: group -->
         <span class="rj-library-print-label" id="rjPrintLabel">{{ i18n "songs_printLabel" }}</span>
         <div class="rj-library-print-seg">
           <button type="button" id="printSetlistBtn" class="rj-library-print-btn">{{ i18n "songs_printSetlistBtn" }}</button>
           <button type="button" id="printChordbookBtn" class="rj-library-print-btn">{{ i18n "songs_printChordbookBtn" }}</button>
           <button type="button" id="printSongbookBtn" class="rj-library-print-btn">{{ i18n "songs_printSongbookBtn" }}</button>
         </div>
-        <p class="rj-library-print-status" id="setlistPrintStatus" role="status" aria-live="polite" hidden></p>
+        <output class="rj-library-print-status" id="setlistPrintStatus" aria-live="polite" hidden></output>
       </div>
-      <div class="rj-library-print-group" role="group" aria-labelledby="rjListenLabel">
+      <div class="rj-library-print-group" role="group" aria-labelledby="rjListenLabel"> <!-- NOSONAR: group -->
         <span class="rj-library-print-label" id="rjListenLabel">{{ i18n "songs_listenLabel" }}</span>
         <div class="rj-library-print-seg">
           <button type="button" id="listenYoutubeBtn" class="rj-library-print-btn" disabled title="{{ i18n "songs_listenYoutubeBtn_title" }}" aria-label="{{ i18n "songs_listenYoutubeBtn_aria" }}"><span class="fa-brands fa-youtube" aria-hidden="true"></span> YouTube</button>
@@ -242,7 +242,7 @@
 <div id="setlistPrintBooklet" class="hideOnScreen"></div>
 
 <div id="setlistModal" class="rj-modal-overlay" hidden>
-  <div class="rj-modal" role="dialog" aria-modal="true" aria-labelledby="setlistModalTitle">
+  <div class="rj-modal" role="dialog" aria-modal="true" aria-labelledby="setlistModalTitle"> <!-- NOSONAR: dialog: <dialog> is Safari 15.4+ -->
     <div class="rj-modal-head">
       <h2 class="rj-modal-title" id="setlistModalTitle">{{ i18n "songs_setlistModalTitle" }}</h2>
       <button type="button" id="setlistModalClose" class="rj-modal-close" aria-label="{{ i18n "songs_setlistModalClose_aria" }}">&times;</button>
@@ -251,9 +251,9 @@
     <input type="text" id="setlistModalName" class="rj-modal-input" placeholder="{{ i18n "songs_setlistModalName_placeholder" }}" autocomplete="off">
     <div class="rj-modal-label" id="setlistModalStartLabel">{{ i18n "songs_setlistModalStartLabel" }}</div>
     <div class="rj-modal-choices" id="setlistModalChoices" role="radiogroup" aria-labelledby="setlistModalStartLabel">
-      <button type="button" class="rj-modal-choice active" data-choice="empty" role="radio" aria-checked="true">{{ i18n "songs_modalEmpty" }}</button>
-      <button type="button" class="rj-modal-choice" data-choice="remix" role="radio" aria-checked="false">{{ i18n "songs_modalRemix" }}</button>
-      <button type="button" class="rj-modal-choice" data-choice="upload" role="radio" aria-checked="false">{{ i18n "songs_modalUpload" }}</button>
+      <button type="button" class="rj-modal-choice active" data-choice="empty" role="radio" aria-checked="true">{{ i18n "songs_modalEmpty" }}</button> <!-- NOSONAR: radio -->
+      <button type="button" class="rj-modal-choice" data-choice="remix" role="radio" aria-checked="false">{{ i18n "songs_modalRemix" }}</button> <!-- NOSONAR: radio -->
+      <button type="button" class="rj-modal-choice" data-choice="upload" role="radio" aria-checked="false">{{ i18n "songs_modalUpload" }}</button> <!-- NOSONAR: radio -->
     </div>
     <div class="rj-modal-context" id="setlistModalRemix" hidden>
       <select id="setlistModalSource" class="rj-modal-input" aria-label="{{ i18n "songs_setlistModalSource_aria" }}"></select>
@@ -297,7 +297,7 @@
   <div class="inspiration-loop" id="inspirationLoopBar" hidden>
     <div class="inspiration-loop-overview-row">
       <button type="button" class="inspiration-loop-overview-zoom-btn" id="inspirationZoomOut" aria-label="{{ i18n "songs_inspirationZoomOut_aria" }}" disabled><span class="fa-solid fa-magnifying-glass-minus" aria-hidden="true"></span></button>
-      <div class="inspiration-loop-overview" id="inspirationLoopOverview" title="{{ i18n "songs_inspirationLoopOverview_title" }}" tabindex="0" role="group" aria-label="{{ i18n "songs_inspirationLoopOverview_aria" }}">
+      <div class="inspiration-loop-overview" id="inspirationLoopOverview" title="{{ i18n "songs_inspirationLoopOverview_title" }}" tabindex="0" role="group" aria-label="{{ i18n "songs_inspirationLoopOverview_aria" }}"> <!-- NOSONAR: group + tabindex: one keyboard focus stop -->
         <div class="inspiration-loop-overview-tick" id="inspirationOverviewTickA" hidden></div>
         <div class="inspiration-loop-overview-tick" id="inspirationOverviewTickB" hidden></div>
         <div class="inspiration-loop-overview-window" id="inspirationOverviewWindow">
