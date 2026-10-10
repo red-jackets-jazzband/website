@@ -70,6 +70,9 @@ export function makeCtx(overrides = {}) {
     inspiration: {
       updateLink: () => {}, init: () => {}, isOpen: () => false, ...overrides.inspiration,
     },
+    layers: {
+      init: () => {}, setOpen: () => {}, toggle: () => {}, ...overrides.layers,
+    },
     setlistData: overrides.setlistData,
     setlistHome: overrides.setlistHome,
     setlistModal: overrides.setlistModal,

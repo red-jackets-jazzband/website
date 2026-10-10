@@ -6576,22 +6576,22 @@ body.rj-sheet-active #layersTab.rj-layers-tab {
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  width: 34px;
-  padding: 14px 0 12px;
-  border: 1px solid #3a3a3a;
+  width: 26px;
+  padding: 10px 0 8px;
+  border: 1px solid rgba(255,255,255,.11);
   border-right: 0;
-  border-radius: 12px 0 0 12px;
-  background: #262626;
-  color: var(--rj-gold);
+  border-radius: 8px 0 0 8px;
+  background: #2f2f2f;
+  color: rgba(236,234,230,.6);
   font-family: "Montserrat", sans-serif;
   cursor: pointer;
-  box-shadow: -4px 4px 14px rgba(0, 0, 0, .35);
-  transition: width .15s, background .15s;
+  transition: width .15s, background .15s, color .15s;
 }
 @media (hover: hover) {
   body.rj-sheet-active #layersTab.rj-layers-tab:hover {
-    width: 38px;
-    background: #2f2f2f;
+    width: 30px;
+    background: var(--rj-gold);
+    color: #222222;
   }
 }
 #layersTab.rj-layers-tab:focus-visible {
@@ -6601,8 +6601,8 @@ body.rj-sheet-active #layersTab.rj-layers-tab {
 .rj-layers-tab-label {
   writing-mode: vertical-rl;
   transform: rotate(180deg);
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 600;
   letter-spacing: .12em;
   text-transform: uppercase;
 }
@@ -6878,26 +6878,40 @@ body.rj-layers-open #layersTab.rj-layers-tab {
 
 /* Mobile / tablet: a floating pill opens a bottom sheet. */
 @media (max-width: 1024px) {
+  /* A half pill hanging up from the bottom edge, at the right, like a drawer's pull tab. */
   body.rj-sheet-active #layersTab.rj-layers-tab {
     top: auto;
     right: calc(16px + var(--rj-layers-edge, 0px));
-    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    bottom: 0;
     flex-direction: row;
-    gap: 8px;
+    gap: 6px;
     width: auto;
-    height: 48px;
-    padding: 0 16px 0 14px;
-    border: 1px solid var(--rj-gold);
-    border-radius: 24px;
-    background: #1f1f1f;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, .45);
+    height: calc(26px + env(safe-area-inset-bottom, 0px));
+    padding: 0 14px env(safe-area-inset-bottom, 0px);
+    border: 1px solid rgba(255,255,255,.11);
+    border-bottom: 0;
+    border-radius: 13px 13px 0 0;
+    background: #2a2a2a;
+    color: rgba(236,234,230,.5);
+    box-shadow: none;
+  }
+  #layersTab.rj-layers-tab .rj-layers-icon {
+    width: 14px;
+    height: 14px;
   }
   .rj-layers-tab-label {
     writing-mode: horizontal-tb;
     transform: none;
-    font-size: 14px;
+    font-size: 11px;
     letter-spacing: .02em;
     text-transform: none;
+  }
+  /* In the sheet's own column rather than wider than it: a sheet wider than
+     the screen stretches the layout viewport, and the fixed pill with it —
+     off the right edge, out of reach. */
+  body.rj-sheet-active #rjSheet.rj-sheet {
+    width: 100%;
+    box-sizing: border-box;
   }
   #layersPanel.rj-layers-panel {
     top: auto;
