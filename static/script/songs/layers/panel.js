@@ -21,6 +21,7 @@
 import { byId, clear, el } from "../../lib/core/dom.js";
 import { LAYERS, activeLayers } from "../../lib/music/layers.js";
 import { findInstrument, INSTRUMENTS } from "../../lib/music/instruments.js";
+import { trackRightEdge } from "./edge.js";
 
 function brassLabels() {
   return INSTRUMENTS.filter((i) => LAYERS.find((l) => l.id === "fingerings").availableFor(i.value)).map((i) => i.label);
@@ -182,6 +183,9 @@ export function createLayersPanel(ctx) {
     ctx.store.subscribe("settings", (_settings, changed) => {
       if (changed.includes("instrument")) redraw();
     });
+    // A newly drawn song can make the page scroll (or stop scrolling).
+    const updateEdge = trackRightEdge(tab ? tab.parentElement : null);
+    ctx.store.subscribe("tune", updateEdge);
     redraw();
     showOpen(ctx.store.get("layers").layersOpen);
   }

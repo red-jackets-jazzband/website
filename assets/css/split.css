@@ -6564,9 +6564,12 @@ body.rj-sheet-fullscreen #sheetmenu {
 #layersTab.rj-layers-tab {
   display: none;
 }
+/* --rj-layers-edge: the width of the page's own scrollbar along the right
+   edge (songs/layers/edge.js), so the tab and panel sit beside it, not on
+   it. 0 with overlay scrollbars. */
 body.rj-sheet-active #layersTab.rj-layers-tab {
   position: fixed;
-  right: 0;
+  right: var(--rj-layers-edge, 0px);
   top: 40vh;
   z-index: 16;
   display: flex;
@@ -6627,7 +6630,7 @@ body.rj-layers-open #layersTab.rj-layers-tab {
 #layersPanel.rj-layers-panel {
   position: fixed;
   top: 0;
-  right: 0;
+  right: var(--rj-layers-edge, 0px);
   bottom: 0;
   z-index: 18;
   width: 312px;
@@ -6861,7 +6864,7 @@ body.rj-layers-open #layersTab.rj-layers-tab {
 @media (max-width: 1024px) {
   body.rj-sheet-active #layersTab.rj-layers-tab {
     top: auto;
-    right: 16px;
+    right: calc(16px + var(--rj-layers-edge, 0px));
     bottom: calc(20px + env(safe-area-inset-bottom, 0px));
     flex-direction: row;
     gap: 8px;
