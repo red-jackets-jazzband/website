@@ -66,11 +66,13 @@ export function spellChord(name) {
 function stack(tones, inversion, octave) {
   const placed = [];
   const order = tones.slice(inversion).concat(tones.slice(0, inversion));
+  let below = null; // the note stacked just before
   order.forEach((tone) => {
     const base = LETTER_SEMITONES[tone.letter] + tone.alter;
-    let oct = placed.length === 0 ? octave : placed[placed.length - 1].octave;
-    while (placed.length > 0 && 60 + 12 * oct + base <= placed[placed.length - 1].midi) oct += 1;
-    placed.push({ letter: tone.letter, alter: tone.alter, octave: oct, midi: 60 + 12 * oct + base });
+    let oct = below === null ? octave : below.octave;
+    while (below !== null && 60 + 12 * oct + base <= below.midi) oct += 1;
+    below = { letter: tone.letter, alter: tone.alter, octave: oct, midi: 60 + 12 * oct + base };
+    placed.push(below);
   });
   return placed;
 }

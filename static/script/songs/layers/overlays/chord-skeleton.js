@@ -9,7 +9,7 @@
 
   Where a note goes is measured, not computed: the vertical step between
   staff positions is read off two engraved noteheads, and every printed line
-  is anchored on its own first note.
+  is anchored on its own first note (or, with no pitched note, its top staff line).
 */
 import { chordSkeletons } from "../../../lib/music/chord-skeleton.js";
 import { bboxOf, noteGroup, svgEl } from "./svg.js";
@@ -32,7 +32,7 @@ function headBoxes(group) {
 // The left edge of what the column's own note draws (noteheads, a rest, its
 // accidental), or null.
 function columnLeft(group) {
-  const shapes = [...group.querySelectorAll(".abcjs-notehead, .abcjs-rest, [data-name^='accidentals']")]
+  const shapes = [...group.querySelectorAll(".abcjs-notehead, [data-name^='rests'], [data-name^='accidentals']")]
     .map(bboxOf)
     .filter(Boolean);
   return shapes.length === 0 ? null : Math.min(...shapes.map((b) => b.x));
@@ -46,6 +46,15 @@ function headReference(el) {
   if (boxes.length === 0) return null;
   const vp = Math.max(...el.pitches.map((p) => p.verticalPos));
   return { vp, y: boxes[0].y + boxes[0].height / 2 };
+}
+
+// { vp, y } of the printed line's top staff line (the first staff's), which
+// anchors a line with no pitched note to measure from, or null.
+function staffReference(group) {
+  const svg = group.ownerSVGElement;
+  const line = svg ? svg.querySelector(".abcjs-top-line") : null;
+  const box = line ? bboxOf(line) : null;
+  return box ? { vp: TOP_LINE, y: box.y + box.height / 2 } : null;
 }
 
 // For each printed line, its first melody note that has a measurable head.
@@ -152,11 +161,11 @@ export function drawChordSkeleton(visualObj) {
   const lines = lineOf(visualObj);
   skeletons.forEach((skeleton) => {
     const group = noteGroup(skeleton.el);
+    if (!group || !group.parentNode) return; // NOSONAR
     const found = references[lines.get(skeleton.el)];
-    if (!group || !group.parentNode || !found || found.length === 0) return; // NOSONAR
     const left = columnLeft(group);
-    if (left === null) return;
-    const anchor = found[0];
+    const anchor = found && found.length > 0 ? found[0] : staffReference(group); // NOSONAR
+    if (left === null || anchor === null) return;
     const notes = skeleton.notes.map((n) => ({ ...n }));
     const { rx } = headSize(step);
     // The stack's right edge sits a little before the note's left edge; a
