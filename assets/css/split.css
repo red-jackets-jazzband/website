@@ -6952,6 +6952,14 @@ body.rj-layers-open #layersTab.rj-layers-tab {
   font-weight: 700;
   font-style: normal;
 }
+/* The name links to the progression's blog post (overlays.js linkLabel). */
+.notation a.rj-layer-prog-link {
+  cursor: pointer;
+  pointer-events: all;
+}
+.notation a.rj-layer-prog-link:hover text {
+  text-decoration: underline;
+}
 /* One warm, subtle shade per progression name on the page (overlays.js's
    progressionShades), like the form strip's greys: amber (the default
    above), apricot, rose, butter, clay. Each label stays dark on its own
