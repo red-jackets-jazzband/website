@@ -6332,7 +6332,8 @@ body.rj-sheet-fullscreen #sheetmenu {
 /* Chapter rail: mark + progress bar per chapter, current one named. */
 .rj-tour-rail {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
   gap: 4px;
   margin: 16px 0 4px;
 }
