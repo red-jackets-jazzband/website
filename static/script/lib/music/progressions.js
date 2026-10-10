@@ -18,8 +18,11 @@
   voice) and returns where each one sits: [{ id, name, startNote, endNote,
   lineStarts }] — `startNote`/`endNote` index the first voice's notes and
   rests in order (the match is [startNote, endNote)), which stay the same
-  however the text is annotated afterwards; `lineStarts` is the source
-  offset of the match's first note on every printed line it covers.
+  however the text is annotated afterwards; `chordNotes` indexes the notes
+  that carry a chord symbol inside the match (what the sheet marks —
+  including a chord restated at the start of a printed line); `lineStarts`
+  is the source offset of the match's first note on every printed line it
+  covers.
 
   Matching is deliberately strict, so a label means what it says: each
   chord of the pattern must last at least a bar (half a bar for Sunshine;
@@ -50,7 +53,9 @@ const VI7 = [9, "dom"];
 const PROGRESSIONS = [
   // Post 565: IV | IVm (or #IV dim) | I | VI7 | II7 (or IIm7) | V7 | I | I.
   // A IV dim in bar 2 (I'm Looking Over a Four-Leaf Clover) counts too.
-  { id: "sunshine", name: "Sunshine", steps: [[IV], [IVm, SHARP_IV_DIM, IV_DIM], [I], [VI7], [II7, IIm], [V7], [I]], minBars: 0.5 },
+  // It is eight bars: a IV held longer (Bourbon Street Parade's runs three)
+  // only lends its last bar (`trimLead`), the rest is just a long IV.
+  { id: "sunshine", name: "Sunshine", steps: [[IV], [IVm, SHARP_IV_DIM, IV_DIM], [I], [VI7], [II7, IIm], [V7], [I]], minBars: 0.5, trimLead: true },
   { id: "salty-dog", name: "Salty Dog", steps: [[VI7], [II7], [V7], [I]] },
   { id: "four-leaf", name: "Four-Leaf", steps: [[I], [II7], [V7], [I]] },
   { id: "georgia", name: "Georgia", steps: [[I], [III7], [VI7]] },
@@ -58,6 +63,12 @@ const PROGRESSIONS = [
 ];
 
 export const PROGRESSION_NAMES = PROGRESSIONS.map((p) => p.name);
+
+// The label a progression wears on the sheet: "Sunshine progression".
+export const PROGRESSION_WORD = "progression";
+export function progressionLabel(name) {
+  return `${name} ${PROGRESSION_WORD}`;
+}
 
 const NATURALS = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
 const ACCIDENTALS = { "#": 1, "♯": 1, b: -1, "♭": -1 };
@@ -178,7 +189,7 @@ function readElement(el, lineIndex, state) {
   const symbol = name === null ? null : parseChordSymbol(name);
   if (symbol) startSegment(el, symbol, lineIndex, state);
   if (el.el_type === "note") {
-    state.notes.push({ time: state.time, startChar: el.startChar, line: lineIndex });
+    state.notes.push({ time: state.time, startChar: el.startChar, line: lineIndex, hasChord: symbol !== null });
     state.time += el.duration || 0;
   }
 }
@@ -212,19 +223,33 @@ function matchAt(segments, i, progression, bar) {
   const { steps } = progression;
   const minLength = bar * (progression.minBars || 1);
   let at = i;
+  const spans = [];
   for (let s = 0; s < steps.length; s++) {
     if (at >= segments.length || !fitsStep(segments[at], steps[s])) return null;
     const stepFirst = at;
     const stepStart = segments[at].start;
     while (at + 2 < segments.length && isPassing(segments[at + 1], bar) && fitsStep(segments[at + 2], steps[s])) at += 2;
     const stepEnd = segments[at].end;
+    spans.push({ start: stepStart, end: stepEnd });
     const closing = s === steps.length - 1;
     if (stepEnd - stepStart < minLength - EPS && !(closing && isTonicStep(steps[s]))) return null;
-    if (closing) return { last: at, closingFirst: stepFirst, end: Math.min(stepEnd, stepStart + bar) };
+    if (closing) {
+      return {
+        last: at, closingFirst: stepFirst, start: patternStart(progression, spans[0], bar),
+        end: Math.min(stepEnd, stepStart + bar),
+      };
+    }
     at += 1;
     if (approachChord(segments, at, steps[s + 1], bar)) at += 1;
   }
   return null;
+}
+
+// Where the match starts: a `trimLead` pattern's lead chord held for longer
+// than a bar only lends its last bar.
+function patternStart(progression, lead, bar) {
+  const overlong = progression.trimLead && lead.end - lead.start > bar + EPS;
+  return overlong ? lead.end - bar : lead.start;
 }
 
 // Is segment `at` a short approach chord into one that fits `next`?
@@ -241,6 +266,16 @@ function isPassing(segment, bar) {
 function noteIndexAt(notes, time) {
   const index = notes.findIndex((n) => n.time >= time - EPS);
   return index === -1 ? notes.length : index;
+}
+
+// Every note in [startTime, endTime) that carries a chord symbol — a chord
+// restated at the start of a printed line counts, though it isn't a change.
+function chordNotesWithin(notes, startTime, endTime) {
+  const indexes = [];
+  notes.forEach((n, i) => {
+    if (n.hasChord && n.time >= startTime - EPS && n.time < endTime - EPS) indexes.push(i);
+  });
+  return indexes;
 }
 
 function lineStartsWithin(notes, startTime, endTime) {
@@ -284,14 +319,15 @@ export function findNamedProgressions(song) {
   const { segments, notes, bar } = collectHarmony(song);
   const matches = findMatches(segments, bar);
   return matches.map((m, k) => {
-    const startTime = segments[m.first].start;
+    const startTime = m.start;
     const next = matches[k + 1];
-    const endTime = next && segments[next.first].start < m.end ? segments[next.first].start : m.end;
+    const endTime = next && next.start < m.end ? next.start : m.end;
     return {
       id: m.progression.id,
       name: m.progression.name,
       startNote: noteIndexAt(notes, startTime),
       endNote: noteIndexAt(notes, endTime),
+      chordNotes: chordNotesWithin(notes, startTime, endTime),
       lineStarts: lineStartsWithin(notes, startTime, endTime),
     };
   });

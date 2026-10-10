@@ -80,3 +80,11 @@ test("a progression running onto the next line gets a label offset per line", ()
   assert.equal(text.slice(match.lineStarts[0], match.lineStarts[0] + 4), '"G7"');
   assert.equal(text.slice(match.lineStarts[1], match.lineStarts[1] + 4), '"F7"');
 });
+
+test("chordNotes mark every chord symbol of the pattern's eight bars, a restated one included (Bourbon Street Parade's B♭ runs three bars)", () => {
+  const song = parse('"F" A4 | A4 | "Bb" B4 | B4 |\n"Bb" B4 | "Fdim" A4 | "F" A4 | "D7" A4 | "G7" G4 | "C7" G4 | "F" F4 | F4 |', "M:4/4\nL:1/4\nK:F");
+  const found = findNamedProgressions(song);
+  assert.deepEqual(found.map((m) => m.name), ["Sunshine"]);
+  assert.deepEqual(found[0].chordNotes, [4, 5, 6, 7, 8, 9, 10], "eight bars: the first B♭ bars are only a long IV");
+  assert.equal(found[0].startNote, 4);
+});

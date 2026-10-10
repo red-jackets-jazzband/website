@@ -77,7 +77,7 @@ test("the Layers panel opens from its tab and draws fingerings and progression b
   await page.locator('.rj-layer-row[data-layer="progressions"]').click();
   await expect(page.locator("#notation .rj-layer-fingering").first()).toBeVisible();
   // Basin Street's B section: Georgia (I III7) handing on to a Salty Dog.
-  await expect(page.locator("#notation .rj-layer-prog-label", { hasText: "Georgia" }).first()).toBeVisible();
+  await expect(page.locator("#notation .rj-layer-prog-text", { hasText: "Georgia" }).first()).toBeVisible();
   expect(await page.locator("#notation .rj-layer-prog-band").count()).toBeGreaterThan(0);
   await expect(page.locator("#layersTabCount")).toHaveText("2");
 
