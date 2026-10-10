@@ -217,7 +217,9 @@ async function runDownload(ctx) {
     uniqueFiles(setlists).map((file) => `/setlists/${file}`),
     (done, total) => setStatus(tl("offline_progress_setlists", "Setlists: {done} of {total}", { done, total })),
   );
-  await fetchAll([`/tour/tour.${pageLanguage()}.md`], () => {});
+  // The tour loads English first and overlays the page's language on it.
+  const tourLanguages = pageLanguage() === "en" ? ["en"] : ["en", pageLanguage()];
+  await fetchAll(tourLanguages.map((lang) => `/tour/tour.${lang}.md`), () => {});
 
   failures += await warmSoundfont(
     ctx.state.highQualityAudio,
