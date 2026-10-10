@@ -57,12 +57,23 @@ export const LAYERS = [
     id: "chord-skeleton",
     group: "Harmony",
     label: "Chord skeleton",
-    hint: "Each chord's notes as faint ghost notes on the staff, in the inversion that sits under most of the bar's melody. Only a visual reminder: they are not played.",
+    hint: "Each chord's notes as faint ghost notes on the staff, in the inversion that sits under most of the bar's melody; notes outside the key are tinted rose. Only a visual reminder: they are not played.",
     order: 4, // unused: it writes no annotation
     availableFor: () => true,
     appliesTo: () => true,
     // Drawn as SVG after ABCjs engraves (songs/layers/chord-skeleton.js), so
     // nothing is written into the tune text.
+    annotate: () => [],
+  },
+  {
+    id: "outside-chords",
+    group: "Harmony",
+    label: "Outside chords",
+    hint: "Shades in magenta each chord that has a note outside the key.",
+    order: 5, // unused: it writes no annotation
+    availableFor: () => true,
+    appliesTo: () => true,
+    // Drawn as SVG after ABCjs engraves (songs/layers/overlays/outside-chords.js).
     annotate: () => [],
   },
   {

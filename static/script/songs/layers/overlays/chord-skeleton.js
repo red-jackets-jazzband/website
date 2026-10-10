@@ -2,8 +2,9 @@
   Draws the "Chord skeleton" layer (lib/music/chord-skeleton.js) after
   ABCjs has engraved the sheet: each chord's notes as faint grey noteheads on
   the staff, just left of the note the chord symbol sits on, so no melody
-  note or stem covers one (on the note's own column, behind it, when the
-  previous element is too close to leave room inside the bar). They are SVG
+  note or stem covers one (when the previous element is too close to leave
+  room, the stack slides right until its heads at most touch the note's left
+  edge). They are SVG
   shapes only — nothing goes into the ABC, so nothing is played — and each is
   inserted just under its column's own note group, so the staff lines are
   drawn over it.
@@ -21,6 +22,8 @@ const TOP_LINE = 10;
 // Gap before the note, and the sideways shift of a second, in head radii.
 const GAP_RX = 0.6;
 const SECOND_SHIFT_RX = 1.9;
+// The nearest a skeleton head's centre gets to the note's left edge, in head radii.
+const NEAR_RX = 0.9;
 
 // The element's noteheads' boxes, top first.
 function headBoxes(group) {
@@ -28,15 +31,6 @@ function headBoxes(group) {
     .map(bboxOf)
     .filter(Boolean)
     .sort((a, b) => a.y - b.y);
-}
-
-// Horizontal middle of a column's noteheads (or rest), or null.
-function columnCentre(group) {
-  const boxes = headBoxes(group);
-  const shapes = boxes.length > 0 ? boxes : [...group.querySelectorAll("[data-name^='rests']")].map(bboxOf).filter(Boolean);
-  if (shapes.length === 0) return null;
-  const left = Math.min(...shapes.map((b) => b.x));
-  return (left + Math.max(...shapes.map((b) => b.x + b.width))) / 2;
 }
 
 // The left edge of what the column's own note draws (noteheads, a rest, its
@@ -161,13 +155,14 @@ function buildStack(notes, x, yOf, step) {
         x1: cx - rx * 1.5, x2: cx + rx * 1.5, y1: yOf(at), y2: yOf(at),
       }));
     });
+    const tint = note.outside ? " rj-layer-skeleton--outside" : "";
     group.append(svgEl("ellipse", {
-      class: "rj-layer-skeleton-note",
+      class: `rj-layer-skeleton-note${tint}`,
       cx, cy, rx, ry, transform: `rotate(-20 ${cx} ${cy})`,
     }));
     if (note.accidental) {
       const sign = svgEl("text", {
-        class: "rj-layer-skeleton-accidental",
+        class: `rj-layer-skeleton-accidental${tint}`,
         x: x - rx * 1.5, y: cy, "text-anchor": "end", "dominant-baseline": "central", "font-size": step * 5,
       });
       sign.textContent = note.accidental;
@@ -194,18 +189,20 @@ export function drawChordSkeleton(visualObj) {
     if (left === null || anchor === null) return;
     const notes = skeleton.notes.map((n) => ({ ...n }));
     const { rx } = headSize(step);
-    // The stack's right edge sits a little before the note's left edge; a
-    // second in the chord pushes one head right, so it needs the room too.
+    // The stack sits just left of the note, its right edge a little before the
+    // note's left edge (a second in the chord pushes one head right, so it
+    // needs the room too).
     const reach = hasSecond(notes) ? SECOND_SHIFT_RX + 1 : 1;
     const hasSign = notes.some((n) => n.accidental);
     const before = drawnRight(place.previous);
-    // It must stay inside the bar: with the previous element (a bar line, or
-    // the bar's last note after a pickup) too close, the stack would read as
-    // belonging to it, so it sits on the note's own column instead.
-    const roomNeeded = (reach + 1 + (hasSign ? 2.2 : 0)) * rx + GAP_RX * rx;
-    const crowded = before !== null && left - before < roomNeeded;
-    const centre = crowded ? columnCentre(group) : null;
-    const x = centre === null ? left - GAP_RX * rx - reach * rx : centre;
+    const ideal = left - GAP_RX * rx - reach * rx;
+    // With the previous element (a bar line, the clef/key/meter) too close to
+    // leave that room, it slides right to clear it - but never past the note:
+    // the heads at most touch the melody note's left edge, so they still read
+    // as sitting before it, not on it.
+    const signRoom = hasSign ? 2.2 : 0;
+    const clear = before === null ? ideal : before + (1.8 + signRoom) * rx;
+    const x = Math.min(Math.max(ideal, clear), left - NEAR_RX * rx);
     const stack = buildStack(notes, x, (vp) => anchor.y + (anchor.vp - vp) * step, step);
     group.before(stack);
   });

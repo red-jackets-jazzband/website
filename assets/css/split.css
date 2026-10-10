@@ -7064,6 +7064,24 @@ body.rj-layers-open #layersTab.rj-layers-tab {
   stroke: none;
 }
 
+/* Outside chords (overlays/outside-chords.js): a chord with a note outside
+   the key sits in a soft magenta shade. */
+.notation .rj-layer-outside-chord {
+  fill: rgba(202, 72, 109, 0.16);
+  stroke: rgba(202, 72, 109, 0.4);
+  stroke-width: 0.8;
+}
+.notation text.rj-layer-outside-text {
+  fill: #a8325a;
+}
+/* Chord skeleton: a ghost note outside the key's scale. */
+.notation .rj-layer-skeleton-note.rj-layer-skeleton--outside {
+  fill: #e3a0b6;
+}
+.notation text.rj-layer-skeleton-accidental.rj-layer-skeleton--outside {
+  fill: #c0577b;
+}
+
 /* Scale degrees (overlays.js's styleDegrees): after Improvise for Real, a
    note that belongs to the chord under it has its number in a magenta circle;
    any other note is the bare number. */
