@@ -43,7 +43,7 @@ test("annotateLayers puts fingerings, then the progression label, under the note
   const result = annotateLayers(TEXT, parse(TEXT), { active: { progressions: true, fingerings: true }, instrument: "trumpet" });
   assert.deepEqual(result.applied, ["progressions", "fingerings"]);
   assert.deepEqual(result.progressions.map((p) => p.name), ["Salty Dog"]);
-  assert.match(result.text, /"_12""_Salty Dog""A7" E4/);
+  assert.match(result.text, /"_1\\n2\\n\u00B7""_Salty Dog""A7" E4/);
   // Still valid ABC, and the chords are untouched.
   const reparsed = parse(result.text);
   assert.equal(reparsed.warnings, undefined);

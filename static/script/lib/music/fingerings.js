@@ -11,6 +11,8 @@
                                           the printed note of one abcjs pitch
     melodyFingerings(song, instrument)    [{ startChar, text }] for every note
                                           onset of the tune's first voice
+    fingeringGlyphs(instrument, text)     the valve diagram to print (three
+                                          lines); trombone stays a digit
 
   The charts are the standard first-choice fingerings a teacher writes in:
   the alternatives (1-3 for a low D, 4th position for a high D...) are left
@@ -64,6 +66,22 @@ export function instrumentHasFingerings(instrument) {
 
 export function fingeringFor(instrument, midi) {
   return instrumentHasFingerings(instrument) ? FINGERING_CHARTS[instrument](midi) : null;
+}
+
+// A valve combination as the three lines of a little valve diagram, top
+// valve first: the pressed valves' numbers (set as filled discs by
+// songs/layers/overlays.js), a "·" for each valve left up, and ⓪ in the
+// middle when nothing is pressed. Printed one column wide so neighbouring
+// notes never run into each other. Trombone positions stay a plain digit.
+// ABC's own line break inside an annotation: a backslash and an n.
+const ABC_NEWLINE = "\\n";
+export const VALVE_UP = "\u00B7";
+export const VALVE_OPEN = "0";
+
+export function fingeringGlyphs(instrument, text) {
+  if (instrument === "trombone") return text;
+  if (text === "0") return [VALVE_UP, VALVE_OPEN, VALVE_UP].join(ABC_NEWLINE);
+  return [1, 2, 3].map((valve) => (text.includes(String(valve)) ? String(valve) : VALVE_UP)).join(ABC_NEWLINE);
 }
 
 const LETTER_SEMITONES = [0, 2, 4, 5, 7, 9, 11]; // C D E F G A B

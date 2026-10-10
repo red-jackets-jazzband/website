@@ -8,7 +8,8 @@
     at a glance where it starts and stops — each name in its own warm
     shade;
   - fingering numbers get their own class, so split.css sets them upright
-    and bold instead of the italic annotation face.
+    and bold instead of the italic annotation face, and are centred under
+    their notehead (ABCjs starts an annotation at the note's left edge).
 
   Called by sheet.js's paint() right after ABCjs draws, for the live sheet
   and a booklet alike (a booklet's plan simply has no layers on).
@@ -16,7 +17,9 @@
 import { CONTINUED } from "../../lib/music/layers.js";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
-const FINGERING_TEXT = /^[0-7]{1,3}$/;
+const FINGERING_TEXT = /^(?:[0-7]{1,3}|\u00B7)$/;
+const VALVE_UP = "\u00B7";
+const VALVE_DIGITS = { 0: "0", 1: "1", 2: "2", 3: "3" };
 const BAND_PAD_X = 6;
 const BAND_PAD_Y = 2;
 // split.css's rj-layer-prog--0 .. --4: amber, apricot, rose, butter, clay.
@@ -107,9 +110,76 @@ function drawProgressionBands(visualObj, progressions) {
   });
 }
 
+// The horizontal middle of the noteheads drawn alongside `text`, or null.
+function noteheadCentre(text) {
+  const group = text.parentNode;
+  if (!group || typeof group.querySelectorAll !== "function") return null;
+  let left = Infinity;
+  let right = -Infinity;
+  group.querySelectorAll(".abcjs-notehead").forEach((head) => {
+    const box = bboxOf(head);
+    if (!box) return;
+    left = Math.min(left, box.x);
+    right = Math.max(right, box.x + box.width);
+  });
+  return left <= right ? (left + right) / 2 : null;
+}
+
+function svgEl(name, attrs) {
+  const node = document.createElementNS(SVG_NS, name);
+  Object.keys(attrs).forEach((key) => node.setAttribute(key, String(attrs[key])));
+  return node;
+}
+
+/*
+  One slot of the valve diagram (the annotation lines lib/music/fingerings.js
+  writes, top valve first) drawn as a shape rather than the font's glyph,
+  which is thin and tiny at annotation size: a pressed valve is a solid
+  disc with a bold white number, an open horn a ring with a 0, a valve left
+  up a small grey dot. The annotation text stays in place (invisible, via
+  split.css) for anything that reads it.
+*/
+function drawValveSlot(text, glyph, centre) {
+  const box = bboxOf(text);
+  if (!box || !text.parentNode) return;
+  const radius = Math.min(6, Math.max(4.5, box.height / 2));
+  const cy = box.y + box.height / 2;
+  const digit = VALVE_DIGITS[glyph];
+  const group = svgEl("g", { class: "rj-layer-valves" });
+  if (digit === undefined) {
+    group.append(svgEl("circle", { class: "rj-layer-valve-up", cx: centre, cy, r: 1.6 }));
+  } else {
+    group.append(svgEl("circle", { class: digit === "0" ? "rj-layer-valve rj-layer-valve--open" : "rj-layer-valve", cx: centre, cy, r: radius }));
+    const label = svgEl("text", {
+      class: "rj-layer-valve-digit",
+      x: centre,
+      y: cy,
+      "text-anchor": "middle",
+      "dominant-baseline": "central",
+      "font-size": radius * 1.5,
+    });
+    label.textContent = digit;
+    group.append(label);
+  }
+  text.parentNode.append(group);
+  text.classList.add("rj-layer-fingering--drawn");
+}
+
+function centreUnderNote(text) {
+  if (typeof text.getBBox !== "function") return;
+  const centre = noteheadCentre(text);
+  if (centre === null) return;
+  text.setAttribute("text-anchor", "middle");
+  text.setAttribute("x", String(centre));
+  const glyph = text.textContent.trim();
+  if (glyph === VALVE_UP || VALVE_DIGITS[glyph] !== undefined) drawValveSlot(text, glyph, centre);
+}
+
 function styleFingerings(notationEl) {
   notationEl.querySelectorAll(".abcjs-annotation").forEach((text) => {
-    if (FINGERING_TEXT.test(text.textContent.trim())) text.classList.add("rj-layer-fingering");
+    if (!FINGERING_TEXT.test(text.textContent.trim())) return;
+    text.classList.add("rj-layer-fingering");
+    centreUnderNote(text);
   });
 }
 

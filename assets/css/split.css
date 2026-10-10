@@ -6973,6 +6973,30 @@ body.rj-layers-open #layersTab.rj-layers-tab {
   font-weight: 700;
   fill: #1b1b1b;
 }
+/* Valves are drawn as circles (overlays.js); the text stays only as a label. */
+.notation text.rj-layer-fingering--drawn {
+  fill: transparent;
+}
+.notation .rj-layer-valve {
+  fill: #1b1b1b;
+  stroke: #1b1b1b;
+  stroke-width: 1;
+}
+.notation .rj-layer-valve--open {
+  fill: #fff;
+}
+.notation text.rj-layer-valve-digit {
+  font-family: Montserrat, Arial, sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  fill: #fff;
+}
+.notation .rj-layer-valve-up {
+  fill: #9a9a9a;
+}
+.notation .rj-layer-valve--open + text.rj-layer-valve-digit {
+  fill: #1b1b1b;
+}
 
 /* The id selectors above outrank .hideOnprint's own print rule, so the
    panel, its tab and the desktop push are switched off here for print;
