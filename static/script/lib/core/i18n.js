@@ -58,6 +58,7 @@ export function pageLanguage() {
 function fill(text, params) {
   if (!params) return text;
   return text.replace(/\{(\w+)\}/g, (whole, name) => (
+    // NOSONAR: Object.hasOwn() is Safari 15.4+; this page supports Safari 12
     Object.prototype.hasOwnProperty.call(params, name) ? String(params[name]) : whole
   ));
 }

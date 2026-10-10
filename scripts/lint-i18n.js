@@ -96,7 +96,7 @@ function placeholders(text) {
     found.push(text.slice(at, end + 1));
     at = text.indexOf("{", end);
   }
-  return found.sort().join(" ");
+  return found.toSorted((a, b) => a.localeCompare(b)).join(" ");
 }
 
 function checkUsage(english, problems) {
