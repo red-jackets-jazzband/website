@@ -5,7 +5,6 @@ import { STANDARD_SOUNDFONT_URL, HIGH_QUALITY_SOUNDFONT_URL } from "../audio/pla
 import { tl } from "../../lib/core/i18n.js";
 
 const SW_URL = "/sw.js";
-const SW_SCOPE = "/songs/";
 const TOUR_LANGS = ["en", "nl", "de", "fr"];
 
 // The 12 semitones of a chromatic octave, sharps only (no need to spell both
@@ -56,9 +55,18 @@ function serviceWorkerSupported() {
   return "serviceWorker" in navigator;
 }
 
+// The worker's scope is this page's own: "/songs/", or "/nl/songs/" etc. on a
+// translated page (a page is only controlled by a worker whose scope covers it).
+const SONGS_SCOPE = /^(?:\/(?:nl|de|fr))?\/songs\//;
+
+function serviceWorkerScope() {
+  const match = SONGS_SCOPE.exec(window.location.pathname);
+  return match ? match[0] : "/songs/";
+}
+
 function registerServiceWorker() {
   if (!serviceWorkerSupported()) return Promise.resolve(false);
-  return navigator.serviceWorker.register(SW_URL, { scope: SW_SCOPE, type: "module" })
+  return navigator.serviceWorker.register(SW_URL, { scope: serviceWorkerScope(), type: "module" })
     .then(() => true)
     .catch(() => false);
 }
