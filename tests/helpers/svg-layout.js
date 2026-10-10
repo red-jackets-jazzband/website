@@ -14,8 +14,8 @@ import { mountPage } from "./dom.js";
   keeps it in step.
 */
 function boxOf(element) {
-  const data = element.getAttribute("data-box");
-  if (data === null) return { x: 0, y: 0, width: 0, height: 0 };
+  const data = element.dataset.box;
+  if (data === undefined) return { x: 0, y: 0, width: 0, height: 0 };
   const [x, y, width, height] = data.split(",").map(Number);
   return { x, y, width, height };
 }
