@@ -143,7 +143,7 @@ function buildStack(notes, x, yOf, step) {
     if (note.accidental) {
       const sign = svgEl("text", {
         class: "rj-layer-skeleton-accidental",
-        x: cx - rx * 1.5, y: cy, "text-anchor": "end", "dominant-baseline": "central", "font-size": step * 3.4,
+        x: x - rx * 1.5, y: cy, "text-anchor": "end", "dominant-baseline": "central", "font-size": step * 5,
       });
       sign.textContent = note.accidental;
       group.append(sign);

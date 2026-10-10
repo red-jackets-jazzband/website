@@ -7055,9 +7055,13 @@ body.rj-layers-open #layersTab.rj-layers-tab {
   stroke: #d4d4d4;
   stroke-width: 1;
 }
+/* Darker than the notes so the sign reads, and no stroke: the sheet's svg
+   text would otherwise outline it in black and fill the glyph in. */
 .notation text.rj-layer-skeleton-accidental {
   font-family: MuseJazzText, Georgia, serif;
-  fill: #c4c4c4;
+  font-weight: 400;
+  fill: #a8a8a8;
+  stroke: none;
 }
 
 /* Scale degrees (overlays.js's styleDegrees): after Improvise for Real, a
