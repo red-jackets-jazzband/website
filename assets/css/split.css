@@ -7043,7 +7043,7 @@ body.rj-layers-open #layersTab.rj-layers-tab {
 }
 
 /* Scale degrees (overlays.js's styleDegrees): after Improvise for Real, a
-   note that belongs to the chord under it has its number in a green circle;
+   note that belongs to the chord under it has its number in a magenta circle;
    any other note is the bare number. */
 .notation text.rj-layer-degree {
   font-family: Montserrat, Arial, sans-serif;
@@ -7053,7 +7053,7 @@ body.rj-layers-open #layersTab.rj-layers-tab {
 }
 .notation .rj-layer-degree-circle {
   fill: none;
-  stroke: #2e9b3f;
+  stroke: #CA486d;
   stroke-width: 1.3;
 }
 
