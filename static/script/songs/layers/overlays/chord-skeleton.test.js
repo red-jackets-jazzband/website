@@ -7,9 +7,9 @@ import { drawChordSkeleton } from "./chord-skeleton.js";
 const NOTEHEAD_BOX = 7; // a head's drawn height
 let dom;
 
-// jsdom has no layout: give each notehead path the box its own "M x y" start implies.
-function stubBoxes() {
-  dom.window.SVGElement.prototype.getBBox = function getBBox() {
+// jsdom has no layout: a notehead path's box is the one its own "M x y" start implies.
+function stubbedBoxes() {
+  return function getBBox() {
     const d = this.getAttribute("d");
     const [x, y] = d ? d.slice(1).trim().split(/[ c]/).map(Number) : [0, 0];
     return { x, y: y - NOTEHEAD_BOX / 2, width: NOTEHEAD_BOX, height: NOTEHEAD_BOX };
@@ -25,7 +25,7 @@ beforeEach(() => {
   dom = new JSDOM('<div id="notation"></div>');
   global.window = dom.window;
   global.document = dom.window.document;
-  stubBoxes();
+  dom.window.SVGElement.prototype.getBBox = stubbedBoxes();
 });
 
 afterEach(() => {
@@ -77,4 +77,19 @@ test("without layout (no getBBox) nothing is drawn and nothing throws", () => {
   };
   drawChordSkeleton(tune);
   assert.equal(document.querySelectorAll(".rj-layer-skeleton").length, 0);
+});
+
+test("a chord on a rest in a line with no pitched note is anchored to the staff", () => {
+  const tune = render('C D E F |\n"C" z4 |');
+  // jsdom has no layout: the stubbed heads give the step; the rest and the
+  // second line's top staff line get boxes of their own.
+  const lineTwoTop = document.querySelectorAll(".abcjs-top-line")[1];
+  const heads = stubbedBoxes();
+  dom.window.SVGElement.prototype.getBBox = function getBBox() {
+    if (this === lineTwoTop) return { x: 0, y: 100, width: 200, height: 0 };
+    if ((this.getAttribute("data-name") || "").startsWith("rests")) return { x: 50, y: 120, width: NOTEHEAD_BOX, height: NOTEHEAD_BOX };
+    return heads.call(this);
+  };
+  drawChordSkeleton(tune);
+  assert.equal(document.querySelectorAll(".rj-layer-skeleton-note").length, 3);
 });
