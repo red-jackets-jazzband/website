@@ -6984,6 +6984,11 @@ body.rj-layers-open #layersTab.rj-layers-tab {
 .notation text.rj-layer-prog-text.rj-layer-prog--4 {
   fill: #5c2a17;
 }
+/* The same progression straight after itself (overlays.js's progressionShades):
+   every second band is a lighter tint of its own shade, so the two read as two. */
+.notation .rj-layer-prog-band.rj-layer-prog-alt {
+  fill-opacity: .45;
+}
 .notation text.rj-layer-fingering {
   font-style: normal;
   font-weight: 700;
