@@ -4,7 +4,7 @@
   "type": "module",
   "description": "Dev tooling (lint + unit tests) for the Red Jackets Jazzband Hugo site's vanilla JS. Not part of the Hugo build or the GitHub Pages deploy.",
   "scripts": {
-    "lint": "npm run lint:js && npm run lint:typed && npm run lint:css && npm run lint:dup && npm run lint:types && npm run lint:abc && npm run lint:setlists && npm run lint:catalog && npm run lint:py",
+    "lint": "npm run lint:js && npm run lint:typed && npm run lint:css && npm run lint:dup && npm run lint:types && npm run lint:abc && npm run lint:setlists && npm run lint:i18n && npm run lint:catalog && npm run lint:py",
     "lint:js": "eslint --max-warnings 0 static/script static/sw.js scripts tests eslint.config.js",
     "lint:typed": "eslint --max-warnings 0 -c eslint.typed.config.js static/script",
     "lint:css": "stylelint \"assets/css/**/*.css\"",
@@ -12,6 +12,7 @@
     "lint:types": "tsc -p tsconfig.lib.json",
     "lint:abc": "node scripts/lint-abc.js",
     "lint:setlists": "node scripts/lint-setlists.js",
+    "lint:i18n": "node scripts/lint-i18n.js",
     "test:e2e": "playwright test",
     "lint:catalog": "node scripts/lint-catalog.js",
     "lint:py": "node scripts/lint-python.js",

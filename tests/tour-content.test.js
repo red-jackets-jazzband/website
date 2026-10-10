@@ -15,9 +15,9 @@ import { mountPage } from "./helpers/dom.js";
 const read = (relative) => readFileSync(fileURLToPath(new URL(`../${relative}`, import.meta.url)), "utf8");
 const tour = Object.fromEntries(TOUR_LANGS.map((lang) => [lang, parseTourMarkdown(read(`static/tour/tour.${lang}.md`))]));
 const english = tour.en;
-const songsPage = read("content/songs.md");
+const songsPage = read("layouts/shortcodes/songs-app.html");
 
-// Targets the tour points at that songs.md doesn't contain: they're created at
+// Targets the tour points at that the songs-app shortcode doesn't contain: they're created at
 // runtime, by the module (and string) named here.
 const RUNTIME_TARGETS = {
   "#tourBtn": ["layouts/partials/intro.html", 'id="tourBtn"'],
@@ -112,7 +112,7 @@ test("every target selector is valid and points at something the page has", () =
           const found = selector.startsWith("#")
             ? songsPage.includes(`id="${name}"`)
             : new RegExp(`class="[^"]*\\b${name}\\b`).test(songsPage);
-          assert.ok(found, `${label(item)}: ${selector} isn't in content/songs.md`);
+          assert.ok(found, `${label(item)}: ${selector} isn't in layouts/shortcodes/songs-app.html`);
         }
       }
     }
