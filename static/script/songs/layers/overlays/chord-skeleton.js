@@ -139,7 +139,7 @@ function ledgerPositions(vp) {
   y. A note a second above its neighbour moves to the right of it, as on a
   printed chord.
 */
-function buildStack(notes, x, yOf, step) {
+function buildStack(notes, x, yOf, step, markOutside) {
   const { rx, ry } = headSize(step);
   const group = svgEl("g", { class: "rj-layer-skeleton", "pointer-events": "none" });
   const ordered = notes.slice().sort((a, b) => a.vp - b.vp);
@@ -155,7 +155,7 @@ function buildStack(notes, x, yOf, step) {
         x1: cx - rx * 1.5, x2: cx + rx * 1.5, y1: yOf(at), y2: yOf(at),
       }));
     });
-    const tint = note.outside ? " rj-layer-skeleton--outside" : "";
+    const tint = markOutside && note.outside ? " rj-layer-skeleton--outside" : "";
     group.append(svgEl("ellipse", {
       class: `rj-layer-skeleton-note${tint}`,
       cx, cy, rx, ry, transform: `rotate(-20 ${cx} ${cy})`,
@@ -172,7 +172,8 @@ function buildStack(notes, x, yOf, step) {
   return group;
 }
 
-export function drawChordSkeleton(visualObj) {
+// `markOutside`: tint the notes that aren't in the key (the Outside chords layer).
+export function drawChordSkeleton(visualObj, { markOutside = false } = {}) {
   const skeletons = chordSkeletons(visualObj);
   if (skeletons.length === 0) return;
   const references = lineReferences(visualObj);
@@ -204,7 +205,7 @@ export function drawChordSkeleton(visualObj) {
     const signRoom = hasSign ? 2.2 : 0;
     const clear = before === null ? ideal : before + (1.8 + signRoom) * rx;
     const x = Math.min(Math.max(ideal, clear), left - (reach - OVERLAP_RX) * rx);
-    const stack = buildStack(notes, x, (vp) => anchor.y + (anchor.vp - vp) * step, step);
+    const stack = buildStack(notes, x, (vp) => anchor.y + (anchor.vp - vp) * step, step, markOutside);
     group.before(stack);
   });
 }

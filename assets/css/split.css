@@ -7065,7 +7065,8 @@ body.rj-layers-open #layersTab.rj-layers-tab {
 }
 
 /* Outside chords (overlays/outside-chords.js): a chord with a note outside
-   the key sits in a soft magenta shade. */
+   the key sits in a soft magenta shade; with the Chord skeleton on, its
+   out-of-key ghost notes are tinted to match. */
 .notation .rj-layer-outside-chord {
   fill: rgba(202, 72, 109, 0.16);
   stroke: rgba(202, 72, 109, 0.4);
@@ -7074,7 +7075,6 @@ body.rj-layers-open #layersTab.rj-layers-tab {
 .notation text.rj-layer-outside-text {
   fill: #a8325a;
 }
-/* Chord skeleton: a ghost note outside the key's scale. */
 .notation .rj-layer-skeleton-note.rj-layer-skeleton--outside {
   fill: #e3a0b6;
 }
