@@ -13,6 +13,7 @@
                                           #IV dim, II7 may be IIm7)
     Apple Tree   I | IV | I              Post 41 — an opening pattern, so
                                           only matched where a part starts
+                                          (the IV may be a half bar)
 
   findNamedProgressions(song) walks the parsed tune's chord symbols (first
   voice) and returns where each one sits: [{ id, name, startNote, endNote,
@@ -67,7 +68,7 @@ const PROGRESSIONS = [
   // Town) — before the closing I.
   { id: "four-leaf", name: "Four-Leaf", url: BLOG + "2016/07/a-very-common-pattern.html", steps: [[I], [II7], [V_TRIAD_OR_7], [I]], turnaround: { step: 2, over: [VIm, VI7, II7, IIm], maxChords: 2 } },
   { id: "georgia", name: "Georgia", url: BLOG + "2013/01/the-georgia-chord-progression.html", steps: [[I], [III7], [VI7]] },
-  { id: "apple-tree", name: "Apple Tree", url: BLOG + "2013/06/the-apple-tree-chord-progression.html", steps: [[I], [IV], [I]], opening: true },
+  { id: "apple-tree", name: "Apple Tree", url: BLOG + "2013/06/the-apple-tree-chord-progression.html", steps: [[I], [IV], [I]], minBars: 0.5, opening: true },
 ];
 
 export const PROGRESSION_NAMES = PROGRESSIONS.map((p) => p.name);
@@ -272,8 +273,12 @@ function matchAt(segments, i, progression, bar) {
 // progression with a `turnaround`, past that too.
 function lastSegmentOfStep(segments, from, progression, s, bar) {
   const step = progression.steps[s];
+  const next = progression.steps[s + 1];
   let at = from;
-  while (at + 2 < segments.length && isPassing(segments[at + 1], bar) && fitsStep(segments[at + 2], step)) at += 2;
+  // A short chord that is the next step itself (F | B♭ | F with a half-bar
+  // B♭) is that step, not an approach chord to this one.
+  const isApproach = (seg) => isPassing(seg, bar) && !(next && fitsStep(seg, next));
+  while (at + 2 < segments.length && isApproach(segments[at + 1]) && fitsStep(segments[at + 2], step)) at += 2;
   const turnaround = progression.turnaround;
   return turnaround && turnaround.step === s ? extendOverTurnaround(segments, at, step, turnaround) : at;
 }
