@@ -7056,6 +7056,12 @@ body.rj-layers-open #layersTab.rj-layers-tab {
   stroke: #CA486d;
   stroke-width: 1.3;
 }
+/* abcjs sizes each printed line's <svg> to its own content, and an inline
+   <svg> clips what pokes outside it: the circle round a chord tone reaches a
+   little below the number's reserved room, so its bottom was cut flat. */
+.notation svg {
+  overflow: visible;
+}
 
 /* The id selectors above outrank .hideOnprint's own print rule, so the
    panel, its tab and the desktop push are switched off here for print;
