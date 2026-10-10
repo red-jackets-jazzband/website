@@ -42,10 +42,12 @@
 {{ with .Site.Params.favicon }}<link rel="icon" href="{{ . | absURL }}" />{{ end }}
 
 <!-- PWA: only the songs page (in each language) is offline-capable; the
-     manifest's own start_url/scope are "/songs/", so linking it from every
-     page would be misleading. See CLAUDE.md's "Offline / PWA" section. -->
+     manifest's start_url/scope are the page's own (/songs/ or /nl/songs/ ...,
+     one manifest per language), so linking it from every page would be
+     misleading. See CLAUDE.md's "Offline / PWA" section. -->
 {{ if and .File (eq .File.TranslationBaseName "songs") }}
-<link rel="manifest" href="/manifest.webmanifest" />
+{{ $manifest := "/manifest.webmanifest" }}{{ if ne .Language.Lang "en" }}{{ $manifest = printf "/manifest.%s.webmanifest" .Language.Lang }}{{ end }}
+<link rel="manifest" href="{{ $manifest }}" />
 <link rel="apple-touch-icon" href="/images/icons/apple-touch-icon.png" />
 <meta name="theme-color" content="#1b1b1b" />
 <meta name="mobile-web-app-capable" content="yes" />

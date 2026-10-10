@@ -2,10 +2,9 @@ import { byId, on } from "../../lib/core/dom.js";
 import { GM_VOICES } from "../../lib/audio/gm-voices.js";
 import { parseSongIndex } from "../../lib/core/song-index.js";
 import { STANDARD_SOUNDFONT_URL, HIGH_QUALITY_SOUNDFONT_URL } from "../audio/player.js";
-import { tl } from "../../lib/core/i18n.js";
+import { pageLanguage, tl } from "../../lib/core/i18n.js";
 
 const SW_URL = "/sw.js";
-const TOUR_LANGS = ["en", "nl", "de", "fr"];
 
 // The 12 semitones of a chromatic octave, sharps only (no need to spell both
 // enharmonic names — a soundfont has one sample per pitch regardless of how
@@ -218,7 +217,7 @@ async function runDownload(ctx) {
     uniqueFiles(setlists).map((file) => `/setlists/${file}`),
     (done, total) => setStatus(tl("offline_progress_setlists", "Setlists: {done} of {total}", { done, total })),
   );
-  await fetchAll(TOUR_LANGS.map((lang) => `/tour/tour.${lang}.md`), () => {});
+  await fetchAll([`/tour/tour.${pageLanguage()}.md`], () => {});
 
   failures += await warmSoundfont(
     ctx.state.highQualityAudio,

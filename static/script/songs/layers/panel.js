@@ -106,8 +106,9 @@ function updateRow({ row, switchBtn, hintText, credit, layer }, active, instrume
   if (credit) credit.hidden = !available;
 }
 
-function tabLabel(count, open) {
-  if (open) return tl("layers_close", "Close layers");
+// The tab's accessible name stays "Layers" (aria-expanded says open/closed);
+// only the on-count rides along.
+function tabLabel(count) {
   return count > 0
     ? tl("layers_tab_count", "Layers ({count} on)", { count })
     : tl("layers_tab", "Layers");
@@ -122,7 +123,7 @@ function updateCount(active, instrument) {
     badge.hidden = count === 0;
   });
   const tab = byId("layersTab");
-  if (tab) tab.setAttribute("aria-label", tabLabel(count, tab.getAttribute("aria-expanded") === "true"));
+  if (tab) tab.setAttribute("aria-label", tabLabel(count));
 }
 
 // The chord table measures its container, and the open panel narrows it —
@@ -142,8 +143,6 @@ function showOpen(open) {
   if (backdrop) backdrop.hidden = !open;
   if (tab) {
     tab.setAttribute("aria-expanded", open ? "true" : "false");
-    const badge = byId("layersTabCount");
-    tab.setAttribute("aria-label", tabLabel(badge ? Number(badge.textContent) || 0 : 0, open));
     tab.title = open ? tl("layers_close", "Close layers") : tl("layers_tab", "Layers");
   }
   document.body.classList.toggle("rj-layers-open", open);

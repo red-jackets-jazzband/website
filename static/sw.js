@@ -25,12 +25,12 @@ import {
 //   files/paths it caches (v2: every module moved into feature folders;
 //   v4: the Layers panel's new modules; v5: its edge.js; v6: the page is
 //   served in four languages, so the worker is registered once per language
-//   page and precaches/falls back to its own scope's page, not /songs/).
+//   page and precaches/falls back to its own scope's page, not /songs/; v7: one manifest per language).
 // - ASSET_VERSION: the third-party soundfont samples and Font Awesome, which
 //   never change once published. Bump only when caching *those* changes —
 //   it deletes the soundfonts visitors downloaded with "Download for
 //   offline", so their offline playback is gone until they download again.
-const SHELL_VERSION = "v6";
+const SHELL_VERSION = "v7";
 const ASSET_VERSION = "v1";
 // Every cache this worker owns is named under this prefix, and activate()'s
 // cleanup only ever deletes caches under it — CacheStorage is shared across
@@ -57,7 +57,10 @@ const CURRENT_CACHES = new Set([SHELL_CACHE, SOUNDFONT_CACHE, FONT_AWESOME_CACHE
 // The page this registration serves: its own scope, "/songs/" or one of the
 // translated "/nl/songs/", "/de/songs/", "/fr/songs/".
 const PAGE_URL = new URL(self.registration.scope).pathname;
-const PRECACHE_URLS = [PAGE_URL, "/manifest.webmanifest", "/script/lamejs-1.2.1-min.js"];
+// Its own language's manifest: /manifest.webmanifest, /manifest.nl.webmanifest ...
+const LANG_PREFIX = /^\/(nl|de|fr)\//.exec(PAGE_URL);
+const MANIFEST_URL = LANG_PREFIX ? `/manifest.${LANG_PREFIX[1]}.webmanifest` : "/manifest.webmanifest";
+const PRECACHE_URLS = [PAGE_URL, MANIFEST_URL, "/script/lamejs-1.2.1-min.js"];
 
 // A page's own <head>/<body> — its stylesheet(s), the webfonts they declare
 // via @font-face, and its own <script> tags (including, for the type="module"
