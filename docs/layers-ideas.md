@@ -1,6 +1,6 @@
 # Layers: ideas for future layers
 
-The Layers panel on `/songs/` (see **Layers panel** in [CLAUDE.md](../CLAUDE.md)) ships with two layers: **Fingerings** and **Named progressions**. This file collects candidates for later, so the next one can be picked up without starting from scratch. The original design, with its suggested groups, is on the design canvas: https://claude.ai/artifact/LmVyFj1ovor1haxyPanyWm
+The Layers panel on `/songs/` (see **Layers panel** in [CLAUDE.md](../CLAUDE.md)) ships with three layers: **Fingerings**, **Named progressions** and **Scale degrees** (after David Reed's *Improvise for Real*: numbers in the key, chord tones circled — so the Scale degree and, in its simplest form, Chord tones rows below are done). This file collects candidates for later, so the next one can be picked up without starting from scratch. The original design, with its suggested groups, is on the design canvas: https://claude.ai/artifact/LmVyFj1ovor1haxyPanyWm
 
 Nothing here is a commitment. The "Effort" column is a rough guess at the size of the change.
 

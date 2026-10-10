@@ -88,6 +88,16 @@ const KEY_ACC = { sharp: 1, flat: -1, "#": 1, b: -1 };
   bass note after a slash doesn't change the function (B♭/D is still I).
 */
 export function parseChordSymbol(name) {
+  const split = splitChordSymbol(name);
+  return split === null ? null : { root: split.root, quality: chordQuality(split.rest) };
+}
+
+/*
+  A chord symbol cut into its root (0-11) and what follows it up to a slash
+  bass ("m7b5" in "Bm7b5/F"), or null when it isn't a chord. A "b" followed
+  by a 5 is the chord's flat five, not a flat root.
+*/
+export function splitChordSymbol(name) {
   if (typeof name !== "string" || name.length === 0) return null;
   const natural = NATURALS[name[0]];
   if (natural === undefined) return null;
@@ -98,8 +108,7 @@ export function parseChordSymbol(name) {
     i += 1;
   }
   const slash = name.indexOf("/", i);
-  const rest = slash === -1 ? name.slice(i) : name.slice(i, slash);
-  return { root: (root + 12) % 12, quality: chordQuality(rest) };
+  return { root: (root + 12) % 12, rest: slash === -1 ? name.slice(i) : name.slice(i, slash) };
 }
 
 function hasSeventhOrMore(rest) {
@@ -134,16 +143,22 @@ function qualityFits(wanted, quality) {
 
 // The chord symbol an abcjs element carries, if any (annotations have a
 // position of their own; a chord symbol's is "default").
-function chordName(el) {
+export function chordName(el) {
   if (!el.chord) return null;
   const symbol = el.chord.find((c) => c.position === "default" || c.position === undefined);
   return symbol ? symbol.name : null;
 }
 
-function keyTonic(key) {
+// The key's tonic as a pitch class 0-11 (minor and modal keys included),
+// or null for a tune with no key.
+export function keyRoot(key) {
   if (!key || NATURALS[key.root] === undefined) return null;
-  if (key.mode && key.mode.toLowerCase().startsWith("m")) return null; // minor / modal: not these patterns // NOSONAR
   return (NATURALS[key.root] + (KEY_ACC[key.acc] || 0) + 12) % 12;
+}
+
+function keyTonic(key) {
+  if (key && key.mode && key.mode.toLowerCase().startsWith("m")) return null; // minor / modal: not these patterns // NOSONAR
+  return keyRoot(key);
 }
 
 function meterLength(staff) {
