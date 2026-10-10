@@ -40,8 +40,23 @@ test("Georgia hands its VI7 on to a Salty Dog, and the bands meet there", () => 
   assert.deepEqual([found[1].startNote, found[1].endNote], [2, 8], "Salty Dog: G7 to the Bb/D");
 });
 
-test("Sunshine: IV IVm I", () => {
-  assert.deepEqual(names(parse('"Eb" G4 | "Ebm" G4 | "Bb" F4 | F4 |')), ["Sunshine"]);
+test("Sunshine: the eight bars of Post 565, IV IVm I VI7 II7 V7 I I", () => {
+  const song = parse('"Eb" G4 | "Ebm" G4 | "Bb" F4 | "G7" G4 | "C7" G4 | "F7" A4 | "Bb" B4 | B4 |');
+  const found = findNamedProgressions(song);
+  assert.deepEqual(found.map((m) => m.name), ["Sunshine"], "not a Salty Dog inside it");
+  assert.deepEqual([found[0].startNote, found[0].endNote], [0, 7]);
+});
+
+test("Sunshine's variations: #IV dim (any spelling) or IV dim in bar 2, IIm7 in bar 5", () => {
+  // Bill Bailey in F: Fdim is B°7 respelled, the #IV dim.
+  assert.deepEqual(names(parse('"Bb" A4 | "Fdim" A4 | "F" A4 | "D7" A4 | "G7" A4 | "C7" A4 | "F" F4 |', "M:4/4\nL:1/4\nK:F")), ["Sunshine"]);
+  // Four-Leaf Clover in Bb: Ebdim, the IV dim.
+  assert.deepEqual(names(parse('"Eb" G4 | "Ebdim" G4 | "Bb" F4 | "G7" G4 | "Cm7" G4 | "F7" A4 | "Bb" B4 |')), ["Sunshine"]);
+});
+
+test("Sunshine compressed into half-bars still counts; IV IVm I alone does not", () => {
+  assert.deepEqual(names(parse('"Eb" G2 "Ebm" G2 | "Bb" F2 "G7" G2 | "C7" G2 "F7" A2 | "Bb" B4 |')), ["Sunshine"]);
+  assert.deepEqual(names(parse('"Eb" G4 | "Ebm" G4 | "Bb" F4 | F4 |')), []);
 });
 
 test("Apple Tree only counts as an opening", () => {
