@@ -59,7 +59,10 @@ test("a diatonic tune is left alone", () => {
   assert.equal(document.querySelectorAll(".rj-layer-outside-chord").length, 0);
 });
 
-test("the skeleton tints out-of-key ghost notes, with or without this layer", () => {
+test("the skeleton tints out-of-key ghost notes only when asked to", () => {
   drawChordSkeleton(render('"A7" c e g e |'));
+  assert.equal(document.querySelectorAll(".rj-layer-skeleton--outside").length, 0);
+  document.getElementById("notation").innerHTML = "";
+  drawChordSkeleton(render('"A7" c e g e |'), { markOutside: true });
   assert.ok(document.querySelectorAll(".rj-layer-skeleton-note.rj-layer-skeleton--outside").length >= 1);
 });

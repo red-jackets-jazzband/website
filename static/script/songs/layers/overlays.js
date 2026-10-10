@@ -9,8 +9,8 @@
     first chord, over two lines ("Salty Dog" / "progression") — each name
     in its own warm shade;
   - an outside chord (one with a note outside the key: lib/music/diatonic.js)
-    gets a soft magenta shade behind its chord symbol; the Chord skeleton
-    tints its out-of-key ghost notes on its own;
+    gets a soft magenta shade behind its chord symbol, and, with the Chord
+    skeleton on, its out-of-key ghost notes are tinted to match;
   - scale degrees ("\u25CF3", "\u25CB\u266D7": lib/music/scale-degrees.js) lose their
     marker and sit centred under the note, a chord tone inside a magenta
     circle (as in Improvise for Real) and any other note bare;
@@ -37,7 +37,7 @@ export function decorateLayers(notationEl, visualObj, plan) {
   const applied = plan.layersApplied || [];
   const progressions = plan.progressions || [];
   if (applied.length > 0 || progressions.length > 0) uncropChords(notationEl);
-  if (applied.includes("chord-skeleton")) drawChordSkeleton(visualObj);
+  if (applied.includes("chord-skeleton")) drawChordSkeleton(visualObj, { markOutside: applied.includes("outside-chords") });
   if (applied.includes("outside-chords")) markOutsideChords(visualObj);
   if (progressions.length > 0) drawProgressions(visualObj, progressions);
   if (applied.includes("fingerings")) styleFingerings(notationEl, plan.instrument);
