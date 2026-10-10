@@ -69,8 +69,9 @@ function stack(tones, inversion, octave) {
   let below = null; // the note stacked just before
   order.forEach((tone) => {
     const base = LETTER_SEMITONES[tone.letter] + tone.alter;
+    const floor = below === null ? -Infinity : below.midi;
     let oct = below === null ? octave : below.octave;
-    while (below !== null && 60 + 12 * oct + base <= below.midi) oct += 1;
+    while (60 + 12 * oct + base <= floor) oct += 1;
     below = { letter: tone.letter, alter: tone.alter, octave: oct, midi: 60 + 12 * oct + base };
     placed.push(below);
   });
