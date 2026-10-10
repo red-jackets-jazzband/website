@@ -6894,7 +6894,7 @@ body.rj-layers-open #layersTab .rj-layers-count {
     padding: 0 18px;
     z-index: 19;
   }
-  /* Closed: pointing up (pull the sheet open); open: pointing down. */
+  /* The chevron points up while the sheet is closed and down while it is open. */
   #layersTab .rj-layers-tab-chevron {
     transform: rotate(-90deg);
   }
