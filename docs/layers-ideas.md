@@ -23,10 +23,10 @@ A layer is one entry in `LAYERS` in [static/script/lib/music/layers.js](../stati
 
 Things the first two layers taught us:
 
-- **Use plain ABC annotations wherever possible.** ABCjs makes room for them, spaces them and prints them, and they work on every browser. Draw on the SVG afterwards (in [songs/layers/overlays.js](../static/script/songs/layers/overlays.js)) only for what an annotation can't do, such as a band spanning several bars.
+- **Use plain ABC annotations wherever possible.** ABCjs makes room for them, spaces them and prints them, and they work on every browser. Draw on the SVG afterwards (in [songs/layers/overlays/](../static/script/songs/layers/overlays/), one module per layer; the arithmetic in [layer-geometry.js](../static/script/lib/music/layer-geometry.js)) only for what an annotation can't do, such as a band spanning several bars.
 - **Above the staff is crowded.** An `^annotation` shares its row with the chord symbols and pushes some of them up. Below the staff works well. Rows stack in the order they're written, which `annotateLayers`' `writeOrder` controls (fingerings sit closest to the notes, then the progression band).
 - **Match the SVG to the music by melody-note index, not by source offset.** Inserting annotations shifts every offset after them, so an index into the first voice's notes is the reliable link.
-- **The `song` passed in is the tune as printed** (instrument transposition and clef already applied). Anything about pitch has to read where the note is *drawn* (`verticalPos`); see `noteMidi` in [fingerings.js](../static/script/lib/music/fingerings.js).
+- **The `song` passed in is the tune as printed** (instrument transposition and clef already applied). Anything about pitch has to read where the note is *drawn* (`verticalPos`); see `noteMidi` in [melody-walk.js](../static/script/lib/music/melody-walk.js).
 - **A layer must never change `plan.abcText`.** `rerender()` reads it again, and the comping and solo generators parse it.
 
 ## Harmony
@@ -35,7 +35,7 @@ Things the first two layers taught us:
 |---|---|---|---|
 | **Roman numerals** | I, VI7, II7, V7… under each chord change, in the key | `convertChordsToRoman` in [music-theory.js](../static/script/lib/music/music-theory.js) already powers the "Concert + Roman" chord table; a per-chord version only needs the chord's position in the melody (already worked out for progressions) | S |
 | **Form (A / B / C sections)** | A soft tint per section, the same shade wherever that section comes back, plus a small "B · 8 bars" label at its start | `P:` parts are parsed already; `stepShades` in [sheet.js](../static/script/songs/sheet/sheet.js) gives the form strip its greys | S–M |
-| **More named progressions** | More of Pops Coffee's names as bands | `PROGRESSIONS` in [progressions.js](../static/script/lib/music/progressions.js) takes a new entry in one line. Candidates: **Sweet Sue** (an opening pattern from Post 41; its chords weren't confirmed when the first version was written), and anything else from Posts 41, 286 and 569 ("Traditional jazz comes in four-bar blocks"). Check each against the blog before adding it, as was done for Sunshine (Post 565) | S each |
+| **More named progressions** | More of Pops Coffee's names as bands | `PATTERNS` in [progressions.js](../static/script/lib/music/progressions.js) takes a new entry in one line, plus one test in `progressions-source.test.js` quoting what the post says. Candidates: **Sweet Sue** (an opening pattern from Post 41; its chords weren't confirmed when the first version was written), and anything else from Posts 41, 286 and 569 ("Traditional jazz comes in four-bar blocks"). Check each against the blog before adding it, as was done for Sunshine (Post 565) and the others (a bar-length or variation claim the post doesn't make is the module's own rule, and says so) | S each |
 | **Lego bricks + joins** | Conrad Cork's "bricks" (familiar chord chunks) as boxes behind the chord row, with a marker where two bricks join | The progression matcher already walks chord segments with lengths. The brick and join names need a real source (Cork's *Harmony with Lego Bricks*) before they go on screen; the design canvas used placeholder names | M |
 | **Turnarounds and approach chords** | A light mark on the I–VI–II–V turnaround at the end of a section, and on chromatic approach chords (A♭7 → G7) | The progression matcher already detects approach chords and skips over them; it only needs to report them | S |
 | **12-bar blues map** | "Blues · bar 1 of 12" markers, with the IV in bar 5 and the turnaround highlighted | `simplifyBlues` in [chords.js](../static/script/lib/music/chords.js) already recognises a repeating 12-bar scheme | S–M |
@@ -46,7 +46,7 @@ Things the first two layers taught us:
 | Layer | What it shows on the sheet | Building blocks already in the repo | Effort |
 |---|---|---|---|
 | **Chord tones** | 1, 3, 5, ♭7, 9… under each note relative to the chord sounding over it: filled for chord tones, outlined for tensions, a dot for passing notes (as on the design canvas) | `noteMidi` gives each note's pitch; the progression code knows which chord is sounding at each note's time; Tonal (already loaded) can spell the chord | M |
-| **Scale degree** | Each note's degree in the key (3, 6, 1…) | `noteMidi` plus the key tonic (`keyTonic` in progressions.js) | S |
+| **Scale degree** | Each note's degree in the key (3, 6, 1…) | Done: `melodyDegrees` in [scale-degrees.js](../static/script/lib/music/scale-degrees.js) (`noteMidi` plus `keyRoot` from chord-symbol.js) | S |
 | **Guide tones** | Highlights the 3rd and 7th of each chord, the notes that outline the changes, as a practice target for improvisers | Shares its maths with Chord tones | S once Chord tones exists |
 | **Target notes on strong beats** | Marks the chord tone that lands on beat 1 or 3 | Note times are already summed in `collectHarmony` | S |
 | **Blue notes** | A small mark on ♭3, ♭5 and ♭7 against the key | Same as Scale degree | S |
