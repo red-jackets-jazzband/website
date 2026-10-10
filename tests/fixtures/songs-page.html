@@ -33,23 +33,27 @@
           <input type="text" id="setlistNameInput" class="rj-setlist-title-input" aria-label="Setlist name" hidden>
           <button type="button" id="setlistExportBtn" class="rj-setlist-title-btn" title="Export as a .txt file" aria-label="Export setlist as a .txt file" hidden><span class="fa-solid fa-file-arrow-down" aria-hidden="true"></span></button>
         </div>
-        <div class="rj-library-print-group" role="group" aria-labelledby="rjPrintLabel">
-          <span class="rj-library-print-label" id="rjPrintLabel">Print</span>
-          <div class="rj-library-print-seg">
-            <button type="button" id="printSetlistBtn" class="rj-library-print-btn">Setlist</button>
-            <button type="button" id="printChordbookBtn" class="rj-library-print-btn">Chordbook</button>
-            <button type="button" id="printSongbookBtn" class="rj-library-print-btn">Songbook</button>
+        <fieldset class="rj-library-print-fieldset" aria-labelledby="rjPrintLabel">
+          <div class="rj-library-print-group">
+            <span class="rj-library-print-label" id="rjPrintLabel">Print</span>
+            <div class="rj-library-print-seg">
+              <button type="button" id="printSetlistBtn" class="rj-library-print-btn">Setlist</button>
+              <button type="button" id="printChordbookBtn" class="rj-library-print-btn">Chordbook</button>
+              <button type="button" id="printSongbookBtn" class="rj-library-print-btn">Songbook</button>
+            </div>
+            <output class="rj-library-print-status" id="setlistPrintStatus" aria-live="polite" hidden></output>
           </div>
-          <output class="rj-library-print-status" id="setlistPrintStatus" aria-live="polite" hidden></output>
-        </div>
-        <div class="rj-library-print-group" role="group" aria-labelledby="rjListenLabel">
-          <span class="rj-library-print-label" id="rjListenLabel">Listen</span>
-          <div class="rj-library-print-seg">
-            <button type="button" id="listenYoutubeBtn" class="rj-library-print-btn" disabled title="No YouTube links in this setlist" aria-label="Open this setlist’s songs on YouTube"><span class="fa-brands fa-youtube" aria-hidden="true"></span> YouTube</button>
-            <button type="button" id="listenExportBtn" class="rj-library-print-btn" disabled title="No songs in this setlist"><span class="fa-solid fa-share-from-square" aria-hidden="true"></span> Export</button>
+        </fieldset>
+        <fieldset class="rj-library-print-fieldset" aria-labelledby="rjListenLabel">
+          <div class="rj-library-print-group">
+            <span class="rj-library-print-label" id="rjListenLabel">Listen</span>
+            <div class="rj-library-print-seg">
+              <button type="button" id="listenYoutubeBtn" class="rj-library-print-btn" disabled title="No YouTube links in this setlist" aria-label="Open this setlist’s songs on YouTube"><span class="fa-brands fa-youtube" aria-hidden="true"></span> YouTube</button>
+              <button type="button" id="listenExportBtn" class="rj-library-print-btn" disabled title="No songs in this setlist"><span class="fa-solid fa-share-from-square" aria-hidden="true"></span> Export</button>
+            </div>
+            <output class="rj-library-print-status" id="listenStatus" aria-live="polite" hidden></output>
           </div>
-          <output class="rj-library-print-status" id="listenStatus" aria-live="polite" hidden></output>
-        </div>
+        </fieldset>
       </div>
     </div>
 
@@ -190,7 +194,7 @@
   <div id="setlistPrintBooklet" class="hideOnScreen"></div>
 
   <div id="setlistModal" class="rj-modal-overlay" hidden>
-    <div class="rj-modal" role="dialog" aria-modal="true" aria-labelledby="setlistModalTitle">
+    <dialog class="rj-modal" open aria-modal="true" aria-labelledby="setlistModalTitle">
       <div class="rj-modal-head">
         <h2 class="rj-modal-title" id="setlistModalTitle">New setlist</h2>
         <button type="button" id="setlistModalClose" class="rj-modal-close" aria-label="Close">&times;</button>
@@ -198,10 +202,10 @@
       <label class="rj-modal-label" for="setlistModalName">Name</label>
       <input type="text" id="setlistModalName" class="rj-modal-input" placeholder="New setlist name" autocomplete="off">
       <div class="rj-modal-label" id="setlistModalStartLabel">Start from</div>
-      <div class="rj-modal-choices" id="setlistModalChoices" role="radiogroup" aria-labelledby="setlistModalStartLabel">
-        <button type="button" class="rj-modal-choice active" data-choice="empty" role="radio" aria-checked="true">Empty</button>
-        <button type="button" class="rj-modal-choice" data-choice="remix" role="radio" aria-checked="false">Remix a setlist</button>
-        <button type="button" class="rj-modal-choice" data-choice="upload" role="radio" aria-checked="false">Upload a .txt</button>
+      <div class="rj-modal-choices" id="setlistModalChoices">
+        <button type="button" class="rj-modal-choice active" data-choice="empty" aria-pressed="true">Empty</button>
+        <button type="button" class="rj-modal-choice" data-choice="remix" aria-pressed="false">Remix a setlist</button>
+        <button type="button" class="rj-modal-choice" data-choice="upload" aria-pressed="false">Upload a .txt</button>
       </div>
       <div class="rj-modal-context" id="setlistModalRemix" hidden>
         <select id="setlistModalSource" class="rj-modal-input" aria-label="Setlist to remix"></select>
@@ -213,7 +217,7 @@
         <button type="button" id="setlistModalCancel" class="rj-modal-btn">Cancel</button>
         <button type="button" id="setlistModalCreate" class="rj-modal-btn rj-modal-btn-primary">Create</button>
       </div>
-    </div>
+    </dialog>
   </div>
 
   <div id="inspirationPanel" class="inspiration-panel hideOnprint" hidden>
@@ -245,7 +249,7 @@
     <div class="inspiration-loop" id="inspirationLoopBar" hidden>
       <div class="inspiration-loop-overview-row">
         <button type="button" class="inspiration-loop-overview-zoom-btn" id="inspirationZoomOut" aria-label="Zoom out" disabled><span class="fa-solid fa-magnifying-glass-minus" aria-hidden="true"></span></button>
-        <div class="inspiration-loop-overview" id="inspirationLoopOverview" title="Drag to pan, or drag an edge to zoom" tabindex="0" role="group" aria-label="Timeline overview: Left and Right arrow keys pan, Up and Down arrow keys zoom, Home and End jump to the start or end">
+        <div class="inspiration-loop-overview" id="inspirationLoopOverview" title="Drag to pan, or drag an edge to zoom" tabindex="0" role="slider" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Timeline overview: Left and Right arrow keys pan, Up and Down arrow keys zoom, Home and End jump to the start or end">
           <div class="inspiration-loop-overview-tick" id="inspirationOverviewTickA" hidden></div>
           <div class="inspiration-loop-overview-tick" id="inspirationOverviewTickB" hidden></div>
           <div class="inspiration-loop-overview-window" id="inspirationOverviewWindow">

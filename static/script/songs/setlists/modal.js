@@ -31,7 +31,7 @@ export function createSetlistModal(ctx) {
     qsa(".rj-modal-choice", byId("setlistModalChoices")).forEach((btn) => {
       const selected = btn.dataset.choice === next;
       btn.classList.toggle("active", selected);
-      btn.setAttribute("aria-checked", selected ? "true" : "false");
+      btn.setAttribute("aria-pressed", selected ? "true" : "false");
     });
     const remix = byId("setlistModalRemix");
     const upload = byId("setlistModalUpload");

@@ -3118,6 +3118,13 @@ body.rj-sheet-active .rj-sheet-empty {
   spans the toolbar — at 300px there isn't room for "Print" plus three words
   on one line.
 */
+.rj-library-print-fieldset {
+  flex-basis: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
 .rj-library-print-group {
   flex-basis: 100%;
   display: flex;
@@ -3228,6 +3235,15 @@ output.rj-library-print-status:not([hidden]) {
 }
 .rj-modal-overlay[hidden] {
   display: none;
+}
+/* A <dialog open> used as a plain box inside the overlay: undo the UA's own
+   absolute positioning, auto margins and canvas colour. */
+dialog.rj-modal {
+  display: block;
+  position: static;
+  margin: 0;
+  color: inherit;
+  max-height: none;
 }
 .rj-modal {
   width: 340px;
