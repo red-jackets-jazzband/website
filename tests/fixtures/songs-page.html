@@ -168,6 +168,17 @@
       <div id="notation" class="notation"></div>
       <div id="lyrics" class="lyrics"></div>
     </div>
+    <button type="button" id="layersTab" class="rj-layers-tab hideOnprint" aria-controls="layersPanel" aria-expanded="false" aria-label="Layers"><span class="rj-layers-tab-label">Layers</span><span id="layersTabCount" class="rj-layers-count" hidden></span></button>
+    <aside id="layersPanel" class="rj-layers-panel hideOnprint" aria-labelledby="layersPanelTitle" hidden>
+      <h2 id="layersPanelTitle" class="rj-layers-title">Layers</h2>
+      <span id="layersPanelCount" class="rj-layers-count" hidden></span>
+      <button type="button" id="layersResetBtn" class="rj-layers-reset">Reset all</button>
+      <button type="button" id="layersCloseBtn" class="rj-layers-close" aria-label="Close layers"></button>
+      <div id="layersList" class="rj-layers-list"></div>
+    </aside>
+    <div id="layersBackdrop" class="rj-layers-backdrop hideOnprint" hidden></div>
+    <template id="layerPreview-progressions"><svg class="rj-layer-mini" viewBox="0 0 88 44"></svg></template>
+    <template id="layerPreview-fingerings"><svg class="rj-layer-mini" viewBox="0 0 88 44"></svg></template>
 
     <div id="songPrintFooter" class="songPrintFooter hideOnScreen">
       Retrieved from www.redjackets.nl - <span id="instrumentText"></span>

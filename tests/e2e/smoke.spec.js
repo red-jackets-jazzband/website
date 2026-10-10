@@ -63,6 +63,29 @@ test("the Mixer <dialog> is hidden until its button is clicked, then toggles", a
   await expect(panel).toBeHidden();
 });
 
+test("the Layers panel opens from its tab and draws fingerings and progression bands", async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto(`${SONGS_URL}#s=basin_street`);
+  await expect(page.locator("#notation svg").first()).toBeVisible();
+  await page.locator("#instrument").selectOption("trumpet");
+
+  const panel = page.locator("#layersPanel");
+  await expect(panel).toBeHidden();
+  await page.locator("#layersTab").click();
+  await expect(panel).toBeVisible();
+  await page.locator('.rj-layer-row[data-layer="fingerings"]').click();
+  await page.locator('.rj-layer-row[data-layer="progressions"]').click();
+  await expect(page.locator("#notation .rj-layer-fingering").first()).toBeVisible();
+  // Basin Street's B section: Georgia (I III7) handing on to a Salty Dog.
+  await expect(page.locator("#notation .rj-layer-prog-label", { hasText: "Georgia" }).first()).toBeVisible();
+  expect(await page.locator("#notation .rj-layer-prog-band").count()).toBeGreaterThan(0);
+  await expect(page.locator("#layersTabCount")).toHaveText("2");
+
+  await page.locator("#layersCloseBtn").click();
+  await expect(panel).toBeHidden();
+  expect(errors).toEqual([]);
+});
+
 test("a band setlist opens from a deep link and lists its songs", async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto(`${SONGS_URL}#sl=setlist_2026`);
