@@ -8,6 +8,7 @@
     id            stable key (persisted: rj.layer.<id>)
     group         the panel heading it sits under
     label / hint  the panel row's text
+    credit        optional { prefix, text, href }: a link shown after the hint
     availableFor(instrument)
                   false greys the row out (fingerings are brass-only)
     annotate(song, context)
@@ -30,7 +31,8 @@ export const LAYERS = [
     id: "progressions",
     group: "Harmony",
     label: "Named progressions",
-    hint: "Salty Dog, Four-Leaf, Georgia, Sunshine, Apple Tree",
+    hint: "Labels the stock trad-jazz chord patterns (Salty Dog, Four-Leaf, Georgia, Sunshine, Apple Tree) and shades each bar they span.",
+    credit: { prefix: "Names from Pops Coffee's blog ", text: "Playing Traditional Jazz", href: "https://playing-traditional-jazz.blogspot.com/" },
     availableFor: () => true,
     annotate(song, context) {
       const out = [];

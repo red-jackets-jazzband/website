@@ -43,6 +43,15 @@ function unavailableHint(instrument) {
   return `Not for ${found ? found.label : "this instrument"} — pick ${names} under Instrument.`;
 }
 
+// "<prefix><link>" — the row's click toggles the layer, so the link keeps its
+// own click from bubbling up to it.
+function buildCredit(credit) {
+  if (!credit) return null;
+  const link = el("a", { text: credit.text, attrs: { href: credit.href, target: "_blank", rel: "noopener" } });
+  link.addEventListener("click", (event) => event.stopPropagation());
+  return el("span", { class: "rj-layer-credit" }, [credit.prefix, link]);
+}
+
 function buildRow(layer, toggle) {
   const labelId = `layerLabel-${layer.id}`;
   const switchBtn = el("button", {
@@ -50,7 +59,9 @@ function buildRow(layer, toggle) {
     class: "rj-layer-switch",
     attrs: { role: "switch", "aria-checked": "false", "aria-labelledby": labelId },
   }, [el("span", { class: "rj-layer-knob", attrs: { "aria-hidden": "true" } })]);
-  const hint = el("span", { class: "rj-layer-hint", text: layer.hint });
+  const hintText = el("span", { text: layer.hint });
+  const credit = buildCredit(layer.credit);
+  const hint = el("span", { class: "rj-layer-hint" }, credit ? [hintText, " ", credit] : [hintText]);
   const row = el("div", { class: "rj-layer-row", dataset: { layer: layer.id } }, [
     el("span", { class: "rj-layer-preview", attrs: { "aria-hidden": "true" } }, [previewFor(layer.id)]),
     el("span", { class: "rj-layer-text" }, [
@@ -64,7 +75,7 @@ function buildRow(layer, toggle) {
   row.addEventListener("click", () => {
     if (!switchBtn.disabled) toggle(layer.id);
   });
-  return { row, switchBtn, hint, layer };
+  return { row, switchBtn, hintText, credit, layer };
 }
 
 function buildList(listEl, toggle) {
@@ -83,14 +94,15 @@ function buildList(listEl, toggle) {
   return rows;
 }
 
-function updateRow({ row, switchBtn, hint, layer }, active, instrument) {
+function updateRow({ row, switchBtn, hintText, credit, layer }, active, instrument) {
   const available = layer.availableFor(instrument);
   const on = Boolean(active[layer.id]);
   switchBtn.setAttribute("aria-checked", on && available ? "true" : "false");
   switchBtn.disabled = !available;
   row.classList.toggle("is-on", on && available);
   row.classList.toggle("is-unavailable", !available);
-  hint.textContent = available ? layer.hint : unavailableHint(instrument);
+  hintText.textContent = available ? layer.hint : unavailableHint(instrument);
+  if (credit) credit.hidden = !available;
 }
 
 function updateCount(active, instrument) {
