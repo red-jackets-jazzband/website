@@ -14,6 +14,7 @@ import {
 import {
   updateMarkerTime, trackFraction, positionLoopHandle, positionOverviewTick, updateOverviewPlayed,
 } from "./timeline.js";
+import { tl } from "../../lib/core/i18n.js";
 
 const LOOP_POLL_MS = 80;
 const LOOP_MIN_GAP = 1; // seconds — the shortest loop the toggle will accept
@@ -299,7 +300,7 @@ export function createLoopBar({ getPlayer }) {
     if (!btn) return;
     const icon = btn.querySelector("span");
     if (icon) icon.className = isPlaying ? "fa-solid fa-pause" : "fa-solid fa-play";
-    const label = isPlaying ? "Pause" : "Play";
+    const label = isPlaying ? tl("pause", "Pause") : tl("play", "Play");
     btn.title = label;
     btn.setAttribute("aria-label", label);
     // Same treatment as the sheet's own Play button (.sheet-play-btn.playing):

@@ -22,6 +22,7 @@ import { byId, clear, el } from "../../lib/core/dom.js";
 import { LAYERS, activeLayers } from "../../lib/music/layers.js";
 import { findInstrument, INSTRUMENTS } from "../../lib/music/instruments.js";
 import { trackRightEdge } from "./edge.js";
+import { listOf, tl } from "../../lib/core/i18n.js";
 
 function brassLabels() {
   return INSTRUMENTS.filter((i) => LAYERS.find((l) => l.id === "fingerings").availableFor(i.value)).map((i) => i.label);
@@ -34,13 +35,13 @@ function previewFor(id) {
 
 // "A, B or C".
 function orList(names) {
-  return names.length < 2 ? names.join("") : `${names.slice(0, -1).join(", ")} or ${names[names.length - 1]}`;
+  return listOf(names, "or");
 }
 
 function unavailableHint(instrument) {
   const found = findInstrument(instrument);
   const names = orList(brassLabels());
-  return `Not for ${found ? found.label : "this instrument"}. Pick ${names} under Instrument.`;
+  return tl("layers_unavailable", "Not for {instrument}. Pick {names} under Instrument.", { instrument: found ? found.label : tl("layers_this_instrument", "this instrument"), names });
 }
 
 // "<prefix><link>" — the row's click toggles the layer, so the link keeps its
@@ -106,8 +107,10 @@ function updateRow({ row, switchBtn, hintText, credit, layer }, active, instrume
 }
 
 function tabLabel(count, open) {
-  if (open) return "Close layers";
-  return count > 0 ? `Layers (${count} on)` : "Layers";
+  if (open) return tl("layers_close", "Close layers");
+  return count > 0
+    ? tl("layers_tab_count", "Layers ({count} on)", { count })
+    : tl("layers_tab", "Layers");
 }
 
 function updateCount(active, instrument) {
@@ -141,7 +144,7 @@ function showOpen(open) {
     tab.setAttribute("aria-expanded", open ? "true" : "false");
     const badge = byId("layersTabCount");
     tab.setAttribute("aria-label", tabLabel(badge ? Number(badge.textContent) || 0 : 0, open));
-    tab.title = open ? "Close layers" : "Layers";
+    tab.title = open ? tl("layers_close", "Close layers") : tl("layers_tab", "Layers");
   }
   document.body.classList.toggle("rj-layers-open", open);
   announceResize();
