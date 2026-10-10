@@ -48,7 +48,8 @@ function literalEnd(source, start) {
   return i + 1;
 }
 
-// Every tl("key", "English"…) call in a source file.
+// Every tl("key", "English"…) call in a source file; `english` is null when no
+// double-quoted English literal follows the key on the same line.
 function scanCalls(source) {
   const calls = [];
   const marker = 'tl("';
@@ -60,6 +61,8 @@ function scanCalls(source) {
     if (source.startsWith(', "', keyEnd)) {
       const textStart = keyEnd + 2;
       calls.push({ key, english: JSON.parse(source.slice(textStart, literalEnd(source, textStart))) });
+    } else {
+      calls.push({ key, english: null });
     }
     at = source.indexOf(marker, keyEnd);
   }
@@ -73,6 +76,7 @@ function scanTemplateKeys(source) {
   let at = source.indexOf(marker);
   while (at >= 0) {
     const end = source.indexOf('"', at + marker.length);
+    if (end < 0) break;
     keys.push(source.slice(at + marker.length, end));
     at = source.indexOf(marker, end);
   }
@@ -105,7 +109,9 @@ function checkUsage(english, problems) {
     scanCalls(readText(path)).forEach(({ key, english: text }) => {
       const full = `js_${key}`;
       used.add(full);
-      if (!english.has(full)) {
+      if (text === null) {
+        problems.push(`${path}: tl("${key}") must pass a double-quoted English literal as its second argument, on the same line`);
+      } else if (!english.has(full)) {
         problems.push(`${path}: tl("${key}") has no ${full} in i18n/en.toml`);
       } else if (english.get(full) !== text) {
         problems.push(`${path}: tl("${key}") says ${JSON.stringify(text)}, i18n/en.toml says ${JSON.stringify(english.get(full))}`);
