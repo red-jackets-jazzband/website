@@ -33,6 +33,9 @@ const RUNTIME_TARGETS = {
   ".setlist-divider-input": ["static/script/songs/setlists/view.js", 'class: "setlist-divider-input"'],
   ".setlist-split-btn": ["static/script/songs/setlists/view.js", 'class: "setlist-split-btn"'],
   ".setlist-set-merge": ["static/script/songs/setlists/view.js", 'class: "setlist-set-merge"'],
+  '.rj-layer-row[data-layer="progressions"]': ["static/script/songs/layers/panel.js", "dataset: { layer: layer.id }"],
+  '.rj-layer-row[data-layer="fingerings"]': ["static/script/songs/layers/panel.js", "dataset: { layer: layer.id }"],
+  ".rj-layer-prog-band": ["static/script/songs/layers/overlays.js", "rj-layer-prog-band"],
   ".setlist-song-note-add": ["static/script/songs/setlists/view.js", 'class: "setlist-song-note-add"'],
 };
 
