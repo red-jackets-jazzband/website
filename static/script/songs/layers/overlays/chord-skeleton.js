@@ -22,8 +22,8 @@ const TOP_LINE = 10;
 // Gap before the note, and the sideways shift of a second, in head radii.
 const GAP_RX = 0.6;
 const SECOND_SHIFT_RX = 1.9;
-// The nearest a skeleton head's centre gets to the note's left edge, in head radii.
-const NEAR_RX = 0.9;
+// How far the stack's right edge may reach into the note's left edge, in head radii.
+const OVERLAP_RX = 0.1;
 
 // The element's noteheads' boxes, top first.
 function headBoxes(group) {
@@ -198,11 +198,12 @@ export function drawChordSkeleton(visualObj) {
     const ideal = left - GAP_RX * rx - reach * rx;
     // With the previous element (a bar line, the clef/key/meter) too close to
     // leave that room, it slides right to clear it - but never past the note:
-    // the heads at most touch the melody note's left edge, so they still read
+    // the stack's right edge (its shifted head too, when the chord has a
+    // second) at most touches the melody note's left edge, so it still reads
     // as sitting before it, not on it.
     const signRoom = hasSign ? 2.2 : 0;
     const clear = before === null ? ideal : before + (1.8 + signRoom) * rx;
-    const x = Math.min(Math.max(ideal, clear), left - NEAR_RX * rx);
+    const x = Math.min(Math.max(ideal, clear), left - (reach - OVERLAP_RX) * rx);
     const stack = buildStack(notes, x, (vp) => anchor.y + (anchor.vp - vp) * step, step);
     group.before(stack);
   });
