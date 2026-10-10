@@ -210,5 +210,5 @@ Pour la **trompette**, le **trombone** et le **sousaphone**, cela écrit la comb
 Les calques que vous allumez sont retenus sur cet appareil, la prochaine visite aura le même aspect. **Tout réinitialiser** éteint tous les calques d'un coup. Le panneau lui-même démarre toujours fermé.
 
 ## done: Fin de la visite
-Voilà la visite. Le bouton `fa-circle-question` la ramène, et le menu en haut de la carte change la langue.
+Voilà la visite. Le bouton `fa-circle-question` la ramène.
 

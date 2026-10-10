@@ -210,5 +210,5 @@ Voor **Trompet**, **Trombone** en **Sousafoon** schrijft dit de ventielcombinati
 De lagen die je aanzet worden op dit apparaat onthouden, dus de volgende keer ziet alles er hetzelfde uit. Met **Alles terugzetten** zet je alle lagen in één keer uit. Het paneel zelf begint altijd dicht.
 
 ## done: Dat was de rondleiding
-Dat was de rondleiding. De `fa-circle-question`-knop haalt hem terug, en het menu bovenaan de kaart wisselt van taal.
+Dat was de rondleiding. De `fa-circle-question`-knop haalt hem terug.
 

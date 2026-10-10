@@ -210,5 +210,5 @@ Für **Trompete**, **Posaune** und **Sousafon** schreibt das die Ventilkombinati
 Die Ebenen, die du einschaltest, werden auf diesem Gerät gemerkt, beim nächsten Besuch sieht alles gleich aus. Mit **Alle zurücksetzen** schaltest du alle Ebenen auf einmal aus. Das Panel selbst startet immer geschlossen.
 
 ## done: Das war die Tour
-Das war die Tour. Der `fa-circle-question`-Knopf holt sie zurück, und das Menü oben auf der Karte wechselt die Sprache.
+Das war die Tour. Der `fa-circle-question`-Knopf holt sie zurück.
 
