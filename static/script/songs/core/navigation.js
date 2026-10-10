@@ -1,6 +1,7 @@
 import { byId, qsa } from "../../lib/core/dom.js";
 import { parseSongsParams, buildSongsHash } from "../../lib/core/song-hash.js";
 import { getPersonalSetlist } from "../../lib/setlists/setlists-store.js";
+import { tl } from "../../lib/core/i18n.js";
 
 // The `.abc` filename -> its slug (basename), used in the `s=` hash param.
 function songSlug(file) {
@@ -103,7 +104,7 @@ export function createNavigation(ctx) {
       patch.currentLibrarySongName = row.name;
     }
     setNav(patch);
-    setSheetBackLabel("Songs");
+    setSheetBackLabel(tl("back_songs", "Songs"));
     ctx.sheet.renderFromFile(song.file);
   }
 
@@ -148,7 +149,7 @@ export function createNavigation(ctx) {
 
   function selectSetlistSong(file, index) {
     setNav({ currentSongFile: file, currentSetlistSongIndex: index == null ? null : Number(index) });
-    setSheetBackLabel("Setlist");
+    setSheetBackLabel(tl("back_setlist", "Setlist"));
   }
 
   // Back at the setlists home: no setlist open any more. The song itself may

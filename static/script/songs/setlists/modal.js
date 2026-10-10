@@ -3,6 +3,7 @@ import { parseSetlistFile } from "../../lib/setlists/setlist-format.js";
 import {
   listPersonalSetlists, getPersonalSetlist, createPersonalSetlist, copyBandSetlistToPersonal,
 } from "../../lib/setlists/setlists-store.js";
+import { tl } from "../../lib/core/i18n.js";
 
 /*
   The "New setlist" modal (#setlistModal): a name plus one of three starting
@@ -45,7 +46,7 @@ export function createSetlistModal(ctx) {
 
     if (ctx.state.setlistIndex.length) {
       const group = document.createElement("optgroup");
-      group.label = "From the band";
+      group.label = tl("setlists_from_band", "From the band");
       ctx.state.setlistIndex.forEach((entry) => {
         group.append(sourceOption(`band:${entry.file}`, entry.name));
       });
@@ -54,12 +55,12 @@ export function createSetlistModal(ctx) {
     const mine = listPersonalSetlists(ctx.storage());
     if (mine.length) {
       const group = document.createElement("optgroup");
-      group.label = "Yours";
+      group.label = tl("setlists_yours", "Yours");
       mine.forEach((entry) => group.append(sourceOption(`mine:${entry.id}`, entry.name)));
       select.append(group);
     }
     if (!select.options.length) {
-      const opt = sourceOption("", "No setlists to remix");
+      const opt = sourceOption("", tl("modal_no_remix", "No setlists to remix"));
       opt.disabled = true;
       select.append(opt);
     }
@@ -130,7 +131,7 @@ export function createSetlistModal(ctx) {
     const name = (byId("setlistModalName").value || "").trim();
     if (choice === "upload") createFromUpload(name);
     else if (choice === "remix") createFromRemix(name);
-    else openCreated(createPersonalSetlist(ctx.storage(), name || "New setlist"));
+    else openCreated(createPersonalSetlist(ctx.storage(), name || tl("setlist_new_default", "New setlist")));
   }
 
   function init() {
