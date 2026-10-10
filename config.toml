@@ -107,9 +107,9 @@ copyright = "&copy;2019 Red Jackets Jazzband"
   # the license option via the template author's website: https://onepagelove.com/split
 
 # Footer "Pages" list. `pageRef` resolves to the current language's version of
-# the page, and the label is that page's own `tagline`. /songs is English-only,
-# so it is a plain url. Identifiers are explicit because every page shares the
-# same title, which would otherwise make them collide.
+# the page, and the label is that page's own `tagline`. Identifiers are explicit
+# because every page shares the same title, which would otherwise make them
+# collide.
 [[menus.main]]
   identifier = "agenda"
   pageRef = "/agenda"
@@ -127,8 +127,7 @@ copyright = "&copy;2019 Red Jackets Jazzband"
 
 [[menus.main]]
   identifier = "songs"
-  name = "Songs"
-  url = "/songs"
+  pageRef = "/songs"
   weight = 40
 
 # Below settings should fix any GDPR concerns according to Hugo docs
