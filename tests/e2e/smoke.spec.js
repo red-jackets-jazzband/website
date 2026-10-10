@@ -81,7 +81,7 @@ test("the Layers panel opens from its tab and draws fingerings and progression b
   expect(await page.locator("#notation .rj-layer-prog-band").count()).toBeGreaterThan(0);
   await expect(page.locator("#layersTabCount")).toHaveText("2");
 
-  await page.locator("#layersCloseBtn").click();
+  await page.locator("#layersTab").click();
   await expect(panel).toBeHidden();
   expect(errors).toEqual([]);
 });
