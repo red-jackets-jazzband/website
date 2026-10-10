@@ -6204,21 +6204,6 @@ body.rj-sheet-fullscreen #sheetmenu {
   color: #a39b8f;
   font: 500 13px "Montserrat", sans-serif;
 }
-/* Language: a quiet menu, not a row of buttons. */
-.rj-tour-lang {
-  -webkit-appearance: none;
-  appearance: none;
-  padding: 2px 16px 2px 0;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23a39b8f' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right center;
-  border: none;
-  color: #a39b8f;
-  font: 500 13px "Montserrat", sans-serif;
-  cursor: pointer;
-}
-.rj-tour-lang option {
-  background: #24211e;
-  color: #ece6dc;
-}
 .rj-tour-close {
   flex: none;
   width: 24px;
