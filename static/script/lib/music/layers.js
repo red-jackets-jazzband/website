@@ -19,7 +19,7 @@
   lays them out (making room above/below the staff) exactly as it would a
   hand-written one, and a printed sheet carries them too.
 */
-import { instrumentHasFingerings, melodyFingerings } from "./fingerings.js";
+import { fingeringGlyphs, instrumentHasFingerings, melodyFingerings } from "./fingerings.js";
 import { findNamedProgressions } from "./progressions.js";
 
 // The marker a continued progression's label carries on each later line.
@@ -48,7 +48,7 @@ export const LAYERS = [
     label: "Fingerings",
     hint: "Valves for trumpet and sousaphone, slide positions for trombone",
     availableFor: instrumentHasFingerings,
-    annotate: (song, context) => melodyFingerings(song, context.instrument).map((f) => ({ startChar: f.startChar, text: `_${f.text}` })),
+    annotate: (song, context) => melodyFingerings(song, context.instrument).map((f) => ({ startChar: f.startChar, text: `_${fingeringGlyphs(context.instrument, f.text)}` })),
   },
 ];
 

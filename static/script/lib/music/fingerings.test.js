@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import ABCJS from "abcjs";
 import {
-  fingeringFor, instrumentHasFingerings, melodyFingerings, noteMidi,
+  fingeringFor, fingeringGlyphs, instrumentHasFingerings, melodyFingerings, noteMidi,
 } from "./fingerings.js";
 import { resolveTranspose } from "./render-plan.js";
 
@@ -85,4 +85,10 @@ test("a chord gets the fingering of its top note; source offsets point at the no
 
 test("no fingerings for a non-brass instrument", () => {
   assert.deepEqual(melodyFingerings(engraved("C D E F |", "alto_saxophone"), "alto_saxophone"), []);
+});
+
+test("valves print as a three-line diagram, trombone positions stay digits", () => {
+  assert.equal(fingeringGlyphs("trumpet", "13"), "1\\n\u00B7\\n3");
+  assert.equal(fingeringGlyphs("sousaphone", "0"), "\u00B7\\n0\\n\u00B7");
+  assert.equal(fingeringGlyphs("trombone", "12"), "12");
 });
