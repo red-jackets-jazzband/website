@@ -36,8 +36,8 @@ const RUNTIME_TARGETS = {
   '.rj-layer-row[data-layer="progressions"]': ["static/script/songs/layers/panel.js", "dataset: { layer: layer.id }"],
   '.rj-layer-row[data-layer="fingerings"]': ["static/script/songs/layers/panel.js", "dataset: { layer: layer.id }"],
   '.rj-layer-row[data-layer="scale-degrees"]': ["static/script/songs/layers/panel.js", "dataset: { layer: layer.id }"],
-  ".rj-layer-degree-circle": ["static/script/songs/layers/overlays.js", "rj-layer-degree-circle"],
-  ".rj-layer-prog-band": ["static/script/songs/layers/overlays.js", "rj-layer-prog-band"],
+  ".rj-layer-degree-circle": ["static/script/songs/layers/overlays/degrees.js", "rj-layer-degree-circle"],
+  ".rj-layer-prog-band": ["static/script/songs/layers/overlays/progression-bands.js", "rj-layer-prog-band"],
   ".setlist-song-note-add": ["static/script/songs/setlists/view.js", 'class: "setlist-song-note-add"'],
 };
 

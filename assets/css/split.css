@@ -6959,6 +6959,9 @@ body.rj-layers-open #layersTab.rj-layers-tab {
    italic otherwise). Both print as shown. */
 .notation .rj-layer-prog-band {
   fill: #f8e2b3;
+  /* Translucent, so a chord two progressions share (Georgia's VI7 is a Salty
+     Dog's first chord) shows both bands and both borders over it. */
+  fill-opacity: .75;
   stroke: #c98500;
   stroke-width: 1;
 }
