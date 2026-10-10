@@ -6550,3 +6550,405 @@ body.rj-sheet-fullscreen #sheetmenu {
   background: var(--rj-hover);
   color: #fff;
 }
+
+/* ========================================================================
+   Layers panel (songs/layers/panel.js, lib/music/layers.js)
+
+   Closed: a thin tab on the right edge of the screen (desktop) or a
+   floating "Layers" pill bottom-right (below 1024px — not an edge drawer,
+   since left/right swipes on the sheet already step through songs). Open:
+   a 312px panel down the right edge that pushes the sheet over rather than
+   covering it (desktop), or a bottom sheet over a dimmed page (mobile).
+   Only shown once a song is on the sheet (body.rj-sheet-active).
+   ======================================================================== */
+#layersTab.rj-layers-tab {
+  display: none;
+}
+body.rj-sheet-active #layersTab.rj-layers-tab {
+  position: fixed;
+  right: 0;
+  top: 40vh;
+  z-index: 16;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 34px;
+  padding: 14px 0 12px;
+  border: 1px solid #3a3a3a;
+  border-right: 0;
+  border-radius: 12px 0 0 12px;
+  background: #262626;
+  color: var(--rj-gold);
+  font-family: "Montserrat", sans-serif;
+  cursor: pointer;
+  box-shadow: -4px 4px 14px rgba(0, 0, 0, .35);
+  transition: width .15s, background .15s;
+}
+@media (hover: hover) {
+  body.rj-sheet-active #layersTab.rj-layers-tab:hover {
+    width: 38px;
+    background: #2f2f2f;
+  }
+}
+#layersTab.rj-layers-tab:focus-visible {
+  outline: 2px solid var(--rj-gold);
+  outline-offset: 2px;
+}
+.rj-layers-tab-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.rj-layers-count {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  box-sizing: border-box;
+  border-radius: 9px;
+  background: var(--rj-gold);
+  color: #1b1b1b;
+  font-family: "Montserrat", sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+.rj-layers-count[hidden] {
+  display: none;
+}
+body.rj-layers-open #layersTab.rj-layers-tab {
+  display: none;
+}
+
+#layersPanel.rj-layers-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 18;
+  width: 312px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  background: #1f1f1f;
+  border-left: 1px solid #2e2e2e;
+  color: #ecebe6;
+  font-family: "Montserrat", sans-serif;
+  box-shadow: -8px 0 24px rgba(0, 0, 0, .35);
+}
+#layersPanel.rj-layers-panel[hidden] {
+  display: none;
+}
+.rj-layers-grip {
+  display: none;
+}
+.rj-layers-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 8px 4px 16px;
+}
+.rj-layers-head .rj-layers-icon {
+  color: var(--rj-gold);
+  flex: none;
+}
+#layersPanel .rj-layers-title {
+  margin: 0;
+  line-height: 1.2;
+  font-family: "Montserrat", sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: .01em;
+  color: #ffffff;
+  text-transform: none;
+}
+.rj-layers-reset {
+  margin-left: auto;
+  padding: 8px 6px;
+  border: 0;
+  background: none;
+  color: var(--rj-gold);
+  font: 600 12px "Montserrat", sans-serif;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.rj-layers-close {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #dedcd6;
+  font-size: 18px;
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .rj-layers-reset:hover {
+    color: var(--rj-hover);
+  }
+  .rj-layers-close:hover {
+    background: #2f2f2f;
+    color: var(--rj-gold);
+  }
+}
+#layersPanel .rj-layers-intro {
+  margin: 0;
+  padding: 0 16px 10px;
+  border-bottom: 1px solid #2e2e2e;
+  font: 12px/1.45 "Montserrat", sans-serif;
+  color: #a29f98;
+}
+.rj-layers-list {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 10px;
+}
+.rj-layer-group {
+  padding: 14px 16px 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: #a29f98;
+}
+.rj-layer-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 6px;
+  padding: 8px 6px 8px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background .15s;
+}
+.rj-layer-row:hover,
+.rj-layer-row:focus-within {
+  background: #2b2b2b;
+}
+.rj-layer-row.is-unavailable {
+  cursor: default;
+}
+.rj-layer-row.is-unavailable .rj-layer-preview,
+.rj-layer-row.is-unavailable .rj-layer-label {
+  opacity: .45;
+}
+.rj-layer-preview {
+  flex: none;
+  width: 88px;
+  height: 44px;
+  border-radius: 5px;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px #3a3a3a;
+  transition: transform .18s, box-shadow .18s;
+}
+.rj-layer-mini {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+/* A preview shows its layer faintly while off, fully while on — and fully on
+   hover/focus, so you see what switching it on would add. */
+.rj-layer-preview-ov {
+  opacity: .38;
+  transition: opacity .2s;
+}
+.rj-layer-row.is-on .rj-layer-preview-ov,
+.rj-layer-row:hover .rj-layer-preview-ov,
+.rj-layer-row:focus-within .rj-layer-preview-ov {
+  opacity: 1;
+}
+.rj-layer-row:not(.is-unavailable):hover .rj-layer-preview,
+.rj-layer-row:not(.is-unavailable):focus-within .rj-layer-preview {
+  transform: scale(1.06);
+  box-shadow: 0 0 0 1.5px var(--rj-gold);
+}
+.rj-layer-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.rj-layer-label {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: #dedcd6;
+}
+.rj-layer-row.is-on .rj-layer-label {
+  color: #ffffff;
+}
+.rj-layer-hint {
+  font-size: 11.5px;
+  line-height: 1.3;
+  color: #a29f98;
+}
+.rj-layer-switch {
+  flex: none;
+  position: relative;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.rj-layer-switch::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 12px;
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
+  background: #4a4a4a;
+  transition: background .15s;
+}
+.rj-layer-knob {
+  position: absolute;
+  left: 7px;
+  top: 15px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #d8d6d0;
+  transition: left .15s, background .15s;
+}
+.rj-layer-switch[aria-checked="true"]::before {
+  background: var(--rj-gold);
+}
+.rj-layer-switch[aria-checked="true"] .rj-layer-knob {
+  left: 23px;
+  background: #1b1b1b;
+}
+.rj-layer-switch:disabled {
+  cursor: default;
+  opacity: .4;
+}
+.rj-layer-switch:focus-visible {
+  outline: 2px solid var(--rj-gold);
+  outline-offset: -2px;
+  border-radius: 12px;
+}
+#layersPanel .rj-layers-foot {
+  margin: 0;
+  padding: 10px 16px 14px;
+  border-top: 1px solid #2e2e2e;
+  font: 11px/1.4 "Montserrat", sans-serif;
+  color: #a29f98;
+}
+#layersBackdrop.rj-layers-backdrop {
+  display: none;
+}
+
+/* Desktop: the open panel takes its own column instead of covering the
+   sheet (the staff and chord grid re-fit to the narrower width). */
+@media (min-width: 1025px) {
+  body.rj-sheet-active.rj-layers-open .rj-songs-layout {
+    box-sizing: border-box;
+    padding-right: 312px;
+  }
+}
+
+/* Mobile / tablet: a floating pill opens a bottom sheet. */
+@media (max-width: 1024px) {
+  body.rj-sheet-active #layersTab.rj-layers-tab {
+    top: auto;
+    right: 16px;
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    flex-direction: row;
+    gap: 8px;
+    width: auto;
+    height: 48px;
+    padding: 0 16px 0 14px;
+    border: 1px solid var(--rj-gold);
+    border-radius: 24px;
+    background: #1f1f1f;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, .45);
+  }
+  .rj-layers-tab-label {
+    writing-mode: horizontal-tb;
+    transform: none;
+    font-size: 14px;
+    letter-spacing: .02em;
+    text-transform: none;
+  }
+  #layersPanel.rj-layers-panel {
+    top: auto;
+    left: 0;
+    width: auto;
+    height: min(65vh, 560px);
+    border-left: 0;
+    border-radius: 18px 18px 0 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    box-shadow: 0 -12px 32px rgba(0, 0, 0, .55);
+  }
+  .rj-layers-grip {
+    display: block;
+    width: 40px;
+    height: 5px;
+    margin: 8px auto 0;
+    border-radius: 3px;
+    background: #555555;
+  }
+  .rj-layer-preview {
+    width: 112px;
+    height: 56px;
+  }
+  .rj-layer-label {
+    font-size: 14px;
+  }
+  .rj-layer-hint {
+    font-size: 12px;
+  }
+  body.rj-layers-open #layersBackdrop.rj-layers-backdrop {
+    display: block;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 17;
+    background: rgba(0, 0, 0, .35);
+  }
+}
+
+/* On the sheet: a named progression's label sits in an amber highlighter
+   band over its bars; fingerings are set upright and bold (annotations are
+   italic otherwise). Both print as shown. */
+.notation .rj-layer-prog-band {
+  fill: #f8e2b3;
+  stroke: #c98500;
+  stroke-width: 1;
+}
+.notation text.rj-layer-prog-label {
+  fill: #6b4300;
+  font-weight: 700;
+  font-style: normal;
+}
+.notation text.rj-layer-fingering {
+  font-style: normal;
+  font-weight: 700;
+  fill: #1b1b1b;
+}
+
+/* The id selectors above outrank .hideOnprint's own print rule, so the
+   panel, its tab and the desktop push are switched off here for print;
+   the layers drawn on the sheet itself do print. */
+@media print {
+  body.rj-sheet-active #layersTab.rj-layers-tab,
+  #layersPanel.rj-layers-panel,
+  body.rj-layers-open #layersBackdrop.rj-layers-backdrop {
+    display: none;
+  }
+  body.rj-sheet-active.rj-layers-open .rj-songs-layout {
+    padding-right: 0;
+  }
+}

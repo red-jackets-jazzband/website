@@ -1,0 +1,67 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import ABCJS from "abcjs";
+import { findNamedProgressions, parseChordSymbol } from "./progressions.js";
+
+const parse = (body, header = "M:4/4\nL:1/4\nK:Bb") => ABCJS.parseOnly(`X:1\n${header}\n${body}\n`)[0];
+const names = (song) => findNamedProgressions(song).map((m) => m.name);
+
+test("parseChordSymbol: root and function", () => {
+  assert.deepEqual(parseChordSymbol("Bb7"), { root: 10, quality: "dom" });
+  assert.deepEqual(parseChordSymbol("B♭"), { root: 10, quality: "maj" });
+  assert.deepEqual(parseChordSymbol("C#7"), { root: 1, quality: "dom" });
+  assert.deepEqual(parseChordSymbol("Bb/D"), { root: 10, quality: "maj" });
+  assert.equal(parseChordSymbol("Ebm").quality, "min");
+  assert.equal(parseChordSymbol("Ebm6").quality, "min");
+  assert.equal(parseChordSymbol("Bbmaj7").quality, "maj");
+  assert.equal(parseChordSymbol("Bb6").quality, "maj");
+  assert.equal(parseChordSymbol("F+7").quality, "dom");
+  assert.equal(parseChordSymbol("Gm7b5").quality, "hdim");
+  assert.equal(parseChordSymbol("Edim").quality, "dim");
+  assert.equal(parseChordSymbol("N.C."), null);
+  assert.equal(parseChordSymbol(""), null);
+});
+
+test("Salty Dog: VI7 II7 V7 I, a bar each", () => {
+  assert.deepEqual(names(parse('"G7" D4 | "C7" D4 | "F7" D4 | "Bb" B4 |')), ["Salty Dog"]);
+});
+
+test("Four-Leaf: I II7 V7 I, two bars each", () => {
+  const song = parse('"Bb" B4 | B4 | "C7" c4 | c4 | "F7" F4 | F4 | "Bb" B4 | B4 |');
+  assert.deepEqual(names(song), ["Four-Leaf"]);
+});
+
+test("Georgia hands its VI7 on to a Salty Dog, and the bands meet there", () => {
+  // Basin Street's B section, approach chord (Ab7) and all.
+  const song = parse('"Bb" D4 | "D7" D4 | "G7" D4 | "Ab7" E2 "G7" D2 | "C7" D4 | "F7" D4 | "Bb/D" c2 "C#7" A2 | "C7" B2 "F7" F2 |');
+  const found = findNamedProgressions(song);
+  assert.deepEqual(found.map((m) => m.name), ["Georgia", "Salty Dog"]);
+  assert.deepEqual([found[0].startNote, found[0].endNote], [0, 2], "Georgia: Bb and D7");
+  assert.deepEqual([found[1].startNote, found[1].endNote], [2, 8], "Salty Dog: G7 to the Bb/D");
+});
+
+test("Sunshine: IV IVm I", () => {
+  assert.deepEqual(names(parse('"Eb" G4 | "Ebm" G4 | "Bb" F4 | F4 |')), ["Sunshine"]);
+});
+
+test("Apple Tree only counts as an opening", () => {
+  assert.deepEqual(names(parse('P:A\n"Bb" B4 | "Eb" G4 | "Bb" F4 | F4 |')), ["Apple Tree"]);
+  assert.deepEqual(names(parse('"F7" A4 | "Bb" B4 | "Eb" G4 | "Bb" F4 |')), []);
+});
+
+test("a chord change faster than a bar isn't a named progression", () => {
+  assert.deepEqual(names(parse('"G7" D2 "C7" D2 | "F7" D2 "Bb" D2 |')), []);
+});
+
+test("minor keys and chordless tunes give nothing", () => {
+  assert.deepEqual(names(parse('"Eb" G4 | "Ebm" G4 | "Bb" F4 |', "M:4/4\nL:1/4\nK:Gm")), []);
+  assert.deepEqual(names(parse("B4 | c4 |")), []);
+});
+
+test("a progression running onto the next line gets a label offset per line", () => {
+  const text = 'X:1\nM:4/4\nL:1/4\nK:Bb\n"G7" D4 | "C7" D4 |\n"F7" E4 | "Bb" F4 |\n';
+  const [match] = findNamedProgressions(ABCJS.parseOnly(text)[0]);
+  assert.equal(match.lineStarts.length, 2);
+  assert.equal(text.slice(match.lineStarts[0], match.lineStarts[0] + 4), '"G7"');
+  assert.equal(text.slice(match.lineStarts[1], match.lineStarts[1] + 4), '"F7"');
+});
