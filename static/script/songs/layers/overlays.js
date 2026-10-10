@@ -169,6 +169,18 @@ function placeLabel(label, bar, name, minY) {
   return true;
 }
 
+// Wrap the label's text line(s) in a link to the progression's blog post.
+function linkLabel(lines, url) {
+  const link = document.createElementNS(SVG_NS, "a");
+  link.setAttribute("class", "rj-layer-prog-link");
+  link.setAttribute("href", url);
+  link.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", url);
+  link.setAttribute("target", "_blank");
+  link.setAttribute("rel", "noopener");
+  lines[0].before(link);
+  link.append(...lines);
+}
+
 // The bar's extent behind `chords` (or, with none, behind the label), padded.
 function barBehind(chords, label) {
   const boxes = (chords.length > 0 ? chords : [label]).map(bboxOf).filter(Boolean);
@@ -214,7 +226,8 @@ function pathEl(d, shade, fill) {
   came in from before its start: that side runs out to the staff's edge with
   no border.
 */
-function drawMarking(chords, label, shade, open, name) {
+function drawMarking(chords, label, shade, open, match) {
+  const { name, url } = match;
   const texts = chords.concat(label ? [label] : []);
   texts.forEach((text) => text.classList.add("rj-layer-prog-text", ...shade.split(" ")));
   const anchor = chords[0] || label;
@@ -226,7 +239,8 @@ function drawMarking(chords, label, shade, open, name) {
   const minY = viewTop(svg);
   keepBelow(bar, minY);
   // The label's copy for the second line inherits its classes.
-  if (label && chords.length > 0) placeLabel(label, bar, name, minY);
+  const placed = label && chords.length > 0 && placeLabel(label, bar, name, minY);
+  if (label && url) linkLabel(placed ? [label, label.nextElementSibling] : [label], url);
   const { fill, edge } = barPath(bar, sides);
   // First in the svg, so the notation draws over them.
   svg.insertBefore(pathEl(edge, shade, false), svg.firstChild);
@@ -287,7 +301,7 @@ function drawProgressions(visualObj, progressions) {
     order.forEach((line, i) => {
       const { chords, label } = lines.get(line);
       if (chords.length === 0 && !label) return;
-      drawMarking(chords, label, shades[k], { left: i > 0, right: i < order.length - 1 }, match.name);
+      drawMarking(chords, label, shades[k], { left: i > 0, right: i < order.length - 1 }, match);
     });
   });
 }

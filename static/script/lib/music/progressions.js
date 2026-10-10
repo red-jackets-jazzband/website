@@ -53,19 +53,21 @@ const V_TRIAD_OR_7 = [7, "majOrDom"];
   enough to be recognised even "compressed into half-bars" (Post 565, e.g.
   At the Jazzband Ball), the short patterns are not.
 */
+// Each progression links to the blog post that explains it.
+const BLOG = "https://playing-traditional-jazz.blogspot.com/";
 const PROGRESSIONS = [
   // Post 565: IV | IVm (or #IV dim) | I | VI7 | II7 (or IIm7) | V7 | I | I.
   // A IV dim in bar 2 (I'm Looking Over a Four-Leaf Clover) counts too.
   // It is eight bars: a IV held longer (Bourbon Street Parade's runs three)
   // only lends its last bar (`trimLead`), the rest is just a long IV.
-  { id: "sunshine", name: "Sunshine", steps: [[IV], [IVm, SHARP_IV_DIM, IV_DIM], [I], [VI7], [II7, IIm], [V7], [I]], minBars: 0.5, trimLead: true },
-  { id: "salty-dog", name: "Salty Dog", steps: [[VI7], [II7], [V7], [I]] },
+  { id: "sunshine", name: "Sunshine", url: BLOG + "2017/11/post-565-essential-to-master-sunshine.html", steps: [[IV], [IVm, SHARP_IV_DIM, IV_DIM], [I], [VI7], [II7, IIm], [V7], [I]], minBars: 0.5, trimLead: true },
+  { id: "salty-dog", name: "Salty Dog", url: BLOG + "2013/06/salty-dog-chord-progression.html", steps: [[VI7], [II7], [V7], [I]] },
   // Post 41 / 413: the V7 bars may hold a turnaround that comes back to the
   // dominant — F7 | Gm | C7 | F7 (Four-Leaf Clover), F | C7 | F7 (Honky Tonk
   // Town) — before the closing I.
-  { id: "four-leaf", name: "Four-Leaf", steps: [[I], [II7], [V_TRIAD_OR_7], [I]], turnaround: { step: 2, over: [VIm, VI7, II7, IIm], maxChords: 2 } },
-  { id: "georgia", name: "Georgia", steps: [[I], [III7], [VI7]] },
-  { id: "apple-tree", name: "Apple Tree", steps: [[I], [IV], [I]], opening: true },
+  { id: "four-leaf", name: "Four-Leaf", url: BLOG + "2016/07/a-very-common-pattern.html", steps: [[I], [II7], [V_TRIAD_OR_7], [I]], turnaround: { step: 2, over: [VIm, VI7, II7, IIm], maxChords: 2 } },
+  { id: "georgia", name: "Georgia", url: BLOG + "2013/01/the-georgia-chord-progression.html", steps: [[I], [III7], [VI7]] },
+  { id: "apple-tree", name: "Apple Tree", url: BLOG + "2013/06/the-apple-tree-chord-progression.html", steps: [[I], [IV], [I]], opening: true },
 ];
 
 export const PROGRESSION_NAMES = PROGRESSIONS.map((p) => p.name);
@@ -358,6 +360,7 @@ export function findNamedProgressions(song) {
     return {
       id: m.progression.id,
       name: m.progression.name,
+      url: m.progression.url,
       startNote: noteIndexAt(notes, startTime),
       endNote: noteIndexAt(notes, endTime),
       chordNotes: chordNotesWithin(notes, startTime, endTime),

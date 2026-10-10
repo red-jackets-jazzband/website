@@ -103,3 +103,8 @@ test("chordNotes mark every chord symbol of the pattern's eight bars, a restated
   assert.deepEqual(found[0].chordNotes, [4, 5, 6, 7, 8, 9, 10], "eight bars: the first B♭ bars are only a long IV");
   assert.equal(found[0].startNote, 4);
 });
+
+test("a match carries the blog post that explains the progression", () => {
+  const [match] = findNamedProgressions(parse('"G7" D4 | "C7" D4 | "F7" D4 | "Bb" B4 |'));
+  assert.equal(match.url, "https://playing-traditional-jazz.blogspot.com/2013/06/salty-dog-chord-progression.html");
+});
