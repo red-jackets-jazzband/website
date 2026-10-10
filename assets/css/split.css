@@ -7042,6 +7042,21 @@ body.rj-layers-open #layersTab.rj-layers-tab {
   fill: #1b1b1b;
 }
 
+/* Scale degrees (overlays.js's styleDegrees): after Improvise for Real, a
+   note that belongs to the chord under it has its number in a green circle;
+   any other note is the bare number. */
+.notation text.rj-layer-degree {
+  font-family: Montserrat, Arial, sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  fill: #1b1b1b;
+}
+.notation .rj-layer-degree-circle {
+  fill: none;
+  stroke: #2e9b3f;
+  stroke-width: 1.3;
+}
+
 /* The id selectors above outrank .hideOnprint's own print rule, so the
    panel, its tab and the desktop push are switched off here for print;
    the layers drawn on the sheet itself do print. */
