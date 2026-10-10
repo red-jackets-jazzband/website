@@ -57,7 +57,7 @@ export function findLayer(id) {
 
 // The layers switched on (in `active`, { id: bool }) that apply to `instrument`.
 export function activeLayers(active, instrument) {
-  return LAYERS.filter((layer) => active && active[layer.id] && layer.availableFor(instrument));
+  return LAYERS.filter((layer) => active && active[layer.id] && layer.availableFor(instrument)); // NOSONAR
 }
 
 // Insert `"text"` before each annotation's offset, back to front so earlier

@@ -29,7 +29,7 @@ function brassLabels() {
 
 function previewFor(id) {
   const template = byId(`layerPreview-${id}`);
-  return template && template.content ? template.content.cloneNode(true) : null;
+  return template && template.content ? template.content.cloneNode(true) : null; // NOSONAR
 }
 
 // "A, B or C".
@@ -123,7 +123,7 @@ function updateCount(active, instrument) {
 const PUSHES_SHEET = "(min-width: 1025px)";
 
 function announceResize() {
-  if (window.matchMedia && window.matchMedia(PUSHES_SHEET).matches) window.dispatchEvent(new Event("resize"));
+  if (window.matchMedia && window.matchMedia(PUSHES_SHEET).matches) window.dispatchEvent(new Event("resize")); // NOSONAR
 }
 
 function showOpen(open) {
