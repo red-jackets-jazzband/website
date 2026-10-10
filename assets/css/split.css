@@ -4472,7 +4472,9 @@ body:has(#rjLibrary) .split-bio {
 }
 .rj-sheet-pager .songtitle {
   flex: 0 1 auto;
-  min-width: 0;
+  /* Never narrower than the longest word, or on a very small sheet the title
+     overflows its box and runs underneath the next chevron. */
+  min-width: min-content;
   padding-left: 0;
   padding-right: 0;
 }
@@ -6609,11 +6611,17 @@ body.rj-sheet-active #layersTab.rj-layers-tab {
 .rj-layers-count[hidden] {
   display: none;
 }
-/* Open: the tab stays, riding the panel's outer edge as the collapse marker
-   (a chevron, like the More-controls drawer's pull) instead of an X. */
+/* The chevron is always there and turns like the More-controls drawer's
+   pull: towards the side the panel comes from when closed (left), away
+   again when open — riding the panel's outer edge as the collapse marker. */
 .rj-layers-tab-chevron {
-  display: none;
+  display: block;
   font-size: 12px;
+  transform: rotate(180deg);
+  transition: transform 0.15s ease;
+}
+body.rj-layers-open #layersTab .rj-layers-tab-chevron {
+  transform: none;
 }
 body.rj-sheet-active.rj-layers-open #layersTab.rj-layers-tab {
   right: calc(312px + var(--rj-layers-edge, 0px));
@@ -6624,9 +6632,6 @@ body.rj-layers-open #layersTab .rj-layers-icon,
 body.rj-layers-open #layersTab .rj-layers-tab-label,
 body.rj-layers-open #layersTab .rj-layers-count {
   display: none;
-}
-body.rj-layers-open #layersTab .rj-layers-tab-chevron {
-  display: block;
 }
 
 #layersPanel.rj-layers-panel {
@@ -6888,6 +6893,10 @@ body.rj-layers-open #layersTab .rj-layers-tab-chevron {
     height: 26px;
     padding: 0 18px;
     z-index: 19;
+  }
+  /* Closed: pointing up (pull the sheet open); open: pointing down. */
+  #layersTab .rj-layers-tab-chevron {
+    transform: rotate(-90deg);
   }
   body.rj-layers-open #layersTab .rj-layers-tab-chevron {
     transform: rotate(90deg);
