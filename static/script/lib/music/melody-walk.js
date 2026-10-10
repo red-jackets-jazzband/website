@@ -74,9 +74,11 @@ export function topNote(el, state) {
   Call visit(el, state) for every element of the tune's first voice, in
   order, across every printed line. `state` is { key, clef, keyAccidentals,
   barAccidentals } as it stands at that element: the staff's key (changed
-  by a mid-tune key signature), the clef (likewise) and the accidentals earlier in the bar.
+  by a mid-tune key signature), the clef (likewise) and the accidentals earlier in the bar —
+  carried across printed lines, since a bar can run over a line break.
 */
 export function walkMelody(song, visit) {
+  let barAccidentals = new Map();
   song.lines.forEach((line) => {
     const staff = line.staff && line.staff[0]; // NOSONAR
     if (!staff || !staff.voices) return; // NOSONAR
@@ -84,7 +86,7 @@ export function walkMelody(song, visit) {
       key: staff.key,
       clef: staff.clef ? staff.clef.type : "treble",
       keyAccidentals: keyAccidentalMap(staff.key),
-      barAccidentals: new Map(),
+      barAccidentals,
     };
     (staff.voices[0] || []).forEach((el) => {
       if (el.el_type === "bar") state.barAccidentals = new Map();
@@ -95,5 +97,6 @@ export function walkMelody(song, visit) {
       if (el.el_type === "clef") state.clef = el.type;
       visit(el, state);
     });
+    barAccidentals = state.barAccidentals;
   });
 }

@@ -81,3 +81,12 @@ test("walkMelody forgets a bar's accidentals at the bar line", () => {
   });
   assert.deepEqual(sizes, [1, 1, 0]);
 });
+
+test("a bar that runs over a line break keeps its accidentals", () => {
+  // The bar has no bar line at the break, so the F# is still in force.
+  assert.deepEqual(midis("^F A B\nF C D |", C_HEADER).slice(0, 4), [66, 69, 71, 66]);
+});
+
+test("a bar line at a line break does reset them", () => {
+  assert.deepEqual(midis("^F A B |\nF C D |", C_HEADER).slice(0, 4), [66, 69, 71, 65]);
+});

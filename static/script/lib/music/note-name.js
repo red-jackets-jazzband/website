@@ -19,7 +19,8 @@ function tonalChroma(normalized) {
 // handling, falling back to a small manual table so this still works in
 // Node (unit tests) or if Tonal fails to load.
 export function noteChroma(noteName) {
-  const normalized = noteName.replace(/♭/g, "b").replace(/♯/g, "#");
+  // NOSONAR: String#replaceAll is Safari 13.1+; the page must run on Safari 12.
+  const normalized = noteName.replace(/♭/g, "b").replace(/♯/g, "#"); // NOSONAR
   if (typeof Tonal !== "undefined" && Tonal.Note) {
     const chroma = tonalChroma(normalized);
     // Tonal represents an unparseable note (e.g. "Am" — a chord, not a
