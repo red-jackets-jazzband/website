@@ -31,6 +31,21 @@ test("Four-Leaf: I II7 V7 I, two bars each", () => {
   assert.deepEqual(names(song), ["Four-Leaf"]);
 });
 
+test("Four-Leaf: the V7 bars may hold a turnaround back to V7 (Four-Leaf Clover)", () => {
+  const song = parse('"Bb" B4 | B4 | "C7" c4 | c4 | "F7" F4 | "Gm" G4 | "C7" c4 | "F7" F4 | "Bb" B4 |');
+  assert.deepEqual(names(song), ["Four-Leaf"]);
+});
+
+test("Four-Leaf: a plain V triad with a C7 turnaround (Honky Tonk Town)", () => {
+  const song = parse('"Bb" B4 | B4 | "C7" c4 | c4 | "F" F4 | F4 | F4 | "C7" c4 | "F7" F4 | "Bb" B4 |');
+  assert.deepEqual(names(song), ["Four-Leaf"]);
+});
+
+test("Four-Leaf: a V7 that never returns to the I is no Four-Leaf", () => {
+  const song = parse('"Bb" B4 | B4 | "C7" c4 | c4 | "F7" F4 | "Gm" G4 | "Eb" E4 | "Bb" B4 |');
+  assert.deepEqual(names(song), []);
+});
+
 test("Georgia hands its VI7 on to a Salty Dog, and the bands meet there", () => {
   // Basin Street's B section, approach chord (Ab7) and all.
   const song = parse('"Bb" D4 | "D7" D4 | "G7" D4 | "Ab7" E2 "G7" D2 | "C7" D4 | "F7" D4 | "Bb/D" c2 "C#7" A2 | "C7" B2 "F7" F2 |');

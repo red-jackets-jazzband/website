@@ -43,6 +43,9 @@ const SHARP_IV_DIM = [6, "dim"];
 const IV_DIM = [5, "dim"];
 const V7 = [7, "dom"];
 const VI7 = [9, "dom"];
+const VIm = [9, "min"];
+// Four-Leaf's dominant may be a plain triad (Down in Honky Tonk Town's F).
+const V_TRIAD_OR_7 = [7, "majOrDom"];
 
 /*
   Each step lists the chords that may stand there. `minBars` is how long
@@ -57,7 +60,10 @@ const PROGRESSIONS = [
   // only lends its last bar (`trimLead`), the rest is just a long IV.
   { id: "sunshine", name: "Sunshine", steps: [[IV], [IVm, SHARP_IV_DIM, IV_DIM], [I], [VI7], [II7, IIm], [V7], [I]], minBars: 0.5, trimLead: true },
   { id: "salty-dog", name: "Salty Dog", steps: [[VI7], [II7], [V7], [I]] },
-  { id: "four-leaf", name: "Four-Leaf", steps: [[I], [II7], [V7], [I]] },
+  // Post 41 / 413: the V7 bars may hold a turnaround that comes back to the
+  // dominant — F7 | Gm | C7 | F7 (Four-Leaf Clover), F | C7 | F7 (Honky Tonk
+  // Town) — before the closing I.
+  { id: "four-leaf", name: "Four-Leaf", steps: [[I], [II7], [V_TRIAD_OR_7], [I]], turnaround: { step: 2, over: [VIm, VI7, II7, IIm], maxChords: 2 } },
   { id: "georgia", name: "Georgia", steps: [[I], [III7], [VI7]] },
   { id: "apple-tree", name: "Apple Tree", steps: [[I], [IV], [I]], opening: true },
 ];
@@ -228,7 +234,7 @@ function matchAt(segments, i, progression, bar) {
     if (at >= segments.length || !fitsStep(segments[at], steps[s])) return null;
     const stepFirst = at;
     const stepStart = segments[at].start;
-    while (at + 2 < segments.length && isPassing(segments[at + 1], bar) && fitsStep(segments[at + 2], steps[s])) at += 2;
+    at = lastSegmentOfStep(segments, at, progression, s, bar);
     const stepEnd = segments[at].end;
     spans.push({ start: stepStart, end: stepEnd });
     const closing = s === steps.length - 1;
@@ -243,6 +249,33 @@ function matchAt(segments, i, progression, bar) {
     if (approachChord(segments, at, steps[s + 1], bar)) at += 1;
   }
   return null;
+}
+
+// The segment a step ends on: past its short approach chords and, for a
+// progression with a `turnaround`, past that too.
+function lastSegmentOfStep(segments, from, progression, s, bar) {
+  const step = progression.steps[s];
+  let at = from;
+  while (at + 2 < segments.length && isPassing(segments[at + 1], bar) && fitsStep(segments[at + 2], step)) at += 2;
+  const turnaround = progression.turnaround;
+  return turnaround && turnaround.step === s ? extendOverTurnaround(segments, at, step, turnaround) : at;
+}
+
+/*
+  A step's chord may be left and come back after up to `maxChords` chords of
+  turnaround ("over"): V7 | VIm | II7 | V7 is still the V7 bars. Returns the
+  index of the segment the step finally ends on.
+*/
+function extendOverTurnaround(segments, at, step, turnaround) {
+  for (let gap = 1; gap <= turnaround.maxChords; gap++) {
+    const back = at + gap + 1;
+    if (back >= segments.length) return at;
+    const between = segments.slice(at + 1, back);
+    if (between.every((seg) => fitsStep(seg, turnaround.over)) && fitsStep(segments[back], step)) {
+      return extendOverTurnaround(segments, back, step, turnaround);
+    }
+  }
+  return at;
 }
 
 // Where the match starts: a `trimLead` pattern's lead chord held for longer
