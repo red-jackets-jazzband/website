@@ -220,6 +220,23 @@ test("runs: up-then-down climbs to the octave and back over eight notes", () => 
   assert.deepEqual(scale, [65, 67, 69, 70, 72, 70, 69, 67]);
 });
 
+test("runs: up-then-down with too few notes per chord goes up one bar, down the next", () => {
+  const names = [["F"], ["F"], ["F"], ["F"]];
+  for (const exercise of ["arpeggios-updown", SCALES_UPDOWN]) {
+    const notes = practiceNotes(names, exercise, { rhythm: "charleston", breathEvery: 0 });
+    [0, 1, 2, 3].forEach((bar) => {
+      const [first, second] = notes.filter((n) => Math.floor(n.start / 4) === bar).map((n) => n.midi);
+      if (bar % 2 === 0) {
+        assert.equal(first, 65, `${exercise} bar ${bar} starts on the root`);
+        assert.ok(second > first, `${exercise} bar ${bar} goes up`);
+      } else {
+        assert.equal(first, 77, `${exercise} bar ${bar} starts on the octave`);
+        assert.ok(second < first, `${exercise} bar ${bar} comes down`);
+      }
+    });
+  }
+});
+
 test("runs: a fixed shape stays within one octave of a root on the staff", () => {
   const names = [["F"], ["C7"], ["Bb"], ["G7"], ["Eb"], ["Ab"], ["D7"], ["A"]];
   for (const exercise of ["arpeggios", "scales"]) {

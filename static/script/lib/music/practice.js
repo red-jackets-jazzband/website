@@ -284,19 +284,28 @@ function segmentSizes(notes) {
   return sizes;
 }
 
-// Where a run starts over a new chord, and which way it goes.
-function runStart(runs, chord, prev, walk) {
+// Too few notes over a chord to go up and come back down within it.
+const UPDOWN_MIN_NOTES = 4;
+
+// Where a run starts over a new chord, and which way it goes. `size`: how
+// many notes play over the chord.
+function runStart(runs, chord, prev, walk, size) {
   if (runs === "alternate") {
     // Voice-led from the last note, the other way round from last time.
     walk.dir = -walk.dir;
     return nearest(chordTones(chord), prev);
   }
+  // Up then down over one chord; with too few notes for that (a Charleston's
+  // two), every other chord goes up and the ones between come down.
+  walk.flip = !walk.flip;
+  let shape = runs;
+  if (runs === "updown" && size < UPDOWN_MIN_NOTES) shape = walk.flip ? "up" : "down";
   // A fixed shape: no voice leading, every chord jumps to its root and the
   // run stays in that root's octave (octaveRange).
   const root = pitchesOf(chord, [0], RUN_ROOTS)[0];
   walk.range = octaveRange(runs, root, walk.withOctave);
-  walk.dir = runs === "down" ? -1 : 1;
-  const start = runs === "down" ? root + 12 : root;
+  walk.dir = shape === "down" ? -1 : 1;
+  const start = shape === "down" ? root + 12 : root;
   walk.restart = runs === "updown" ? null : start;
   return start;
 }
@@ -320,12 +329,14 @@ function octaveRange(runs, root, withOctave) {
   but jump to the chord's root at every new chord (so every bar starts on
   one): "up" climbs from the root, "down" falls from its octave, and
   "updown" climbs from the root to the note after the middle of the chord's
-  notes and comes back down — all within one octave of the root. `withOctave`:
+  notes and comes back down (or, over a chord with fewer than four notes,
+  climbs over one chord and falls over the next) — all within one octave of
+  the root. `withOctave`:
   the pool is a scale, whose run spans root to octave.
 */
 function runPitches(notes, pool, runs = "alternate", withOctave = false) {
   // Flipped at the first chord, so an alternating line opens going up.
-  const walk = { dir: -1, restart: null, range: undefined, withOctave };
+  const walk = { dir: -1, restart: null, range: undefined, withOctave, flip: false };
   const sizes = segmentSizes(notes);
   let prev = START;
   let segment = null;
@@ -341,7 +352,7 @@ function runPitches(notes, pool, runs = "alternate", withOctave = false) {
     } else {
       segment = note.at.id;
       index = 0;
-      prev = runStart(runs, note.at.chord, prev, walk);
+      prev = runStart(runs, note.at.chord, prev, walk, sizes.get(segment));
     }
     pools.push(pool(note.at.chord, walk.range));
     return prev;
