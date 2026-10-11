@@ -48,7 +48,7 @@ export function effectiveSheetSettings(settings, { booklet = false, layers = {} 
     compingParts: settings.compingSplit ? settings.compingParts : null,
     solo: drawer && settings.soloEnabled ? settings.solo : "off",
     practice: drawer && settings.practice ? settings.practice : "off",
-    practiceOptions: { rhythm: settings.practiceRhythm, runs: settings.practiceRuns },
+    practiceOptions: { rhythm: settings.practiceRhythm, runs: settings.practiceRuns, breath: settings.practiceBreath },
   };
 }
 

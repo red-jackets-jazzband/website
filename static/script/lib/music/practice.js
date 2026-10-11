@@ -18,7 +18,9 @@ import { tl } from "../core/i18n.js";
     a dotted-quarter 3-over-4, a note tied over the beat, a last "and"
     anticipating the next bar's chord), each held for CELL_BARS bars so it
     can settle before the next one comes round — or one of them kept the
-    whole way through (the Rhythm dropdown);
+    whole way through (the Rhythm dropdown); every few bars (the Breaths
+    dropdown, four by default) the phrase ends on a breath, a half note
+    landing on the chord and then a rest;
   - a PITCH rule for every onset in it: chord-tone runs, scale runs, guide
     tones (3rds and 7ths), enclosures into each new chord, or one note per
     chord (rhythm alone); a run either voice-leads and turns round every
@@ -79,6 +81,14 @@ export const PRACTICE_RUNS = [
   { value: "down", label: tl("practice_runs_down", "Always down") },
   { value: "updown", label: tl("practice_runs_updown", "Up, then down") },
 ];
+// The Breaths dropdown: a breath (BREATH_CELL) every so many bars, or none.
+export const PRACTICE_BREATHS = [
+  { value: "4", label: tl("practice_breath_4", "Breathe every 4 bars") },
+  { value: "2", label: tl("practice_breath_2", "Breathe every 2 bars") },
+  { value: "8", label: tl("practice_breath_8", "Breathe every 8 bars") },
+  { value: "off", label: tl("practice_breath_off", "No breaths") },
+];
+
 // Which exercises the Runs choice changes.
 export const RUN_EXERCISES = new Set(["arpeggios", "scales", "enclosures"]);
 
@@ -120,12 +130,17 @@ function nearest(candidates, ref) {
   return best;
 }
 
+// A breathing bar: land on the chord with a half note, then rest.
+const BREATH_CELL = "x---....";
+
 /*
   The rhythm as one string of slots over the whole chart: each bar's cell (a
   break bar, all N.C., is silent and takes no anticipation), with a ">"
-  carried into the next bar's first slot.
+  carried into the next bar's first slot. With `breathEvery` (bars, 0 for
+  never) the last bar of every phrase of that length, counted from the first
+  chord bar, is a breath instead (BREATH_CELL).
 */
-export function rhythmSlots(bars, breaks, cells) {
+export function rhythmSlots(bars, breaks, cells, breathEvery = 0) {
   let out = "";
   let tieIn = false;
   for (let bar = 0; bar < bars; bar++) {
@@ -133,7 +148,8 @@ export function rhythmSlots(bars, breaks, cells) {
       out += ".".repeat(SLOTS_PER_BAR);
       tieIn = false;
     } else {
-      const cell = cells[Math.floor(bar / CELL_BARS) % cells.length];
+      const breath = breathEvery > 0 && bar % breathEvery === breathEvery - 1;
+      const cell = breath ? BREATH_CELL : cells[Math.floor(bar / CELL_BARS) % cells.length];
       let body = cell.slice(0, SLOTS_PER_BAR);
       if (tieIn && body[0] === "x") body = "-" + body.slice(1);
       out += body;
@@ -251,7 +267,7 @@ function runPitches(notes, pool, runs = "alternate", withOctave = false) {
   let prev = START;
   let segment = null;
   let index = 0;
-  return notes.map((note) => {
+  const midis = notes.map((note) => {
     if (note.at.id === segment) {
       index += 1;
       // Up to the middle note, then back down: 1 2 3 4 5 4 3 2 over eight.
@@ -263,6 +279,34 @@ function runPitches(notes, pool, runs = "alternate", withOctave = false) {
       prev = runStart(runs, note.at.chord, prev, walk);
     }
     return prev;
+  });
+  return runs === "alternate" ? midis : leadIntoChords(notes, midis);
+}
+
+// Within this many eighths of the next chord's first note, a run's last note leads into it.
+const LEAD_GAP = 2;
+// The leading tone is only taken when it's at most a fourth from the note before it.
+const LEAD_REACH = 5;
+
+/*
+  A fixed-shape run jumps to a new root at every chord, so its last note
+  before the change leads into the next chord's first note: kept when it's
+  already a step away, else a half step below it — a leading tone (B-flat C
+  D E-flat F E-flat D E-natural, then F) — when that's a short move from
+  the note before; otherwise the line is left as it was rather than leap
+  to it. Not a chord's only note, and not across a longer rest.
+*/
+function leadIntoChords(notes, midis) {
+  return midis.map((midi, i) => {
+    const note = notes[i];
+    const next = notes[i + 1];
+    const changes = next !== undefined && next.at.id !== note.at.id;
+    const firstOfChord = i === 0 || notes[i - 1].at.id !== note.at.id;
+    if (!changes || firstOfChord || next.slot - (note.slot + note.len) > LEAD_GAP) return midi;
+    const target = midis[i + 1];
+    const leading = target - 1;
+    if (Math.abs(midi - target) <= 2 || Math.abs(leading - midis[i - 1]) > LEAD_REACH) return midi;
+    return leading;
   });
 }
 
@@ -344,9 +388,9 @@ function cellsFor(spec, rhythm) {
   as [{ start, duration, midi, leadsUp }] in beats from the first chord bar — the
   shape solo.js's barFragments draws. Empty for an unknown exercise.
   `rhythm` is "varied" or a PRACTICE_RHYTHMS value to keep all the way;
-  `runs` a PRACTICE_RUNS value.
+  `runs` a PRACTICE_RUNS value; `breath` a PRACTICE_BREATHS value.
 */
-export function practiceNotes(names, exercise, { rhythm = "varied", runs = "alternate" } = {}) {
+export function practiceNotes(names, exercise, { rhythm = "varied", runs = "alternate", breath = "off" } = {}) {
   const spec = EXERCISES[exercise];
   if (!spec) return [];
   const breaks = new Set();
@@ -354,7 +398,8 @@ export function practiceNotes(names, exercise, { rhythm = "varied", runs = "alte
     if (row.every((name) => name === null)) breaks.add(bar);
   });
   const timeline = chordTimeline(names);
-  const notes = onsetsOf(rhythmSlots(names.length, breaks, cellsFor(spec, rhythm)))
+  const breathEvery = breath === "off" ? 0 : Number(breath);
+  const notes = onsetsOf(rhythmSlots(names.length, breaks, cellsFor(spec, rhythm), breathEvery))
     .map((note) => ({ ...note, at: chordFor(timeline, note) }))
     .filter((note) => note.at);
   const midis = spec.pitches(notes, runs);
