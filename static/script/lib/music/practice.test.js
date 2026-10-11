@@ -72,14 +72,23 @@ test("guide tones step to the nearest 3rd or 7th of the next chord", () => {
   for (const i of [2, 4]) assert.ok(Math.abs(notes[i].midi - notes[i - 1].midi) <= 2, `${notes[i].start}`);
 });
 
-test("an enclosure lands on the new chord from a step above and a half step below", () => {
-  const notes = practiceNotes([["F"], ["C7"]], "enclosures");
-  const target = notes.findIndex((n) => n.start === 4);
-  assert.ok(target >= 2);
-  assert.ok(C7_CHORD_TONES.has(mod12(notes[target].midi)));
-  assert.equal(notes[target - 1].midi, notes[target].midi - 1);
-  assert.ok(notes[target - 1].leadsUp);
-  assert.ok(notes[target - 2].midi > notes[target].midi);
+test("an enclosure opens each chord and lands on its target: a step above, a half step below", () => {
+  const notes = practiceNotes([["F"], ["C7"]], "enclosures", { rhythm: "eighths" });
+  [F_CHORD_TONES, C7_CHORD_TONES].forEach((tones, bar) => {
+    const [above, below, target] = notes.filter((n) => Math.floor(n.start / 4) === bar);
+    assert.equal(target.start, bar * 4 + 1, "the target is the chord's third note, on a beat");
+    assert.ok(tones.has(mod12(target.midi)), `${target.midi} is a chord tone`);
+    assert.equal(below.midi, target.midi - 1);
+    assert.ok(below.leadsUp);
+    assert.ok(above.midi > target.midi && above.midi - target.midi <= 2);
+  });
+});
+
+test("a short chord keeps only the half step below, a single note just the target", () => {
+  const notes = practiceNotes([["F"], ["C7"]], "enclosures", { rhythm: "charleston" });
+  const [below, target] = notes.filter((n) => n.start >= 4);
+  assert.equal(below.midi, target.midi - 1);
+  assert.ok(C7_CHORD_TONES.has(mod12(target.midi)));
 });
 
 test("a chromatic note leading up is spelled sharp", () => {
