@@ -299,6 +299,7 @@ interactive: true
 setup: openDrawer, practiceOn
 target: #notation
 Press play and the exercise sounds with the tune. In the mixer it's a voice of its own, **Practice**, so you can turn it down once you know it, and play it yourself.
+> To hear only the exercise, mute **Melody** in the mixer.
 
 # comping: Comping
 setup: openDemoSong

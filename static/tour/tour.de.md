@@ -186,6 +186,7 @@ Spiele die Läufe **aufwärts**, **abwärts**, **auf und ab** oder stimmführend
 
 ## staff: Mitspielen
 Drück auf Abspielen und die Übung klingt mit dem Song. Im Mixer ist sie eine eigene Stimme, **Übung**, sodass du sie leiser stellen kannst, sobald du sie kennst, und sie selbst spielst.
+> Um nur die Übung zu hören, schalte im Mixer **Melodie** stumm.
 
 # comping: Comping
 

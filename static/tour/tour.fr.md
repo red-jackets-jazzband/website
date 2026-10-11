@@ -186,6 +186,7 @@ Jouez les traits **en montant**, **en descendant**, **en montant puis en descend
 
 ## staff: Jouer avec
 Lancez la lecture et l'exercice sonne avec le morceau. Dans la console de mixage, c'est une voix à part, **Exercice**, que vous pouvez baisser une fois l'exercice connu, pour le jouer vous-même.
+> Pour n'entendre que l'exercice, coupez **Mélodie** dans la console de mixage.
 
 # comping: Comping
 
