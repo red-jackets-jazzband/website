@@ -2,7 +2,7 @@ import { byId, el } from "../../lib/core/dom.js";
 import { INSTRUMENTS } from "../../lib/music/instruments.js";
 import { COMPING_PATTERNS } from "../../lib/music/comping.js";
 import { SOLO_STYLES } from "../../lib/music/solo.js";
-import { PRACTICE_EXERCISES, PRACTICE_RHYTHMS } from "../../lib/music/practice.js";
+import { PRACTICE_EXERCISES, PRACTICE_RHYTHM_MIXES, PRACTICE_RHYTHMS } from "../../lib/music/practice.js";
 import { COMPING_PARTS } from "./state.js";
 import { tl } from "../../lib/core/i18n.js";
 
@@ -183,7 +183,8 @@ export function createSoloDropdown(ctx) {
   two ("SCALE RUNS: UP, THEN DOWN · CHARLESTON"), a disabled first option
   that's always the selected one; open, an Exercise group ("OFF" plus
   lib/music/practice.js's PRACTICE_EXERCISES — each run kind in each shape)
-  and a Rhythm group (varied, or one PRACTICE_RHYTHMS pattern the whole way,
+  and a Rhythm group (a PRACTICE_RHYTHM_MIXES cycle — varied or syncopated —
+  or one PRACTICE_RHYTHMS pattern the whole way,
   disabled while practice is off), the current pick in each ticked. Picking
   from a group writes just that setting. sheet.js appends the exercise as
   one more staff (Comping / Solo stay as they are, and the lead keeps
@@ -191,13 +192,17 @@ export function createSoloDropdown(ctx) {
 */
 const PICK_MARK = "\u2713 ";
 
+// A rhythm as the summary names it: a mix by its short name ("SYNCOPATED RHYTHM").
+function shortRhythm(value, rhythms) {
+  const mix = PRACTICE_RHYTHM_MIXES.find((m) => m.value === value);
+  return mix ? mix.short.toUpperCase() : rhythms.get(value);
+}
+
 function practiceSummary(ctx, exercises, rhythms) {
   if (ctx.state.practice === "off") return exercises.get("off");
   return tl("practice_summary", "{exercise} · {rhythm}", {
     exercise: exercises.get(ctx.state.practice),
-    rhythm: ctx.state.practiceRhythm === "varied"
-      ? tl("practice_rhythm_varied_short", "Varied rhythm").toUpperCase()
-      : rhythms.get(ctx.state.practiceRhythm),
+    rhythm: shortRhythm(ctx.state.practiceRhythm, rhythms),
   });
 }
 
@@ -223,8 +228,8 @@ export function createPracticeDropdown(ctx) {
 
   const exercises = new Map([["off", tl("practice_off", "PRACTICE: OFF")]]);
   for (const entry of PRACTICE_EXERCISES) exercises.set(entry.value, entry.label.toUpperCase());
-  const rhythms = new Map([["varied", tl("practice_rhythm_varied", "Varied, changes every 2 bars").toUpperCase()]]);
-  for (const entry of PRACTICE_RHYTHMS) rhythms.set(entry.value, entry.label.toUpperCase());
+  const rhythms = new Map();
+  for (const entry of [...PRACTICE_RHYTHM_MIXES, ...PRACTICE_RHYTHMS]) rhythms.set(entry.value, entry.label.toUpperCase());
 
   const summary = el("option", { value: "summary", disabled: true });
   const exerciseGroup = practiceGroup(tl("practice_group_exercise", "Exercise"), "ex", exercises);

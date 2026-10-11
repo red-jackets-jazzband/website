@@ -2,7 +2,7 @@ import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import ABCJS from "abcjs";
 import {
-  buildPracticeTune, practiceNotes, PRACTICE_EXERCISES, PRACTICE_RHYTHMS,
+  buildPracticeTune, practiceNotes, PRACTICE_EXERCISES, PRACTICE_RHYTHM_MIXES, PRACTICE_RHYTHMS,
   rhythmSlots,
 } from "./practice.js";
 import { buildCompingTune, COMPING_PATTERNS } from "./comping.js";
@@ -281,4 +281,36 @@ test("up-then-down turns its last note back towards the next chord, by a scale s
   // Always up / down keep going their way and jump.
   const up = practiceNotes([["Bb"], ["F7"]], "scales-up", { rhythm: "eighths", breathEvery: 0 });
   assert.deepEqual(up.slice(0, 8).map((n) => n.midi), [58, 60, 62, 63, 65, 67, 69, 70]);
+});
+
+// Whether a bar's rhythm is syncopated: a note on an "and" whose next beat
+// isn't played — left silent, or the note held or tied over it (a trailing
+// ">" ties the last "and" over the bar line).
+function syncopated(cell) {
+  return cell.split("").some((mark, i) => mark === "x" && i % 2 === 1 && cell[i + 1] !== "x");
+}
+
+test("Syncopated is a rhythm choice: it cycles only through syncopated patterns", () => {
+  assert.deepEqual(PRACTICE_RHYTHM_MIXES.map((m) => m.value), ["varied", "syncopated"]);
+  for (const { value } of PRACTICE_EXERCISES) {
+    const notes = practiceNotes(EIGHT_BARS, value, { rhythm: "syncopated", breathEvery: 0 });
+    assert.ok(notes.length > 0, value);
+    // Never a bar of plain on-the-beat eighths.
+    assert.ok(!barRhythms(notes, 8).includes("0:1 1:1 2:1 3:1 4:1 5:1 6:1 7:1"), value);
+  }
+  for (const rhythm of PRACTICE_RHYTHMS.filter((r) => r.sync)) {
+    assert.ok(syncopated(rhythm.cell), rhythm.value);
+  }
+  // All six of its patterns come round, two bars at a time (a bar after an
+  // anticipation opens with the tied-over note, so it reads differently).
+  const bars = barRhythms(practiceNotes(Array.from({ length: 12 }, () => ["F"]), "scales", { rhythm: "syncopated", breathEvery: 0 }), 12);
+  assert.ok(new Set(bars).size >= 6, bars.join(" | "));
+  assert.equal(bars[0], bars[1]);
+});
+
+test("Pushes on the \"and\": the and of 2 held over beat 3, the and of 4 tied over the bar", () => {
+  const pushes = PRACTICE_RHYTHMS.find((r) => r.value === "pushes");
+  assert.equal(pushes.cell, "xx.x--.x>");
+  const notes = practiceNotes([["F"], ["F"]], "scales", { rhythm: "pushes", breathEvery: 0 });
+  assert.deepEqual(notes.slice(0, 4).map((n) => [n.start, n.duration]), [[0, 0.5], [0.5, 0.5], [1.5, 1.5], [3.5, 1]]);
 });

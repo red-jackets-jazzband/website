@@ -76,25 +76,45 @@ const CELL_BARS = 2;
   The Rhythm dropdown's patterns. `cell` is one bar in eighths: "x" a note
   starts, "-" it holds, "." a rest; a trailing ">" ties the bar's last note
   over the bar line (the next bar's first eighth becomes its continuation).
-  "Varied" cycles through the exercise's own set (`run` ones for the runs,
-  `long` ones for guide tones); picking a pattern plays it all the way.
+  The mixes (PRACTICE_RHYTHM_MIXES) cycle through the exercise's own set
+  (`run` ones for the runs, `long` ones for guide tones) — all of it, or
+  only the `sync` ones: a note on an "and" held over the next beat or bar
+  line, or a beat left out for an offbeat; picking a pattern plays it all
+  the way.
 */
 export const PRACTICE_RHYTHMS = [
   { value: "eighths", cell: "xxxxxxxx", run: true, label: tl("practice_rhythm_eighths", "Straight eighths") },
-  { value: "offbeats", cell: ".x.x.x.x", run: true, label: tl("practice_rhythm_offbeats", "Offbeats") },
-  { value: "tied", cell: "xx-xx-xx", run: true, label: tl("practice_rhythm_tied", "Tied over the beat") },
-  { value: "charleston", cell: "x--x....", run: true, label: tl("practice_rhythm_charleston", "Charleston") },
-  { value: "anticipate", cell: "xxxxxx.x>", run: true, label: tl("practice_rhythm_anticipate", "Anticipate the next bar") },
+  { value: "offbeats", cell: ".x.x.x.x", run: true, sync: true, label: tl("practice_rhythm_offbeats", "Offbeats") },
+  { value: "tied", cell: "xx-xx-xx", run: true, sync: true, label: tl("practice_rhythm_tied", "Tied over the beat") },
+  { value: "charleston", cell: "x--x....", run: true, sync: true, label: tl("practice_rhythm_charleston", "Charleston") },
+  { value: "anticipate", cell: "xxxxxx.x>", run: true, sync: true, label: tl("practice_rhythm_anticipate", "Anticipate the next bar") },
+  // The "and" of 2 pushed over beat 3, the "and" of 4 over the bar line.
+  { value: "pushes", cell: "xx.x--.x>", run: true, sync: true, label: tl("practice_rhythm_pushes", "Pushes on the \"and\"") },
   { value: "threefour", cell: "x--x--x-", run: true, label: tl("practice_rhythm_threefour", "Three against four") },
   { value: "and", cell: ".xxx.xxx", run: true, label: tl("practice_rhythm_and", "Start on the \"and\"") },
-  { value: "pairs", cell: "xx.xx.xx>", run: true, label: tl("practice_rhythm_pairs", "Pairs, last one anticipated") },
+  { value: "pairs", cell: "xx.xx.xx>", run: true, sync: true, label: tl("practice_rhythm_pairs", "Pairs, last one anticipated") },
   { value: "halves", cell: "x---x---", long: true, label: tl("practice_rhythm_halves", "Half notes") },
-  { value: "halfanticipate", cell: "x---...x>", long: true, label: tl("practice_rhythm_halfanticipate", "Half note, anticipate") },
-  { value: "late", cell: ".x--x---", long: true, label: tl("practice_rhythm_late", "Late start") },
-  { value: "longcharleston", cell: "x--x---.", long: true, label: tl("practice_rhythm_longcharleston", "Long Charleston") },
+  { value: "halfanticipate", cell: "x---...x>", long: true, sync: true, label: tl("practice_rhythm_halfanticipate", "Half note, anticipate") },
+  { value: "late", cell: ".x--x---", long: true, sync: true, label: tl("practice_rhythm_late", "Late start") },
+  { value: "longcharleston", cell: "x--x---.", long: true, sync: true, label: tl("practice_rhythm_longcharleston", "Long Charleston") },
 ];
 const RUN_CELLS = PRACTICE_RHYTHMS.filter((r) => r.run).map((r) => r.cell);
 const LONG_CELLS = PRACTICE_RHYTHMS.filter((r) => r.long).map((r) => r.cell);
+const SYNC_CELLS = new Set(PRACTICE_RHYTHMS.filter((r) => r.sync).map((r) => r.cell));
+
+// The Rhythm choices that cycle (every CELL_BARS bars) rather than keep one pattern.
+export const PRACTICE_RHYTHM_MIXES = [
+  {
+    value: "varied",
+    label: tl("practice_rhythm_varied", "Varied, changes every 2 bars"),
+    short: tl("practice_rhythm_varied_short", "Varied rhythm"),
+  },
+  {
+    value: "syncopated",
+    label: tl("practice_rhythm_syncopated", "Syncopated, changes every 2 bars"),
+    short: tl("practice_rhythm_syncopated_short", "Syncopated rhythm"),
+  },
+];
 
 // Range of the line (concert MIDI, C4 to G5) and where it starts.
 const LOW = 60;
@@ -397,6 +417,7 @@ const EXERCISES = {
 
 // The cells an exercise cycles through: its own set, or the one picked.
 function cellsFor(spec, rhythm) {
+  if (rhythm === "syncopated") return spec.cells.filter((cell) => SYNC_CELLS.has(cell));
   const picked = PRACTICE_RHYTHMS.find((r) => r.value === rhythm);
   return picked ? [picked.cell] : spec.cells;
 }
@@ -405,7 +426,8 @@ function cellsFor(spec, rhythm) {
   The exercise's notes over `names` (resolveChordNames' per-bar chord rows),
   as [{ start, duration, midi, leadsUp }] in beats from the first chord bar — the
   shape solo.js's barFragments draws. Empty for an unknown exercise.
-  `rhythm` is "varied" or a PRACTICE_RHYTHMS value to keep all the way;
+  `rhythm` is a PRACTICE_RHYTHM_MIXES value ("varied", "syncopated") or a
+  PRACTICE_RHYTHMS one to keep all the way;
   `breathEvery` how many bars to a breath (0: none, for the tests).
 */
 export function practiceNotes(names, exercise, { rhythm = "varied", breathEvery = BREATH_EVERY } = {}) {
