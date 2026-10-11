@@ -1,10 +1,11 @@
 /*
   Scale degrees on the engraved sheet: the annotation lib/music/scale-degrees.js
   wrote ("●3", "○♭7") loses its marker and is centred under its note, a chord
-  tone inside a circle (as in Improvise for Real) and any other note bare.
+  tone inside a circle (as in Improvise for Real) and any other note bare,
+  all on one row per staff line (svg.js's alignRows).
 */
 import { parseDegreeText } from "../../../lib/music/scale-degrees.js";
-import { bboxOf, noteheadCentre, svgEl } from "./svg.js";
+import { alignRows, bboxOf, noteheadCentre, svgEl } from "./svg.js";
 
 const DEGREE_PAD = 1.6;
 
@@ -24,6 +25,7 @@ function drawDegreeShape(text) {
 }
 
 export function styleDegrees(notationEl) {
+  const styled = [];
   notationEl.querySelectorAll(".abcjs-annotation").forEach((text) => {
     const parsed = parseDegreeText(text.textContent.trim());
     if (parsed === null) return;
@@ -33,6 +35,11 @@ export function styleDegrees(notationEl) {
     if (centre === null) return;
     text.setAttribute("text-anchor", "middle");
     text.setAttribute("x", String(centre));
-    if (parsed.tone === "chord") drawDegreeShape(text);
+    styled.push({ text, tone: parsed.tone });
+  });
+  // Back on one row before the circles are drawn round where they end up.
+  alignRows(styled.map((s) => s.text));
+  styled.forEach(({ text, tone }) => {
+    if (tone === "chord") drawDegreeShape(text);
   });
 }
