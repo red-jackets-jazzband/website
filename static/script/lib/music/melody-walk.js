@@ -56,11 +56,15 @@ export function noteLetter(pitch, clef) {
   return LETTERS[steps - Math.floor(steps / 7) * 7];
 }
 
-// The key signature as letter → alteration ("B" → -1 in F major).
+// The key signature as letter → alteration ("B" → -1 in F major). A
+// natural in a signature only cancels the previous key's accidental (abcjs
+// writes ♮B ♮E ♮A into a G signature that follows E♭), so it's skipped:
+// once transposed, those naturals aren't moved with the key and would
+// otherwise wipe out real sharps or flats (F♯ major's A♯).
 function keyAccidentalMap(key) {
   const map = new Map();
   ((key && key.accidentals) || []).forEach((acc) => { // NOSONAR
-    if (ALTER[acc.acc] !== undefined) map.set(acc.note.toUpperCase(), ALTER[acc.acc]);
+    if (ALTER[acc.acc] !== undefined && acc.acc !== "natural") map.set(acc.note.toUpperCase(), ALTER[acc.acc]);
   });
   return map;
 }

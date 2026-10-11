@@ -90,3 +90,25 @@ test("a bar that runs over a line break keeps its accidentals", () => {
 test("a bar line at a line break does reset them", () => {
   assert.deepEqual(midis("^F A B |\nF C D |", C_HEADER).slice(0, 4), [66, 69, 71, 65]);
 });
+
+test("a key change's cancelling naturals don't override the new key's own accidentals", () => {
+  // G after Eb carries ♮B ♮E ♮A; transposed down a semitone it's F# major,
+  // and abcjs leaves those naturals unmoved, so ♮A must not erase its A#.
+  const text = "X:1\nM:4/4\nL:1/4\nK:Eb\nE F G A|\nK:G\nB A G F|\n";
+  const song = ABCJS.parseOnly(text, { visualTranspose: -1 })[0];
+  const out = [];
+  walkMelody(song, (el, state) => {
+    const top = topNote(el, state);
+    if (top !== null) out.push(top.midi);
+  });
+  assert.deepEqual(out.slice(4), [70, 68, 66, 65], "A# G# F# E# in F# major");
+});
+
+test("topNote reports the printed letter", () => {
+  const letters = [];
+  walkMelody(parse("C ^F _B c", "M:4/4\nL:1/4\nK:C clef=bass middle=D"), (el, state) => {
+    const top = topNote(el, state);
+    if (top !== null) letters.push(top.letter);
+  });
+  assert.deepEqual(letters, ["C", "F", "B", "C"]);
+});

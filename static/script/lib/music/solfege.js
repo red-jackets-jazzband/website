@@ -12,6 +12,11 @@
     melodySolfege(song)
                        [{ startChar, syllable }] for every note onset of the
                        tune's first voice
+    solfegeText(syllable) / parseSolfegeText(text)
+                       the annotation text the sheet engraves, and back: the
+                       syllable behind an invisible marker, so the overlay
+                       (songs/layers/overlays/solfege.js) can tell it from a
+                       chart's own annotation
 
   A spelling with no common syllable of its own (E♯ in C, a double sharp)
   falls back to the one for its sound, flats for the black keys as on a
@@ -37,6 +42,21 @@ const SYLLABLES = [
 ];
 // By sound alone, semitones above do.
 const CHROMATIC = ["do", "ra", "re", "me", "mi", "fa", "se", "sol", "le", "la", "te", "ti"];
+
+// U+200B ZERO WIDTH SPACE: invisible if nothing restyles it, and not
+// trimmed away by String#trim.
+const MARK = "\u200B";
+const SYLLABLE_SET = new Set(CHROMATIC.concat(["di", "ri", "fi", "si", "li"]));
+
+export function solfegeText(syllable) {
+  return MARK + syllable;
+}
+
+export function parseSolfegeText(text) {
+  if (!text.startsWith(MARK)) return null;
+  const syllable = text.slice(MARK.length);
+  return SYLLABLE_SET.has(syllable) ? syllable : null;
+}
 
 const mod = (n, m) => ((n % m) + m) % m;
 
