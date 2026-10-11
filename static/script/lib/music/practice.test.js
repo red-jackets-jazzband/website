@@ -2,7 +2,7 @@ import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import ABCJS from "abcjs";
 import {
-  buildPracticeTune, joinExercise, practiceNotes, practiceSummary, PRACTICE_EXERCISES, PRACTICE_KINDS,
+  buildPracticeTune, joinExercise, practiceNotes, practiceSummary, practiceSummaryParts, PRACTICE_EXERCISES, PRACTICE_KINDS,
   PRACTICE_RHYTHM_MIXES, PRACTICE_RHYTHMS, PRACTICE_SHAPES, splitExercise,
   rhythmSlots,
 } from "./practice.js";
@@ -427,6 +427,13 @@ test("the panel's kinds and shapes join into exercise values and back", () => {
     const { kind, runs } = splitExercise(value);
     assert.equal(joinExercise(kind, runs), value);
   }
+});
+
+test("practiceSummaryParts: the exercise and its rhythm apart, for a phone to stack", () => {
+  assert.equal(practiceSummaryParts("off", "varied"), null);
+  assert.deepEqual(practiceSummaryParts(SCALES_UPDOWN, "halfanticipate"), {
+    exercise: "Scale runs, Up & down", rhythm: "Half note, anticipate",
+  });
 });
 
 test("practiceSummary: one line for the closed control", () => {
