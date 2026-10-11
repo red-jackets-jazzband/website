@@ -2,7 +2,9 @@ import { byId, el } from "../../lib/core/dom.js";
 import { INSTRUMENTS } from "../../lib/music/instruments.js";
 import { COMPING_PATTERNS } from "../../lib/music/comping.js";
 import { SOLO_STYLES } from "../../lib/music/solo.js";
-import { PRACTICE_EXERCISES } from "../../lib/music/practice.js";
+import {
+  PRACTICE_EXERCISES, PRACTICE_RHYTHMS, PRACTICE_RUNS, RUN_EXERCISES,
+} from "../../lib/music/practice.js";
 import { COMPING_PARTS } from "./state.js";
 import { tl } from "../../lib/core/i18n.js";
 
@@ -178,29 +180,54 @@ export function createSoloDropdown(ctx) {
 }
 
 /*
-  The practice <select> (#practice): an "OFF" entry plus one entry per
-  exercise from lib/music/practice.js — a view of ctx.state.practice.
-  sheet.js appends the exercise as one more staff (Comping / Solo stay as
-  they are, and the lead keeps playing, so it can be played along with).
+  The practice pickers in #practiceSlot, views of the settings slice like the
+  comping one: the exercise (#practice: "OFF" plus lib/music/practice.js's
+  PRACTICE_EXERCISES), and — once one is on — its rhythm (#practiceRhythm:
+  varied, or one pattern the whole way) and, for the run exercises, the
+  shape of its runs (#practiceRuns). sheet.js appends the exercise as one
+  more staff (Comping / Solo stay as they are, and the lead keeps playing,
+  so it can be played along with).
 */
 export function createPracticeDropdown(ctx) {
   const slot = byId("practiceSlot");
   if (!slot) return;
 
-  const select = el("select", { class: "dropbtn", id: "practice" },
+  const exercise = el("select", { class: "dropbtn", id: "practice" },
     el("option", { value: "off", text: tl("practice_off", "PRACTICE: OFF") }));
-  for (const exercise of PRACTICE_EXERCISES) {
-    select.append(el("option", { value: exercise.value, text: exercise.label.toUpperCase() }));
+  for (const entry of PRACTICE_EXERCISES) {
+    exercise.append(el("option", { value: entry.value, text: entry.label.toUpperCase() }));
   }
+  const rhythm = el("select", {
+    class: "dropbtn", id: "practiceRhythm", attrs: { "aria-label": tl("practice_rhythm_aria", "Practice rhythm") },
+  }, el("option", { value: "varied", text: tl("practice_rhythm_varied", "RHYTHM: VARIED") }));
+  for (const entry of PRACTICE_RHYTHMS) {
+    rhythm.append(el("option", { value: entry.value, text: entry.label.toUpperCase() }));
+  }
+  const runs = el("select", {
+    class: "dropbtn", id: "practiceRuns", attrs: { "aria-label": tl("practice_runs_aria", "Practice runs") },
+  });
+  for (const entry of PRACTICE_RUNS) {
+    runs.append(el("option", { value: entry.value, text: entry.label.toUpperCase() }));
+  }
+  const rhythmBox = dropdown(rhythm);
+  const runsBox = dropdown(runs);
 
+  const pickers = [[exercise, "practice"], [rhythm, "practiceRhythm"], [runs, "practiceRuns"]];
   const draw = () => {
-    if (select.value !== ctx.state.practice) select.value = ctx.state.practice;
+    for (const [select, key] of pickers) {
+      if (select.value !== ctx.state[key]) select.value = ctx.state[key];
+    }
+    const on = ctx.state.practice !== "off";
+    rhythmBox.hidden = !on;
+    runsBox.hidden = !on || !RUN_EXERCISES.has(ctx.state.practice);
   };
   draw();
   ctx.store.subscribe("settings", draw);
 
-  select.addEventListener("change", () => {
-    ctx.state.practice = select.value;
-  });
-  slot.append(dropdown(select));
+  for (const [select, key] of pickers) {
+    select.addEventListener("change", () => {
+      ctx.state[key] = select.value;
+    });
+  }
+  slot.append(dropdown(exercise), rhythmBox, runsBox);
 }

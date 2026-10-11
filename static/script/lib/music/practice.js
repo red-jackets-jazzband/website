@@ -17,10 +17,12 @@ import { tl } from "../core/i18n.js";
   - a RHYTHM: one-bar rhythm cells (straight eighths, offbeats, a Charleston,
     a dotted-quarter 3-over-4, a note tied over the beat, a last "and"
     anticipating the next bar's chord), each held for CELL_BARS bars so it
-    can settle before the next one comes round;
+    can settle before the next one comes round — or one of them kept the
+    whole way through (the Rhythm dropdown);
   - a PITCH rule for every onset in it: chord-tone runs, scale runs, guide
     tones (3rds and 7ths), enclosures into each new chord, or one note per
-    chord (rhythm alone).
+    chord (rhythm alone); a run either voice-leads and turns round every
+    chord, or has the same shape over every chord (the Runs dropdown).
   A note that crosses a bar line belongs to the chord it lands on: that is
   what an anticipation is, the new chord played an eighth early.
 */
@@ -42,32 +44,52 @@ const SLOTS_PER_BEAT = 2;
 const CELL_BARS = 2;
 
 /*
-  One bar in eighths: "x" a note starts, "-" it holds, "." a rest; a trailing
-  ">" ties the bar's last note over the bar line (the next bar's first eighth
-  becomes its continuation).
+  The Rhythm dropdown's patterns. `cell` is one bar in eighths: "x" a note
+  starts, "-" it holds, "." a rest; a trailing ">" ties the bar's last note
+  over the bar line (the next bar's first eighth becomes its continuation).
+  "Varied" cycles through the exercise's own set (`run` ones for the runs,
+  `long` ones for guide tones); picking a pattern plays it all the way.
 */
-const RUN_CELLS = [
-  "xxxxxxxx", // straight eighths: the run itself
-  ".x.x.x.x", // every offbeat
-  "xx-xx-xx", // "and" of 1 and of 3 tied over the beat
-  "x--x....", // Charleston
-  "xxxxxx.x>", // run, breath, anticipate the next downbeat
-  "x--x--x-", // dotted quarters: three against four
-  ".xxx.xxx", // start on the "and"
-  "xx.xx.xx>", // pairs, the last one anticipated
+export const PRACTICE_RHYTHMS = [
+  { value: "eighths", cell: "xxxxxxxx", run: true, label: tl("practice_rhythm_eighths", "Straight eighths") },
+  { value: "offbeats", cell: ".x.x.x.x", run: true, label: tl("practice_rhythm_offbeats", "Offbeats") },
+  { value: "tied", cell: "xx-xx-xx", run: true, label: tl("practice_rhythm_tied", "Tied over the beat") },
+  { value: "charleston", cell: "x--x....", run: true, label: tl("practice_rhythm_charleston", "Charleston") },
+  { value: "anticipate", cell: "xxxxxx.x>", run: true, label: tl("practice_rhythm_anticipate", "Anticipate the next bar") },
+  { value: "threefour", cell: "x--x--x-", run: true, label: tl("practice_rhythm_threefour", "Three against four") },
+  { value: "and", cell: ".xxx.xxx", run: true, label: tl("practice_rhythm_and", "Start on the \"and\"") },
+  { value: "pairs", cell: "xx.xx.xx>", run: true, label: tl("practice_rhythm_pairs", "Pairs, last one anticipated") },
+  { value: "halves", cell: "x---x---", long: true, label: tl("practice_rhythm_halves", "Half notes") },
+  { value: "halfanticipate", cell: "x---...x>", long: true, label: tl("practice_rhythm_halfanticipate", "Half note, anticipate") },
+  { value: "late", cell: ".x--x---", long: true, label: tl("practice_rhythm_late", "Late start") },
+  { value: "longcharleston", cell: "x--x---.", long: true, label: tl("practice_rhythm_longcharleston", "Long Charleston") },
 ];
-// Fewer, longer notes for a line that moves once or twice a chord.
-const LONG_CELLS = [
-  "x---x---",
-  "x---...x>",
-  ".x--x---",
-  "x--x---.",
+const RUN_CELLS = PRACTICE_RHYTHMS.filter((r) => r.run).map((r) => r.cell);
+const LONG_CELLS = PRACTICE_RHYTHMS.filter((r) => r.long).map((r) => r.cell);
+
+/*
+  The Runs dropdown: the shape of a run over each chord (chord-tone runs,
+  scale runs, and the notes between an enclosure's targets). "alternate"
+  voice-leads from the last note and turns round every chord; the others
+  give every chord the same shape, from the same place.
+*/
+export const PRACTICE_RUNS = [
+  { value: "alternate", label: tl("practice_runs_alternate", "Alternate up and down") },
+  { value: "up", label: tl("practice_runs_up", "Always up") },
+  { value: "down", label: tl("practice_runs_down", "Always down") },
+  { value: "updown", label: tl("practice_runs_updown", "Up, then down") },
 ];
+// Which exercises the Runs choice changes.
+export const RUN_EXERCISES = new Set(["arpeggios", "scales", "enclosures"]);
 
 // Range of the line (concert MIDI, C4 to G5) and where it starts.
 const LOW = 60;
 const HIGH = 79;
 const START = 67;
+// Where a fixed-shape run starts over each chord: low for one that climbs,
+// high for one that falls.
+const LOW_ANCHOR = 64;
+const HIGH_ANCHOR = 76;
 
 const mod12 = (x) => ((x % 12) + 12) % 12;
 
@@ -161,35 +183,63 @@ function chordFor(timeline, note) {
   return timeline[crossing ? Math.floor(end / SLOTS_PER_BAR) * SLOTS_PER_BAR : note.slot] || timeline[note.slot];
 }
 
-// Walk `pool` (sorted) from `prev` one step in `dir`, turning round at either end.
+// Walk `pool` (sorted) from `prev` one step in `dir`. At either end it turns
+// round, or — `walk.wrap`, a run that only goes one way — jumps an octave
+// back and carries on in the same direction.
 function stepThrough(pool, prev, walk) {
   const i = pool.indexOf(prev);
   if (i === -1) return nearest(pool, prev);
   let next = i + walk.dir;
   if (next < 0 || next >= pool.length) {
+    if (walk.wrap) return pool[pool.indexOf(nearest(pool, prev - 12 * walk.dir)) + walk.dir];
     walk.dir = -walk.dir;
     next = i + walk.dir;
   }
   return pool[Math.max(0, Math.min(pool.length - 1, next))];
 }
 
+// How many notes play over each chord slot, by its id.
+function segmentSizes(notes) {
+  const sizes = new Map();
+  for (const note of notes) sizes.set(note.at.id, (sizes.get(note.at.id) || 0) + 1);
+  return sizes;
+}
+
+// Where a run starts over a new chord, and which way it goes.
+function runStart(runs, chord, prev, walk) {
+  if (runs === "alternate") {
+    // Voice-led from the last note, the other way round from last time.
+    walk.dir = -walk.dir;
+    return nearest(chordTones(chord), prev);
+  }
+  walk.dir = runs === "down" ? -1 : 1;
+  return nearest(chordTones(chord), runs === "down" ? HIGH_ANCHOR : LOW_ANCHOR);
+}
+
 /*
-  A run: each chord starts on the chord tone nearest the last note (so the
-  line voice-leads through the changes) and then walks `pool` — up over one
-  chord, down over the next.
+  A run over each chord, walking `pool` from a chord tone. `runs` (a
+  PRACTICE_RUNS value) sets its shape: "alternate" starts on the chord tone
+  nearest the last note (so the line voice-leads through the changes) and
+  goes up over one chord, down over the next; "up" / "down" start every
+  chord from the same low / high spot; "updown" climbs for the first half of
+  the chord's notes and comes back down.
 */
-function runPitches(notes, pool) {
-  // Flipped at the first chord, so the line opens going up.
-  const walk = { dir: -1 };
+function runPitches(notes, pool, runs = "alternate") {
+  // Flipped at the first chord, so an alternating line opens going up.
+  const walk = { dir: -1, wrap: runs === "up" || runs === "down" };
+  const sizes = segmentSizes(notes);
   let prev = START;
   let segment = null;
+  let index = 0;
   return notes.map((note) => {
-    if (note.at.id !== segment) {
-      segment = note.at.id;
-      walk.dir = -walk.dir;
-      prev = nearest(chordTones(note.at.chord), prev);
-    } else {
+    if (note.at.id === segment) {
+      index += 1;
+      if (runs === "updown" && index === Math.ceil(sizes.get(segment) / 2)) walk.dir = -1;
       prev = stepThrough(pool(note.at.chord), prev, walk);
+    } else {
+      segment = note.at.id;
+      index = 0;
+      prev = runStart(runs, note.at.chord, prev, walk);
     }
     return prev;
   });
@@ -232,7 +282,7 @@ function rhythmPitches(notes) {
   has them, enclose it — the scale step above, then a half step below. Other
   notes run over the chord's tones from its own target.
 */
-function enclosurePitches(notes) {
+function enclosurePitches(notes, runs) {
   const targets = new Map();
   let prev = START;
   notes.forEach((note, i) => {
@@ -241,7 +291,7 @@ function enclosurePitches(notes) {
       targets.set(i, prev);
     }
   });
-  const runs = runPitches(notes, chordTones);
+  const filler = runPitches(notes, chordTones, runs);
   return notes.map((note, i) => {
     if (targets.has(i)) return targets.get(i);
     if (targets.has(i + 1)) return targets.get(i + 1) - 1;
@@ -250,24 +300,32 @@ function enclosurePitches(notes) {
       const above = scaleTones(notes[i + 2].at.chord).find((m) => m > target);
       return above === undefined ? target + 2 : above;
     }
-    return runs[i];
+    return filler[i];
   });
 }
 
 const EXERCISES = {
-  arpeggios: { cells: RUN_CELLS, pitches: (notes) => runPitches(notes, chordTones) },
-  scales: { cells: RUN_CELLS, pitches: (notes) => runPitches(notes, scaleTones) },
+  arpeggios: { cells: RUN_CELLS, pitches: (notes, runs) => runPitches(notes, chordTones, runs) },
+  scales: { cells: RUN_CELLS, pitches: (notes, runs) => runPitches(notes, scaleTones, runs) },
   guide: { cells: LONG_CELLS, pitches: guidePitches },
   enclosures: { cells: RUN_CELLS, pitches: enclosurePitches },
   rhythm: { cells: RUN_CELLS, pitches: rhythmPitches },
 };
 
+// The cells an exercise cycles through: its own set, or the one picked.
+function cellsFor(spec, rhythm) {
+  const picked = PRACTICE_RHYTHMS.find((r) => r.value === rhythm);
+  return picked ? [picked.cell] : spec.cells;
+}
+
 /*
   The exercise's notes over `names` (resolveChordNames' per-bar chord rows),
   as [{ start, duration, midi, leadsUp }] in beats from the first chord bar — the
   shape solo.js's barFragments draws. Empty for an unknown exercise.
+  `rhythm` is "varied" or a PRACTICE_RHYTHMS value to keep all the way;
+  `runs` a PRACTICE_RUNS value.
 */
-export function practiceNotes(names, exercise) {
+export function practiceNotes(names, exercise, { rhythm = "varied", runs = "alternate" } = {}) {
   const spec = EXERCISES[exercise];
   if (!spec) return [];
   const breaks = new Set();
@@ -275,10 +333,10 @@ export function practiceNotes(names, exercise) {
     if (row.every((name) => name === null)) breaks.add(bar);
   });
   const timeline = chordTimeline(names);
-  const notes = onsetsOf(rhythmSlots(names.length, breaks, spec.cells))
+  const notes = onsetsOf(rhythmSlots(names.length, breaks, cellsFor(spec, rhythm)))
     .map((note) => ({ ...note, at: chordFor(timeline, note) }))
     .filter((note) => note.at);
-  const midis = spec.pitches(notes);
+  const midis = spec.pitches(notes, runs);
   return notes.map((note, i) => ({
     start: note.slot / SLOTS_PER_BEAT,
     duration: note.len / SLOTS_PER_BEAT,
@@ -304,11 +362,11 @@ function createPracticeSpeller(keyScale) {
   tune. `text`, `chords` and `song` are as for buildSoloTune; `text` may
   already carry the Comping / Solo voices. Returns { abc, notes }, or null
   when it can't apply (no chords, no such exercise, an unsupported meter, no
-  K: line).
+  K: line). `options` is practiceNotes' { rhythm, runs }.
 */
-export function buildPracticeTune(text, chords, song, exercise) {
+export function buildPracticeTune(text, chords, song, exercise, options = {}) {
   if (!chords || chords.length === 0 || !EXERCISES[exercise]) return null;
-  const notes = practiceNotes(resolveChordNames(chords), exercise);
+  const notes = practiceNotes(resolveChordNames(chords), exercise, options);
   const abc = appendBarVoice(text, song, ({ keyScale, keySig, lnum, lden }) => (
     barFragments(notes, chords.length, createPracticeSpeller(keyScale))
       .map((fragment, i, all) => rebeamBar(respellBar(fragment, keySig, i > 0 && endsTied(all[i - 1])), lnum, lden))

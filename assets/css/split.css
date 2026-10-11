@@ -5465,6 +5465,12 @@ body:not(.rj-sheet-active) .rj-sheet-pager .rj-sheet-step {
   display: inline-block;
 }
 
+/* display:inline-block above beats the UA [hidden] rule (the Practice
+   Rhythm / Runs pickers hide while no exercise is on). */
+.dropdown[hidden] {
+  display: none;
+}
+
 .dropdown:hover .dropbtn {
   background-color: var(--rj-gold);
   color: black;

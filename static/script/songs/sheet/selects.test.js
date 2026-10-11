@@ -5,7 +5,7 @@ import { makeCtx } from "../../../../tests/helpers/ctx.js";
 import { INSTRUMENTS } from "../../lib/music/instruments.js";
 import { COMPING_PATTERNS } from "../../lib/music/comping.js";
 import { SOLO_STYLES } from "../../lib/music/solo.js";
-import { PRACTICE_EXERCISES } from "../../lib/music/practice.js";
+import { PRACTICE_EXERCISES, PRACTICE_RHYTHMS } from "../../lib/music/practice.js";
 import {
   createInstrumentDropdown, createCompingDropdown, createPracticeDropdown, createSoloDropdown,
 } from "./selects.js";
@@ -106,10 +106,32 @@ test("createPracticeDropdown builds an OFF entry plus one per exercise and re-re
       [...select.options].map((o) => o.value),
       ["off", ...PRACTICE_EXERCISES.map((e) => e.value)],
     );
+    const rhythm = document.getElementById("practiceRhythm");
+    const runs = document.getElementById("practiceRuns");
+    const shown = (node) => !node.closest(".dropdown").hidden;
+    assert.ok(!shown(rhythm) && !shown(runs), "rhythm and runs wait for an exercise");
+
     select.value = "enclosures";
     select.dispatchEvent(new window.Event("change"));
     assert.equal(rerenders.length, 1);
     assert.equal(window.localStorage.getItem("rj.practice"), "enclosures");
+    assert.ok(shown(rhythm) && shown(runs));
+    assert.deepEqual(
+      [...rhythm.options].map((o) => o.value),
+      ["varied", ...PRACTICE_RHYTHMS.map((r) => r.value)],
+    );
+
+    rhythm.value = "charleston";
+    rhythm.dispatchEvent(new window.Event("change"));
+    runs.value = "updown";
+    runs.dispatchEvent(new window.Event("change"));
+    assert.equal(rerenders.length, 3);
+    assert.equal(window.localStorage.getItem("rj.practiceRhythm"), "charleston");
+    assert.equal(window.localStorage.getItem("rj.practiceRuns"), "updown");
+
+    select.value = "guide";
+    select.dispatchEvent(new window.Event("change"));
+    assert.ok(shown(rhythm) && !shown(runs), "guide tones have no runs");
   } finally {
     page.cleanup();
   }

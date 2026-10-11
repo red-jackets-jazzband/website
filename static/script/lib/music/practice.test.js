@@ -1,7 +1,9 @@
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import ABCJS from "abcjs";
-import { buildPracticeTune, practiceNotes, PRACTICE_EXERCISES, rhythmSlots } from "./practice.js";
+import {
+  buildPracticeTune, practiceNotes, PRACTICE_EXERCISES, PRACTICE_RHYTHMS, PRACTICE_RUNS, rhythmSlots,
+} from "./practice.js";
 import { buildCompingTune, COMPING_PATTERNS } from "./comping.js";
 import { parseChordScheme } from "./chords.js";
 import { tonalStub } from "../../../../tests/helpers/stubs.js";
@@ -147,4 +149,64 @@ test("a note tied into a bar doesn't set its accidental for the rest of the bar"
     assert.match(built.abc, /E- \|E=E/);
     assert.deepEqual(practicePlayback(built.abc), built.notes.map((n) => n.midi));
   });
+});
+
+// The onsets of each bar, as "slot:length" in eighths.
+function barRhythms(notes, bars) {
+  return Array.from({ length: bars }, (_, bar) => notes
+    .filter((n) => Math.floor(n.start / 4) === bar)
+    .map((n) => `${n.start * 2 - bar * 8}:${n.duration * 2}`)
+    .join(" "));
+}
+
+const EIGHT_BARS = [["F"], ["C7"], ["F"], ["C7"], ["F"], ["C7"], ["F"], ["C7"]];
+
+test("a picked rhythm plays the whole way; varied changes it every two bars", () => {
+  const fixed = barRhythms(practiceNotes(EIGHT_BARS, "arpeggios", { rhythm: "charleston" }), 8);
+  assert.ok(fixed.every((bar) => bar === "0:3 3:1"), fixed.join(" | "));
+  const varied = barRhythms(practiceNotes(EIGHT_BARS, "arpeggios"), 8);
+  assert.notEqual(varied[0], varied[2]);
+  for (const { value } of PRACTICE_RHYTHMS) {
+    assert.ok(practiceNotes(EIGHT_BARS, "guide", { rhythm: value }).length > 0, value);
+  }
+});
+
+// Each chord's notes as steps from its first one: the run's shape.
+function shapes(notes) {
+  return Array.from({ length: 8 }, (_, bar) => {
+    const run = notes.filter((n) => Math.floor(n.start / 4) === bar).map((n) => n.midi);
+    return run.map((m) => m - run[0]).join(",");
+  });
+}
+
+test("runs: up, down and up-then-down give every chord the same shape", () => {
+  for (const runs of ["up", "down", "updown"]) {
+    const notes = practiceNotes([["F"], ["F"], ["F"], ["F"], ["F"], ["F"], ["F"], ["F"]], "arpeggios", { rhythm: "eighths", runs });
+    const each = shapes(notes);
+    assert.ok(each.every((shape) => shape === each[0]), `${runs}: ${each.join(" | ")}`);
+  }
+});
+
+test("runs: always up only ever climbs within a bar, always down only falls", () => {
+  for (const { runs, sign } of [{ runs: "up", sign: 1 }, { runs: "down", sign: -1 }]) {
+    const notes = practiceNotes(EIGHT_BARS, "scales", { rhythm: "eighths", runs });
+    for (let bar = 0; bar < 8; bar++) {
+      const run = notes.filter((n) => Math.floor(n.start / 4) === bar).map((n) => n.midi);
+      // One octave drop (or climb) back is allowed when the run reaches the edge of the range.
+      const turns = run.slice(1).filter((m, i) => Math.sign(m - run[i]) !== sign);
+      assert.ok(turns.length <= 1, `${runs} bar ${bar}: ${run}`);
+    }
+  }
+});
+
+test("runs: up-then-down climbs for the first half of the chord and falls for the rest", () => {
+  const notes = practiceNotes([["F"]], "arpeggios", { rhythm: "eighths", runs: "updown" });
+  const run = notes.map((n) => n.midi);
+  assert.deepEqual(run.slice(1).map((m, i) => Math.sign(m - run[i])), [1, 1, 1, -1, -1, -1, -1]);
+});
+
+test("every Runs choice is a known shape", () => {
+  for (const { value } of PRACTICE_RUNS) {
+    assert.equal(practiceNotes(EIGHT_BARS, "enclosures", { runs: value }).length > 0, true, value);
+  }
 });
