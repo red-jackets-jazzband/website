@@ -199,10 +199,27 @@ test("runs: always up only ever climbs within a bar, always down only falls", ()
   }
 });
 
-test("runs: up-then-down climbs for the first half of the chord and falls for the rest", () => {
-  const notes = practiceNotes([["F"]], "arpeggios", { rhythm: "eighths", runs: "updown" });
-  const run = notes.map((n) => n.midi);
-  assert.deepEqual(run.slice(1).map((m, i) => Math.sign(m - run[i])), [1, 1, 1, -1, -1, -1, -1]);
+test("runs: up-then-down climbs to the octave and back over eight notes", () => {
+  // F major's chord tones here are 1 3 5 6: F A C D F' D C A.
+  const arpeggio = practiceNotes([["F"]], "arpeggios", { rhythm: "eighths", runs: "updown" }).map((n) => n.midi);
+  assert.deepEqual(arpeggio, [65, 69, 72, 74, 77, 74, 72, 69]);
+  const scale = practiceNotes([["F"]], "scales", { rhythm: "eighths", runs: "updown" }).map((n) => n.midi);
+  assert.deepEqual(scale, [65, 67, 69, 70, 72, 70, 69, 67]);
+});
+
+test("runs: a fixed shape stays within one octave of a root on the staff", () => {
+  const names = [["F"], ["C7"], ["Bb"], ["G7"], ["Eb"], ["Ab"], ["D7"], ["A"]];
+  for (const exercise of ["arpeggios", "scales"]) {
+    for (const runs of ["up", "down", "updown"]) {
+      const notes = practiceNotes(names, exercise, { rhythm: "eighths", runs });
+      for (let bar = 0; bar < names.length; bar++) {
+        const run = notes.filter((n) => Math.floor(n.start / 4) === bar).map((n) => n.midi);
+        const low = Math.min(...run);
+        assert.ok(Math.max(...run) - low <= 12, `${exercise} ${runs} bar ${bar}: ${run}`);
+        assert.ok(low >= 57 && Math.max(...run) <= 80, `${exercise} ${runs} bar ${bar}: ${run}`);
+      }
+    }
+  }
 });
 
 test("every Runs choice is a known shape", () => {
@@ -220,7 +237,7 @@ test("runs: always up jumps to the chord's root at every new chord, no voice lea
       row.forEach((chord, i) => {
         const first = notes.find((n) => n.start === bar * 4 + i * (4 / row.length));
         assert.equal(mod12(first.midi), roots[chord], `${exercise} bar ${bar} ${chord}`);
-        assert.ok(first.midi <= 69, "the low root: B-flat3 to A4");
+        assert.ok(first.midi >= 57 && first.midi <= 68, "the root: A3 to G#4");
       });
     });
     // A run that runs out of room starts again from its root.
