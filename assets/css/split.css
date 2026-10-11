@@ -7335,10 +7335,6 @@ body.rj-layers-open #layersTab .rj-layers-count {
   font: italic 13px/1.35 "Lora", serif;
   color: #b9b2a7;
 }
-#practicePanel .practice-breath {
-  font: 12px/1.35 "Lora", serif;
-  color: #b9b2a7;
-}
 .practice-step {
   display: flex;
   flex-direction: column;
