@@ -210,3 +210,21 @@ test("every Runs choice is a known shape", () => {
     assert.equal(practiceNotes(EIGHT_BARS, "enclosures", { runs: value }).length > 0, true, value);
   }
 });
+
+test("runs: always up jumps to the chord's root at every new chord, no voice leading", () => {
+  const names = [["F"], ["C7"], ["Bb"], ["F", "C7"]];
+  const roots = { F: 5, C7: 0, Bb: 10 };
+  for (const exercise of ["arpeggios", "scales"]) {
+    const notes = practiceNotes(names, exercise, { rhythm: "eighths", runs: "up" });
+    names.forEach((row, bar) => {
+      row.forEach((chord, i) => {
+        const first = notes.find((n) => n.start === bar * 4 + i * (4 / row.length));
+        assert.equal(mod12(first.midi), roots[chord], `${exercise} bar ${bar} ${chord}`);
+        assert.ok(first.midi <= 69, "the low root: B-flat3 to A4");
+      });
+    });
+    // A run that runs out of room starts again from its root.
+    const fBar = notes.filter((n) => n.start < 4).map((n) => n.midi);
+    fBar.slice(1).forEach((m, i) => assert.ok(m > fBar[i] || m === fBar[0], `${exercise}: ${fBar}`));
+  }
+});
