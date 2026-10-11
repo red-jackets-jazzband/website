@@ -531,8 +531,15 @@ export function createSetlistPrint(ctx) {
     printWithTitle([name, printModeLabel(mode)].filter(Boolean).join(" — "));
   }
 
+  // Opening a setlist starts from what the server has now; only edits made
+  // while it stays open reuse the cache (see songTexts / songCache above).
+  function clearCache() {
+    songTexts.clear();
+    songCache.clear();
+  }
+
   return {
-    buildBooklet, print, PRINT_MODES, setListenChangeHandler, getListenUrl: () => listenUrl, getListenSongs: () => listenSongs,
+    buildBooklet, clearCache, print, PRINT_MODES, setListenChangeHandler, getListenUrl: () => listenUrl, getListenSongs: () => listenSongs,
     getListenTitle: () => listenTitle,
   };
 }
