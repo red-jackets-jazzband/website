@@ -259,7 +259,12 @@ function paintChordsAndTitle(plan, targets, titlePrefix) {
   // The form strip stands in for the header's printed part order.
   renderWordsTables(chordEl, plan.wordsTables);
 
-  byId(targets.titleId).textContent = titlePrefix + plan.song.metaText.title;
+  // A heading once it has a title (never an empty one before the first song),
+  // so a screen reader can jump straight to the song on the sheet.
+  const titleEl = byId(targets.titleId);
+  titleEl.textContent = titlePrefix + plan.song.metaText.title;
+  titleEl.setAttribute("role", "heading");
+  titleEl.setAttribute("aria-level", "2");
   return chordEl;
 }
 

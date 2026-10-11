@@ -26,7 +26,7 @@ description: "Foto's, video's en opnames van de Red Jackets Jazzband tijdens liv
 <div class="rj-action-record">
 <div class="rj-action-record-head">Opnames</div>
 <p>De playlist van de Red Jackets op SoundCloud.</p>
-<iframe class="rj-action-soundcloud" width="100%" height="300" scrolling="no" frameborder="no" allow="autoplay" src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/4099638&color=%23e29d0f&auto_play=false&hide_related=false&show_comments=false&show_user=true&show_reposts=false&show_teaser=true&visual=true"></iframe>
+<iframe class="rj-action-soundcloud" title="Red Jackets Jazzband – SoundCloud-afspeellijst" width="100%" height="300" scrolling="no" frameborder="no" allow="autoplay" src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/4099638&color=%23e29d0f&auto_play=false&hide_related=false&show_comments=false&show_user=true&show_reposts=false&show_teaser=true&visual=true"></iframe>
 </div>
 
 <div class="rj-action-mosaic rj-action-mosaic--tail">

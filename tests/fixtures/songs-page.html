@@ -15,8 +15,8 @@
 
   <div id="rjLibrary" class="rj-library hideOnprint">
     <div class="rj-library-tabs" id="libraryTabs">
-      <button type="button" class="rj-library-tab" data-tab="library">Songs</button>
-      <button type="button" class="rj-library-tab" data-tab="setlists">Setlists</button>
+      <button type="button" class="rj-library-tab" data-tab="library" aria-pressed="true">Songs</button>
+      <button type="button" class="rj-library-tab" data-tab="setlists" aria-pressed="false">Setlists</button>
     </div>
     <output id="offlineStatus" class="rj-offline-status" aria-live="polite" hidden></output>
 
@@ -63,7 +63,7 @@
     </div>
   </div>
 
-  <div id="rjSheet" class="rj-sheet">
+  <div id="rjSheet" class="rj-sheet" tabindex="-1">
     <div class="rj-sheet-navrow"><button id="sheetBackBtn" class="rj-sheet-back hideOnprint" type="button"><span class="fa-solid fa-chevron-left" aria-hidden="true"></span><span id="sheetBackLabel">Songs</span></button></div>
     <div id="sheetmenu" class="hideOnprint">
       <div id="sheetStatus" class="sheet-status"></div>
@@ -76,6 +76,7 @@
           <span class="sheet-stepper-label">semitones</span>
         </div>
         <button type="button" id="keyUpBtn" class="sheet-stepper-btn" aria-label="Raise key">&plus;</button>
+        <span class="rj-sr-only sheet-stepper-announce" aria-live="polite"></span>
       </div>
 
       <div class="sheet-stepper" id="tempoStepper" title="Tempo">
@@ -85,6 +86,7 @@
           <span class="sheet-stepper-label">bpm</span>
         </div>
         <button type="button" id="tempoUpBtn" class="sheet-stepper-btn" aria-label="Faster">&plus;</button>
+        <span class="rj-sr-only sheet-stepper-announce" aria-live="polite"></span>
       </div>
       </div>
 
@@ -111,6 +113,7 @@
           <span class="sheet-stepper-label" id="repeatCountLabel">repeats</span>
         </div>
         <button type="button" id="repeatUpBtn" class="sheet-stepper-btn" aria-label="More repeats">&plus;</button>
+        <span class="rj-sr-only sheet-stepper-announce" aria-live="polite"></span>
       </div>
       <div id="compingSlot" class="sheet-comping"></div>
       <div id="soloSlot" class="sheet-comping"></div>

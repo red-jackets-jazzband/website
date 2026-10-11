@@ -463,7 +463,6 @@ body.page-template-page-fullsingle-split p {
   margin-bottom: 31px;
   color: var(--rj-body);
   letter-spacing: 2px;
-  opacity: 0.5;
 }
 .split-lists .split-list ul li {
   font-size: 16px;
@@ -480,7 +479,8 @@ body.page-template-page-fullsingle-split p {
 }
 
 .split-credit {
-  opacity: 0.4;
+  /* Full --rj-body (5.1:1 on #1b1b1b); the old 0.4 opacity fell to 1.9:1. */
+  color: var(--rj-body);
 }
 .split-credit p {
   font-size: 12px;
@@ -1106,10 +1106,10 @@ body.rj-sheet-active .rj-sheet-empty {
   color: var(--rj-gold);
 }
 .sheet-stepper-label {
-  font: 600 7.5px/1 "Montserrat", sans-serif;
+  font: 600 9px/1 "Montserrat", sans-serif;
   letter-spacing: .04em;
   text-transform: uppercase;
-  color: rgba(236,234,230,.4);
+  color: rgba(236,234,230,.6);
   white-space: nowrap;
 }
 #transpose,
@@ -5140,7 +5140,7 @@ body:not(.rj-sheet-active) .rj-sheet-pager .rj-sheet-step {
   width: 108px;
 }
 .rj-show--past .rj-show-loc {
-  color: rgba(132, 141, 150, 0.75);
+  color: var(--rj-body);
 }
 
 @media (max-width: 600px) {
@@ -5241,7 +5241,6 @@ body:not(.rj-sheet-active) .rj-sheet-pager .rj-sheet-step {
   letter-spacing: 2px;
   text-transform: uppercase;
   color: var(--rj-body);
-  opacity: 0.5;
   margin-bottom: 16px;
 }
 .rj-action-videos {
@@ -5264,7 +5263,6 @@ body:not(.rj-sheet-active) .rj-sheet-pager .rj-sheet-step {
   letter-spacing: 2px;
   text-transform: uppercase;
   color: var(--rj-body);
-  opacity: 0.5;
   margin-bottom: 10px;
 }
 .split-bio .rj-action-record p {
@@ -6934,7 +6932,7 @@ body.rj-layers-open #layersTab .rj-layers-count {
     border-bottom: 0;
     border-radius: 13px 13px 0 0;
     background: #2a2a2a;
-    color: rgba(236,234,230,.5);
+    color: rgba(236,234,230,.7);
     box-shadow: none;
   }
   /* Open: the pill is a tab growing out of the sheet's top edge — the
@@ -6950,7 +6948,7 @@ body.rj-layers-open #layersTab .rj-layers-count {
     border: 0;
     border-radius: 14px 14px 0 0;
     background: #1f1f1f;
-    color: rgba(236,234,230,.6);
+    color: rgba(236,234,230,.7);
     transform: translateY(var(--rj-layers-drag, 0px));
     transition: transform .18s ease-out;
   }
@@ -7601,4 +7599,65 @@ body.rj-layers-open #layersTab .rj-layers-count {
   .practice-choices--mixes {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+/* Reduced motion, site-wide: a visitor who asked their OS for less motion gets
+   instant state changes instead of slides, fades and pulses (the bottom
+   sheets, the Layers drawer, the tour spotlight, hover fades). Durations go to
+   ~0 rather than `none` so a transition still completes and lands on its end
+   state. No script waits on transitionend/animationend. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+  }
+}
+
+/* Text for screen readers only (e.g. the steppers' spoken readouts). */
+.rj-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Skip links (layouts/partials/intro.html): off screen until focused, then a
+   gold pill in the top-left corner, above everything but the tour. */
+.rj-skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 45;
+  padding: 8px 14px;
+  border-radius: 6px;
+  background: var(--rj-gold);
+  color: #1b1b1b;
+  font: 600 14px/1.2 "Montserrat", sans-serif;
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+.rj-skip-link:focus {
+  transform: none;
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+/* Below 1024px the sheet is a separate screen, hidden while the list shows. */
+@media (max-width: 1024px) {
+  body:not(.rj-sheet-active) .rj-skip-link--sheet {
+    display: none;
+  }
+}
+/* Where a skip link lands: focusable by script only, no ring of its own. */
+#content:focus,
+#rjSheet:focus {
+  outline: none;
 }

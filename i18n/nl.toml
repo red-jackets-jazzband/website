@@ -382,3 +382,7 @@ js_offline_partial_many = "Offline beschikbaar ({count} items konden niet worden
 js_offline_failed = "Downloaden is niet gelukt — probeer het opnieuw als je weer online bent."
 js_setlist_new_set = "Nieuwe set"
 js_setlist_new = "Nieuwe setlist"
+skip_to_content = "Naar de inhoud"
+skip_to_sheet = "Naar de bladmuziek"
+js_chords_table = "Akkoorden"
+js_chords_same = "zelfde akkoord"

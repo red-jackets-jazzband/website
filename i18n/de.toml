@@ -382,3 +382,7 @@ js_offline_partial_many = "Offline verfügbar ({count} Elemente konnten nicht he
 js_offline_failed = "Der Download konnte nicht abgeschlossen werden — versuch es erneut, sobald du wieder online bist."
 js_setlist_new_set = "Neues Set"
 js_setlist_new = "Neue Setlist"
+skip_to_content = "Zum Inhalt springen"
+skip_to_sheet = "Zu den Noten springen"
+js_chords_table = "Akkorde"
+js_chords_same = "gleicher Akkord"

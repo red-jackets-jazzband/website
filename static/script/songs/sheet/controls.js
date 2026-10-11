@@ -1,4 +1,4 @@
-import { byId, el, on } from "../../lib/core/dom.js";
+import { byId, el, on, qsa } from "../../lib/core/dom.js";
 import { TEMPO_STEP } from "../../lib/music/tempo.js";
 import { tl } from "../../lib/core/i18n.js";
 
@@ -94,6 +94,28 @@ function initAdvancedToggle(ctx) {
   });
 }
 
+// A -/+ press on any stepper (Key, Tempo, Repeat) reads the new value out
+// ("3 semitones", "132 bpm"): the value sits in an <input> or a plain span,
+// neither of which a screen reader announces by itself when it changes. Only
+// presses speak, so opening a song doesn't. Listens on the stepper, so it
+// runs after the button's own handler has updated the value.
+function stepperReadout(stepper) {
+  const input = stepper.querySelector("input");
+  const value = input ? input.value : stepper.querySelector(".sheet-stepper-value span").textContent;
+  const unit = stepper.querySelector(".sheet-stepper-label");
+  return unit ? `${value} ${unit.textContent.trim()}` : value;
+}
+
+function initStepperAnnouncements() {
+  qsa(".sheet-stepper").forEach((stepper) => {
+    const live = stepper.querySelector(".sheet-stepper-announce");
+    if (!live) return;
+    stepper.addEventListener("click", (e) => {
+      if (e.target.closest(".sheet-stepper-btn")) live.textContent = stepperReadout(stepper);
+    });
+  });
+}
+
 // The Key stepper (#transpose): a view of ctx.state.transpose, in semitones.
 // Typing into it or the -/+ buttons (which nudge it and dispatch "input",
 // see stepNumericField) write the store; a newly opened song seeds the
@@ -164,6 +186,7 @@ function initSpacebarPlayPause(ctx) {
 */
 export function initSheetControls(ctx) {
   initKeyStepper(ctx);
+  initStepperAnnouncements();
   on("tempoUpBtn", "click", () => ctx.audio.stepTempo(TEMPO_STEP));
   on("tempoDownBtn", "click", () => ctx.audio.stepTempo(-TEMPO_STEP));
   const repeatCountInput = byId("repeatCount");
