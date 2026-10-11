@@ -107,17 +107,16 @@ test("createPracticeDropdown builds an OFF entry plus one per exercise and re-re
       ["off", ...PRACTICE_EXERCISES.map((e) => e.value)],
     );
     const rhythm = document.getElementById("practiceRhythm");
-    const runs = document.getElementById("practiceRuns");
-    const breath = document.getElementById("practiceBreath");
     const shown = (node) => !node.closest(".dropdown").hidden;
-    assert.ok(!shown(rhythm) && !shown(runs) && !shown(breath), "rhythm, runs and breaths wait for an exercise");
+    assert.ok(!shown(rhythm), "rhythm waits for an exercise");
+    assert.equal(document.getElementById("practiceSlot").querySelectorAll("select").length, 2, "just the two pickers");
 
-    select.value = "enclosures";
+    select.value = "scales-updown";
     select.dispatchEvent(new window.Event("change"));
     assert.equal(rerenders.length, 1);
-    assert.equal(window.localStorage.getItem("rj.practice"), "enclosures");
-    assert.ok(shown(rhythm) && shown(runs) && shown(breath));
-    assert.equal(breath.value, "4", "a breath every 4 bars by default");
+    assert.equal(window.localStorage.getItem("rj.practice"), "scales-updown");
+    assert.ok(shown(rhythm));
+    assert.equal(select.selectedOptions[0].textContent, "SCALE RUNS: UP, THEN DOWN");
     assert.deepEqual(
       [...rhythm.options].map((o) => o.value),
       ["varied", ...PRACTICE_RHYTHMS.map((r) => r.value)],
@@ -125,18 +124,8 @@ test("createPracticeDropdown builds an OFF entry plus one per exercise and re-re
 
     rhythm.value = "charleston";
     rhythm.dispatchEvent(new window.Event("change"));
-    runs.value = "updown";
-    runs.dispatchEvent(new window.Event("change"));
-    assert.equal(rerenders.length, 3);
+    assert.equal(rerenders.length, 2);
     assert.equal(window.localStorage.getItem("rj.practiceRhythm"), "charleston");
-    assert.equal(window.localStorage.getItem("rj.practiceRuns"), "updown");
-    breath.value = "off";
-    breath.dispatchEvent(new window.Event("change"));
-    assert.equal(window.localStorage.getItem("rj.practiceBreath"), "off");
-
-    select.value = "guide";
-    select.dispatchEvent(new window.Event("change"));
-    assert.ok(shown(rhythm) && !shown(runs), "guide tones have no runs");
   } finally {
     page.cleanup();
   }

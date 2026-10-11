@@ -18,25 +18,52 @@ import { tl } from "../core/i18n.js";
     a dotted-quarter 3-over-4, a note tied over the beat, a last "and"
     anticipating the next bar's chord), each held for CELL_BARS bars so it
     can settle before the next one comes round — or one of them kept the
-    whole way through (the Rhythm dropdown); every few bars (the Breaths
-    dropdown, four by default) the phrase ends on a breath, a half note
-    landing on the chord and then a rest;
+    whole way through (the Rhythm dropdown); every fourth bar ends on a
+    breath, at least its last beat rested;
   - a PITCH rule for every onset in it: chord-tone runs, scale runs, guide
     tones (3rds and 7ths), enclosures into each new chord, or one note per
     chord (rhythm alone); a run either voice-leads and turns round every
-    chord, or has the same shape over every chord (the Runs dropdown).
+    chord, or has the same shape over every chord — picked together with
+    the run itself in the Practice dropdown ("Scale runs: always up").
   A note that crosses a bar line belongs to the chord it lands on: that is
   what an anticipation is, the new chord played an eighth early.
 */
 
-// The Practice dropdown's entries (value = an EXERCISES key).
-export const PRACTICE_EXERCISES = [
+/*
+  The shape of a run over each chord. "alternate" voice-leads from the last
+  note and turns round every chord; the others give every chord the same
+  shape, starting on its root.
+*/
+const RUN_SHAPES = [
+  { value: "alternate", label: tl("practice_runs_alternate", "Alternate up and down") },
+  { value: "up", label: tl("practice_runs_up", "Always up") },
+  { value: "down", label: tl("practice_runs_down", "Always down") },
+  { value: "updown", label: tl("practice_runs_updown", "Up, then down") },
+];
+const RUN_KINDS = [
   { value: "arpeggios", label: tl("practice_arpeggios", "Chord-tone runs") },
   { value: "scales", label: tl("practice_scales", "Scale runs") },
+];
+
+/*
+  The Practice dropdown's entries: each run kind in each shape ("scales" is
+  the voice-led one, "scales-up" always up, ...), then the other exercises.
+  splitExercise reads a value back into its EXERCISES key and run shape.
+*/
+export const PRACTICE_EXERCISES = [
+  ...RUN_KINDS.flatMap((kind) => RUN_SHAPES.map((shape) => ({
+    value: shape.value === "alternate" ? kind.value : `${kind.value}-${shape.value}`,
+    label: tl("practice_run_option", "{kind}: {shape}", { kind: kind.label, shape: shape.label }),
+  }))),
   { value: "guide", label: tl("practice_guide", "Guide tones") },
   { value: "enclosures", label: tl("practice_enclosures", "Enclosures") },
   { value: "rhythm", label: tl("practice_rhythm", "Rhythm on one note") },
 ];
+
+function splitExercise(exercise) {
+  const [kind, runs] = String(exercise).split("-");
+  return { kind, runs: runs === undefined ? "alternate" : runs };
+}
 
 // General MIDI trumpet: the Mixer's Practice voice default.
 export const PRACTICE_PROGRAM = 56;
@@ -68,29 +95,6 @@ export const PRACTICE_RHYTHMS = [
 ];
 const RUN_CELLS = PRACTICE_RHYTHMS.filter((r) => r.run).map((r) => r.cell);
 const LONG_CELLS = PRACTICE_RHYTHMS.filter((r) => r.long).map((r) => r.cell);
-
-/*
-  The Runs dropdown: the shape of a run over each chord (chord-tone runs,
-  scale runs, and the notes between an enclosure's targets). "alternate"
-  voice-leads from the last note and turns round every chord; the others
-  give every chord the same shape, starting on its root.
-*/
-export const PRACTICE_RUNS = [
-  { value: "alternate", label: tl("practice_runs_alternate", "Alternate up and down") },
-  { value: "up", label: tl("practice_runs_up", "Always up") },
-  { value: "down", label: tl("practice_runs_down", "Always down") },
-  { value: "updown", label: tl("practice_runs_updown", "Up, then down") },
-];
-// The Breaths dropdown: a breath (BREATH_CELL) every so many bars, or none.
-export const PRACTICE_BREATHS = [
-  { value: "4", label: tl("practice_breath_4", "Breathe every 4 bars") },
-  { value: "2", label: tl("practice_breath_2", "Breathe every 2 bars") },
-  { value: "8", label: tl("practice_breath_8", "Breathe every 8 bars") },
-  { value: "off", label: tl("practice_breath_off", "No breaths") },
-];
-
-// Which exercises the Runs choice changes.
-export const RUN_EXERCISES = new Set(["arpeggios", "scales", "enclosures"]);
 
 // Range of the line (concert MIDI, C4 to G5) and where it starts.
 const LOW = 60;
@@ -130,15 +134,17 @@ function nearest(candidates, ref) {
   return best;
 }
 
-// A breathing bar: land on the chord with a half note, then rest.
-const BREATH_CELL = "x---....";
+// Every fourth bar (counted from the first chord bar) ends on a breath: its
+// last beat is a rest, and nothing ties out of it.
+const BREATH_EVERY = 4;
+const BREATH_SLOTS = SLOTS_PER_BEAT;
 
 /*
   The rhythm as one string of slots over the whole chart: each bar's cell (a
   break bar, all N.C., is silent and takes no anticipation), with a ">"
   carried into the next bar's first slot. With `breathEvery` (bars, 0 for
-  never) the last bar of every phrase of that length, counted from the first
-  chord bar, is a breath instead (BREATH_CELL).
+  never) the last bar of every phrase of that length is a breath: at least
+  its last beat rested.
 */
 export function rhythmSlots(bars, breaks, cells, breathEvery = 0) {
   let out = "";
@@ -149,11 +155,12 @@ export function rhythmSlots(bars, breaks, cells, breathEvery = 0) {
       tieIn = false;
     } else {
       const breath = breathEvery > 0 && bar % breathEvery === breathEvery - 1;
-      const cell = breath ? BREATH_CELL : cells[Math.floor(bar / CELL_BARS) % cells.length];
+      const cell = cells[Math.floor(bar / CELL_BARS) % cells.length];
       let body = cell.slice(0, SLOTS_PER_BAR);
       if (tieIn && body[0] === "x") body = "-" + body.slice(1);
+      if (breath) body = body.slice(0, SLOTS_PER_BAR - BREATH_SLOTS) + ".".repeat(BREATH_SLOTS);
       out += body;
-      tieIn = cell.endsWith(">") && !breaks.has(bar + 1) && bar + 1 < bars;
+      tieIn = !breath && cell.endsWith(">") && !breaks.has(bar + 1) && bar + 1 < bars;
     }
   }
   return out;
@@ -251,7 +258,7 @@ function octaveRange(runs, root, withOctave) {
 
 /*
   A run over each chord, walking `pool` from a chord tone. `runs` (a
-  PRACTICE_RUNS value) sets its shape: "alternate" starts on the chord tone
+  RUN_SHAPES value) sets its shape: "alternate" starts on the chord tone
   nearest the last note (so the line voice-leads through the changes) and
   goes up over one chord, down over the next; the others don't voice-lead
   but jump to the chord's root at every new chord (so every bar starts on
@@ -399,17 +406,17 @@ function cellsFor(spec, rhythm) {
   as [{ start, duration, midi, leadsUp }] in beats from the first chord bar — the
   shape solo.js's barFragments draws. Empty for an unknown exercise.
   `rhythm` is "varied" or a PRACTICE_RHYTHMS value to keep all the way;
-  `runs` a PRACTICE_RUNS value; `breath` a PRACTICE_BREATHS value.
+  `breathEvery` how many bars to a breath (0: none, for the tests).
 */
-export function practiceNotes(names, exercise, { rhythm = "varied", runs = "alternate", breath = "off" } = {}) {
-  const spec = EXERCISES[exercise];
+export function practiceNotes(names, exercise, { rhythm = "varied", breathEvery = BREATH_EVERY } = {}) {
+  const { kind, runs } = splitExercise(exercise);
+  const spec = EXERCISES[kind];
   if (!spec) return [];
   const breaks = new Set();
   names.forEach((row, bar) => {
     if (row.every((name) => name === null)) breaks.add(bar);
   });
   const timeline = chordTimeline(names);
-  const breathEvery = breath === "off" ? 0 : Number(breath);
   const notes = onsetsOf(rhythmSlots(names.length, breaks, cellsFor(spec, rhythm), breathEvery))
     .map((note) => ({ ...note, at: chordFor(timeline, note) }))
     .filter((note) => note.at);
@@ -439,10 +446,10 @@ function createPracticeSpeller(keyScale) {
   tune. `text`, `chords` and `song` are as for buildSoloTune; `text` may
   already carry the Comping / Solo voices. Returns { abc, notes }, or null
   when it can't apply (no chords, no such exercise, an unsupported meter, no
-  K: line). `options` is practiceNotes' { rhythm, runs }.
+  K: line). `options` is practiceNotes' { rhythm }.
 */
 export function buildPracticeTune(text, chords, song, exercise, options = {}) {
-  if (!chords || chords.length === 0 || !EXERCISES[exercise]) return null;
+  if (!chords || chords.length === 0 || !EXERCISES[splitExercise(exercise).kind]) return null;
   const notes = practiceNotes(resolveChordNames(chords), exercise, options);
   const abc = appendBarVoice(text, song, ({ keyScale, keySig, lnum, lden }) => (
     barFragments(notes, chords.length, createPracticeSpeller(keyScale))

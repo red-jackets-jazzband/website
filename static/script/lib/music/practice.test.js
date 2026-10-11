@@ -2,7 +2,7 @@ import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import ABCJS from "abcjs";
 import {
-  buildPracticeTune, practiceNotes, PRACTICE_BREATHS, PRACTICE_EXERCISES, PRACTICE_RHYTHMS, PRACTICE_RUNS,
+  buildPracticeTune, practiceNotes, PRACTICE_EXERCISES, PRACTICE_RHYTHMS,
   rhythmSlots,
 } from "./practice.js";
 import { buildCompingTune, COMPING_PATTERNS } from "./comping.js";
@@ -163,9 +163,9 @@ function barRhythms(notes, bars) {
 const EIGHT_BARS = [["F"], ["C7"], ["F"], ["C7"], ["F"], ["C7"], ["F"], ["C7"]];
 
 test("a picked rhythm plays the whole way; varied changes it every two bars", () => {
-  const fixed = barRhythms(practiceNotes(EIGHT_BARS, "arpeggios", { rhythm: "charleston" }), 8);
+  const fixed = barRhythms(practiceNotes(EIGHT_BARS, "arpeggios", { rhythm: "charleston", breathEvery: 0 }), 8);
   assert.ok(fixed.every((bar) => bar === "0:3 3:1"), fixed.join(" | "));
-  const varied = barRhythms(practiceNotes(EIGHT_BARS, "arpeggios"), 8);
+  const varied = barRhythms(practiceNotes(EIGHT_BARS, "arpeggios", { breathEvery: 0 }), 8);
   assert.notEqual(varied[0], varied[2]);
   for (const { value } of PRACTICE_RHYTHMS) {
     assert.ok(practiceNotes(EIGHT_BARS, "guide", { rhythm: value }).length > 0, value);
@@ -182,7 +182,7 @@ function shapes(notes) {
 
 test("runs: up, down and up-then-down give every chord the same shape", () => {
   for (const runs of ["up", "down", "updown"]) {
-    const notes = practiceNotes([["F"], ["F"], ["F"], ["F"], ["F"], ["F"], ["F"], ["F"]], "arpeggios", { rhythm: "eighths", runs });
+    const notes = practiceNotes([["F"], ["F"], ["F"], ["F"], ["F"], ["F"], ["F"], ["F"]], `arpeggios-${runs}`, { rhythm: "eighths", breathEvery: 0 });
     // The last bar has no next chord to lead into, so only the others compare.
     const each = shapes(notes).slice(0, -1);
     assert.ok(each.every((shape) => shape === each[0]), `${runs}: ${each.join(" | ")}`);
@@ -191,7 +191,7 @@ test("runs: up, down and up-then-down give every chord the same shape", () => {
 
 test("runs: always up only ever climbs within a bar, always down only falls", () => {
   for (const { runs, sign } of [{ runs: "up", sign: 1 }, { runs: "down", sign: -1 }]) {
-    const notes = practiceNotes(EIGHT_BARS, "scales", { rhythm: "eighths", runs });
+    const notes = practiceNotes(EIGHT_BARS, `scales-${runs}`, { rhythm: "eighths", breathEvery: 0 });
     for (let bar = 0; bar < 8; bar++) {
       const run = notes.filter((n) => Math.floor(n.start / 4) === bar).map((n) => n.midi);
       // One octave drop (or climb) back is allowed when the run reaches the edge of the range.
@@ -203,9 +203,9 @@ test("runs: always up only ever climbs within a bar, always down only falls", ()
 
 test("runs: up-then-down climbs to the octave and back over eight notes", () => {
   // F major's chord tones here are 1 3 5 6: F A C D F' D C A.
-  const arpeggio = practiceNotes([["F"]], "arpeggios", { rhythm: "eighths", runs: "updown" }).map((n) => n.midi);
+  const arpeggio = practiceNotes([["F"]], "arpeggios-updown", { rhythm: "eighths", breathEvery: 0 }).map((n) => n.midi);
   assert.deepEqual(arpeggio, [65, 69, 72, 74, 77, 74, 72, 69]);
-  const scale = practiceNotes([["F"]], "scales", { rhythm: "eighths", runs: "updown" }).map((n) => n.midi);
+  const scale = practiceNotes([["F"]], "scales-updown", { rhythm: "eighths", breathEvery: 0 }).map((n) => n.midi);
   assert.deepEqual(scale, [65, 67, 69, 70, 72, 70, 69, 67]);
 });
 
@@ -213,7 +213,7 @@ test("runs: a fixed shape stays within one octave of a root on the staff", () =>
   const names = [["F"], ["C7"], ["Bb"], ["G7"], ["Eb"], ["Ab"], ["D7"], ["A"]];
   for (const exercise of ["arpeggios", "scales"]) {
     for (const runs of ["up", "down", "updown"]) {
-      const notes = practiceNotes(names, exercise, { rhythm: "eighths", runs });
+      const notes = practiceNotes(names, `${exercise}-${runs}`, { rhythm: "eighths", breathEvery: 0 });
       for (let bar = 0; bar < names.length; bar++) {
         const run = notes.filter((n) => Math.floor(n.start / 4) === bar).map((n) => n.midi);
         const low = Math.min(...run);
@@ -224,17 +224,23 @@ test("runs: a fixed shape stays within one octave of a root on the staff", () =>
   }
 });
 
-test("every Runs choice is a known shape", () => {
-  for (const { value } of PRACTICE_RUNS) {
-    assert.equal(practiceNotes(EIGHT_BARS, "enclosures", { runs: value }).length > 0, true, value);
-  }
+test("the Practice list offers each run in each shape, read back from one value", () => {
+  const values = PRACTICE_EXERCISES.map((e) => e.value);
+  assert.deepEqual(values, [
+    "arpeggios", "arpeggios-up", "arpeggios-down", "arpeggios-updown",
+    "scales", "scales-up", "scales-down", "scales-updown",
+    "guide", "enclosures", "rhythm",
+  ]);
+  assert.equal(PRACTICE_EXERCISES[5].label, "Scale runs: Always up");
+  for (const value of values) assert.ok(practiceNotes(EIGHT_BARS, value).length > 0, value);
+  assert.deepEqual(practiceNotes(EIGHT_BARS, "kazoo-up"), []);
 });
 
 test("runs: always up jumps to the chord's root at every new chord, no voice leading", () => {
   const names = [["F"], ["C7"], ["Bb"], ["F", "C7"]];
   const roots = { F: 5, C7: 0, Bb: 10 };
   for (const exercise of ["arpeggios", "scales"]) {
-    const notes = practiceNotes(names, exercise, { rhythm: "eighths", runs: "up" });
+    const notes = practiceNotes(names, `${exercise}-up`, { rhythm: "eighths" });
     names.forEach((row, bar) => {
       row.forEach((chord, i) => {
         const first = notes.find((n) => n.start === bar * 4 + i * (4 / row.length));
@@ -248,42 +254,31 @@ test("runs: always up jumps to the chord's root at every new chord, no voice lea
   }
 });
 
-test("a breath every 4 bars: the 4th bar of each phrase lands with a half note, then rests", () => {
-  assert.equal(rhythmSlots(4, new Set(), ["xxxxxxxx"], 4), "xxxxxxxx".repeat(3) + "x---....");
-  // An anticipation into the breath bar becomes its landing note; none ties out of it.
-  assert.equal(rhythmSlots(5, new Set(), ["xxxxxx.x>"], 4), "xxxxxx.x-xxxxx.x-xxxxx.x----....xxxxxx.x");
+test("every 4th bar breathes: at least its last beat is a rest, nothing ties out of it", () => {
+  assert.equal(rhythmSlots(4, new Set(), ["xxxxxxxx"], 4), "xxxxxxxx".repeat(3) + "xxxxxx..");
+  // An anticipation into the breath bar still lands; none ties out of it.
+  assert.equal(rhythmSlots(5, new Set(), ["xxxxxx.x>"], 4), "xxxxxx.x-xxxxx.x-xxxxx.x-xxxxx..xxxxxx.x");
+  // A note held into the last beat is cut short there.
+  assert.equal(rhythmSlots(4, new Set(), ["x--x--x-"], 4).slice(24), "x--x--..");
   for (const { value } of PRACTICE_EXERCISES) {
-    const notes = practiceNotes(EIGHT_BARS, value, { rhythm: "eighths", breath: "4" });
+    const notes = practiceNotes(EIGHT_BARS, value, { rhythm: "eighths" });
     for (const bar of [3, 7]) {
-      const inBar = notes.filter((n) => n.start + n.duration > bar * 4 && n.start < bar * 4 + 4);
-      assert.equal(inBar.length, 1, `${value} bar ${bar}`);
-      assert.ok(inBar[0].start + inBar[0].duration <= bar * 4 + 2, `${value} bar ${bar} rests after beat 3`);
+      const end = bar * 4 + 4;
+      assert.ok(notes.every((n) => n.start >= end || n.start + n.duration <= end - 1), `${value} bar ${bar}`);
     }
+    // The other bars keep playing to the bar line.
+    assert.ok(notes.some((n) => n.start + n.duration === 4), value);
   }
-});
-
-// The bars that are a breath (one half note, then a rest) for this Breaths choice.
-function breathBars(breath) {
-  return barRhythms(practiceNotes(EIGHT_BARS, "arpeggios", { rhythm: "eighths", breath }), 8)
-    .map((bar, i) => (bar === "0:4" ? i : -1)).filter((i) => i >= 0);
-}
-
-test("breaths: every 2 / 8 bars, or none", () => {
-  assert.deepEqual(breathBars("2"), [1, 3, 5, 7]);
-  assert.deepEqual(breathBars("4"), [3, 7]);
-  assert.deepEqual(breathBars("8"), [7]);
-  assert.deepEqual(breathBars("off"), []);
-  assert.deepEqual(PRACTICE_BREATHS.map((b) => b.value), ["4", "2", "8", "off"]);
 });
 
 test("up-then-down turns its last note back towards the next chord, by a scale step", () => {
   // Bb into F7: ... F Eb D then Eb (not C), stepping up towards F.
-  const intoF7 = practiceNotes([["Bb"], ["F7"]], "scales", { rhythm: "eighths", runs: "updown" });
+  const intoF7 = practiceNotes([["Bb"], ["F7"]], "scales-updown", { rhythm: "eighths", breathEvery: 0 });
   assert.deepEqual(intoF7.slice(0, 9).map((n) => n.midi), [58, 60, 62, 63, 65, 63, 62, 63, 65]);
   // Into the same chord again the run already steps onto its root: C stays.
-  const again = practiceNotes([["Bb"], ["Bb"]], "scales", { rhythm: "eighths", runs: "updown" });
+  const again = practiceNotes([["Bb"], ["Bb"]], "scales-updown", { rhythm: "eighths", breathEvery: 0 });
   assert.equal(again[7].midi, 60);
   // Always up / down keep going their way and jump.
-  const up = practiceNotes([["Bb"], ["F7"]], "scales", { rhythm: "eighths", runs: "up" });
+  const up = practiceNotes([["Bb"], ["F7"]], "scales-up", { rhythm: "eighths", breathEvery: 0 });
   assert.deepEqual(up.slice(0, 8).map((n) => n.midi), [58, 60, 62, 63, 65, 67, 69, 70]);
 });
