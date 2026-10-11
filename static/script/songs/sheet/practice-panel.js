@@ -125,10 +125,7 @@ function buildPanel() {
       patternGrid,
     ]),
     el("div", { class: "practice-foot" }, [
-      el("div", { class: "practice-foot-text" }, [
-        preview,
-        el("p", { class: "practice-breath", text: tl("practice_breath_note", "Breathes on the last beat of every 4th bar") }),
-      ]),
+      el("div", { class: "practice-foot-text" }, [preview]),
       done,
     ]),
   ]);
