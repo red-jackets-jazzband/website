@@ -416,31 +416,34 @@ function rhythmPitches(notes) {
 }
 
 /*
-  Enclosures: every chord's first note is a target chord tone (the 3rd or
-  7th nearest the previous target); the two notes before it, when the rhythm
-  has them, enclose it — the scale step above, then a half step below. Other
-  notes run over the chord's tones from its own target.
+  Enclosures: every chord opens with an enclosure and lands on its target —
+  the 3rd or 7th nearest the last note played — on the chord's third note:
+  the scale step above, a half step below, then the target. A chord with only
+  two notes drops the step above; one with a single note just plays the
+  target. The notes after the target run on through the chord's tones from
+  it, up over one chord and down over the next.
 */
-function enclosurePitches(notes, runs) {
-  const targets = new Map();
-  let prev = START;
+function enclosureSegment(chord, size, prev, dir) {
+  const target = nearest(guideTones(chord), prev);
+  const above = scaleTones(chord).find((m) => m > target);
+  const approach = [above === undefined ? target + 2 : above, target - 1].slice(Math.max(0, 3 - size));
+  const out = [...approach, target];
+  const walk = { dir, restart: null };
+  while (out.length < size) out.push(stepThrough(chordTones(chord), out[out.length - 1], walk));
+  return out.slice(0, size);
+}
+
+function enclosurePitches(notes) {
+  const sizes = segmentSizes(notes);
+  const out = [];
+  let dir = 1;
   notes.forEach((note, i) => {
-    if (i === 0 || notes[i - 1].at.id !== note.at.id) {
-      prev = nearest(guideTones(note.at.chord), prev);
-      targets.set(i, prev);
-    }
+    if (i > 0 && notes[i - 1].at.id === note.at.id) return;
+    const prev = out.length > 0 ? out[out.length - 1] : START;
+    out.push(...enclosureSegment(note.at.chord, sizes.get(note.at.id), prev, dir));
+    dir = -dir;
   });
-  const filler = runPitches(notes, chordTones, runs);
-  return notes.map((note, i) => {
-    if (targets.has(i)) return targets.get(i);
-    if (targets.has(i + 1)) return targets.get(i + 1) - 1;
-    if (targets.has(i + 2)) {
-      const target = targets.get(i + 2);
-      const above = scaleTones(notes[i + 2].at.chord).find((m) => m > target);
-      return above === undefined ? target + 2 : above;
-    }
-    return filler[i];
-  });
+  return out;
 }
 
 const EXERCISES = {
