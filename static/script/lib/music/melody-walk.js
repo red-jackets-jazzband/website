@@ -4,6 +4,8 @@
 
     noteMidi(pitch, clef, keyAccidentals, barAccidentals)
                        the printed MIDI note of one abcjs pitch
+    noteLetter(pitch, clef)
+                       the letter ("C".."B") a pitch is printed as, or null
     topNote(el, state) the top printed note of a note element, or null
     walkMelody(song, visit)
                        visit(el, state) for every element of the first voice,
@@ -45,6 +47,15 @@ export function noteMidi(pitch, clef, keyAccidentals, barAccidentals) {
   return 60 + 12 * octave + LETTER_SEMITONES[degree] + alter;
 }
 
+// The letter an abcjs pitch is printed as (the line or space it sits on,
+// read the same way noteMidi reads it), or null for a clef we don't know.
+export function noteLetter(pitch, clef) {
+  const shift = CLEF_STEPS[clef];
+  if (shift === undefined) return null;
+  const steps = pitch.verticalPos - shift;
+  return LETTERS[steps - Math.floor(steps / 7) * 7];
+}
+
 // The key signature as letter → alteration ("B" → -1 in F major).
 function keyAccidentalMap(key) {
   const map = new Map();
@@ -56,7 +67,7 @@ function keyAccidentalMap(key) {
 
 /*
   The top printed note of a note element — a chord takes its top note (the
-  melody) — as { midi, pitch }, or null for a rest, a non-note or a note
+  melody) — as { midi, pitch, letter }, or null for a rest, a non-note or a note
   outside the clefs we know. `state` is walkMelody's. Always reads every
   pitch of the element, so the bar's accidentals stay current.
 */
@@ -65,7 +76,7 @@ export function topNote(el, state) {
   let top = null;
   for (const pitch of el.pitches) {
     const midi = noteMidi(pitch, state.clef, state.keyAccidentals, state.barAccidentals);
-    if (midi !== null && (top === null || midi > top.midi)) top = { midi, pitch };
+    if (midi !== null && (top === null || midi > top.midi)) top = { midi, pitch, letter: noteLetter(pitch, state.clef) };
   }
   return top;
 }
