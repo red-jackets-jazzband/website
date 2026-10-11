@@ -7158,6 +7158,14 @@ body.rj-layers-open #layersTab .rj-layers-count {
   font-weight: 700;
   fill: #1b1b1b;
 }
+/* Solfège (overlays/solfege.js): lower-case syllables, same face as the
+   degrees but regular weight, so a line of them reads as words. */
+.notation text.rj-layer-solfege {
+  font-family: Montserrat, Arial, sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  fill: #1b1b1b;
+}
 .notation .rj-layer-degree-circle {
   fill: none;
   stroke: #CA486d;

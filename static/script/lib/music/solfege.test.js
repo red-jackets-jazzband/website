@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import ABCJS from "abcjs";
-import { melodySolfege, solfegeSyllable } from "./solfege.js";
+import { melodySolfege, parseSolfegeText, solfegeSyllable, solfegeText } from "./solfege.js";
 import { resolveTranspose } from "./render-plan.js";
 
 const parse = (body, key = "C") => ABCJS.parseOnly(`X:1\nM:4/4\nL:1/4\nK:${key}\n${body}\n`)[0];
@@ -53,4 +53,12 @@ test("the bass-clef stamp for low brass keeps the syllables", () => {
 test("rests and a tune with no key give no syllables", () => {
   assert.deepEqual(sung("C z E z |"), ["do", "mi"]);
   assert.deepEqual(sung("C D |", "none"), []);
+});
+
+test("the annotation text carries an invisible marker the overlay reads back", () => {
+  assert.equal(parseSolfegeText(solfegeText("sol")), "sol");
+  assert.equal(parseSolfegeText(solfegeText("se")), "se");
+  assert.equal(parseSolfegeText("sol"), null, "a chart's own annotation is left alone");
+  assert.equal(parseSolfegeText(solfegeText("Fine")), null);
+  assert.equal(solfegeText("do").trim(), solfegeText("do"));
 });

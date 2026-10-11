@@ -112,11 +112,11 @@ test("solfège sings every melody note with do on the key's tonic", () => {
   const text = 'X:1\nM:4/4\nL:1/4\nK:F\n"F" F G A B | "C7" c e f2 |\n';
   const { text: out, applied } = annotateLayers(text, parse(text), { active: { solfege: true }, instrument: "alto_saxophone" });
   assert.deepEqual(applied, ["solfege"]);
-  assert.deepEqual((out.match(/"_[a-z]+"/g) || []).map((a) => a.slice(2, -1)), ["do", "re", "mi", "fa", "sol", "ti", "do"]);
+  assert.deepEqual((out.match(/"_\u200B[a-z]+"/g) || []).map((a) => a.slice(3, -1)), ["do", "re", "mi", "fa", "sol", "ti", "do"]);
   assert.equal(parse(out).warnings, undefined);
 });
 
 test("with scale degrees on too, the syllable sits below the degree", () => {
   const { text } = annotateLayers(TEXT, parse(TEXT), { active: { "scale-degrees": true, solfege: true }, instrument: "trumpet" });
-  assert.match(text, /"_[●○•]3""_mi""A7" E4/);
+  assert.match(text, /"_[●○•]3""_\u200Bmi""A7" E4/);
 });
