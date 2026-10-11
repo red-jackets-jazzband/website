@@ -167,167 +167,132 @@ function dockedSheet({ pointerEvents, open = true }) {
 }
 
 const dragVar = () => document.body.style.getPropertyValue("--rj-layers-drag");
-
-test("pulling the bottom sheet's grip down dismisses it; a short pull springs back", () => {
-  const { ctx, grip, cleanup } = dockedSheet({ pointerEvents: true });
-  try {
-    grip.dispatchEvent(pointer("pointerdown", { clientY: 100, timeStamp: 0 }));
-    grip.dispatchEvent(pointer("pointermove", { clientY: 130, timeStamp: 400 }));
-    assert.equal(dragVar(), "30px");
-    grip.dispatchEvent(pointer("pointerup", { clientY: 130, timeStamp: 900 }));
-    assert.equal(ctx.store.get("layers").layersOpen, true);
-    assert.equal(dragVar(), "");
-
-    grip.dispatchEvent(pointer("pointerdown", { clientY: 100, timeStamp: 0 }));
-    grip.dispatchEvent(pointer("pointermove", { clientY: 300, timeStamp: 300 }));
-    grip.dispatchEvent(pointer("pointerup", { clientY: 300, timeStamp: 300 }));
-    assert.equal(ctx.store.get("layers").layersOpen, false);
-  } finally {
-    cleanup();
-  }
-});
-
-test("a tap closes the sheet from the grip, but not from the header's empty space", () => {
-  const { ctx, grip, head, cleanup } = dockedSheet({ pointerEvents: true });
-  try {
-    head.dispatchEvent(pointer("pointerdown", { clientY: 50, timeStamp: 0 }));
-    head.dispatchEvent(pointer("pointerup", { clientY: 50, timeStamp: 60 }));
-    assert.equal(ctx.store.get("layers").layersOpen, true);
-
-    // ...while a real pull from the header still dismisses it.
-    head.dispatchEvent(pointer("pointerdown", { clientY: 50, timeStamp: 0 }));
-    head.dispatchEvent(pointer("pointermove", { clientY: 260, timeStamp: 200 }));
-    head.dispatchEvent(pointer("pointerup", { clientY: 260, timeStamp: 200 }));
-    assert.equal(ctx.store.get("layers").layersOpen, false);
-
-    ctx.store.set("layers", { layersOpen: true });
-    grip.dispatchEvent(pointer("pointerdown", { clientY: 10, timeStamp: 0 }));
-    grip.dispatchEvent(pointer("pointerup", { clientY: 10, timeStamp: 50 }));
-    assert.equal(ctx.store.get("layers").layersOpen, false);
-  } finally {
-    cleanup();
-  }
-});
-
-test("without Pointer Events (Safari 12) the same pull works from touch events", () => {
-  const { ctx, grip, cleanup } = dockedSheet({ pointerEvents: false });
-  try {
-    grip.dispatchEvent(touch("touchstart", 100, 0));
-    const move = touch("touchmove", 140, 100);
-    grip.dispatchEvent(move);
-    assert.equal(dragVar(), "40px");
-    assert.equal(move.defaultPrevented, true, "the page doesn't scroll under the pull");
-    grip.dispatchEvent(touch("touchend", 140, 1000));
-    assert.equal(ctx.store.get("layers").layersOpen, true, "a short, slow pull springs back");
-
-    grip.dispatchEvent(touch("touchstart", 100, 0));
-    grip.dispatchEvent(touch("touchmove", 320, 200));
-    grip.dispatchEvent(touch("touchend", 320, 200));
-    assert.equal(ctx.store.get("layers").layersOpen, false);
-  } finally {
-    cleanup();
-  }
-});
-
 const panelEl = () => document.getElementById("layersPanel");
-
-test("pulling the closed sheet's tab up draws the sheet out and opens it; the click it ends in is swallowed", () => {
-  const { ctx, tab, cleanup } = dockedSheet({ pointerEvents: true, open: false });
-  try {
-    tab.dispatchEvent(pointer("pointerdown", { clientY: 600, timeStamp: 0 }));
-    tab.dispatchEvent(pointer("pointermove", { clientY: 300, timeStamp: 200 }));
-    assert.equal(panelEl().hidden, false, "the sheet shows under the finger");
-    assert.equal(dragVar(), "200px", "500px tall, 300px of it pulled up");
-    tab.dispatchEvent(pointer("pointerup", { clientY: 300, timeStamp: 200 }));
-    click(tab);
-    assert.equal(ctx.store.get("layers").layersOpen, true);
-    assert.equal(dragVar(), "");
-  } finally {
-    cleanup();
-  }
+const isOpen = (ctx) => ctx.store.get("layers").layersOpen;
+const wait = (ms) => new Promise((resolve) => {
+  setTimeout(resolve, ms);
 });
 
-test("a short, slow pull on the closed tab slides the sheet back down and hides it", async () => {
-  const { ctx, tab, cleanup } = dockedSheet({ pointerEvents: true, open: false });
+// Runs `body(sheet)` on a docked sheet and always restores the page.
+async function withDockedSheet(options, body) {
+  const sheet = dockedSheet(options);
   try {
-    tab.dispatchEvent(pointer("pointerdown", { clientY: 600, timeStamp: 0 }));
-    tab.dispatchEvent(pointer("pointermove", { clientY: 540, timeStamp: 800 }));
-    tab.dispatchEvent(pointer("pointerup", { clientY: 540, timeStamp: 900 }));
-    assert.equal(ctx.store.get("layers").layersOpen, false);
-    assert.equal(dragVar(), "500px", "sliding back out of sight");
-    await new Promise((resolve) => {
-      setTimeout(resolve, 250);
-    });
-    assert.equal(panelEl().hidden, true);
-    assert.equal(dragVar(), "");
+    await body(sheet);
   } finally {
-    cleanup();
+    sheet.cleanup();
   }
-});
+}
 
-test("the open sheet's tab pulls it down to close; a tap on it is just its click", () => {
-  const { ctx, tab, cleanup } = dockedSheet({ pointerEvents: true });
-  try {
-    tab.dispatchEvent(pointer("pointerdown", { clientY: 100, timeStamp: 0 }));
-    tab.dispatchEvent(pointer("pointerup", { clientY: 100, timeStamp: 50 }));
-    assert.equal(ctx.store.get("layers").layersOpen, true, "the tap itself doesn't close it...");
-    click(tab);
-    assert.equal(ctx.store.get("layers").layersOpen, false, "...its click does");
+// One gesture on `el`: down at `from`, a move to `to` (left out when `to` is
+// undefined — a tap), up where it got to. `move`/`up` are the timestamps.
+function pull(el, { from, to, start = 0, move = start + 200, up = move }) {
+  el.dispatchEvent(pointer("pointerdown", { clientY: from, timeStamp: start }));
+  if (to !== undefined) el.dispatchEvent(pointer("pointermove", { clientY: to, timeStamp: move }));
+  el.dispatchEvent(pointer("pointerup", { clientY: to === undefined ? from : to, timeStamp: up }));
+}
 
-    ctx.store.set("layers", { layersOpen: true });
-    tab.dispatchEvent(pointer("pointerdown", { clientY: 100, timeStamp: 0 }));
-    tab.dispatchEvent(pointer("pointermove", { clientY: 320, timeStamp: 200 }));
-    tab.dispatchEvent(pointer("pointerup", { clientY: 320, timeStamp: 200 }));
-    click(tab);
-    assert.equal(ctx.store.get("layers").layersOpen, false, "closed by the pull, not re-opened by its click");
+// The same with touch events (no Pointer Events, Safari 12); returns the move.
+function touchPull(el, { from, to, move = 200, up = move }) {
+  el.dispatchEvent(touch("touchstart", from, 0));
+  const moveEvent = touch("touchmove", to, move);
+  el.dispatchEvent(moveEvent);
+  el.dispatchEvent(touch("touchend", to, up));
+  return moveEvent;
+}
 
-    // A pull that ends in no click at all (touch) doesn't eat the next tap.
-    ctx.store.set("layers", { layersOpen: true });
-    tab.dispatchEvent(pointer("pointerdown", { clientY: 100, timeStamp: 0 }));
-    tab.dispatchEvent(pointer("pointermove", { clientY: 140, timeStamp: 900 }));
-    tab.dispatchEvent(pointer("pointerup", { clientY: 140, timeStamp: 1000 }));
-    assert.equal(ctx.store.get("layers").layersOpen, true, "a short, slow pull springs back");
-    tab.dispatchEvent(pointer("pointerdown", { clientY: 100, timeStamp: 1200 }));
-    tab.dispatchEvent(pointer("pointerup", { clientY: 100, timeStamp: 1250 }));
-    click(tab);
-    assert.equal(ctx.store.get("layers").layersOpen, false, "the tap after it still toggles");
-  } finally {
-    cleanup();
-  }
-});
+test("pulling the bottom sheet's grip down dismisses it; a short pull springs back", () => withDockedSheet({ pointerEvents: true }, ({ ctx, grip }) => {
+  grip.dispatchEvent(pointer("pointerdown", { clientY: 100, timeStamp: 0 }));
+  grip.dispatchEvent(pointer("pointermove", { clientY: 130, timeStamp: 400 }));
+  assert.equal(dragVar(), "30px");
+  grip.dispatchEvent(pointer("pointerup", { clientY: 130, timeStamp: 900 }));
+  assert.equal(isOpen(ctx), true);
+  assert.equal(dragVar(), "");
 
-test("without Pointer Events the tab pulls the sheet open from touch events", () => {
-  const { ctx, tab, cleanup } = dockedSheet({ pointerEvents: false, open: false });
-  try {
-    tab.dispatchEvent(touch("touchstart", 600, 0));
-    tab.dispatchEvent(touch("touchmove", 300, 200));
-    tab.dispatchEvent(touch("touchend", 300, 200));
-    assert.equal(ctx.store.get("layers").layersOpen, true);
-  } finally {
-    cleanup();
-  }
-});
+  pull(grip, { from: 100, to: 300 });
+  assert.equal(isOpen(ctx), false);
+}));
 
-test("a new pull on the tab while the sheet slides back starts clean, and the old timer can't hide it", async () => {
-  const { ctx, tab, cleanup } = dockedSheet({ pointerEvents: true, open: false });
-  try {
-    tab.dispatchEvent(pointer("pointerdown", { clientY: 600, timeStamp: 0 }));
-    tab.dispatchEvent(pointer("pointermove", { clientY: 540, timeStamp: 800 }));
-    tab.dispatchEvent(pointer("pointerup", { clientY: 540, timeStamp: 900 }));
-    assert.equal(dragVar(), "500px", "sliding back");
+test("a tap closes the sheet from the grip, but not from the header's empty space", () => withDockedSheet({ pointerEvents: true }, ({ ctx, grip, head }) => {
+  pull(head, { from: 50, up: 60 });
+  assert.equal(isOpen(ctx), true);
 
-    tab.dispatchEvent(pointer("pointerdown", { clientY: 600, timeStamp: 1000 }));
-    assert.equal(dragVar(), "", "the new gesture starts with no offset");
-    assert.equal(panelEl().hidden, true, "the cut-short slide back has hidden the sheet");
-    tab.dispatchEvent(pointer("pointermove", { clientY: 300, timeStamp: 1200 }));
-    await new Promise((resolve) => {
-      setTimeout(resolve, 250);
-    });
-    assert.equal(panelEl().hidden, false, "the old timer doesn't hide the sheet mid-pull");
-    assert.equal(dragVar(), "200px");
-    tab.dispatchEvent(pointer("pointerup", { clientY: 300, timeStamp: 1200 }));
-    assert.equal(ctx.store.get("layers").layersOpen, true);
-  } finally {
-    cleanup();
-  }
-});
+  // ...while a real pull from the header still dismisses it.
+  pull(head, { from: 50, to: 260 });
+  assert.equal(isOpen(ctx), false);
+
+  ctx.store.set("layers", { layersOpen: true });
+  pull(grip, { from: 10, up: 50 });
+  assert.equal(isOpen(ctx), false);
+}));
+
+test("without Pointer Events (Safari 12) the same pull works from touch events", () => withDockedSheet({ pointerEvents: false }, ({ ctx, grip }) => {
+  const move = touchPull(grip, { from: 100, to: 140, move: 100, up: 1000 });
+  assert.equal(move.defaultPrevented, true, "the page doesn't scroll under the pull");
+  assert.equal(isOpen(ctx), true, "a short, slow pull springs back");
+
+  touchPull(grip, { from: 100, to: 320 });
+  assert.equal(isOpen(ctx), false);
+}));
+
+test("pulling the closed sheet's tab up draws the sheet out and opens it; the click it ends in is swallowed", () => withDockedSheet({ pointerEvents: true, open: false }, ({ ctx, tab }) => {
+  tab.dispatchEvent(pointer("pointerdown", { clientY: 600, timeStamp: 0 }));
+  tab.dispatchEvent(pointer("pointermove", { clientY: 300, timeStamp: 200 }));
+  assert.equal(panelEl().hidden, false, "the sheet shows under the finger");
+  assert.equal(dragVar(), "200px", "500px tall, 300px of it pulled up");
+  tab.dispatchEvent(pointer("pointerup", { clientY: 300, timeStamp: 200 }));
+  click(tab);
+  assert.equal(isOpen(ctx), true);
+  assert.equal(dragVar(), "");
+}));
+
+// 60px up over most of a second: neither far nor quick enough to open.
+const SHORT_SLOW_PULL = { from: 600, to: 540, move: 800, up: 900 };
+
+test("a short, slow pull on the closed tab slides the sheet back down and hides it", () => withDockedSheet({ pointerEvents: true, open: false }, async ({ ctx, tab }) => {
+  pull(tab, SHORT_SLOW_PULL);
+  assert.equal(isOpen(ctx), false);
+  assert.equal(dragVar(), "500px", "sliding back out of sight");
+  await wait(250);
+  assert.equal(panelEl().hidden, true);
+  assert.equal(dragVar(), "");
+}));
+
+test("the open sheet's tab pulls it down to close; a tap on it is just its click", () => withDockedSheet({ pointerEvents: true }, ({ ctx, tab }) => {
+  pull(tab, { from: 100, up: 50 });
+  assert.equal(isOpen(ctx), true, "the tap itself doesn't close it...");
+  click(tab);
+  assert.equal(isOpen(ctx), false, "...its click does");
+
+  ctx.store.set("layers", { layersOpen: true });
+  pull(tab, { from: 100, to: 320 });
+  click(tab);
+  assert.equal(isOpen(ctx), false, "closed by the pull, not re-opened by its click");
+
+  // A pull that ends in no click at all (touch) doesn't eat the next tap.
+  ctx.store.set("layers", { layersOpen: true });
+  pull(tab, { from: 100, to: 140, move: 900, up: 1000 });
+  assert.equal(isOpen(ctx), true, "a short, slow pull springs back");
+  pull(tab, { from: 100, start: 1200, up: 1250 });
+  click(tab);
+  assert.equal(isOpen(ctx), false, "the tap after it still toggles");
+}));
+
+test("without Pointer Events the tab pulls the sheet open from touch events", () => withDockedSheet({ pointerEvents: false, open: false }, ({ ctx, tab }) => {
+  touchPull(tab, { from: 600, to: 300 });
+  assert.equal(isOpen(ctx), true);
+}));
+
+test("a new pull on the tab while the sheet slides back starts clean, and the old timer can't hide it", () => withDockedSheet({ pointerEvents: true, open: false }, async ({ ctx, tab }) => {
+  pull(tab, SHORT_SLOW_PULL);
+  assert.equal(dragVar(), "500px", "sliding back");
+
+  tab.dispatchEvent(pointer("pointerdown", { clientY: 600, timeStamp: 1000 }));
+  assert.equal(dragVar(), "", "the new gesture starts with no offset");
+  assert.equal(panelEl().hidden, true, "the cut-short slide back has hidden the sheet");
+  tab.dispatchEvent(pointer("pointermove", { clientY: 300, timeStamp: 1200 }));
+  await wait(250);
+  assert.equal(panelEl().hidden, false, "the old timer doesn't hide the sheet mid-pull");
+  assert.equal(dragVar(), "200px");
+  tab.dispatchEvent(pointer("pointerup", { clientY: 300, timeStamp: 1200 }));
+  assert.equal(isOpen(ctx), true);
+}));
