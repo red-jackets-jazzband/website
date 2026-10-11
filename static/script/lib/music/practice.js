@@ -86,9 +86,10 @@ export const RUN_EXERCISES = new Set(["arpeggios", "scales", "enclosures"]);
 const LOW = 60;
 const HIGH = 79;
 const START = 67;
-// A fixed-shape run (always up / down, up then down) reaches further: it
-// starts on a root from B-flat3 up (a trumpet's written C4) and climbs to C6.
-const RUN_RANGE = { low: 58, high: 84 };
+// A fixed-shape run (always up / down, up then down) stays within one
+// octave of its root, the root taken from A3 to G#4 (concert) so the octave
+// sits on the treble staff (a trumpet's written B3 to A#4 root).
+const RUN_ROOTS = { low: 57, high: 68 };
 
 const mod12 = (x) => ((x % 12) + 12) % 12;
 
@@ -211,13 +212,25 @@ function runStart(runs, chord, prev, walk) {
     walk.dir = -walk.dir;
     return nearest(chordTones(chord), prev);
   }
-  // A fixed shape: no voice leading, every chord jumps to its root — the
-  // lowest one in range for a run that climbs, the highest for one that falls.
-  const roots = pitchesOf(chord, [0], RUN_RANGE);
+  // A fixed shape: no voice leading, every chord jumps to its root and the
+  // run stays in that root's octave (octaveRange).
+  const root = pitchesOf(chord, [0], RUN_ROOTS)[0];
+  walk.range = octaveRange(runs, root, walk.withOctave);
   walk.dir = runs === "down" ? -1 : 1;
-  const root = runs === "down" ? roots[roots.length - 1] : roots[0];
-  if (runs !== "updown") walk.restart = root;
-  return root;
+  const start = runs === "down" ? root + 12 : root;
+  walk.restart = runs === "updown" ? null : start;
+  return start;
+}
+
+/*
+  The one octave a fixed-shape run moves in. A scale run (`withOctave`) and
+  an up-then-down run take root to octave, both ends; an arpeggio that only
+  goes one way leaves out the far root, so it repeats root-3-5-7 going up
+  (octave-7-5-3 going down) instead of doubling the root at the turn.
+*/
+function octaveRange(runs, root, withOctave) {
+  if (withOctave || runs === "updown") return { low: root, high: root + 12 };
+  return runs === "down" ? { low: root + 1, high: root + 12 } : { low: root, high: root + 11 };
 }
 
 /*
@@ -226,14 +239,14 @@ function runStart(runs, chord, prev, walk) {
   nearest the last note (so the line voice-leads through the changes) and
   goes up over one chord, down over the next; the others don't voice-lead
   but jump to the chord's root at every new chord (so every bar starts on
-  one): "up" climbs from the low root, "down" falls from the high one, and
-  "updown" climbs from the low root for the first half of the chord's notes
-  and comes back down.
+  one): "up" climbs from the root, "down" falls from its octave, and
+  "updown" climbs from the root to the note after the middle of the chord's
+  notes and comes back down — all within one octave of the root. `withOctave`:
+  the pool is a scale, whose run spans root to octave.
 */
-function runPitches(notes, pool, runs = "alternate") {
+function runPitches(notes, pool, runs = "alternate", withOctave = false) {
   // Flipped at the first chord, so an alternating line opens going up.
-  const walk = { dir: -1, restart: null };
-  const range = runs === "alternate" ? undefined : RUN_RANGE;
+  const walk = { dir: -1, restart: null, range: undefined, withOctave };
   const sizes = segmentSizes(notes);
   let prev = START;
   let segment = null;
@@ -241,8 +254,9 @@ function runPitches(notes, pool, runs = "alternate") {
   return notes.map((note) => {
     if (note.at.id === segment) {
       index += 1;
-      if (runs === "updown" && index === Math.ceil(sizes.get(segment) / 2)) walk.dir = -1;
-      prev = stepThrough(pool(note.at.chord, range), prev, walk);
+      // Up to the middle note, then back down: 1 2 3 4 5 4 3 2 over eight.
+      if (runs === "updown" && index === Math.ceil(sizes.get(segment) / 2) + 1) walk.dir = -1;
+      prev = stepThrough(pool(note.at.chord, walk.range), prev, walk);
     } else {
       segment = note.at.id;
       index = 0;
@@ -313,7 +327,7 @@ function enclosurePitches(notes, runs) {
 
 const EXERCISES = {
   arpeggios: { cells: RUN_CELLS, pitches: (notes, runs) => runPitches(notes, chordTones, runs) },
-  scales: { cells: RUN_CELLS, pitches: (notes, runs) => runPitches(notes, scaleTones, runs) },
+  scales: { cells: RUN_CELLS, pitches: (notes, runs) => runPitches(notes, scaleTones, runs, true) },
   guide: { cells: LONG_CELLS, pitches: guidePitches },
   enclosures: { cells: RUN_CELLS, pitches: enclosurePitches },
   rhythm: { cells: RUN_CELLS, pitches: rhythmPitches },
