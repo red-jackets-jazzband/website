@@ -276,20 +276,14 @@ test("breaths: every 2 / 8 bars, or none", () => {
   assert.deepEqual(PRACTICE_BREATHS.map((b) => b.value), ["4", "2", "8", "off"]);
 });
 
-test("a fixed-shape run's last note leads into the next chord", () => {
-  // Bb up-then-down into F7: ... D then E-natural (not C), a half step below F.
+test("up-then-down turns its last note back towards the next chord, by a scale step", () => {
+  // Bb into F7: ... F Eb D then Eb (not C), stepping up towards F.
   const intoF7 = practiceNotes([["Bb"], ["F7"]], "scales", { rhythm: "eighths", runs: "updown" });
-  assert.deepEqual(intoF7.slice(0, 9).map((n) => n.midi), [58, 60, 62, 63, 65, 63, 62, 64, 65]);
-  assert.ok(intoF7[7].leadsUp, "spelled as a leading tone");
-  withRealTonal(() => {
-    // In F, after the E-flat earlier in the bar: "B,CD_E FED=E".
-    const { abc } = buildPracticeTune(ABC, chordsOf(["Bb"], ["F7"]), SONG, "scales", { rhythm: "eighths", runs: "updown" });
-    assert.match(practiceBars(abc)[0], /D=E $/);
-  });
+  assert.deepEqual(intoF7.slice(0, 9).map((n) => n.midi), [58, 60, 62, 63, 65, 63, 62, 63, 65]);
   // Into the same chord again the run already steps onto its root: C stays.
   const again = practiceNotes([["Bb"], ["Bb"]], "scales", { rhythm: "eighths", runs: "updown" });
   assert.equal(again[7].midi, 60);
-  // Alternate voice-leads already and is left as it was.
-  const alternate = practiceNotes([["Bb"], ["F7"]], "scales", { rhythm: "eighths" });
-  assert.equal(alternate.slice(0, 8).every((n) => !n.leadsUp || n.midi % 12 !== 4), true);
+  // Always up / down keep going their way and jump.
+  const up = practiceNotes([["Bb"], ["F7"]], "scales", { rhythm: "eighths", runs: "up" });
+  assert.deepEqual(up.slice(0, 8).map((n) => n.midi), [58, 60, 62, 63, 65, 67, 69, 70]);
 });

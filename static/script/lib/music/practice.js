@@ -267,6 +267,8 @@ function runPitches(notes, pool, runs = "alternate", withOctave = false) {
   let prev = START;
   let segment = null;
   let index = 0;
+  // The notes each one's run walks through, for leadIntoChords.
+  const pools = [];
   const midis = notes.map((note) => {
     if (note.at.id === segment) {
       index += 1;
@@ -278,25 +280,33 @@ function runPitches(notes, pool, runs = "alternate", withOctave = false) {
       index = 0;
       prev = runStart(runs, note.at.chord, prev, walk);
     }
+    pools.push(pool(note.at.chord, walk.range));
     return prev;
   });
-  return runs === "alternate" ? midis : leadIntoChords(notes, midis);
+  // Only up-then-down turns into the next chord: "always up/down" jump.
+  return runs === "updown" ? leadIntoChords(notes, midis, pools) : midis;
 }
 
 // Within this many eighths of the next chord's first note, a run's last note leads into it.
 const LEAD_GAP = 2;
-// The leading tone is only taken when it's at most a fourth from the note before it.
-const LEAD_REACH = 5;
+
+// The note next to `from` in `pool` (sorted), one step towards `target`.
+function stepToward(pool, from, target) {
+  if (target > from) return pool.find((m) => m > from);
+  const below = pool.filter((m) => m < from);
+  return below[below.length - 1];
+}
 
 /*
-  A fixed-shape run jumps to a new root at every chord, so its last note
-  before the change leads into the next chord's first note: kept when it's
-  already a step away, else a half step below it — a leading tone (B-flat C
-  D E-flat F E-flat D E-natural, then F) — when that's a short move from
-  the note before; otherwise the line is left as it was rather than leap
-  to it. Not a chord's only note, and not across a longer rest.
+  An up-then-down run jumps to a new root at every chord, so its last note
+  before the change turns towards the next chord's first note: instead of
+  carrying on away from it, it steps back the other way through the same
+  scale (or chord tones) — B-flat C D E-flat F E-flat D E-flat, then F,
+  not ... D C, then F. Kept when it's already a step from that note, when
+  turning wouldn't bring it any closer, for a chord's only note, and across
+  a longer rest.
 */
-function leadIntoChords(notes, midis) {
+function leadIntoChords(notes, midis, pools) {
   return midis.map((midi, i) => {
     const note = notes[i];
     const next = notes[i + 1];
@@ -304,9 +314,10 @@ function leadIntoChords(notes, midis) {
     const firstOfChord = i === 0 || notes[i - 1].at.id !== note.at.id;
     if (!changes || firstOfChord || next.slot - (note.slot + note.len) > LEAD_GAP) return midi;
     const target = midis[i + 1];
-    const leading = target - 1;
-    if (Math.abs(midi - target) <= 2 || Math.abs(leading - midis[i - 1]) > LEAD_REACH) return midi;
-    return leading;
+    const prev = midis[i - 1];
+    if (Math.abs(midi - target) <= 2 || prev === target) return midi;
+    const turn = stepToward(pools[i], prev, target);
+    return turn !== undefined && Math.abs(turn - target) < Math.abs(midi - target) ? turn : midi;
   });
 }
 
