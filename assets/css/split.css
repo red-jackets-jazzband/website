@@ -5465,12 +5465,6 @@ body:not(.rj-sheet-active) .rj-sheet-pager .rj-sheet-step {
   display: inline-block;
 }
 
-/* display:inline-block above beats the UA [hidden] rule (the Practice
-   Rhythm picker hides while no exercise is on). */
-.dropdown[hidden] {
-  display: none;
-}
-
 .dropdown:hover .dropbtn {
   background-color: var(--rj-gold);
   color: black;
@@ -5525,6 +5519,14 @@ body:not(.rj-sheet-active) .rj-sheet-pager .rj-sheet-step {
      doesn't flash a white OS list on open. */
   color-scheme: dark;
   background-position: right 14px center;
+}
+/* The Practice picker's closed face is a summary of both its choices, so
+   it can run long: cut it off rather than wrap or widen the row. */
+#practiceSlot #practice {
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .sheet-status .dropdown:hover .dropbtn,
 .sheet-comping .dropdown:hover .dropbtn {

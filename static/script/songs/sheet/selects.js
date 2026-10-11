@@ -178,45 +178,77 @@ export function createSoloDropdown(ctx) {
 }
 
 /*
-  The practice pickers in #practiceSlot, views of the settings slice like the
-  comping one: the exercise (#practice: "OFF" plus lib/music/practice.js's
-  PRACTICE_EXERCISES — each run kind in each shape, so one list picks both)
-  and, once one is on, its rhythm (#practiceRhythm: varied, or one pattern
-  the whole way). sheet.js appends the exercise as one more staff (Comping /
-  Solo stay as they are, and the lead keeps playing, so it can be played
-  along with).
+  The practice picker (#practice in #practiceSlot): one <select> for both of
+  the settings slice's practice choices. Closed, it shows a summary of the
+  two ("SCALE RUNS: UP, THEN DOWN · CHARLESTON"), a disabled first option
+  that's always the selected one; open, an Exercise group ("OFF" plus
+  lib/music/practice.js's PRACTICE_EXERCISES — each run kind in each shape)
+  and a Rhythm group (varied, or one PRACTICE_RHYTHMS pattern the whole way,
+  disabled while practice is off), the current pick in each ticked. Picking
+  from a group writes just that setting. sheet.js appends the exercise as
+  one more staff (Comping / Solo stay as they are, and the lead keeps
+  playing, so it can be played along with).
 */
+const PICK_MARK = "\u2713 ";
+
+function practiceSummary(ctx, exercises, rhythms) {
+  if (ctx.state.practice === "off") return exercises.get("off");
+  return tl("practice_summary", "{exercise} · {rhythm}", {
+    exercise: exercises.get(ctx.state.practice),
+    rhythm: ctx.state.practiceRhythm === "varied"
+      ? tl("practice_rhythm_varied_short", "Varied rhythm").toUpperCase()
+      : rhythms.get(ctx.state.practiceRhythm),
+  });
+}
+
+// Tick the group's current pick ("ex:" / "rh:" option values).
+function tick(group, prefix, labels, current) {
+  for (const option of group.children) {
+    const value = option.value.slice(prefix.length + 1);
+    option.textContent = (value === current ? PICK_MARK : "") + labels.get(value);
+  }
+}
+
+function practiceGroup(label, prefix, labels) {
+  const group = el("optgroup", { label: label.toUpperCase() });
+  for (const [value, text] of labels) {
+    group.append(el("option", { value: `${prefix}:${value}`, text }));
+  }
+  return group;
+}
+
 export function createPracticeDropdown(ctx) {
   const slot = byId("practiceSlot");
   if (!slot) return;
 
-  const exercise = el("select", { class: "dropbtn", id: "practice" },
-    el("option", { value: "off", text: tl("practice_off", "PRACTICE: OFF") }));
-  for (const entry of PRACTICE_EXERCISES) {
-    exercise.append(el("option", { value: entry.value, text: entry.label.toUpperCase() }));
-  }
-  const rhythm = el("select", {
-    class: "dropbtn", id: "practiceRhythm", attrs: { "aria-label": tl("practice_rhythm_aria", "Practice rhythm") },
-  }, el("option", { value: "varied", text: tl("practice_rhythm_varied", "RHYTHM: VARIED") }));
-  for (const entry of PRACTICE_RHYTHMS) {
-    rhythm.append(el("option", { value: entry.value, text: entry.label.toUpperCase() }));
-  }
-  const rhythmBox = dropdown(rhythm);
+  const exercises = new Map([["off", tl("practice_off", "PRACTICE: OFF")]]);
+  for (const entry of PRACTICE_EXERCISES) exercises.set(entry.value, entry.label.toUpperCase());
+  const rhythms = new Map([["varied", tl("practice_rhythm_varied", "Varied, changes every 2 bars").toUpperCase()]]);
+  for (const entry of PRACTICE_RHYTHMS) rhythms.set(entry.value, entry.label.toUpperCase());
 
-  const pickers = [[exercise, "practice"], [rhythm, "practiceRhythm"]];
+  const summary = el("option", { value: "summary", disabled: true });
+  const exerciseGroup = practiceGroup(tl("practice_group_exercise", "Exercise"), "ex", exercises);
+  const rhythmGroup = practiceGroup(tl("practice_group_rhythm", "Rhythm"), "rh", rhythms);
+  const select = el("select", {
+    class: "dropbtn", id: "practice", attrs: { "aria-label": tl("practice_aria", "Practice exercise and rhythm") },
+  }, [summary, exerciseGroup, rhythmGroup]);
+
   const draw = () => {
-    for (const [select, key] of pickers) {
-      if (select.value !== ctx.state[key]) select.value = ctx.state[key];
-    }
-    rhythmBox.hidden = ctx.state.practice === "off";
+    summary.textContent = practiceSummary(ctx, exercises, rhythms);
+    tick(exerciseGroup, "ex", exercises, ctx.state.practice);
+    tick(rhythmGroup, "rh", rhythms, ctx.state.practiceRhythm);
+    rhythmGroup.disabled = ctx.state.practice === "off";
+    select.value = "summary";
   };
   draw();
   ctx.store.subscribe("settings", draw);
 
-  for (const [select, key] of pickers) {
-    select.addEventListener("change", () => {
-      ctx.state[key] = select.value;
-    });
-  }
-  slot.append(dropdown(exercise), rhythmBox);
+  select.addEventListener("change", () => {
+    const [prefix, value] = select.value.split(":");
+    if (prefix === "ex") ctx.state.practice = value;
+    else if (prefix === "rh") ctx.state.practiceRhythm = value;
+    // Back to the summary even when the pick changed nothing.
+    draw();
+  });
+  slot.append(dropdown(select));
 }
