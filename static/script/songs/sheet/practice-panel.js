@@ -12,7 +12,7 @@ import { tl } from "../../lib/core/i18n.js";
   button ("PRACTICE  Scale runs, Up & down · Syncopated rhythm"); the summary
   opens #practicePanel inline below it, three numbered steps read top to
   bottom: 1 what to play (PRACTICE_KINDS), 2 the run's shape (only for a
-  run kind), 3 rhythm (Varied / Syncopated / One pattern, the last opening a
+  run kind), 3 rhythm (One pattern / Syncopated / Varied, the first opening a
   grid of PRACTICE_RHYTHMS drawn as eight eighth-note cells), then a one-bar
   preview and Done. Any pick also switches practice on; the switch
   remembers the exercise it last turned off. sheet.js appends the exercise
@@ -91,8 +91,9 @@ function buildPanel() {
     contour(shape.points),
     el("span", { class: "practice-choice-label", text: shape.label }),
   ]));
-  const mixes = [...PRACTICE_RHYTHM_MIXES.map((mix) => ({ value: mix.value, label: mix.choice })),
-    { value: FIXED, label: tl("practice_mix_fixed", "One pattern") }]
+  // One pattern first, then the mixes the other way round: One pattern / Syncopated / Varied.
+  const mixes = [{ value: FIXED, label: tl("practice_mix_fixed", "One pattern") },
+    ...PRACTICE_RHYTHM_MIXES.map((mix) => ({ value: mix.value, label: mix.choice })).reverse()]
     .map((mix) => choice("practice-mix", mix.value, [el("span", { class: "practice-choice-label", text: mix.label })]));
   const patterns = PRACTICE_RHYTHMS.map((rhythm) => choice("practice-pattern", rhythm.value, [
     cellStrip(rhythm.cell),
