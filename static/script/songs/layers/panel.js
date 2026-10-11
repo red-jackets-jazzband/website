@@ -195,8 +195,9 @@ export function createLayersPanel(ctx) {
     document.addEventListener("keydown", onKeydown);
     const panel = byId("layersPanel");
     if (panel) {
-      const handles = [panel.querySelector(".rj-layers-grip"), panel.querySelector(".rj-layers-head")].filter(Boolean);
-      initSheetDrag(panel, handles, () => setOpen(false));
+      const grip = panel.querySelector(".rj-layers-grip");
+      const handles = [grip, panel.querySelector(".rj-layers-head")].filter(Boolean);
+      initSheetDrag(panel, handles, grip, () => setOpen(false));
     }
 
     ctx.store.subscribe("layers", (state, changed) => {
