@@ -382,3 +382,7 @@ js_offline_partial_many = "Disponible hors ligne ({count} éléments n'ont pas p
 js_offline_failed = "Le téléchargement n'a pas pu se terminer — réessayez une fois de nouveau en ligne."
 js_setlist_new_set = "Nouveau set"
 js_setlist_new = "Nouvelle setlist"
+skip_to_content = "Aller au contenu"
+skip_to_sheet = "Aller à la partition"
+js_chords_table = "Accords"
+js_chords_same = "même accord"

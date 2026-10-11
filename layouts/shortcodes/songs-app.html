@@ -25,8 +25,8 @@
 
 <div id="rjLibrary" class="rj-library hideOnprint">
   <div class="rj-library-tabs" id="libraryTabs">
-    <button type="button" class="rj-library-tab" data-tab="library">{{ i18n "songs_tabSongs" }}</button>
-    <button type="button" class="rj-library-tab" data-tab="setlists">{{ i18n "songs_tabSetlists" }}</button>
+    <button type="button" class="rj-library-tab" data-tab="library" aria-pressed="true">{{ i18n "songs_tabSongs" }}</button>
+    <button type="button" class="rj-library-tab" data-tab="setlists" aria-pressed="false">{{ i18n "songs_tabSetlists" }}</button>
   </div>
   <output id="offlineStatus" class="rj-offline-status" aria-live="polite" hidden></output>
 
@@ -73,7 +73,7 @@
   </div>
 </div>
 
-<div id="rjSheet" class="rj-sheet">
+<div id="rjSheet" class="rj-sheet" tabindex="-1">
 <div class="rj-sheet-navrow hideOnprint">
 <button id="sheetBackBtn" class="rj-sheet-back" type="button"><span class="fa-solid fa-chevron-left" aria-hidden="true"></span><span id="sheetBackLabel">{{ i18n "songs_tabSongs" }}</span></button>
 </div>
@@ -88,6 +88,7 @@
       <span class="sheet-stepper-label">{{ i18n "songs_keyUnit" }}</span>
     </div>
     <button type="button" id="keyUpBtn" class="sheet-stepper-btn" aria-label="{{ i18n "songs_keyUpBtn_aria" }}">&plus;</button>
+    <span class="rj-sr-only sheet-stepper-announce" aria-live="polite"></span>
   </div>
 
   <div class="sheet-stepper" id="tempoStepper" title="{{ i18n "songs_tempoStepper_title" }}">
@@ -97,6 +98,7 @@
       <span class="sheet-stepper-label">{{ i18n "songs_tempoUnit" }}</span>
     </div>
     <button type="button" id="tempoUpBtn" class="sheet-stepper-btn" aria-label="{{ i18n "songs_tempoUpBtn_aria" }}">&plus;</button>
+    <span class="rj-sr-only sheet-stepper-announce" aria-live="polite"></span>
   </div>
   </div>
 
@@ -133,6 +135,7 @@
       <span class="sheet-stepper-label" id="repeatCountLabel">{{ i18n "songs_repeatsUnit" }}</span>
     </div>
     <button type="button" id="repeatUpBtn" class="sheet-stepper-btn" aria-label="{{ i18n "songs_repeatUpBtn_aria" }}">&plus;</button>
+    <span class="rj-sr-only sheet-stepper-announce" aria-live="polite"></span>
   </div>
   <div id="compingSlot" class="sheet-comping"></div>
   <div id="soloSlot" class="sheet-comping"></div>

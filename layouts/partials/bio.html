@@ -1,0 +1,6 @@
+{{/* Overrides the Split theme's bio partial only to give the page body an id
+     the skip link (layouts/partials/intro.html) can land on; tabindex="-1"
+     lets it take focus without joining the tab order. */}}
+<div class="split-bio" id="content" tabindex="-1">
+  {{ .Content }}
+</div>

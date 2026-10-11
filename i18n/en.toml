@@ -382,3 +382,7 @@ js_offline_partial_many = "Available offline ({count} items couldn't be download
 js_offline_failed = "Couldn't finish downloading — try again when you're back online."
 js_setlist_new_set = "New set"
 js_setlist_new = "New setlist"
+skip_to_content = "Skip to content"
+skip_to_sheet = "Skip to the sheet music"
+js_chords_table = "Chords"
+js_chords_same = "same chord"

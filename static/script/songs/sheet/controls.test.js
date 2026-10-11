@@ -212,3 +212,20 @@ function inDom(fn) {
     page.cleanup();
   }
 }
+
+test("a stepper press reads the new value out through its live region", () => {
+  const { cleanup } = setup();
+  try {
+    const live = (id) => document.querySelector(`#${id} .sheet-stepper-announce`);
+    assert.equal(live("keyStepper").textContent, "", "silent until a press");
+    document.getElementById("keyUpBtn").click();
+    assert.match(live("keyStepper").textContent, /^1 \S/);
+    document.getElementById("tempoValueLabel").textContent = "132";
+    document.getElementById("tempoUpBtn").click();
+    assert.match(live("tempoStepper").textContent, /^132 \S/);
+    document.getElementById("repeatUpBtn").click();
+    assert.match(live("repeatStepper").textContent, /^2 \S/);
+  } finally {
+    cleanup();
+  }
+});

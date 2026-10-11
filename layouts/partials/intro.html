@@ -1,10 +1,21 @@
 <div class="split-intro hideOnprint">
+  {{/* Skip links: the first thing a keyboard user tabs to. On /songs/ they're
+       handled by songs/core/skip-links.js so the #s=… deep link survives. */}}
+  <div class="rj-skip-links">
+    <a class="rj-skip-link" href="#content">{{ i18n "skip_to_content" }}</a>
+    {{ if and .File (eq .File.TranslationBaseName "songs") }}<a class="rj-skip-link rj-skip-link--sheet" href="#rjSheet">{{ i18n "skip_to_sheet" }}</a>{{ end }}
+  </div>
   <div class="split-intro-nav">
     {{/* A language link goes to this page in that language when it exists,
          else to that language's home page. */}}
     {{ $to := dict "en" "/" "nl" "/nl" "de" "/de" "fr" "/fr" }}
     {{ range .AllTranslations }}{{ $to = merge $to (dict .Language.Lang .RelPermalink) }}{{ end }}
-    <span class="rj-intro-nav-lang"><a href="/"><img src="/images/Home_Icon.svg" height=19px alt="{{ .Site.Title }}"></a> <a href="{{ index $to "en" }}" data-lang="en">en</a> | <a href="{{ index $to "nl" }}" data-lang="nl">nl</a> | <a href="{{ index $to "de" }}" data-lang="de">de</a> | <a href="{{ index $to "fr" }}" data-lang="fr">fr</a></span>
+    {{/* Each language link is named in full in its own language ("Nederlands",
+         not "nl") and marks the page's own language as current. */}}
+    {{ $here := .Language.Lang }}
+    <span class="rj-intro-nav-lang"><a href="/"><img src="/images/Home_Icon.svg" height=19px alt="{{ .Site.Title }}"></a>
+      {{- range $i, $l := site.Languages }}{{ if $i }} |{{ end }} <a href="{{ index $to $l.Lang }}" data-lang="{{ $l.Lang }}" lang="{{ $l.Locale }}" hreflang="{{ $l.Locale }}" aria-label="{{ $l.Label }}"{{ if eq $l.Lang $here }} aria-current="page"{{ end }}>{{ $l.Lang }}</a>{{ end -}}
+    </span>
     {{ if and .File (eq .File.TranslationBaseName "songs") }}
     <span class="rj-intro-nav-tools">
       <button type="button" id="tourBtn" class="rj-intro-nav-btn" hidden><span class="fa-solid fa-circle-question" aria-hidden="true"></span></button>
