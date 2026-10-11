@@ -126,13 +126,13 @@ function applySolo(renderText, plan, style, compose) {
 /*
   Live sheet only: when a practice exercise is picked, append its staff after
   Comping / Solo (lib/music/practice.js — rule-based, so instant, no
-  background job). Returns the render text and the voice's program, or null
+  background job); `options` is the Rhythm / Runs picks. Returns the render text and the voice's program, or null
   when it didn't apply.
 */
-function applyPractice(renderText, plan, exercise) {
+function applyPractice(renderText, plan, exercise, options) {
   if (exercise === "off") return { renderText, program: null };
   const { song, chords } = plan.concert;
-  const built = buildPracticeTune(renderText, chords, song, exercise);
+  const built = buildPracticeTune(renderText, chords, song, exercise, options);
   return built ? { renderText: built.abc, program: PRACTICE_PROGRAM } : { renderText, program: null };
 }
 
@@ -359,7 +359,9 @@ export function createSheet(ctx) {
     // Like comping, a solo needs chords to play over.
     const soloStyle = plan.hasChords ? settings.solo : "off";
     const solo = applySolo(plan.comping.renderText, plan, soloStyle, composeSoloTake);
-    const practice = applyPractice(solo.renderText, plan, plan.hasChords ? settings.practice : "off");
+    const practice = applyPractice(
+      solo.renderText, plan, plan.hasChords ? settings.practice : "off", settings.practiceOptions,
+    );
     // The Mixer's voice list is an input to this very render: the tune's
     // own voices (read from the raw text, never the transposed/augmented
     // one) plus Comping/Solo/Practice, materialised by the Mixer with each voice's

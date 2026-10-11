@@ -43,6 +43,10 @@ test("effectiveSheetSettings: a practice exercise only counts while the drawer i
   assert.equal(effectiveSheetSettings(settings).practice, "off");
   assert.equal(effectiveSheetSettings({ ...settings, advancedOpen: true }).practice, "scales");
   assert.equal(effectiveSheetSettings({ ...settings, advancedOpen: true }, { booklet: true }).practice, "off");
+  assert.deepEqual(
+    effectiveSheetSettings({ ...settings, practiceRhythm: "pairs", practiceRuns: "up" }).practiceOptions,
+    { rhythm: "pairs", runs: "up" },
+  );
 });
 
 test("effectiveSheetSettings: a booklet ignores the Key stepper and the drawer", () => {
