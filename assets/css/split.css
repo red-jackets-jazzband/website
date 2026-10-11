@@ -5698,6 +5698,11 @@ body:not(.rj-sheet-active) .rj-sheet-pager .rj-sheet-step {
   align-items: center;
   flex-wrap: wrap;
   gap: 10px;
+  /* A flex item's default min-width:auto lets the row grow to its widest
+     unbreakable content — the practice summary's no-wrap text — past
+     #sheetmenu on a phone, where #rjSheet's overflow:hidden then cut off
+     the right of the open practice panel (its Done button included). */
+  min-width: 0;
 }
 /* The History button (sheet/history.js) sits at the end of the drawer row;
    only shown for a tune with H: text. .sheet-icon-btn's display:grid beats
@@ -7200,6 +7205,7 @@ body.rj-layers-open #layersTab .rj-layers-count {
    width while open. */
 #practiceSlot.is-open {
   flex-basis: 100%;
+  max-width: 100%;
 }
 #practiceSlot {
   display: flex;
@@ -7417,6 +7423,10 @@ body.rj-layers-open #layersTab .rj-layers-count {
   justify-content: center;
   text-align: center;
 }
+.practice-shape svg {
+  max-width: 100%;
+  height: auto;
+}
 .practice-shape polyline {
   fill: none;
   stroke: var(--rj-gold);
@@ -7504,5 +7514,34 @@ body.rj-layers-open #layersTab .rj-layers-count {
   }
   .practice-panel {
     max-width: none;
+  }
+  /* Phones in portrait: the panel's side padding shrinks and the foot
+     wraps Done under the preview, so every choice stays inside #rjSheet
+     (which clips overflow) instead of running off its right edge. */
+  .practice-head,
+  .practice-step,
+  .practice-foot {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .practice-foot {
+    flex-wrap: wrap;
+  }
+  .practice-foot-text {
+    min-width: 0;
+  }
+  .practice-choice {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+}
+/* The narrowest phones (320px): the run shapes go two by two and the
+   rhythm mixes stack. */
+@media (max-width: 400px) {
+  .practice-choices--shapes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .practice-choices--mixes {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
