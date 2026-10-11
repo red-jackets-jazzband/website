@@ -126,7 +126,7 @@ function applySolo(renderText, plan, style, compose) {
 /*
   Live sheet only: when a practice exercise is picked, append its staff after
   Comping / Solo (lib/music/practice.js — rule-based, so instant, no
-  background job); `options` is the Rhythm / Runs picks. Returns the render text and the voice's program, or null
+  background job); `options` is the Rhythm pick. Returns the render text and the voice's program, or null
   when it didn't apply.
 */
 function applyPractice(renderText, plan, exercise, options) {
