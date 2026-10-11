@@ -1,5 +1,5 @@
 import {
-  appendBarVoice, distribute, pcChromaVal, rebeamBar, resolveChordNames, respellBar,
+  appendBarVoice, distribute, endsTied, pcChromaVal, rebeamBar, resolveChordNames, respellBar,
 } from "./comping.js";
 import { parseChord } from "./solo-ga.js";
 import { barFragments, createSpeller } from "./solo.js";
@@ -311,7 +311,7 @@ export function buildPracticeTune(text, chords, song, exercise) {
   const notes = practiceNotes(resolveChordNames(chords), exercise);
   const abc = appendBarVoice(text, song, ({ keyScale, keySig, lnum, lden }) => (
     barFragments(notes, chords.length, createPracticeSpeller(keyScale))
-      .map((fragment) => rebeamBar(respellBar(fragment, keySig), lnum, lden))
+      .map((fragment, i, all) => rebeamBar(respellBar(fragment, keySig, i > 0 && endsTied(all[i - 1])), lnum, lden))
   ), { name: "Practice", titleSuffix: "" });
   return abc === null ? null : { abc, notes };
 }
