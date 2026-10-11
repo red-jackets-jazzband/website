@@ -1,6 +1,6 @@
-import { byId, el } from "../../lib/core/dom.js";
+import { byId, clear, el } from "../../lib/core/dom.js";
 import {
-  joinExercise, practiceSummary, PRACTICE_KINDS, PRACTICE_RHYTHM_MIXES, PRACTICE_RHYTHMS, PRACTICE_SHAPES,
+  joinExercise, practiceSummary, practiceSummaryParts, PRACTICE_KINDS, PRACTICE_RHYTHM_MIXES, PRACTICE_RHYTHMS, PRACTICE_SHAPES,
   splitExercise,
 } from "../../lib/music/practice.js";
 import { tl } from "../../lib/core/i18n.js";
@@ -174,7 +174,21 @@ export function createPracticePanel(ctx) {
     const fixed = isPattern(rhythm);
     toggle.setAttribute("aria-pressed", on ? "true" : "false");
     toggle.classList.toggle("is-on", on);
-    summaryText.textContent = practiceSummary(ctx.state.practice, rhythm);
+    // Exercise and rhythm as two spans, so a phone can stack them (split.css);
+    // the full line is the button's tooltip.
+    const parts = practiceSummaryParts(ctx.state.practice, rhythm);
+    const line = practiceSummary(ctx.state.practice, rhythm);
+    summary.title = line;
+    clear(summaryText);
+    if (parts === null) {
+      summaryText.append(line);
+    } else {
+      summaryText.append(
+        el("span", { class: "practice-summary-what", text: parts.exercise }),
+        el("span", { class: "practice-summary-sep", text: " · " }),
+        el("span", { class: "practice-summary-rhythm", text: parts.rhythm }),
+      );
+    }
     markPressed(ui.kinds, on ? kind : null);
     markPressed(ui.shapes, on ? runs : null);
     markPressed(ui.mixes, fixed ? FIXED : rhythm);

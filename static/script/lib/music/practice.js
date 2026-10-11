@@ -132,14 +132,15 @@ export const PRACTICE_RHYTHM_MIXES = [
 ];
 
 /*
-  One line for what's set — the practice control's face when the panel is
-  closed: "Scale runs, Up & down · Syncopated rhythm", or "Off".
+  What's set, in two parts — { exercise: "Scale runs, Up & down", rhythm:
+  "Syncopated rhythm" } — or null when practice is off. The closed practice
+  control shows them side by side, or stacked on a phone.
 */
-export function practiceSummary(practice, rhythm) {
-  if (practice === "off") return tl("practice_summary_off", "Off");
+export function practiceSummaryParts(practice, rhythm) {
+  if (practice === "off") return null;
   const { kind, runs } = splitExercise(practice);
   const found = PRACTICE_KINDS.find((k) => k.value === kind);
-  if (!found) return tl("practice_summary_off", "Off");
+  if (!found) return null;
   const shape = PRACTICE_SHAPES.find((s) => s.value === runs);
   const what = found.runs && shape
     ? tl("practice_summary_run", "{kind}, {shape}", { kind: found.name, shape: shape.label })
@@ -149,7 +150,14 @@ export function practiceSummary(practice, rhythm) {
   let rhythmName = PRACTICE_RHYTHM_MIXES[0].short;
   if (mix) rhythmName = mix.short;
   else if (pattern) rhythmName = pattern.label;
-  return tl("practice_summary", "{exercise} · {rhythm}", { exercise: what, rhythm: rhythmName });
+  return { exercise: what, rhythm: rhythmName };
+}
+
+// The same as one line: "Scale runs, Up & down · Syncopated rhythm", or "Off".
+export function practiceSummary(practice, rhythm) {
+  const parts = practiceSummaryParts(practice, rhythm);
+  if (parts === null) return tl("practice_summary_off", "Off");
+  return tl("practice_summary", "{exercise} · {rhythm}", parts);
 }
 
 // Range of the line (concert MIDI, C4 to G5) and where it starts.
