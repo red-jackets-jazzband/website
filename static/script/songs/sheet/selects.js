@@ -2,6 +2,7 @@ import { byId, el } from "../../lib/core/dom.js";
 import { INSTRUMENTS } from "../../lib/music/instruments.js";
 import { COMPING_PATTERNS } from "../../lib/music/comping.js";
 import { SOLO_STYLES } from "../../lib/music/solo.js";
+import { PRACTICE_EXERCISES } from "../../lib/music/practice.js";
 import { COMPING_PARTS } from "./state.js";
 import { tl } from "../../lib/core/i18n.js";
 
@@ -174,4 +175,32 @@ export function createSoloDropdown(ctx) {
     class: "sheet-solo-status", id: "soloStatus", attrs: { role: "status", "aria-live": "polite" },
   });
   slot.append(dropdown(select), status);
+}
+
+/*
+  The practice <select> (#practice): an "OFF" entry plus one entry per
+  exercise from lib/music/practice.js — a view of ctx.state.practice.
+  sheet.js appends the exercise as one more staff (Comping / Solo stay as
+  they are, and the lead keeps playing, so it can be played along with).
+*/
+export function createPracticeDropdown(ctx) {
+  const slot = byId("practiceSlot");
+  if (!slot) return;
+
+  const select = el("select", { class: "dropbtn", id: "practice" },
+    el("option", { value: "off", text: tl("practice_off", "PRACTICE: OFF") }));
+  for (const exercise of PRACTICE_EXERCISES) {
+    select.append(el("option", { value: exercise.value, text: exercise.label.toUpperCase() }));
+  }
+
+  const draw = () => {
+    if (select.value !== ctx.state.practice) select.value = ctx.state.practice;
+  };
+  draw();
+  ctx.store.subscribe("settings", draw);
+
+  select.addEventListener("change", () => {
+    ctx.state.practice = select.value;
+  });
+  slot.append(dropdown(select));
 }
