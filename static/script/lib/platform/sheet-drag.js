@@ -3,8 +3,11 @@
 // (`dy`, px), how long the gesture took (`dt`, ms) and the sheet's height,
 // decide whether it should close or spring back.
 
+// px or less of travel is a tap on the handle rather than a pull.
+export const TAP_DISTANCE = 6;
+
 const DEFAULTS = {
-  tapDistance: 6, // px or less is a tap on the handle, which also closes
+  tapDistance: TAP_DISTANCE, // a tap on the handle closes too
   closeFraction: 0.3, // pulled past this share of the sheet's height
   flickSpeed: 0.5, // px/ms — a quick flick closes it from much less
   flickDistance: 24, // ...but only past this much travel
