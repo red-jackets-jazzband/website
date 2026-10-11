@@ -40,6 +40,10 @@ const RUNTIME_TARGETS = {
   ".rj-layer-degree-circle": ["static/script/songs/layers/overlays/degrees.js", "rj-layer-degree-circle"],
   ".rj-layer-prog-band": ["static/script/songs/layers/overlays/progression-bands.js", "rj-layer-prog-band"],
   ".setlist-song-note-add": ["static/script/songs/setlists/view.js", 'class: "setlist-song-note-add"'],
+  "#practicePanel": ["static/script/songs/sheet/practice-panel.js", 'id: "practicePanel"'],
+  ".practice-choices--kinds": ["static/script/songs/sheet/practice-panel.js", "practice-choices--kinds"],
+  "#practiceShapeStep": ["static/script/songs/sheet/practice-panel.js", 'id: "practiceShapeStep"'],
+  ".practice-choices--mixes": ["static/script/songs/sheet/practice-panel.js", "practice-choices--mixes"],
 };
 
 const allSteps = english.chapters.flatMap((chapter) => chapter.steps.map((step) => ({ chapter, step })));
