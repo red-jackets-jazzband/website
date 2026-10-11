@@ -71,7 +71,7 @@ const LONG_CELLS = PRACTICE_RHYTHMS.filter((r) => r.long).map((r) => r.cell);
   The Runs dropdown: the shape of a run over each chord (chord-tone runs,
   scale runs, and the notes between an enclosure's targets). "alternate"
   voice-leads from the last note and turns round every chord; the others
-  give every chord the same shape, from the same place.
+  give every chord the same shape, starting on its root.
 */
 export const PRACTICE_RUNS = [
   { value: "alternate", label: tl("practice_runs_alternate", "Alternate up and down") },
@@ -86,28 +86,27 @@ export const RUN_EXERCISES = new Set(["arpeggios", "scales", "enclosures"]);
 const LOW = 60;
 const HIGH = 79;
 const START = 67;
-// Where a fixed-shape run starts over each chord: low for one that climbs,
-// high for one that falls.
-const LOW_ANCHOR = 64;
-const HIGH_ANCHOR = 76;
+// A fixed-shape run (always up / down, up then down) reaches further: it
+// starts on a root from B-flat3 up (a trumpet's written C4) and climbs to C6.
+const RUN_RANGE = { low: 58, high: 84 };
 
 const mod12 = (x) => ((x % 12) + 12) % 12;
 
-function pitchesOf(chord, intervals) {
+function pitchesOf(chord, intervals, range = { low: LOW, high: HIGH }) {
   const set = new Set(intervals);
   const out = [];
-  for (let m = LOW; m <= HIGH; m++) {
+  for (let m = range.low; m <= range.high; m++) {
     if (set.has(mod12(m - chord.root))) out.push(m);
   }
   return out;
 }
 
-const chordTones = (chord) => pitchesOf(chord, [...chord.tones]);
+const chordTones = (chord, range) => pitchesOf(chord, [...chord.tones], range);
 // The chord's scale without the GA's blue notes — a clean scale to run, so
 // a major chord gets its major seventh back (the GA leaves it out).
-function scaleTones(chord) {
+function scaleTones(chord, range) {
   const scale = chord.scale.filter((i) => !chord.blue.has(i));
-  return pitchesOf(chord, chord.type === "maj" ? [...scale, 11] : scale);
+  return pitchesOf(chord, chord.type === "maj" ? [...scale, 11] : scale, range);
 }
 // The 3rd and the 7th (or 6th): every chord tone but the root and the fifth.
 const guideTones = (chord) => pitchesOf(chord, [...chord.tones].filter((i) => i !== 0 && i !== 7));
@@ -184,14 +183,14 @@ function chordFor(timeline, note) {
 }
 
 // Walk `pool` (sorted) from `prev` one step in `dir`. At either end it turns
-// round, or — `walk.wrap`, a run that only goes one way — jumps an octave
-// back and carries on in the same direction.
+// round, or — `walk.restart`, a run that only goes one way — jumps back to
+// the note it started from (the chord's root) and goes again.
 function stepThrough(pool, prev, walk) {
   const i = pool.indexOf(prev);
   if (i === -1) return nearest(pool, prev);
   let next = i + walk.dir;
   if (next < 0 || next >= pool.length) {
-    if (walk.wrap) return pool[pool.indexOf(nearest(pool, prev - 12 * walk.dir)) + walk.dir];
+    if (walk.restart !== null) return walk.restart;
     walk.dir = -walk.dir;
     next = i + walk.dir;
   }
@@ -212,21 +211,29 @@ function runStart(runs, chord, prev, walk) {
     walk.dir = -walk.dir;
     return nearest(chordTones(chord), prev);
   }
+  // A fixed shape: no voice leading, every chord jumps to its root — the
+  // lowest one in range for a run that climbs, the highest for one that falls.
+  const roots = pitchesOf(chord, [0], RUN_RANGE);
   walk.dir = runs === "down" ? -1 : 1;
-  return nearest(chordTones(chord), runs === "down" ? HIGH_ANCHOR : LOW_ANCHOR);
+  const root = runs === "down" ? roots[roots.length - 1] : roots[0];
+  if (runs !== "updown") walk.restart = root;
+  return root;
 }
 
 /*
   A run over each chord, walking `pool` from a chord tone. `runs` (a
   PRACTICE_RUNS value) sets its shape: "alternate" starts on the chord tone
   nearest the last note (so the line voice-leads through the changes) and
-  goes up over one chord, down over the next; "up" / "down" start every
-  chord from the same low / high spot; "updown" climbs for the first half of
-  the chord's notes and comes back down.
+  goes up over one chord, down over the next; the others don't voice-lead
+  but jump to the chord's root at every new chord (so every bar starts on
+  one): "up" climbs from the low root, "down" falls from the high one, and
+  "updown" climbs from the low root for the first half of the chord's notes
+  and comes back down.
 */
 function runPitches(notes, pool, runs = "alternate") {
   // Flipped at the first chord, so an alternating line opens going up.
-  const walk = { dir: -1, wrap: runs === "up" || runs === "down" };
+  const walk = { dir: -1, restart: null };
+  const range = runs === "alternate" ? undefined : RUN_RANGE;
   const sizes = segmentSizes(notes);
   let prev = START;
   let segment = null;
@@ -235,7 +242,7 @@ function runPitches(notes, pool, runs = "alternate") {
     if (note.at.id === segment) {
       index += 1;
       if (runs === "updown" && index === Math.ceil(sizes.get(segment) / 2)) walk.dir = -1;
-      prev = stepThrough(pool(note.at.chord), prev, walk);
+      prev = stepThrough(pool(note.at.chord, range), prev, walk);
     } else {
       segment = note.at.id;
       index = 0;
