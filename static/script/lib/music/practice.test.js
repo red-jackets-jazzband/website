@@ -1,10 +1,12 @@
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
+import ABCJS from "abcjs";
 import { buildPracticeTune, practiceNotes, PRACTICE_EXERCISES, rhythmSlots } from "./practice.js";
 import { buildCompingTune, COMPING_PATTERNS } from "./comping.js";
+import { parseChordScheme } from "./chords.js";
 import { tonalStub } from "../../../../tests/helpers/stubs.js";
 import {
-  ABC, SONG, CHORDS, chordsOf, barSlots, voiceBars as practiceBars,
+  ABC, SONG, CHORDS, chordsOf, barSlots, voiceBars as practiceBars, withRealTonal,
 } from "../../../../tests/helpers/bar-voice.js";
 
 before(() => {
@@ -102,4 +104,47 @@ test("buildPracticeTune declines what it can't do", () => {
   assert.equal(buildPracticeTune(ABC, [], SONG, "scales"), null);
   assert.equal(buildPracticeTune(ABC, CHORDS, SONG, "kazoo"), null);
   assert.equal(buildPracticeTune(ABC.replace("M:4/4", "M:3/4"), CHORDS, SONG, "scales"), null);
+});
+
+// The Practice staff as abcjs actually plays it: the second voice's track
+// (the melody's comes first, the chord accompaniment's last).
+function practicePlayback(abc) {
+  const tracks = ABCJS.parseOnly(abc)[0].setUpAudio({}).tracks;
+  return tracks[1].filter((e) => e.cmd === "note").map((e) => e.pitch);
+}
+
+function practiceOf(text, exercise) {
+  const song = ABCJS.parseOnly(text)[0];
+  return buildPracticeTune(text, parseChordScheme(song), song, exercise);
+}
+
+test("a key change before a repeat is followed: the new section sounds as generated", () => {
+  // K:Bb, then the new part opens on a bar line (Royal Garden Blues' "|:"
+  // shape; a plain "|" here, so playback isn't unrolled by a repeat): the
+  // E-naturals of the C7 bar must be spelled for Bb, not left bare from F.
+  const text = [
+    "X:1", "T:Keys", "M:4/4", "L:1/8", "K:F",
+    "\"F\"F8|\"C7\"G8||", "K:Bb", "P:B", "|\"Bb\"B8|\"C7\"c8|\"F7\"c8|\"Bb\"B8|]", "",
+  ].join("\n");
+  withRealTonal(() => {
+    for (const { value } of PRACTICE_EXERCISES) {
+      const built = practiceOf(text, value);
+      assert.deepEqual(practicePlayback(built.abc), built.notes.map((n) => n.midi), value);
+    }
+  });
+});
+
+test("a note tied into a bar doesn't set its accidental for the rest of the bar", () => {
+  // Rhythm on one note over C7 in Eb ties an E-natural into the next C7 bar:
+  // abcjs ignores the accidental on a tied-over note, so the next E in that
+  // bar must carry its own natural.
+  // The anticipated cell comes round at bars 9-10.
+  const bars = Array.from({ length: 12 }, () => "\"C7\"G8").join("|");
+  const text = ["X:1", "T:Tie", "M:4/4", "L:1/8", "K:Eb", `${bars}|]`, ""].join("\n");
+  withRealTonal(() => {
+    const built = practiceOf(text, "rhythm");
+    // "...E- |E=E...": the tied-over E is written bare, the next one spells its own natural.
+    assert.match(built.abc, /E- \|E=E/);
+    assert.deepEqual(practicePlayback(built.abc), built.notes.map((n) => n.midi));
+  });
 });
