@@ -6892,13 +6892,6 @@ body.rj-layers-open #layersTab .rj-layers-count {
   outline-offset: -2px;
   border-radius: 12px;
 }
-#layersPanel .rj-layers-foot {
-  margin: 0;
-  padding: 10px 16px 14px;
-  border-top: 1px solid #2e2e2e;
-  font: 11px/1.4 "Montserrat", sans-serif;
-  color: #a29f98;
-}
 #layersBackdrop.rj-layers-backdrop {
   display: none;
 }
