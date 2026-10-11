@@ -125,11 +125,7 @@ export function initSheetDrag(panel, handles, grip, onDismiss, options = {}) {
     settleSlideBack();
     document.body.classList.remove(DRAGGING);
     setOffset(panel.offsetHeight);
-    slideTimer = setTimeout(() => {
-      slideTimer = null;
-      document.body.style.removeProperty(DRAG_VAR);
-      if (!isOpen()) reveal(false);
-    }, SLIDE_MS);
+    slideTimer = setTimeout(settleSlideBack, SLIDE_MS);
   }
 
   function finishOpening({ startY, startT, moved }, y, t, cancelled) {
