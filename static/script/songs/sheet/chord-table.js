@@ -194,7 +194,10 @@ export function fitChordTable(container) {
   Fit the song-form arrow strip(s) under the chord grid the same way: each
   step keeps at least its own min-content width, so on a phone the strip
   overflows. Zoom it down by the overflow ratio so the whole flow stays on
-  screen, and re-fit on rotate.
+  screen, and re-fit on rotate. The strip's natural width is its min-content
+  width, not max-content: a step's text wraps, so a long aside (a riff note)
+  laid out on one line would otherwise shrink the whole strip — print included —
+  to a fraction of the width it actually needs.
 */
 export function fitSongForms(chordEl) {
   const parent = chordEl && chordEl.parentNode; // NOSONAR: `?.` is a SyntaxError on Safari 12 (see Browser support)
@@ -205,7 +208,7 @@ export function fitSongForms(chordEl) {
     forceReflow(form);
     const available = form.clientWidth;
     if (!available) return;
-    form.style.width = "max-content";
+    form.style.width = "min-content";
     const natural = form.scrollWidth;
     form.style.width = "";
     if (natural <= available + 1) return;
