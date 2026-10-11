@@ -5844,6 +5844,26 @@ body:not(.rj-sheet-active) .rj-sheet-pager .rj-sheet-step {
   transform: rotate(90deg);
   font-size: 12px;
 }
+/* With the drawer closed, how many extra staves (Comping, Solo, Practice)
+   are still on: a small gold dot on the toggle's top-right corner. */
+.sheet-advanced-badge {
+  position: absolute;
+  top: -7px;
+  right: -9px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  box-sizing: border-box;
+  border-radius: 8px;
+  background: var(--rj-gold);
+  color: #1b1b1b;
+  font: 700 10px/16px "Montserrat", sans-serif;
+  text-align: center;
+  pointer-events: none;
+}
+.sheet-advanced-badge[hidden] {
+  display: none;
+}
 /* Points down at rest (an invitation to pull the drawer open) and flips to
    point up, towards the seam it collapses back behind, once expanded. */
 #sheetmenu.show-advanced .sheet-advanced-toggle .fa-angles-right {

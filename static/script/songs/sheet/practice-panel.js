@@ -197,6 +197,10 @@ export function createPracticePanel(ctx) {
     }
   });
   summary.addEventListener("click", () => setOpen(ui.panel.hidden));
+  // A click anywhere outside the control and its panel closes the panel.
+  document.addEventListener("click", (event) => {
+    if (!ui.panel.hidden && !slot.contains(event.target)) setOpen(false);
+  });
   ui.done.addEventListener("click", () => {
     setOpen(false);
     summary.focus();
