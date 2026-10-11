@@ -12,7 +12,7 @@ import { buildPracticeTune, PRACTICE_PROGRAM } from "../../lib/music/practice.js
 import { parseVoiceList, resolveMixerVoices, isCompingLabel } from "../../lib/audio/audio-mix.js";
 import { parseInspirationLinks } from "../../lib/media/inspiration-links.js";
 import { renderChordTable, scanRepeatBoundaries, fitChordTable, fitSongForms } from "./chord-table.js";
-import { stylePartMarkers, applyCompingColors, applySplitCompingColors } from "./decorations.js";
+import { stylePartMarkers, keepPartsTogether, applyCompingColors, applySplitCompingColors } from "./decorations.js";
 import { updateIrealProLink } from "./irealpro-link.js";
 import { decorateLayers } from "../layers/overlays.js";
 import { RENDER, isRenderWrite } from "../core/state.js";
@@ -247,6 +247,7 @@ function engraveNotation(plan, renderText, notation, voices) {
     node.setAttribute("display", "none");
   });
   stylePartMarkersWhenReady(notationEl);
+  keepPartsTogether(notationEl);
   return { visualObj: visualObjs && visualObjs.length > 0 ? visualObjs[0] : null, notationEl };
 }
 

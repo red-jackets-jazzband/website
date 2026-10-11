@@ -835,6 +835,14 @@ body.rj-sheet-active .rj-sheet-empty {
     overflow-wrap: break-word;
 }
 @media print {
+  /* fitChordTable / fitSongForms pin a width and zoom measured for the screen
+     (a narrow sheet column, a phone), and nothing re-fits for the page: drop
+     that fit in print, where the full page width has room for both. */
+  .split-bio ol.songForm,
+  .chordtable > .chordGrid {
+    width: 90% !important;
+    zoom: 1 !important;
+  }
   .split-bio ol.songForm {
     font-size: x-small;
   }
@@ -2929,6 +2937,11 @@ body.rj-sheet-active .rj-sheet-empty {
   #lyrics svg {
     break-inside: avoid;
     page-break-inside: avoid;
+  }  /* A line whose next line doesn't open a new part (decorations.js's
+     keepPartsTogether): break between parts, not through one. */
+  .rj-keep-with-next {
+    break-after: avoid;
+    page-break-after: avoid;
   }
 }
 
