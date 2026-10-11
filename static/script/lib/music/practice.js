@@ -505,22 +505,32 @@ function guidePitches(notes) {
   return out;
 }
 
-// One note per chord: rhythm alone, on the chord tone nearest the last one.
-function rhythmPitches(notes) {
+/*
+  The key's tonic as a note of `chord` (in range), or [] when it isn't one of
+  the chord's tones (or there's no key): where a line ending over that chord
+  comes home.
+*/
+function homeNotes(chord, tonic) {
+  if (tonic === null || !chord.tones.includes(mod12(tonic - chord.root))) return [];
+  return pitchesOf(chord, [mod12(tonic - chord.root)]);
+}
+
+// One note per chord: rhythm alone, on the guide tone nearest the last one —
+// the tonic over the last chord.
+function rhythmPitches(notes, runs, tonic) {
+  const out = [];
   let prev = START;
-  let segment = null;
-  return notes.map((note) => {
-    if (note.at.id !== segment) {
-      segment = note.at.id;
-      prev = nearest(guideTones(note.at.chord), prev);
-    }
-    return prev;
+  segmentsOf(notes).forEach((seg, k, segs) => {
+    const home = k === segs.length - 1 ? homeNotes(seg.chord, tonic) : [];
+    prev = nearest(home.length > 0 ? home : guideTones(seg.chord), prev);
+    for (let i = seg.start; i < seg.end; i++) out.push(prev);
   });
+  return out;
 }
 
 /*
   Enclosures: each chord's target — its 3rd or 7th (or 6th), the one nearest
-  the last note — is enclosed by the scale step above and the half step
+  the last note; over the tune's last chord, the tonic — is enclosed by the scale step above and the half step
   below, and lands on the strongest note the rhythm gives it (targetIndex):
   a long note, on a beat, with room for both approach notes before it. The
   approach notes come from the chord's own notes when they can, else from
@@ -564,14 +574,16 @@ function leadIn(tones, approach, count) {
   return tones.filter((m) => m < approach[1]).slice(-count);
 }
 
-function enclosurePitches(notes) {
+function enclosurePitches(notes, runs, tonic) {
   const out = [];
   const locked = new Set();
   let dir = 1;
   segmentsOf(notes).forEach((seg, k, segs) => {
     const { chord } = seg;
     const before = out.length > 0 ? out[out.length - 1] : START;
-    const target = nearest(guideTones(chord), before);
+    // The last chord's target is the tonic, when it's one of its tones.
+    const home = k === segs.length - 1 ? homeNotes(chord, tonic) : [];
+    const target = nearest(home.length > 0 ? home : guideTones(chord), before);
     const up = scaleTones(chord).find((m) => m > target);
     const approach = [up === undefined ? target + 2 : up, target - 1];
     const t = targetIndex(notes, seg, approachRoom(notes, seg, segs[k - 1], locked));
@@ -620,9 +632,13 @@ function cellsFor(spec, rhythm) {
   PRACTICE_RHYTHMS one to keep all the way;
   `breathEvery` how many bars to a breath (0: none, for the tests); `key`
   the tune's key as a Set of pitch-class chromas, which picks each chord's
-  scale tensions (null: the default scales).
+  scale tensions (null: the default scales); `tonic` its tonic's chroma, the
+  note the exercise ends on (and an enclosure's last target) when the last
+  chord holds it (null: no such ending).
 */
-export function practiceNotes(names, exercise, { rhythm = "varied", breathEvery = BREATH_EVERY, key = null } = {}) {
+export function practiceNotes(names, exercise, {
+  rhythm = "varied", breathEvery = BREATH_EVERY, key = null, tonic = null,
+} = {}) {
   const { kind, runs } = splitExercise(exercise);
   const spec = EXERCISES[kind];
   if (!spec) return [];
@@ -634,7 +650,12 @@ export function practiceNotes(names, exercise, { rhythm = "varied", breathEvery 
   const notes = onsetsOf(rhythmSlots(names.length, breaks, cellsFor(spec, rhythm), breathEvery))
     .map((note) => ({ ...note, at: chordFor(timeline, note) }))
     .filter((note) => note.at);
-  const midis = spec.pitches(notes, runs);
+  const midis = spec.pitches(notes, runs, tonic);
+  // Every exercise ends at home: its last note on the tonic, when that's a
+  // tone of the last chord, in the octave nearest the note before.
+  const last = notes.length - 1;
+  const home = last >= 0 ? homeNotes(notes[last].at.chord, tonic) : [];
+  if (home.length > 0) midis[last] = nearest(home, last > 0 ? midis[last - 1] : midis[last]);
   return notes.map((note, i) => ({
     start: note.slot / SLOTS_PER_BEAT,
     duration: note.len / SLOTS_PER_BEAT,
@@ -665,8 +686,8 @@ function createPracticeSpeller(keyScale) {
 export function buildPracticeTune(text, chords, song, exercise, options = {}) {
   if (!chords || chords.length === 0 || !EXERCISES[splitExercise(exercise).kind]) return null;
   const head = song.lines[0] && song.lines[0].staff[0] && song.lines[0].staff[0].key;
-  const key = new Set(keyScaleNotes(head || { root: "C", acc: "", mode: "" }).map(pcChromaVal));
-  const notes = practiceNotes(resolveChordNames(chords), exercise, { ...options, key });
+  const scale = keyScaleNotes(head || { root: "C", acc: "", mode: "" }).map(pcChromaVal);
+  const notes = practiceNotes(resolveChordNames(chords), exercise, { ...options, key: new Set(scale), tonic: scale[0] });
   const abc = appendBarVoice(text, song, ({ keyScale, keySig, lnum, lden }) => (
     barFragments(notes, chords.length, createPracticeSpeller(keyScale))
       .map((fragment, i, all) => rebeamBar(respellBar(fragment, keySig, i > 0 && endsTied(all[i - 1])), lnum, lden))

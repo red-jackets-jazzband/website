@@ -144,6 +144,25 @@ A8|E8|]
   });
 });
 
+test("every exercise ends on the key's tonic when the last chord holds it", () => {
+  const names = [["F"], ["C7"], ["Gm7"], ["F"]];
+  for (const exercise of PRACTICE_EXERCISES) {
+    const notes = practiceNotes(names, exercise, { breathEvery: 0, tonic: 5 });
+    assert.equal(mod12(notes[notes.length - 1].midi), 5, exercise);
+  }
+  // A tune ending on its dominant doesn't: C7 has no F.
+  const open = practiceNotes([["F"], ["C7"]], "guide", { breathEvery: 0, tonic: 5 });
+  assert.notEqual(mod12(open[open.length - 1].midi), 5);
+});
+
+test("an enclosure's last target is the tonic, enclosed like any other", () => {
+  const notes = practiceNotes([["F"], ["C7"]], "enclosures", { rhythm: "eighths", breathEvery: 0, tonic: 0 });
+  const bar = notes.filter((n) => n.start >= 4);
+  assert.equal(mod12(bar[2].midi), 0, "C, the tonic, is C7's root");
+  assert.equal(bar[1].midi, bar[2].midi - 1);
+  assert.ok(bar[0].midi > bar[2].midi);
+});
+
 test("a chromatic note leading up is spelled sharp", () => {
   // F into F: the target is A, enclosed by Bb and G# (never Ab).
   const [first] = practiceBars(buildPracticeTune(ABC, chordsOf(["F"], ["F"]), SONG, "enclosures").abc);
