@@ -7006,8 +7006,10 @@ body.rj-layers-open #layersTab .rj-layers-count {
   body.rj-layers-dragging #layersTab.rj-layers-tab {
     transition: none;
   }
-  /* The bar and the header under it are the drag handle (sheet-drag.js). */
-  .rj-layers-head {
+  /* The bar, the header under it and the tab are the drag handles
+     (sheet-drag.js): the tab pulls the closed sheet up, too. */
+  .rj-layers-head,
+  body.rj-sheet-active #layersTab.rj-layers-tab {
     touch-action: none;
   }
   .rj-layers-grip {
