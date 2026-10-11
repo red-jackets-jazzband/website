@@ -6906,15 +6906,38 @@ body.rj-layers-open #layersTab .rj-layers-count {
     color: rgba(236,234,230,.5);
     box-shadow: none;
   }
-  /* Open: the pill rides the sheet's top edge, chevron pointing down. */
+  /* Open: the pill is a tab growing out of the sheet's top edge — the
+     sheet's own colour, no seam, with concave fillets where it meets the
+     edge — chevron pointing down. */
   body.rj-sheet-active.rj-layers-open #layersTab.rj-layers-tab {
-    right: calc(16px + var(--rj-layers-edge, 0px));
-    bottom: min(65vh, 560px);
-    height: 26px;
-    padding: 0 18px;
+    right: calc(36px + var(--rj-layers-edge, 0px));
+    bottom: calc(min(65vh, 560px) - 1px);
+    width: auto;
+    height: 27px;
+    padding: 0 20px 1px;
     z-index: 19;
+    border: 0;
+    border-radius: 14px 14px 0 0;
+    background: #1f1f1f;
+    color: rgba(236,234,230,.6);
     transform: translateY(var(--rj-layers-drag, 0px));
     transition: transform .18s ease-out;
+  }
+  body.rj-sheet-active.rj-layers-open #layersTab.rj-layers-tab::before,
+  body.rj-sheet-active.rj-layers-open #layersTab.rj-layers-tab::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    width: 14px;
+    height: 14px;
+  }
+  body.rj-sheet-active.rj-layers-open #layersTab.rj-layers-tab::before {
+    right: 100%;
+    background: radial-gradient(circle at 0 0, transparent 13.5px, #1f1f1f 14px);
+  }
+  body.rj-sheet-active.rj-layers-open #layersTab.rj-layers-tab::after {
+    left: 100%;
+    background: radial-gradient(circle at 100% 0, transparent 13.5px, #1f1f1f 14px);
   }
   /* The chevron points up while the sheet is closed and down while it is open. */
   #layersTab .rj-layers-tab-chevron {
