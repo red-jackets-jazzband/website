@@ -307,3 +307,27 @@ test("without Pointer Events the tab pulls the sheet open from touch events", ()
     cleanup();
   }
 });
+
+test("a new pull on the tab while the sheet slides back starts clean, and the old timer can't hide it", async () => {
+  const { ctx, tab, cleanup } = dockedSheet({ pointerEvents: true, open: false });
+  try {
+    tab.dispatchEvent(pointer("pointerdown", { clientY: 600, timeStamp: 0 }));
+    tab.dispatchEvent(pointer("pointermove", { clientY: 540, timeStamp: 800 }));
+    tab.dispatchEvent(pointer("pointerup", { clientY: 540, timeStamp: 900 }));
+    assert.equal(dragVar(), "500px", "sliding back");
+
+    tab.dispatchEvent(pointer("pointerdown", { clientY: 600, timeStamp: 1000 }));
+    assert.equal(dragVar(), "", "the new gesture starts with no offset");
+    assert.equal(panelEl().hidden, true, "the cut-short slide back has hidden the sheet");
+    tab.dispatchEvent(pointer("pointermove", { clientY: 300, timeStamp: 1200 }));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 250);
+    });
+    assert.equal(panelEl().hidden, false, "the old timer doesn't hide the sheet mid-pull");
+    assert.equal(dragVar(), "200px");
+    tab.dispatchEvent(pointer("pointerup", { clientY: 300, timeStamp: 1200 }));
+    assert.equal(ctx.store.get("layers").layersOpen, true);
+  } finally {
+    cleanup();
+  }
+});

@@ -58,6 +58,7 @@ export function initSheetDrag(panel, handles, grip, onDismiss, options = {}) {
   let drag = null;
   let swallowClick = false;
   let swallowTimer = null;
+  let slideTimer = null;
 
   function swallowNextClick() {
     swallowClick = true;
@@ -79,6 +80,9 @@ export function initSheetDrag(panel, handles, grip, onDismiss, options = {}) {
     swallowClick = false;
     const fromTab = handle === tab;
     if (!isDocked() || (!fromTab && target.closest(CONTROLS))) return false;
+    // A sheet still sliding back from the last pull settles at once, so this
+    // gesture starts from a clean state.
+    settleSlideBack();
     drag = { id, startY: y, startT: t, fromGrip: handle === grip, fromTab, opening: fromTab && !isOpen(), moved: false };
     document.body.classList.add(DRAGGING);
     return true;
@@ -106,11 +110,23 @@ export function initSheetDrag(panel, handles, grip, onDismiss, options = {}) {
     setOffset(Math.max(0, dy));
   }
 
+  // The end of a slide back: drop the offset and hide the sheet again —
+  // when its timer fires, or straight away when a new gesture cuts it short.
+  function settleSlideBack() {
+    if (slideTimer === null) return;
+    clearTimeout(slideTimer);
+    slideTimer = null;
+    document.body.style.removeProperty(DRAG_VAR);
+    if (!isOpen()) reveal(false);
+  }
+
   // Not opened after all: slide back down, then hide.
   function slideBack() {
+    settleSlideBack();
     document.body.classList.remove(DRAGGING);
     setOffset(panel.offsetHeight);
-    setTimeout(() => {
+    slideTimer = setTimeout(() => {
+      slideTimer = null;
       document.body.style.removeProperty(DRAG_VAR);
       if (!isOpen()) reveal(false);
     }, SLIDE_MS);
