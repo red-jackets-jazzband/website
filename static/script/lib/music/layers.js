@@ -30,7 +30,7 @@
 import { fingeringGlyphs, instrumentHasFingerings, melodyFingerings } from "./fingerings.js";
 import { PROGRESSION_NAMES, findNamedProgressions, progressionLabel } from "./progressions.js";
 import { degreeText, melodyDegrees } from "./scale-degrees.js";
-import { melodySolfege, solfegeText } from "./solfege.js";
+import { melodySolfege, solfegeLabel, solfegeText } from "./solfege.js";
 import { listOf, tl } from "../core/i18n.js";
 
 function nameList(names) {
@@ -97,7 +97,7 @@ export const LAYERS = [
     order: 3,
     availableFor: () => true,
     appliesTo: () => true,
-    annotate: (song) => melodySolfege(song).map((s) => ({ startChar: s.startChar, text: `_${solfegeText(s.syllable)}` })),
+    annotate: (song) => melodySolfege(song).map((s) => ({ startChar: s.startChar, text: `_${solfegeText(solfegeLabel(s.syllable))}` })),
   },
   {
     id: "fingerings",

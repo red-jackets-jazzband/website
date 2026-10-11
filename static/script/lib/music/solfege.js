@@ -12,6 +12,12 @@
     melodySolfege(song)
                        [{ startChar, syllable }] for every note onset of the
                        tune's first voice
+    solfegeLabel(syllable)
+                       how the page's language writes it: English keeps the
+                       syllables (and German, whose Tonika-Do shares them);
+                       French and Dutch sing the seventh "si", so there a
+                       chromatic note is its letter-syllable with ♯/♭ (fa♯,
+                       si♭) rather than an English "si" that would clash
     solfegeText(syllable) / parseSolfegeText(text)
                        the annotation text the sheet engraves, and back: the
                        syllable behind an invisible marker, so the overlay
@@ -25,6 +31,7 @@
 */
 import { keyRoot } from "./chord-symbol.js";
 import { topNote, walkMelody } from "./melody-walk.js";
+import { tl } from "../core/i18n.js";
 
 const LETTERS = "CDEFGAB";
 // Semitones above the tonic of each step of the major scale.
@@ -43,19 +50,46 @@ const SYLLABLES = [
 // By sound alone, semitones above do.
 const CHROMATIC = ["do", "ra", "re", "me", "mi", "fa", "se", "sol", "le", "la", "te", "ti"];
 
+// Every syllable as the page writes it (lib/core/i18n.js; English when
+// untranslated). One literal tl() per key so lint:i18n can check them.
+const LABELS = {
+  do: tl("solfege_do", "do"),
+  di: tl("solfege_di", "di"),
+  ra: tl("solfege_ra", "ra"),
+  re: tl("solfege_re", "re"),
+  ri: tl("solfege_ri", "ri"),
+  me: tl("solfege_me", "me"),
+  mi: tl("solfege_mi", "mi"),
+  fa: tl("solfege_fa", "fa"),
+  fi: tl("solfege_fi", "fi"),
+  se: tl("solfege_se", "se"),
+  sol: tl("solfege_sol", "sol"),
+  si: tl("solfege_si", "si"),
+  le: tl("solfege_le", "le"),
+  la: tl("solfege_la", "la"),
+  li: tl("solfege_li", "li"),
+  te: tl("solfege_te", "te"),
+  ti: tl("solfege_ti", "ti"),
+};
+
+export function solfegeLabel(syllable) {
+  const label = LABELS[syllable];
+  return label === undefined ? syllable : label;
+}
+
 // U+200B ZERO WIDTH SPACE: invisible if nothing restyles it, and not
 // trimmed away by String#trim.
 const MARK = "\u200B";
-const SYLLABLE_SET = new Set(CHROMATIC.concat(["di", "ri", "fi", "si", "li"]));
 
-export function solfegeText(syllable) {
-  return MARK + syllable;
+export function solfegeText(label) {
+  return MARK + label;
 }
 
+// The label behind the marker, or null for any other annotation.
 export function parseSolfegeText(text) {
   if (!text.startsWith(MARK)) return null;
-  const syllable = text.slice(MARK.length);
-  return SYLLABLE_SET.has(syllable) ? syllable : null;
+  const label = text.slice(MARK.length);
+  return label === "" ? null : label;
 }
 
 const mod = (n, m) => ((n % m) + m) % m;

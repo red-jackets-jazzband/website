@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import ABCJS from "abcjs";
-import { melodySolfege, parseSolfegeText, solfegeSyllable, solfegeText } from "./solfege.js";
+import { melodySolfege, parseSolfegeText, solfegeLabel, solfegeSyllable, solfegeText } from "./solfege.js";
 import { resolveTranspose } from "./render-plan.js";
 
 const parse = (body, key = "C") => ABCJS.parseOnly(`X:1\nM:4/4\nL:1/4\nK:${key}\n${body}\n`)[0];
@@ -50,6 +50,11 @@ test("the bass-clef stamp for low brass keeps the syllables", () => {
   assert.deepEqual(sung("C E G c |", "C clef=bass middle=D"), ["do", "mi", "sol", "do"]);
 });
 
+test("alto and tenor clef parts are sung too", () => {
+  assert.deepEqual(sung("C E G c |", "C clef=alto"), ["do", "mi", "sol", "do"]);
+  assert.deepEqual(sung("F A c f |", "F clef=tenor"), ["do", "mi", "sol", "do"]);
+});
+
 test("rests and a tune with no key give no syllables", () => {
   assert.deepEqual(sung("C z E z |"), ["do", "mi"]);
   assert.deepEqual(sung("C D |", "none"), []);
@@ -59,6 +64,12 @@ test("the annotation text carries an invisible marker the overlay reads back", (
   assert.equal(parseSolfegeText(solfegeText("sol")), "sol");
   assert.equal(parseSolfegeText(solfegeText("se")), "se");
   assert.equal(parseSolfegeText("sol"), null, "a chart's own annotation is left alone");
-  assert.equal(parseSolfegeText(solfegeText("Fine")), null);
+  assert.equal(parseSolfegeText(solfegeText("fa♯")), "fa♯", "a translated label comes back as written");
+  assert.equal(parseSolfegeText("\u200B"), null);
   assert.equal(solfegeText("do").trim(), solfegeText("do"));
+});
+
+test("solfegeLabel is English under plain Node", () => {
+  assert.equal(solfegeLabel("ti"), "ti");
+  assert.equal(solfegeLabel("fi"), "fi");
 });
