@@ -119,3 +119,43 @@ test("Reset all switches everything off", () => {
     cleanup();
   }
 });
+
+function pointer(type, props) {
+  const event = new window.Event(type, { bubbles: true });
+  Object.entries({ pointerId: 1, pointerType: "touch", button: 0, ...props }).forEach(([key, value]) => {
+    Object.defineProperty(event, key, { value });
+  });
+  return event;
+}
+
+test("pulling the bottom sheet's grip down dismisses it; a short pull springs back", () => {
+  const { ctx, cleanup } = setup();
+  const realMatchMedia = window.matchMedia;
+  window.matchMedia = () => ({ matches: true });
+  try {
+    const panel = document.getElementById("layersPanel");
+    const grip = document.createElement("div");
+    grip.className = "rj-layers-grip";
+    panel.prepend(grip);
+    // init() ran before the grip existed in this fixture; wire a second panel.
+    createLayersPanel(ctx).init();
+    grip.setPointerCapture = () => {};
+    Object.defineProperty(panel, "offsetHeight", { value: 500 });
+    ctx.store.set("layers", { layersOpen: true });
+
+    grip.dispatchEvent(pointer("pointerdown", { clientY: 100, timeStamp: 0 }));
+    grip.dispatchEvent(pointer("pointermove", { clientY: 130, timeStamp: 400 }));
+    assert.equal(document.body.style.getPropertyValue("--rj-layers-drag"), "30px");
+    grip.dispatchEvent(pointer("pointerup", { clientY: 130, timeStamp: 900 }));
+    assert.equal(ctx.store.get("layers").layersOpen, true);
+    assert.equal(document.body.style.getPropertyValue("--rj-layers-drag"), "");
+
+    grip.dispatchEvent(pointer("pointerdown", { clientY: 100, timeStamp: 0 }));
+    grip.dispatchEvent(pointer("pointermove", { clientY: 300, timeStamp: 300 }));
+    grip.dispatchEvent(pointer("pointerup", { clientY: 300, timeStamp: 300 }));
+    assert.equal(ctx.store.get("layers").layersOpen, false);
+  } finally {
+    window.matchMedia = realMatchMedia;
+    cleanup();
+  }
+});
