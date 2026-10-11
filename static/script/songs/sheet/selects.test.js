@@ -5,7 +5,10 @@ import { makeCtx } from "../../../../tests/helpers/ctx.js";
 import { INSTRUMENTS } from "../../lib/music/instruments.js";
 import { COMPING_PATTERNS } from "../../lib/music/comping.js";
 import { SOLO_STYLES } from "../../lib/music/solo.js";
-import { createInstrumentDropdown, createCompingDropdown, createSoloDropdown } from "./selects.js";
+import { PRACTICE_EXERCISES } from "../../lib/music/practice.js";
+import {
+  createInstrumentDropdown, createCompingDropdown, createPracticeDropdown, createSoloDropdown,
+} from "./selects.js";
 
 test("createInstrumentDropdown builds every instrument option into #sheetStatus", () => {
   const page = mountPage();
@@ -86,6 +89,27 @@ test("createSoloDropdown builds an OFF entry plus one per style and re-renders o
     select.dispatchEvent(new window.Event("change"));
     assert.equal(rerenders.length, 1);
     assert.equal(window.localStorage.getItem("rj.solo"), "armstrong");
+  } finally {
+    page.cleanup();
+  }
+});
+
+test("createPracticeDropdown builds an OFF entry plus one per exercise and re-renders on change", () => {
+  const page = mountPage();
+  try {
+    const rerenders = [];
+    const ctx = makeCtx({ sheet: { rerender: () => rerenders.push(1) } });
+    createPracticeDropdown(ctx);
+    const select = document.getElementById("practice");
+    assert.ok(document.getElementById("practiceSlot").contains(select));
+    assert.deepEqual(
+      [...select.options].map((o) => o.value),
+      ["off", ...PRACTICE_EXERCISES.map((e) => e.value)],
+    );
+    select.value = "enclosures";
+    select.dispatchEvent(new window.Event("change"));
+    assert.equal(rerenders.length, 1);
+    assert.equal(window.localStorage.getItem("rj.practice"), "enclosures");
   } finally {
     page.cleanup();
   }
