@@ -442,3 +442,21 @@ test("changing a song's key redoes only that song", async () => {
     page.cleanup();
   }
 });
+
+test("clearCache makes the next build re-read and redraw every song", async () => {
+  const { print, reads, renders, page } = deferredSetup();
+  try {
+    withAbcjs(createAbcjsStub(), () => print.buildBooklet("Gig", SONGS, ""));
+    await flush();
+    await new Promise((resolve) => { setTimeout(resolve, 400); });
+    const readsBefore = reads.length;
+    print.clearCache();
+    withAbcjs(createAbcjsStub(), () => print.buildBooklet("Gig", SONGS, ""));
+    await flush();
+    assert.equal(reads.length, readsBefore + 3);
+    assert.equal(renders.length, 6);
+    await new Promise((resolve) => { setTimeout(resolve, 400); });
+  } finally {
+    page.cleanup();
+  }
+});
