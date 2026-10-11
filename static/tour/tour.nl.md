@@ -186,6 +186,7 @@ Speel de loopjes **omhoog**, **omlaag**, **op en neer**, of stemvoerend van akko
 
 ## staff: Speel mee
 Druk op afspelen en de oefening klinkt mee met de song. In de mixer is het een eigen stem, **Oefening**, zodat je hem zachter kunt zetten zodra je hem kent, en hem zelf kunt spelen.
+> Wil je alleen de oefening horen? Demp dan **Melodie** in de mixer.
 
 # comping: Comping
 
