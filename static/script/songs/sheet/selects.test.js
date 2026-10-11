@@ -94,38 +94,48 @@ test("createSoloDropdown builds an OFF entry plus one per style and re-renders o
   }
 });
 
-test("createPracticeDropdown builds an OFF entry plus one per exercise and re-renders on change", () => {
+test("createPracticeDropdown is one select: a summary, then an Exercise and a Rhythm group", () => {
   const page = mountPage();
   try {
     const rerenders = [];
     const ctx = makeCtx({ sheet: { rerender: () => rerenders.push(1) } });
     createPracticeDropdown(ctx);
     const select = document.getElementById("practice");
-    assert.ok(document.getElementById("practiceSlot").contains(select));
-    assert.deepEqual(
-      [...select.options].map((o) => o.value),
-      ["off", ...PRACTICE_EXERCISES.map((e) => e.value)],
-    );
-    const rhythm = document.getElementById("practiceRhythm");
-    const shown = (node) => !node.closest(".dropdown").hidden;
-    assert.ok(!shown(rhythm), "rhythm waits for an exercise");
-    assert.equal(document.getElementById("practiceSlot").querySelectorAll("select").length, 2, "just the two pickers");
+    const slot = document.getElementById("practiceSlot");
+    assert.ok(slot.contains(select));
+    assert.equal(slot.querySelectorAll("select").length, 1, "one picker");
+    const [exerciseGroup, rhythmGroup] = select.querySelectorAll("optgroup");
+    const values = (group) => [...group.children].map((o) => o.value);
+    assert.deepEqual(values(exerciseGroup), ["ex:off", ...PRACTICE_EXERCISES.map((e) => `ex:${e.value}`)]);
+    assert.deepEqual(values(rhythmGroup), ["rh:varied", ...PRACTICE_RHYTHMS.map((r) => `rh:${r.value}`)]);
+    const shown = () => select.selectedOptions[0].textContent;
+    assert.equal(select.value, "summary");
+    assert.equal(shown(), "PRACTICE: OFF");
+    assert.equal(rhythmGroup.disabled, true, "no rhythm to pick while practice is off");
 
-    select.value = "scales-updown";
-    select.dispatchEvent(new window.Event("change"));
+    const pick = (value) => {
+      select.value = value;
+      select.dispatchEvent(new window.Event("change"));
+    };
+    pick("ex:scales-updown");
     assert.equal(rerenders.length, 1);
     assert.equal(window.localStorage.getItem("rj.practice"), "scales-updown");
-    assert.ok(shown(rhythm));
-    assert.equal(select.selectedOptions[0].textContent, "SCALE RUNS: UP, THEN DOWN");
-    assert.deepEqual(
-      [...rhythm.options].map((o) => o.value),
-      ["varied", ...PRACTICE_RHYTHMS.map((r) => r.value)],
-    );
+    assert.equal(select.value, "summary", "back to the summary after a pick");
+    assert.equal(shown(), "SCALE RUNS: UP, THEN DOWN · VARIED RHYTHM");
+    assert.equal(rhythmGroup.disabled, false);
+    assert.ok(select.querySelector('option[value="ex:scales-updown"]').textContent.startsWith("\u2713 "));
 
-    rhythm.value = "charleston";
-    rhythm.dispatchEvent(new window.Event("change"));
+    pick("rh:charleston");
     assert.equal(rerenders.length, 2);
     assert.equal(window.localStorage.getItem("rj.practiceRhythm"), "charleston");
+    assert.equal(window.localStorage.getItem("rj.practice"), "scales-updown", "the exercise stays");
+    assert.equal(shown(), "SCALE RUNS: UP, THEN DOWN · CHARLESTON");
+    assert.ok(select.querySelector('option[value="rh:charleston"]').textContent.startsWith("\u2713 "));
+    assert.ok(!select.querySelector('option[value="rh:varied"]').textContent.startsWith("\u2713 "));
+
+    pick("ex:off");
+    assert.equal(shown(), "PRACTICE: OFF");
+    assert.equal(window.localStorage.getItem("rj.practiceRhythm"), "charleston", "the rhythm is kept for next time");
   } finally {
     page.cleanup();
   }
