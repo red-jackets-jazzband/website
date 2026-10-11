@@ -2,7 +2,8 @@ import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import ABCJS from "abcjs";
 import {
-  buildPracticeTune, practiceNotes, PRACTICE_EXERCISES, PRACTICE_RHYTHMS, PRACTICE_RUNS, rhythmSlots,
+  buildPracticeTune, practiceNotes, PRACTICE_BREATHS, PRACTICE_EXERCISES, PRACTICE_RHYTHMS, PRACTICE_RUNS,
+  rhythmSlots,
 } from "./practice.js";
 import { buildCompingTune, COMPING_PATTERNS } from "./comping.js";
 import { parseChordScheme } from "./chords.js";
@@ -182,7 +183,8 @@ function shapes(notes) {
 test("runs: up, down and up-then-down give every chord the same shape", () => {
   for (const runs of ["up", "down", "updown"]) {
     const notes = practiceNotes([["F"], ["F"], ["F"], ["F"], ["F"], ["F"], ["F"], ["F"]], "arpeggios", { rhythm: "eighths", runs });
-    const each = shapes(notes);
+    // The last bar has no next chord to lead into, so only the others compare.
+    const each = shapes(notes).slice(0, -1);
     assert.ok(each.every((shape) => shape === each[0]), `${runs}: ${each.join(" | ")}`);
   }
 });
@@ -244,4 +246,50 @@ test("runs: always up jumps to the chord's root at every new chord, no voice lea
     const fBar = notes.filter((n) => n.start < 4).map((n) => n.midi);
     fBar.slice(1).forEach((m, i) => assert.ok(m > fBar[i] || m === fBar[0], `${exercise}: ${fBar}`));
   }
+});
+
+test("a breath every 4 bars: the 4th bar of each phrase lands with a half note, then rests", () => {
+  assert.equal(rhythmSlots(4, new Set(), ["xxxxxxxx"], 4), "xxxxxxxx".repeat(3) + "x---....");
+  // An anticipation into the breath bar becomes its landing note; none ties out of it.
+  assert.equal(rhythmSlots(5, new Set(), ["xxxxxx.x>"], 4), "xxxxxx.x-xxxxx.x-xxxxx.x----....xxxxxx.x");
+  for (const { value } of PRACTICE_EXERCISES) {
+    const notes = practiceNotes(EIGHT_BARS, value, { rhythm: "eighths", breath: "4" });
+    for (const bar of [3, 7]) {
+      const inBar = notes.filter((n) => n.start + n.duration > bar * 4 && n.start < bar * 4 + 4);
+      assert.equal(inBar.length, 1, `${value} bar ${bar}`);
+      assert.ok(inBar[0].start + inBar[0].duration <= bar * 4 + 2, `${value} bar ${bar} rests after beat 3`);
+    }
+  }
+});
+
+// The bars that are a breath (one half note, then a rest) for this Breaths choice.
+function breathBars(breath) {
+  return barRhythms(practiceNotes(EIGHT_BARS, "arpeggios", { rhythm: "eighths", breath }), 8)
+    .map((bar, i) => (bar === "0:4" ? i : -1)).filter((i) => i >= 0);
+}
+
+test("breaths: every 2 / 8 bars, or none", () => {
+  assert.deepEqual(breathBars("2"), [1, 3, 5, 7]);
+  assert.deepEqual(breathBars("4"), [3, 7]);
+  assert.deepEqual(breathBars("8"), [7]);
+  assert.deepEqual(breathBars("off"), []);
+  assert.deepEqual(PRACTICE_BREATHS.map((b) => b.value), ["4", "2", "8", "off"]);
+});
+
+test("a fixed-shape run's last note leads into the next chord", () => {
+  // Bb up-then-down into F7: ... D then E-natural (not C), a half step below F.
+  const intoF7 = practiceNotes([["Bb"], ["F7"]], "scales", { rhythm: "eighths", runs: "updown" });
+  assert.deepEqual(intoF7.slice(0, 9).map((n) => n.midi), [58, 60, 62, 63, 65, 63, 62, 64, 65]);
+  assert.ok(intoF7[7].leadsUp, "spelled as a leading tone");
+  withRealTonal(() => {
+    // In F, after the E-flat earlier in the bar: "B,CD_E FED=E".
+    const { abc } = buildPracticeTune(ABC, chordsOf(["Bb"], ["F7"]), SONG, "scales", { rhythm: "eighths", runs: "updown" });
+    assert.match(practiceBars(abc)[0], /D=E $/);
+  });
+  // Into the same chord again the run already steps onto its root: C stays.
+  const again = practiceNotes([["Bb"], ["Bb"]], "scales", { rhythm: "eighths", runs: "updown" });
+  assert.equal(again[7].midi, 60);
+  // Alternate voice-leads already and is left as it was.
+  const alternate = practiceNotes([["Bb"], ["F7"]], "scales", { rhythm: "eighths" });
+  assert.equal(alternate.slice(0, 8).every((n) => !n.leadsUp || n.midi % 12 !== 4), true);
 });

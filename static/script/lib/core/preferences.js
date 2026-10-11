@@ -14,6 +14,7 @@ export const PREF_KEYS = {
   practice: "rj.practice",
   practiceRhythm: "rj.practiceRhythm",
   practiceRuns: "rj.practiceRuns",
+  practiceBreath: "rj.practiceBreath",
   sheetAdvanced: "rj.sheetAdvanced",
   inspirationWidth: "rj.inspirationWidth",
   mixerBassVolume: "rj.mixerBassVolume",

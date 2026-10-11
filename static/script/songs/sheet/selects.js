@@ -3,7 +3,7 @@ import { INSTRUMENTS } from "../../lib/music/instruments.js";
 import { COMPING_PATTERNS } from "../../lib/music/comping.js";
 import { SOLO_STYLES } from "../../lib/music/solo.js";
 import {
-  PRACTICE_EXERCISES, PRACTICE_RHYTHMS, PRACTICE_RUNS, RUN_EXERCISES,
+  PRACTICE_BREATHS, PRACTICE_EXERCISES, PRACTICE_RHYTHMS, PRACTICE_RUNS, RUN_EXERCISES,
 } from "../../lib/music/practice.js";
 import { COMPING_PARTS } from "./state.js";
 import { tl } from "../../lib/core/i18n.js";
@@ -183,8 +183,9 @@ export function createSoloDropdown(ctx) {
   The practice pickers in #practiceSlot, views of the settings slice like the
   comping one: the exercise (#practice: "OFF" plus lib/music/practice.js's
   PRACTICE_EXERCISES), and — once one is on — its rhythm (#practiceRhythm:
-  varied, or one pattern the whole way) and, for the run exercises, the
-  shape of its runs (#practiceRuns). sheet.js appends the exercise as one
+  varied, or one pattern the whole way), for the run exercises the shape of
+  its runs (#practiceRuns), and how often it stops for a breath
+  (#practiceBreath). sheet.js appends the exercise as one
   more staff (Comping / Solo stay as they are, and the lead keeps playing,
   so it can be played along with).
 */
@@ -209,16 +210,26 @@ export function createPracticeDropdown(ctx) {
   for (const entry of PRACTICE_RUNS) {
     runs.append(el("option", { value: entry.value, text: entry.label.toUpperCase() }));
   }
+  const breath = el("select", {
+    class: "dropbtn", id: "practiceBreath", attrs: { "aria-label": tl("practice_breath_aria", "Practice breaths") },
+  });
+  for (const entry of PRACTICE_BREATHS) {
+    breath.append(el("option", { value: entry.value, text: entry.label.toUpperCase() }));
+  }
   const rhythmBox = dropdown(rhythm);
   const runsBox = dropdown(runs);
+  const breathBox = dropdown(breath);
 
-  const pickers = [[exercise, "practice"], [rhythm, "practiceRhythm"], [runs, "practiceRuns"]];
+  const pickers = [
+    [exercise, "practice"], [rhythm, "practiceRhythm"], [runs, "practiceRuns"], [breath, "practiceBreath"],
+  ];
   const draw = () => {
     for (const [select, key] of pickers) {
       if (select.value !== ctx.state[key]) select.value = ctx.state[key];
     }
     const on = ctx.state.practice !== "off";
     rhythmBox.hidden = !on;
+    breathBox.hidden = !on;
     runsBox.hidden = !on || !RUN_EXERCISES.has(ctx.state.practice);
   };
   draw();
@@ -229,5 +240,5 @@ export function createPracticeDropdown(ctx) {
       ctx.state[key] = select.value;
     });
   }
-  slot.append(dropdown(exercise), rhythmBox, runsBox);
+  slot.append(dropdown(exercise), rhythmBox, runsBox, breathBox);
 }

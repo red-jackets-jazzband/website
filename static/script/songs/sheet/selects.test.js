@@ -108,14 +108,16 @@ test("createPracticeDropdown builds an OFF entry plus one per exercise and re-re
     );
     const rhythm = document.getElementById("practiceRhythm");
     const runs = document.getElementById("practiceRuns");
+    const breath = document.getElementById("practiceBreath");
     const shown = (node) => !node.closest(".dropdown").hidden;
-    assert.ok(!shown(rhythm) && !shown(runs), "rhythm and runs wait for an exercise");
+    assert.ok(!shown(rhythm) && !shown(runs) && !shown(breath), "rhythm, runs and breaths wait for an exercise");
 
     select.value = "enclosures";
     select.dispatchEvent(new window.Event("change"));
     assert.equal(rerenders.length, 1);
     assert.equal(window.localStorage.getItem("rj.practice"), "enclosures");
-    assert.ok(shown(rhythm) && shown(runs));
+    assert.ok(shown(rhythm) && shown(runs) && shown(breath));
+    assert.equal(breath.value, "4", "a breath every 4 bars by default");
     assert.deepEqual(
       [...rhythm.options].map((o) => o.value),
       ["varied", ...PRACTICE_RHYTHMS.map((r) => r.value)],
@@ -128,6 +130,9 @@ test("createPracticeDropdown builds an OFF entry plus one per exercise and re-re
     assert.equal(rerenders.length, 3);
     assert.equal(window.localStorage.getItem("rj.practiceRhythm"), "charleston");
     assert.equal(window.localStorage.getItem("rj.practiceRuns"), "updown");
+    breath.value = "off";
+    breath.dispatchEvent(new window.Event("change"));
+    assert.equal(window.localStorage.getItem("rj.practiceBreath"), "off");
 
     select.value = "guide";
     select.dispatchEvent(new window.Event("change"));

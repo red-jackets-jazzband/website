@@ -18,7 +18,9 @@ import { boolPref, enumPref } from "../../lib/core/persisted.js";
 import { INSTRUMENTS } from "../../lib/music/instruments.js";
 import { COMPING_PATTERNS } from "../../lib/music/comping.js";
 import { SOLO_STYLES } from "../../lib/music/solo.js";
-import { PRACTICE_EXERCISES, PRACTICE_RHYTHMS, PRACTICE_RUNS } from "../../lib/music/practice.js";
+import {
+  PRACTICE_BREATHS, PRACTICE_EXERCISES, PRACTICE_RHYTHMS, PRACTICE_RUNS,
+} from "../../lib/music/practice.js";
 
 // The comping Split toggles, in staff order: root, third, fifth.
 export const COMPING_PARTS = ["R", "3", "5"];
@@ -58,6 +60,7 @@ export const SETTINGS_SLICE = {
     practice: enumPref(PREF_KEYS.practice, ["off", ...PRACTICE_EXERCISES.map((e) => e.value)], "off"),
     practiceRhythm: enumPref(PREF_KEYS.practiceRhythm, ["varied", ...PRACTICE_RHYTHMS.map((r) => r.value)], "varied"),
     practiceRuns: enumPref(PREF_KEYS.practiceRuns, PRACTICE_RUNS.map((r) => r.value), PRACTICE_RUNS[0].value),
+    practiceBreath: enumPref(PREF_KEYS.practiceBreath, PRACTICE_BREATHS.map((b) => b.value), PRACTICE_BREATHS[0].value),
   },
 };
 
