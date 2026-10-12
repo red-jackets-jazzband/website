@@ -67,12 +67,20 @@ function staffKey(node) {
   notes are so close that neighbours would still touch, a label shrinks
   just enough to fit between them, down to MIN_FIT of its size (`fit`).
   `slot(text)` splits a layer that writes several rows per note (a valve
-  diagram's three) so each row is aligned on its own.
+  diagram's three) so each row is aligned on its own; `extent(box, text)`
+  says how wide a label is really drawn ({ size, fixed }: a chord tone's
+  circle is its text's larger side plus padding), so that is what fits.
 */
-export function alignRows(texts, { slot = () => "", fit = true } = {}) {
+export function alignRows(texts, { slot = () => "", fit = true, extent = textWidth } = {}) {
   const keyOf = (text) => `${staffKey(text)}|${slot(text)}`;
   alignToUsualRow(texts, keyOf);
-  if (fit) fitBetweenNeighbours(texts, keyOf);
+  if (fit) fitBetweenNeighbours(texts, keyOf, extent);
+}
+
+// How wide a label is drawn: by default just its text. `size` scales with
+// the font, `fixed` doesn't (a circle's padding).
+function textWidth(box) {
+  return { size: box.width, fixed: 0 };
 }
 
 const yOf = (node) => Number(node.getAttribute("y"));
@@ -123,24 +131,26 @@ const MIN_FIT = 0.75;
 // Room kept clear between two neighbouring labels, in svg units.
 const FIT_GAP = 2;
 
-function shrinkToFit(text, room) {
+function shrinkToFit(text, room, extent) {
   const box = bboxOf(text);
   const size = Number(text.getAttribute("font-size"));
-  if (!box || box.width <= 0 || !Number.isFinite(size) || size <= 0 || box.width <= room) return;
-  const scale = Math.max(MIN_FIT, room / box.width);
+  if (!box || box.width <= 0 || !Number.isFinite(size) || size <= 0) return;
+  const drawn = extent(box, text);
+  if (drawn.size + drawn.fixed <= room) return;
+  const scale = Math.max(MIN_FIT, (room - drawn.fixed) / drawn.size);
   text.setAttribute("font-size", String(Math.round(size * scale * 10) / 10));
 }
 
 // Each label (centred on its x) gets the width up to its nearer neighbour
 // on the same staff line, less a small gap.
-function fitBetweenNeighbours(texts, keyOf) {
+function fitBetweenNeighbours(texts, keyOf, extent) {
   byStaff(texts, "x", keyOf).forEach((row) => {
     row.sort((a, b) => a.value - b.value);
     row.forEach(({ text, value }, i) => {
       const left = i > 0 ? value - row[i - 1].value : Infinity;
       const right = i < row.length - 1 ? row[i + 1].value - value : Infinity;
       const room = Math.min(left, right) - FIT_GAP;
-      if (Number.isFinite(room)) shrinkToFit(text, room);
+      if (Number.isFinite(room)) shrinkToFit(text, room, extent);
     });
   });
 }
