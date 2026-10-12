@@ -106,12 +106,27 @@ function stepperReadout(stepper) {
   return unit ? `${value} ${unit.textContent.trim()}` : value;
 }
 
+// How long the live region stays empty before the readout goes back in.
+const ANNOUNCE_DELAY_MS = 50;
+
+// The region is emptied, then refilled in a later task: a press at a limit
+// (Key at +12) leaves the readout unchanged, and writing the same text again
+// isn't a change a screen reader announces. A newer press cancels a pending
+// refill, so only the latest value is spoken.
 function initStepperAnnouncements() {
   qsa(".sheet-stepper").forEach((stepper) => {
     const live = stepper.querySelector(".sheet-stepper-announce");
     if (!live) return;
+    let pending = null;
     stepper.addEventListener("click", (e) => {
-      if (e.target.closest(".sheet-stepper-btn")) live.textContent = stepperReadout(stepper);
+      if (!e.target.closest(".sheet-stepper-btn")) return;
+      clearTimeout(pending);
+      live.textContent = "";
+      const readout = stepperReadout(stepper);
+      pending = setTimeout(() => {
+        pending = null;
+        live.textContent = readout;
+      }, ANNOUNCE_DELAY_MS);
     });
   });
 }

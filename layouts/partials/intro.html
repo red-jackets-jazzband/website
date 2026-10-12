@@ -10,11 +10,12 @@
          else to that language's home page. */}}
     {{ $to := dict "en" "/" "nl" "/nl" "de" "/de" "fr" "/fr" }}
     {{ range .AllTranslations }}{{ $to = merge $to (dict .Language.Lang .RelPermalink) }}{{ end }}
-    {{/* Each language link is named in full in its own language ("Nederlands",
-         not "nl") and marks the page's own language as current. */}}
+    {{/* Each language link is named in full in its own language, with the
+         visible code kept in the name ("Nederlands (nl)", WCAG 2.5.3 label in
+         name), and marks the page's own language as current. */}}
     {{ $here := .Language.Lang }}
     <span class="rj-intro-nav-lang"><a href="/"><img src="/images/Home_Icon.svg" height=19px alt="{{ .Site.Title }}"></a>
-      {{- range $i, $l := site.Languages }}{{ if $i }} |{{ end }} <a href="{{ index $to $l.Lang }}" data-lang="{{ $l.Lang }}" lang="{{ $l.Locale }}" hreflang="{{ $l.Locale }}" aria-label="{{ $l.Label }}"{{ if eq $l.Lang $here }} aria-current="page"{{ end }}>{{ $l.Lang }}</a>{{ end -}}
+      {{- range $i, $l := site.Languages }}{{ if $i }} |{{ end }} <a href="{{ index $to $l.Lang }}" data-lang="{{ $l.Lang }}" lang="{{ $l.Locale }}" hreflang="{{ $l.Locale }}" aria-label="{{ $l.Label }} ({{ $l.Lang }})"{{ if eq $l.Lang $here }} aria-current="page"{{ end }}>{{ $l.Lang }}</a>{{ end -}}
     </span>
     {{ if and .File (eq .File.TranslationBaseName "songs") }}
     <span class="rj-intro-nav-tools">

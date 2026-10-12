@@ -24,6 +24,13 @@ function drawDegreeShape(text) {
   text.parentNode.insertBefore(shape, text);
 }
 
+// How wide a degree label is drawn: a chord tone's circle (drawDegreeShape)
+// is its number's larger side plus padding all round; any other is its text.
+function degreeExtent(box, text) {
+  if (!text.classList.contains("rj-layer-degree--chord")) return { size: box.width, fixed: 0 };
+  return { size: Math.max(box.width, box.height), fixed: 2 * DEGREE_PAD };
+}
+
 export function styleDegrees(notationEl) {
   const styled = [];
   notationEl.querySelectorAll(".abcjs-annotation").forEach((text) => {
@@ -37,8 +44,9 @@ export function styleDegrees(notationEl) {
     text.setAttribute("x", String(centre));
     styled.push({ text, tone: parsed.tone });
   });
-  // Back on one row before the circles are drawn round where they end up.
-  alignRows(styled.map((s) => s.text));
+  // Back on one row before the circles are drawn round where they end up,
+  // a chord tone fitted by its circle, not just its number.
+  alignRows(styled.map((s) => s.text), { extent: degreeExtent });
   styled.forEach(({ text, tone }) => {
     if (tone === "chord") drawDegreeShape(text);
   });
