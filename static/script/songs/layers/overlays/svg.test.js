@@ -127,3 +127,20 @@ test("alignRows shrinks a label that would touch its neighbours, but not past 75
     page.cleanup();
   }
 });
+
+// A "do" at (x, y); one at y 70 also has a fingering of its own on row 50.
+const doAt = (x, y) => `<g><text class="abcjs-annotation abcjs-l0 abcjs-v0" x="${x}" y="${y}" font-size="16" data-box="${x - 8},${y - 10},16,12">do</text>${y === 70 ? '<text class="abcjs-annotation abcjs-l0 abcjs-v0" y="50">1</text>' : ""}</g>`;
+
+test("alignRows only fits a label against neighbours on its own row", () => {
+  // The middle label stayed a row lower (its own note held the usual row), so
+  // although its x is close to both others, nothing on its row crowds it.
+  const { page, svg } = mountSvg(doAt(100, 50) + doAt(110, 70) + doAt(150, 50));
+  try {
+    const texts = [...svg.querySelectorAll("text[font-size]")];
+    alignRows(texts);
+    assert.deepEqual(texts.map((t) => t.getAttribute("y")), ["50", "70", "50"]);
+    assert.deepEqual(texts.map((t) => t.getAttribute("font-size")), ["16", "16", "16"]);
+  } finally {
+    page.cleanup();
+  }
+});
