@@ -74,7 +74,9 @@ function staffKey(node) {
 export function alignRows(texts, { slot = () => "", fit = true, extent = textWidth } = {}) {
   const keyOf = (text) => `${staffKey(text)}|${slot(text)}`;
   alignToUsualRow(texts, keyOf);
-  if (fit) fitBetweenNeighbours(texts, keyOf, extent);
+  // Neighbours are labels on the same final row: one left a row lower by
+  // rowTaken doesn't crowd the row above it.
+  if (fit) fitBetweenNeighbours(texts, (text) => `${keyOf(text)}|${text.getAttribute("y")}`, extent);
 }
 
 // How wide a label is drawn: by default just its text. `size` scales with
