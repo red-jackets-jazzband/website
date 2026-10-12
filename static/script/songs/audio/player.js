@@ -206,10 +206,9 @@ export function createAudioPlayer(ctx) {
   function exportSynthOptions() {
     const visualObj = state.currentVisualObj;
     if (!visualObj || typeof visualObj.millisecondsPerMeasure !== "function") return null;
-    const warpPercent = bpmToWarpPercent(ctx.state.tempoOverrideBpm, state.nativeQpm);
     return {
       visualObj,
-      millisecondsPerMeasure: (visualObj.millisecondsPerMeasure() * 100) / warpPercent,
+      millisecondsPerMeasure: currentMsPerMeasure(),
       options: synthParams(),
       repeatCount: ctx.state.repeatCount,
       restartFraction: repeatRestartFraction(),
@@ -275,7 +274,22 @@ export function createAudioPlayer(ctx) {
 
   // ---- highlighting -----------------------------------------------------
 
+  // The Layers feature follows the play cursor too (the Pulse layer's bar
+  // glyphs); absent in tests that build a partial ctx.
+  function layersPlayhead(nodes) {
+    if (!ctx.layers || typeof ctx.layers.onPlayhead !== "function") return;
+    if (nodes === null) ctx.layers.onPlayheadStop();
+    else ctx.layers.onPlayhead(nodes, currentMsPerMeasure());
+  }
+
+  function currentMsPerMeasure() {
+    const visualObj = state.currentVisualObj;
+    if (!visualObj || typeof visualObj.millisecondsPerMeasure !== "function") return 0;
+    return (visualObj.millisecondsPerMeasure() * 100) / bpmToWarpPercent(ctx.state.tempoOverrideBpm, state.nativeQpm);
+  }
+
   function clearHighlight() {
+    layersPlayhead(null);
     highlighted.forEach((node) => node.classList.remove("abcjs-current-note"));
     highlighted = [];
     if (highlightedChordCell) {
@@ -315,7 +329,8 @@ export function createAudioPlayer(ctx) {
       next.push(node);
     }));
     highlighted = next;
-    if (next.length > 0 && ctx.follow) ctx.follow.reveal(next[0]);
+    if (ctx.follow && next.length > 0) ctx.follow.reveal(next[0]);
+    layersPlayhead(next);
     if (next.length > 0 && next[0]._abcMeasureIdx !== undefined) {
       const cell = resolveChordCell(next[0]._abcMeasureIdx);
       if (cell) {

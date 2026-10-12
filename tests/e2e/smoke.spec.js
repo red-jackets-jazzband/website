@@ -12,6 +12,7 @@ async function isolate(context) {
 
 // Console/page errors that are the aborted third-party requests above.
 const SONGS_URL = "/songs/";
+const NOTATION_SVG = "#notation svg";
 const SONG_ITEM = ".song-list-item";
 const IGNORED_ERROR = /Failed to load resource|net::ERR|ERR_FAILED|status of 40|blocked/i;
 
@@ -63,7 +64,7 @@ test("a song link's file is requested once, from the page head, and opens", asyn
     if (req.url().endsWith("/songs/bill_bailey.abc")) reads.push(req.url());
   });
   await page.goto(`${SONGS_URL}#s=bill_bailey`);
-  await expect(page.locator("#notation svg").first()).toBeVisible();
+  await expect(page.locator(NOTATION_SVG).first()).toBeVisible();
   await expect(page.locator("#songtitle")).toContainText(/bill bailey/i);
   expect(reads).toHaveLength(1);
 });
@@ -75,7 +76,7 @@ test("picking a song renders its title, chord grid and notation", async ({ page 
   await page.locator(SONG_ITEM).first().click();
 
   await expect(page.locator("#songtitle")).toContainText(/bourbon/i);
-  await expect(page.locator("#notation svg").first()).toBeVisible();
+  await expect(page.locator(NOTATION_SVG).first()).toBeVisible();
   await expect(page.locator("#chordtable")).not.toBeEmpty();
   expect(errors).toEqual([]);
 });
@@ -102,7 +103,7 @@ test("the Mixer <dialog> is hidden until its button is clicked, then toggles", a
   await page.goto(SONGS_URL);
   await page.locator("#songSearch").fill("Bourbon Street");
   await page.locator(SONG_ITEM).first().click();
-  await expect(page.locator("#notation svg").first()).toBeVisible();
+  await expect(page.locator(NOTATION_SVG).first()).toBeVisible();
 
   const panel = page.locator("#mixerPanel");
   await expect(panel).toBeHidden();
@@ -118,7 +119,7 @@ test("the Mixer <dialog> is hidden until its button is clicked, then toggles", a
 test("the Layers panel opens from its tab and draws fingerings and progression bands", async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto(`${SONGS_URL}#s=basin_street`);
-  await expect(page.locator("#notation svg").first()).toBeVisible();
+  await expect(page.locator(NOTATION_SVG).first()).toBeVisible();
   await page.locator("#instrument").selectOption("trumpet");
 
   const panel = page.locator("#layersPanel");
@@ -135,6 +136,22 @@ test("the Layers panel opens from its tab and draws fingerings and progression b
 
   await page.locator("#layersTab").click();
   await expect(panel).toBeHidden();
+  expect(errors).toEqual([]);
+});
+
+test("the Pulse layer draws one rhythm clock per bar, and hovering one lights its notes", async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto(`${SONGS_URL}#s=basin_street`);
+  await expect(page.locator(NOTATION_SVG).first()).toBeVisible();
+  await page.locator("#layersTab").click();
+  await page.locator('.rj-layer-row[data-layer="pulse"]').click();
+  const glyphs = page.locator("#notation .rj-pulse");
+  await expect(glyphs.first()).toBeVisible();
+  expect(await glyphs.count()).toBeGreaterThan(10);
+  await expect(page.locator("#notation .rj-pulse-beat--back")).toHaveCount(2 * await glyphs.count());
+  await page.locator("#layersTab").click();
+  await glyphs.nth(3).hover();
+  expect(await page.locator("#notation .rj-pulse-hilite").count()).toBeGreaterThan(0);
   expect(errors).toEqual([]);
 });
 

@@ -15,6 +15,13 @@
     accidentalColumns(positions) which column (0 nearest the notes) each of a
                                  chord's accidentals goes in, so close ones
                                  don't print on top of each other
+    clockPoint(cx, cy, r, f)     the point a fraction f of a bar round a
+                                 clock face (0 = twelve o'clock, clockwise)
+    arcPath(cx, cy, r, f0, f1)   an arc of that clock from f0 to f1 (a full
+                                 turn is drawn as two halves)
+    sectorPath(cx, cy, r, f0, f1) the pie slice between f0 and f1
+    fingerprintRings(radius, n)  { hub, width, radii }: the rhythmic
+                                 fingerprint's n rings inside `radius`
 */
 
 const BAR_RADIUS = 4;
@@ -141,4 +148,43 @@ export function accidentalColumns(positions) {
     result[index] = column;
   });
   return result;
+}
+
+const round2 = (n) => Math.round(n * 100) / 100;
+
+export function clockPoint(cx, cy, r, fraction) {
+  const angle = fraction * 2 * Math.PI - Math.PI / 2;
+  return { x: round2(cx + r * Math.cos(angle)), y: round2(cy + r * Math.sin(angle)) };
+}
+
+function arcTo(cx, cy, r, from, to) {
+  const end = clockPoint(cx, cy, r, to);
+  const large = to - from > 0.5 ? 1 : 0;
+  return `A ${round2(r)} ${round2(r)} 0 ${large} 1 ${end.x} ${end.y}`;
+}
+
+export function arcPath(cx, cy, r, from, to) {
+  const start = clockPoint(cx, cy, r, from);
+  if (to - from >= 0.999) {
+    const half = from + 0.5;
+    return `M ${start.x} ${start.y} ${arcTo(cx, cy, r, from, half)} ${arcTo(cx, cy, r, half, from + 1)}`;
+  }
+  return `M ${start.x} ${start.y} ${arcTo(cx, cy, r, from, to)}`;
+}
+
+export function sectorPath(cx, cy, r, from, to) {
+  const start = clockPoint(cx, cy, r, from);
+  return `M ${round2(cx)} ${round2(cy)} L ${start.x} ${start.y} ${arcTo(cx, cy, r, from, to)} Z`;
+}
+
+// The hub (an empty middle) takes HUB_SHARE of the radius; the rings share
+// the rest evenly, ring 0 innermost.
+const HUB_SHARE = 0.3;
+
+export function fingerprintRings(radius, count) {
+  const hub = radius * HUB_SHARE;
+  const width = (radius - hub) / count;
+  const radii = [];
+  for (let i = 0; i < count; i += 1) radii.push(hub + width * (i + 0.5));
+  return { hub, width, radii };
 }

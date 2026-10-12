@@ -24,12 +24,16 @@
   swapped in.
 
   setOpen(bool) is exposed for the tour, like the Mixer's.
+  onPlayhead(nodes, msPerMeasure) / onPlayheadStop() are for the audio
+  player: the Pulse layer's glyph for the bar being played lights up and
+  flashes its 2 & 4 in time (overlays/pulse.js).
 */
 import { byId, clear, el } from "../../lib/core/dom.js";
 import { LAYERS, activeLayers } from "../../lib/music/layers.js";
 import { findInstrument, INSTRUMENTS } from "../../lib/music/instruments.js";
 import { trackRightEdge } from "./edge.js";
 import { initSheetDrag } from "./sheet-drag.js";
+import { followPlayhead, stopPlayhead } from "./overlays/pulse.js";
 import { listOf, tl } from "../../lib/core/i18n.js";
 import { BACKGROUND } from "../core/state.js";
 
@@ -257,5 +261,5 @@ export function createLayersPanel(ctx) {
     showOpen(ctx.store.get("layers").layersOpen);
   }
 
-  return { init, setOpen, toggle };
+  return { init, setOpen, toggle, onPlayhead: followPlayhead, onPlayheadStop: stopPlayhead };
 }
