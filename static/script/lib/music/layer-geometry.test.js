@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  accidentalColumns, barPath, growViewBox, keepBelow, progressionShades, unionOf,
+  accidentalColumns, arcPath, barPath, clockPoint, fingerprintRings, growViewBox, keepBelow, progressionShades, sectorPath, unionOf,
 } from "./layer-geometry.js";
 
 const match = (name) => ({ name });
@@ -90,4 +90,27 @@ test("accidentalColumns: close ones step out, highest nearest the notes, reusing
   assert.deepEqual(accidentalColumns([1, 7]), [0, 0]);
   // The bottom one is a seventh below the top one, so it goes back in beside it.
   assert.deepEqual(accidentalColumns([1, 5, 7]), [0, 1, 0]);
+});
+
+test("clockPoint starts at twelve o'clock and runs clockwise", () => {
+  assert.deepEqual(clockPoint(10, 10, 5, 0), { x: 10, y: 5 });
+  assert.deepEqual(clockPoint(10, 10, 5, 0.25), { x: 15, y: 10 }); // beat 2 of 4: three o'clock
+  assert.deepEqual(clockPoint(10, 10, 5, 0.75), { x: 5, y: 10 }); // beat 4: nine o'clock
+});
+
+test("arcPath draws a quarter as one small sweep, a full bar as two halves", () => {
+  assert.equal(arcPath(10, 10, 5, 0, 0.25), "M 10 5 A 5 5 0 0 1 15 10");
+  assert.equal(arcPath(10, 10, 5, 0, 0.75), "M 10 5 A 5 5 0 1 1 5 10");
+  assert.equal(arcPath(10, 10, 5, 0, 1), "M 10 5 A 5 5 0 0 1 10 15 A 5 5 0 0 1 10 5");
+});
+
+test("sectorPath closes the slice through the centre", () => {
+  assert.equal(sectorPath(10, 10, 5, 0.25, 0.5), "M 10 10 L 15 10 A 5 5 0 0 1 10 15 Z");
+});
+
+test("fingerprintRings shares the radius outside the hub evenly", () => {
+  const { hub, width, radii } = fingerprintRings(10, 4);
+  assert.equal(hub, 3);
+  assert.equal(width, 1.75);
+  assert.deepEqual(radii.map((r) => Math.round(r * 1000) / 1000), [3.875, 5.625, 7.375, 9.125]);
 });

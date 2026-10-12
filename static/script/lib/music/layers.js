@@ -101,6 +101,18 @@ export const LAYERS = [
     annotate: (song) => melodySolfege(song).map((s) => ({ startChar: s.startChar, text: `_${solfegeText(solfegeLabel(s.syllable))}` })),
   },
   {
+    id: "pulse",
+    group: tl("layers_group_rhythm", "Rhythm"),
+    label: tl("layer_pulse_label", "Pulse (2 & 4)"),
+    hint: tl("layer_pulse_hint", "A rhythm clock under every bar: one turn is the bar, long notes inside, short ones outside. Beats 2 and 4, the trad-jazz backbeat, are gold; a gold rim means the bar hits them, a magenta one that it's syncopated. Hover or tap a clock to light up its notes."),
+    credit: { prefix: tl("layer_pulse_credit", "After "), text: "Augmenting Sheet Music with Rhythmic Fingerprints", href: "https://arxiv.org/abs/2009.02057" },
+    order: 7, // unused: it writes no annotation
+    availableFor: () => true,
+    appliesTo: () => true,
+    // Drawn as SVG after ABCjs engraves (songs/layers/overlays/pulse.js).
+    annotate: () => [],
+  },
+  {
     id: "fingerings",
     group: tl("layers_group_performance", "Performance"),
     label: tl("layer_fingerings_label", "Fingerings"),

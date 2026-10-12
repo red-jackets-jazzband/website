@@ -104,6 +104,22 @@ test("the Layers panel opens from its tab and draws fingerings and progression b
   expect(errors).toEqual([]);
 });
 
+test("the Pulse layer draws one rhythm clock per bar, and hovering one lights its notes", async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto(`${SONGS_URL}#s=basin_street`);
+  await expect(page.locator("#notation svg").first()).toBeVisible();
+  await page.locator("#layersTab").click();
+  await page.locator('.rj-layer-row[data-layer="pulse"]').click();
+  const glyphs = page.locator("#notation .rj-pulse");
+  await expect(glyphs.first()).toBeVisible();
+  expect(await glyphs.count()).toBeGreaterThan(10);
+  await expect(page.locator("#notation .rj-pulse-beat--back")).toHaveCount(2 * await glyphs.count());
+  await page.locator("#layersTab").click();
+  await glyphs.nth(3).hover();
+  expect(await page.locator("#notation .rj-pulse-hilite").count()).toBeGreaterThan(0);
+  expect(errors).toEqual([]);
+});
+
 test("a band setlist opens from a deep link and lists its songs", async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto(`${SONGS_URL}#sl=setlist_2026`);

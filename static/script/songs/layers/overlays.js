@@ -18,11 +18,14 @@
     and are centred under their note, in the same face as the degrees;
   - fingering numbers get their own class, so split.css sets them upright
     and bold instead of the italic annotation face, and are centred under
-    their notehead (ABCjs starts an annotation at the note's left edge).
+    their notehead (ABCjs starts an annotation at the note's left edge);
+  - the pulse layer (lib/music/pulse.js) draws a rhythmic fingerprint, a
+    clock face of the bar's rhythm with beats 2 and 4 in gold, in a row it
+    adds under each printed line.
 
   Called by sheet.js's paint() right after ABCjs draws, for the live sheet
   and a booklet alike (a booklet's plan simply has no layers on). One module
-  per layer in overlays/ (progression-bands, chord-skeleton, outside-chords, degrees, solfege, fingerings), a
+  per layer in overlays/ (progression-bands, chord-skeleton, outside-chords, degrees, solfege, fingerings, pulse), a
   shared svg.js, and viewbox.js for the chord-letter clipping; the
   arithmetic is in lib/music/layer-geometry.js.
 */
@@ -34,6 +37,7 @@ import { styleFingerings } from "./overlays/fingerings.js";
 import { markOutsideChords } from "./overlays/outside-chords.js";
 import { drawChordSkeleton } from "./overlays/chord-skeleton.js";
 import { uncropChords } from "./overlays/viewbox.js";
+import { drawPulse } from "./overlays/pulse.js";
 
 export function decorateLayers(notationEl, visualObj, plan) {
   if (!notationEl || !visualObj) return;
@@ -46,4 +50,5 @@ export function decorateLayers(notationEl, visualObj, plan) {
   if (applied.includes("fingerings")) styleFingerings(notationEl, plan.instrument);
   if (applied.includes("scale-degrees")) styleDegrees(notationEl);
   if (applied.includes("solfege")) styleSolfege(notationEl);
+  if (applied.includes("pulse")) drawPulse(visualObj);
 }

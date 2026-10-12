@@ -7180,6 +7180,112 @@ body.rj-layers-open #layersTab .rj-layers-count {
   fill: #c0577b;
 }
 
+/* Pulse (2 & 4) (overlays/pulse.js): a rhythmic fingerprint under each bar.
+   The backbeat slices and dots are always gold, so the 2 & 4 pulse is the
+   first thing the eye finds; the rim says the bar's kind. Note arcs are
+   dark on the white paper, rests pale, a tie's continuation in between. */
+.notation .rj-pulse {
+  cursor: pointer;
+}
+.notation .rj-pulse-face {
+  fill: #fff;
+  stroke: #c9c9c9;
+  stroke-width: 0.8;
+}
+.notation .rj-pulse--backbeat .rj-pulse-face {
+  stroke: var(--rj-gold);
+  stroke-width: 1.4;
+}
+.notation .rj-pulse--syncopated .rj-pulse-face {
+  stroke: #CA486d;
+  stroke-width: 1.4;
+}
+.notation .rj-pulse-slice {
+  fill: rgba(226, 157, 15, 0.13);
+}
+.notation .rj-pulse-guide {
+  fill: none;
+  stroke: #ececec;
+  stroke-width: 0.4;
+}
+.notation .rj-pulse-arc {
+  fill: none;
+  stroke: #3a3a3a;
+  stroke-linecap: butt;
+}
+.notation .rj-pulse-arc--tie {
+  stroke: #9a9a9a;
+}
+.notation .rj-pulse-arc--rest {
+  stroke: #d5dde4;
+}
+.notation .rj-pulse-arc--back {
+  stroke: #c98500;
+}
+.notation .rj-pulse-beat {
+  fill: #9a9a9a;
+}
+.notation .rj-pulse-beat--back {
+  fill: var(--rj-gold);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@media screen {
+  .notation .rj-pulse:hover .rj-pulse-face,
+  .notation .rj-pulse.is-pinned .rj-pulse-face {
+    fill: #fff8e8;
+  }
+  .notation .rj-pulse.is-playing .rj-pulse-face {
+    stroke: var(--rj-gold);
+    stroke-width: 2;
+    fill: #fff8e8;
+  }
+  .notation .rj-pulse.is-playing .rj-pulse-beat--back {
+    animation-name: rj-pulse-beat;
+    animation-iteration-count: infinite;
+    animation-timing-function: ease-out;
+    animation-fill-mode: backwards;
+  }
+  .notation .rj-pulse-hilite path,
+  .notation .rj-pulse-hilite ellipse {
+    fill: #c98500;
+  }
+}
+/* One flash per bar: each dot's delay (set inline) puts it on its beat. */
+@keyframes rj-pulse-beat {
+  0% { transform: scale(1.9); fill: #c98500; }
+  14% { transform: scale(1); fill: var(--rj-gold); }
+  100% { transform: scale(1); }
+}
+/* Phones: the glyph is drawn small, so drop the faint ring guides and give
+   the 2 & 4 dots a halo to keep them findable. */
+@media (max-width: 600px) {
+  .notation .rj-pulse-guide {
+    display: none;
+  }
+  .notation .rj-pulse-beat--back {
+    stroke: rgba(226, 157, 15, 0.45);
+    stroke-width: 1.4;
+  }
+}
+/* Print: a quiet, ink-friendly glyph — no tints, no animation. */
+@media print {
+  .notation .rj-pulse-slice,
+  .notation .rj-pulse-guide {
+    display: none;
+  }
+  .notation .rj-pulse-face {
+    fill: none;
+    stroke: #999;
+  }
+  .notation .rj-pulse-arc--back {
+    stroke: #000;
+  }
+  .notation .rj-pulse-beat--back {
+    fill: #000;
+  }
+}
+
 /* Scale degrees (overlays.js's styleDegrees): after Improvise for Real, a
    note that belongs to the chord under it has its number in a magenta circle;
    any other note is the bare number. */

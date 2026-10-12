@@ -20,10 +20,11 @@ test("one row per layer, grouped, each with its preview", () => {
   const { cleanup } = setup();
   try {
     const groups = [...document.querySelectorAll(".rj-layer-group")].map((g) => g.textContent);
-    assert.deepEqual(groups, ["Harmony", "Melody", "Performance"]);
+    assert.deepEqual(groups, ["Harmony", "Melody", "Rhythm", "Performance"]);
     assert.ok(row("progressions").querySelector(".rj-layer-preview svg"));
     assert.ok(row("fingerings").querySelector(".rj-layer-preview svg"));
     assert.ok(row("scale-degrees").querySelector(".rj-layer-preview svg"));
+    assert.ok(row("pulse").querySelector(".rj-layer-preview svg"));
     assert.equal(row("progressions").querySelector(".rj-layer-label").textContent, "Named progressions");
   } finally {
     cleanup();
@@ -113,7 +114,7 @@ test("Reset all switches everything off", () => {
     click(row("progressions"));
     click(document.getElementById("layersResetBtn"));
     assert.deepEqual(ctx.store.get("layers").activeLayers, {
-      progressions: false, "chord-skeleton": false, "outside-chords": false, "scale-degrees": false, solfege: false, fingerings: false,
+      progressions: false, "chord-skeleton": false, "outside-chords": false, "scale-degrees": false, solfege: false, pulse: false, fingerings: false,
     });
   } finally {
     cleanup();
