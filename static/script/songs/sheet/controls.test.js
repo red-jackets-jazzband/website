@@ -237,43 +237,39 @@ test("a stepper press reads the new value out through its live region", async ()
   }
 });
 
-test("a press that leaves the value unchanged is announced again: cleared, then refilled", async () => {
+// Runs `body` on the Tempo stepper's live region with every write to it
+// recorded; `press(bpm)` presses + with the readout showing that tempo.
+async function withTempoAnnouncer(body) {
   const { cleanup } = setup();
   try {
     const live = document.querySelector("#tempoStepper .sheet-stepper-announce");
-    const label = document.getElementById("tempoValueLabel");
     const writes = [];
     new window.MutationObserver(() => writes.push(live.textContent)).observe(live, { childList: true, characterData: true, subtree: true });
-    label.textContent = "200";
-    document.getElementById("tempoUpBtn").click();
-    await afterAnnounce();
-    label.textContent = "200"; // stuck at the limit
-    document.getElementById("tempoUpBtn").click();
-    assert.equal(live.textContent, "", "emptied straight away");
-    await afterAnnounce();
-    assert.match(live.textContent, /^200 \S/);
-    assert.equal(writes.filter((w) => w.startsWith("200")).length, 2, "the same readout written twice, with a clear between");
-    assert.ok(writes.includes(""));
+    const press = (bpm) => {
+      document.getElementById("tempoValueLabel").textContent = bpm;
+      document.getElementById("tempoUpBtn").click();
+    };
+    await body({ live, writes, press });
   } finally {
     cleanup();
   }
-});
+}
 
-test("a newer press cancels the pending readout, so only the latest value is spoken", async () => {
-  const { cleanup } = setup();
-  try {
-    const live = document.querySelector("#tempoStepper .sheet-stepper-announce");
-    const label = document.getElementById("tempoValueLabel");
-    const writes = [];
-    new window.MutationObserver(() => writes.push(live.textContent)).observe(live, { childList: true, characterData: true, subtree: true });
-    label.textContent = "140";
-    document.getElementById("tempoUpBtn").click();
-    label.textContent = "150";
-    document.getElementById("tempoUpBtn").click();
-    await afterAnnounce();
-    assert.match(live.textContent, /^150 \S/);
-    assert.equal(writes.some((w) => w.startsWith("140")), false, "the first readout never went in");
-  } finally {
-    cleanup();
-  }
-});
+test("a press that leaves the value unchanged is announced again: cleared, then refilled", () => withTempoAnnouncer(async ({ live, writes, press }) => {
+  press("200");
+  await afterAnnounce();
+  press("200"); // stuck at the limit
+  assert.equal(live.textContent, "", "emptied straight away");
+  await afterAnnounce();
+  assert.match(live.textContent, /^200 \S/);
+  assert.equal(writes.filter((w) => w.startsWith("200")).length, 2, "the same readout written twice, with a clear between");
+  assert.ok(writes.includes(""));
+}));
+
+test("a newer press cancels the pending readout, so only the latest value is spoken", () => withTempoAnnouncer(async ({ live, writes, press }) => {
+  press("140");
+  press("150");
+  await afterAnnounce();
+  assert.match(live.textContent, /^150 \S/);
+  assert.equal(writes.some((w) => w.startsWith("140")), false, "the first readout never went in");
+}));
