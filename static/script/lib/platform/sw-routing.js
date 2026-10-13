@@ -7,7 +7,6 @@
 // *which kind* a given request is.
 
 const SOUNDFONT_ORIGIN = "https://gleitz.github.io";
-const FONT_AWESOME_ORIGIN = "https://cdnjs.cloudflare.com";
 
 // Same-origin paths worth caching for offline use — the /songs/ app shell
 // (its JS, its one stylesheet at its build-time-fingerprinted URL, and the
@@ -42,8 +41,6 @@ function isCacheablePath(pathname) {
     "soundfont" - an audio sample from the FatBoy/MusyngKite CDN; cache-first
                   only, never revalidated — samples never change once
                   published, so there's nothing to catch up on.
-    "font-awesome" - the icon font CSS/webfont from cdnjs; same treatment as
-                  a soundfont sample, for the same reason.
     null        - don't touch it; let the browser handle the request as it
                   normally would (no caching, no offline fallback).
 */
@@ -53,6 +50,5 @@ export function classifyRequest({
   if (mode === "navigate") return sameOrigin ? "navigate" : null;
   if (sameOrigin) return isCacheablePath(pathname) ? "shell" : null;
   if (origin === SOUNDFONT_ORIGIN) return "soundfont";
-  if (origin === FONT_AWESOME_ORIGIN) return "font-awesome";
   return null;
 }

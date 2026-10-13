@@ -45,10 +45,12 @@ test("a soundfont sample request is classified 'soundfont'", () => {
   );
 });
 
-test("a Font Awesome asset is classified 'font-awesome'", () => {
+// Font Awesome is self-hosted now (assets/css/icons.css); cdnjs is just
+// another cross-origin host.
+test("a cdnjs request is left alone", () => {
   assert.equal(
     classify("/ajax/libs/font-awesome/6.7.2/css/all.min.css", FONT_AWESOME_ORIGIN, "cors"),
-    "font-awesome",
+    null,
   );
 });
 

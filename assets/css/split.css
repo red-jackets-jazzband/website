@@ -536,8 +536,12 @@ video.video {
 
 @font-face {
   font-family: 'MuseJazzText';
-  src: url('/fonts/MuseJazzText.woff') format('woff'), /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
-   url('/fonts/MuseJazzText.ttf') format('truetype'); /* Chrome 4+, Firefox 3.5, Opera 10+, Safari 3—5 */
+  /* WOFF2 (Safari 10+, every browser this site supports) is ~20% smaller than
+     WOFF; same font data, only the container differs (an OFL font may be
+     re-wrapped, not subset, under its own name). */
+  src: url('/fonts/MuseJazzText.woff2') format('woff2'),
+   url('/fonts/MuseJazzText.woff') format('woff'),
+   url('/fonts/MuseJazzText.ttf') format('truetype');
 }
 
 /*
