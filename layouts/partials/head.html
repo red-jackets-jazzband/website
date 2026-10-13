@@ -54,6 +54,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="RJ Songs" />
+<!-- The sheet's text face, fetched alongside the scripts instead of only once
+     the first chart asks for it: the app waits for it before engraving
+     (songs/core/features.js's deepLink), since ABCjs measures text as it lays
+     the chart out. crossorigin matches the @font-face fetch, or it's fetched twice. -->
+<link rel="preload" href="/fonts/MuseJazzText.woff" as="font" type="font/woff" crossorigin />
 {{ end }}
 
 <!-- Structured data -->

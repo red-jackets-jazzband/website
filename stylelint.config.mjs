@@ -32,5 +32,12 @@ export default {
     // in a customizable <select>) is a real, newly-shipped pseudo-element
     // stylelint's built-in list doesn't know about yet.
     "selector-pseudo-element-no-unknown": [true, { ignorePseudoElements: ["selectedcontent"] }],
+    // The /songs/ page must work on Safari 12 (CLAUDE.md, Browser support).
+    // `inset` (Safari 14.1) and `aspect-ratio` (Safari 15) are simply dropped
+    // there, which collapsed the Inspiration video box to zero height and
+    // pinned the full-screen sheet, the tour's veil and the modal backdrops
+    // at their static position. Write top/right/bottom/left, and a
+    // padding-top percentage for a fixed aspect ratio, instead.
+    "property-disallowed-list": ["inset", "aspect-ratio"],
   },
 };

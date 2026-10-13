@@ -26,7 +26,7 @@ function collectErrors(page) {
 
 test.beforeEach(async ({ context }) => { await isolate(context); });
 
-test("/songs/ loads its module graph with no script errors and lists the library", async ({ page }) => {
+test("/songs/ loads its script bundle with no script errors and lists the library", async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto(SONGS_URL);
   await expect(page.locator(SONG_ITEM).first()).toBeVisible();
@@ -112,7 +112,7 @@ test("a band setlist opens from a deep link and lists its songs", async ({ page 
   expect(errors).toEqual([]);
 });
 
-test("the service worker installs and precaches the shell, stylesheet, module graph and lamejs", async ({ page }) => {
+test("the service worker installs and precaches the shell, stylesheet, script bundle and lamejs", async ({ page }) => {
   await page.goto(SONGS_URL);
   const cached = await page.evaluate(async () => {
     await navigator.serviceWorker.ready;
@@ -130,8 +130,10 @@ test("the service worker installs and precaches the shell, stylesheet, module gr
   expect(cached).toContain(SONGS_URL);
   expect(cached).toContain("/manifest.webmanifest");
   expect(cached).toContain("/script/lamejs-1.2.1-min.js");
-  expect(cached).toContain("/script/songs-page.js");
-  expect(cached).toContain("/script/songs/core/app.js");
+  // The app is one js.Build bundle (layouts/shortcodes/songs-app.html), not
+  // the 100-odd source modules.
+  expect(cached.some((u) => /^\/script\/songs-app\..+\.js$/.test(u))).toBe(true);
+  expect(cached).not.toContain("/script/songs/core/app.js");
   expect(cached.some((u) => /^\/css\/split\.min\..+\.css$/.test(u))).toBe(true);
 });
 

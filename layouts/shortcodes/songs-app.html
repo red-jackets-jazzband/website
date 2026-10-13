@@ -19,7 +19,17 @@
 
 <script src="/script/abcjs_midi_6.7.1-min.js" type="text/javascript" defer></script>
 <script src="/script/tonal.4.6.9-min.js" type="text/javascript" defer></script>
-<script type="module" src="/script/songs-page.js"></script>
+{{- /*
+  The app's ES module graph (static/script/songs-page.js and the 100-odd
+  modules it imports, mounted into assets/ by config.toml) is bundled by
+  Hugo's js.Build into one minified, fingerprinted file. Served as separate
+  modules, a browser only finds each level of imports once the level above
+  has downloaded: 11 round trips and 116 requests before any code could run,
+  seconds on an old iPad or a slow connection. es2017 keeps the bundle's
+  syntax inside what Safari 12 parses (CLAUDE.md's Browser support).
+*/ -}}
+{{- $app := resources.Get "script/songs-page.js" | js.Build (dict "format" "esm" "target" "es2017" "minify" true "targetPath" "script/songs-app.js") | fingerprint }}
+<script type="module" src="{{ $app.RelPermalink }}" integrity="{{ $app.Data.Integrity }}"></script>
 
 <div class="rj-songs-layout" data-default-tab="library">
 
