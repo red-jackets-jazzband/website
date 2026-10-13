@@ -34,6 +34,9 @@ test("/songs/ loads its script bundle with no script errors and lists the librar
   expect(errors).toEqual([]);
 });
 
+// The subset is generated before every CI build (scripts/build-icons.js), so
+// this is what catches it going missing (head.html would fall back to cdnjs)
+// or a Font Awesome update that no longer draws the icons.
 test("icons come from the self-hosted Font Awesome subset, not a CDN", async ({ page }) => {
   const thirdParty = [];
   page.on("request", (req) => {
@@ -42,15 +45,12 @@ test("icons come from the self-hosted Font Awesome subset, not a CDN", async ({ 
   await page.goto(SONGS_URL);
   await expect(page.locator(SONG_ITEM).first()).toBeVisible();
   const icon = await page.evaluate(async () => {
-    await document.fonts.load('900 16px "Font Awesome 6 Free"', "\uf04b");
     const glyph = getComputedStyle(document.querySelector("#playPauseBtn .fa-play"), "::before");
-    return {
-      family: glyph.fontFamily,
-      content: glyph.content,
-      loaded: document.fonts.check('900 16px "Font Awesome 6 Free"', "\uf04b"),
-    };
+    const font = `${glyph.fontWeight} 16px ${glyph.fontFamily}`;
+    await document.fonts.load(font, "\uf04b");
+    return { family: glyph.fontFamily, content: glyph.content, loaded: document.fonts.check(font, "\uf04b") };
   });
-  expect(icon.family.toLowerCase()).toContain("font awesome 6 free"); // the minifier lowercases it
+  expect(icon.family.toLowerCase()).toContain("font awesome"); // the minifier lowercases it
   expect(icon.content).toBe('"\uf04b"');
   expect(icon.loaded).toBe(true);
   expect(thirdParty.filter((url) => url.includes("cdnjs"))).toEqual([]);
