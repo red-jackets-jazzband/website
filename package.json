@@ -4,7 +4,7 @@
   "type": "module",
   "description": "Dev tooling (lint + unit tests) for the Red Jackets Jazzband Hugo site's vanilla JS. Not part of the Hugo build or the GitHub Pages deploy.",
   "scripts": {
-    "lint": "npm run lint:js && npm run lint:typed && npm run lint:css && npm run lint:dup && npm run lint:types && npm run lint:abc && npm run lint:setlists && npm run lint:i18n && npm run lint:catalog && npm run lint:icons && npm run lint:py",
+    "lint": "npm run lint:js && npm run lint:typed && npm run lint:css && npm run lint:dup && npm run lint:types && npm run lint:abc && npm run lint:setlists && npm run lint:i18n && npm run lint:catalog && npm run lint:py",
     "lint:js": "eslint --max-warnings 0 static/script static/sw.js scripts tests eslint.config.js",
     "lint:typed": "eslint --max-warnings 0 -c eslint.typed.config.js static/script",
     "lint:css": "stylelint \"assets/css/**/*.css\"",
@@ -15,8 +15,9 @@
     "lint:i18n": "node scripts/lint-i18n.js",
     "test:e2e": "playwright test",
     "lint:catalog": "node scripts/lint-catalog.js",
-    "lint:icons": "node scripts/lint-icons.js",
     "build:icons": "node scripts/build-icons.js",
+    "dev": "npm run build:icons && hugo serve",
+    "build": "npm run build:icons && hugo",
     "lint:py": "node scripts/lint-python.js",
     "lint:seo": "node scripts/lint-seo.js",
     "audit": "node scripts/audit.js",
@@ -39,6 +40,7 @@
     "jsdom": "^30.1.2",
     "stylelint": "^17.16.0",
     "stylelint-config-recommended": "^18.0.0",
+    "subset-font": "2.9.0",
     "typescript": "6.0.3",
     "typescript-eslint": "^8.71.1"
   }
