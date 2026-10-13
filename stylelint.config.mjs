@@ -9,7 +9,8 @@
 
 export default {
   extends: ["stylelint-config-recommended"],
-  ignoreFiles: ["public/**", "resources/**", "themes/**"],
+  // icons.css is generated from Font Awesome (scripts/build-icons.js).
+  ignoreFiles: ["public/**", "resources/**", "themes/**", "assets/css/icons.css"],
   rules: {
     // Retrofitting selector order across an organically-grown, 3000+ line
     // stylesheet to satisfy this is a real risk (source order breaks ties at

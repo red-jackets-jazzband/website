@@ -26,12 +26,13 @@ import {
 //   v4: the Layers panel's new modules; v5: its edge.js; v6: the page is
 //   served in four languages, so the worker is registered once per language
 //   page and precaches/falls back to its own scope's page, not /songs/; v7: one manifest per language; v8: songs/core/skip-links.js;
-//   v9: the page loads one js.Build bundle instead of the module graph).
-// - ASSET_VERSION: the third-party soundfont samples and Font Awesome, which
-//   never change once published. Bump only when caching *those* changes —
+//   v9: the page loads one js.Build bundle instead of the module graph;
+//   v10: Font Awesome self-hosted, MuseJazzText as WOFF2, PNG iRealPro mark).
+// - ASSET_VERSION: the third-party soundfont samples, which never change
+//   once published. Bump only when caching *those* changes —
 //   it deletes the soundfonts visitors downloaded with "Download for
 //   offline", so their offline playback is gone until they download again.
-const SHELL_VERSION = "v9";
+const SHELL_VERSION = "v10";
 const ASSET_VERSION = "v1";
 // Every cache this worker owns is named under this prefix, and activate()'s
 // cleanup only ever deletes caches under it — CacheStorage is shared across
@@ -41,8 +42,9 @@ const ASSET_VERSION = "v1";
 const CACHE_PREFIX = "rj-songs-";
 const SHELL_CACHE = `${CACHE_PREFIX}shell-${SHELL_VERSION}`;
 const SOUNDFONT_CACHE = `${CACHE_PREFIX}soundfont-${ASSET_VERSION}`;
-const FONT_AWESOME_CACHE = `${CACHE_PREFIX}font-awesome-${ASSET_VERSION}`;
-const CURRENT_CACHES = new Set([SHELL_CACHE, SOUNDFONT_CACHE, FONT_AWESOME_CACHE]);
+// (A "font-awesome" cache of the cdnjs kit was dropped once the icons were
+// self-hosted; activate() deletes a visitor's old one like any stale cache.)
+const CURRENT_CACHES = new Set([SHELL_CACHE, SOUNDFONT_CACHE]);
 
 // A deliberately small precache — just enough that a fresh install has an
 // offline fallback immediately, before the user has ever visited /songs/.
@@ -92,7 +94,7 @@ function targetCacheFor(url) {
     sameOrigin: url.origin === self.location.origin,
     mode: "cors",
   });
-  return kind === "font-awesome" ? FONT_AWESOME_CACHE : SHELL_CACHE;
+  return kind === "soundfont" ? SOUNDFONT_CACHE : SHELL_CACHE;
 }
 
 // `required`: a same-origin asset (our own stylesheet, our own fonts, our
@@ -101,10 +103,10 @@ function targetCacheFor(url) {
 // the whole precacheShell() chain and fails installation; the browser
 // retries installing this same worker version on a later registration
 // attempt instead of activating an incomplete one that looks done but
-// silently can't run. A cross-origin asset (Font Awesome's stylesheet and
-// its webfonts, from cdnjs) is optional — a missing icon font is a real but
-// survivable degradation, not worth failing the whole install over, so a
-// failure there is swallowed instead.
+// silently can't run. A cross-origin asset (none today; Font Awesome came
+// from cdnjs until it was self-hosted) is optional — a third-party host being
+// down is not worth failing the whole install over, so a failure there is
+// swallowed instead.
 function precacheUrl(absoluteUrl, required) {
   const attempt = fetch(absoluteUrl).then((response) => {
     if (!response.ok) throw new Error(`${absoluteUrl}: ${response.status}`);
@@ -259,7 +261,6 @@ const STRATEGIES = {
   navigate,
   shell: (request, event) => cacheFirstRevalidate(request, SHELL_CACHE, event),
   soundfont: (request) => cacheFirstOnly(request, SOUNDFONT_CACHE),
-  "font-awesome": (request) => cacheFirstOnly(request, FONT_AWESOME_CACHE),
 };
 
 self.addEventListener("fetch", (event) => {

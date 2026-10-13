@@ -58,7 +58,7 @@
      the first chart asks for it: the app waits for it before engraving
      (songs/core/features.js's deepLink), since ABCjs measures text as it lays
      the chart out. crossorigin matches the @font-face fetch, or it's fetched twice. -->
-<link rel="preload" href="/fonts/MuseJazzText.woff" as="font" type="font/woff" crossorigin />
+<link rel="preload" href="/fonts/MuseJazzText.woff2" as="font" type="font/woff2" crossorigin />
 {{ end }}
 
 <!-- Structured data -->
@@ -78,12 +78,12 @@
 {{ end }}
 
 <!-- Styles -->
-{{ with resources.Get "css/split.css" }}
-  {{ $css := . | minify | fingerprint }}
-  <link rel="stylesheet" href="{{ $css.RelPermalink }}" type="text/css" media="screen,print" integrity="{{ $css.Data.Integrity }}" />
-{{ end }}
-<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
+<!-- One stylesheet: the site's own, then the Font Awesome subset the site
+     uses (assets/css/icons.css, built by scripts/build-icons.js), in the order
+     the separate cdnjs stylesheet used to cascade in. Same origin, so no extra
+     connection before first paint. -->
+{{ $css := slice (resources.Get "css/split.css") (resources.Get "css/icons.css") | resources.Concat "css/split.css" | minify | fingerprint }}
+<link rel="stylesheet" href="{{ $css.RelPermalink }}" type="text/css" media="screen,print" integrity="{{ $css.Data.Integrity }}" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 
 <!-- Image Styles -->

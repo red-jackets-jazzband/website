@@ -34,6 +34,28 @@ test("/songs/ loads its script bundle with no script errors and lists the librar
   expect(errors).toEqual([]);
 });
 
+test("icons come from the self-hosted Font Awesome subset, not a CDN", async ({ page }) => {
+  const thirdParty = [];
+  page.on("request", (req) => {
+    if (!req.url().startsWith("http://127.0.0.1") && !req.url().startsWith("http://localhost")) thirdParty.push(req.url());
+  });
+  await page.goto(SONGS_URL);
+  await expect(page.locator(SONG_ITEM).first()).toBeVisible();
+  const icon = await page.evaluate(async () => {
+    await document.fonts.load('900 16px "Font Awesome 6 Free"', "\uf04b");
+    const glyph = getComputedStyle(document.querySelector("#playPauseBtn .fa-play"), "::before");
+    return {
+      family: glyph.fontFamily,
+      content: glyph.content,
+      loaded: document.fonts.check('900 16px "Font Awesome 6 Free"', "\uf04b"),
+    };
+  });
+  expect(icon.family.toLowerCase()).toContain("font awesome 6 free"); // the minifier lowercases it
+  expect(icon.content).toBe('"\uf04b"');
+  expect(icon.loaded).toBe(true);
+  expect(thirdParty.filter((url) => url.includes("cdnjs"))).toEqual([]);
+});
+
 test("picking a song renders its title, chord grid and notation", async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto(SONGS_URL);
@@ -164,6 +186,9 @@ test("a worker upgrade drops the old shell cache but keeps downloaded soundfonts
   await page.evaluate(async () => {
     const shell = await caches.open("rj-songs-shell-v1");
     await shell.put("/script/songs/app.js", new Response("old"));
+    // The cdnjs Font Awesome cache, from before the icons were self-hosted.
+    const icons = await caches.open("rj-songs-font-awesome-v1");
+    await icons.put("/ajax/libs/font-awesome/all.min.css", new Response("old"));
     const samples = await caches.open("rj-songs-soundfont-v1");
     await samples.put("/test-soundfont-sample.mp3", new Response("sample"));
   });
@@ -183,6 +208,7 @@ test("a worker upgrade drops the old shell cache but keeps downloaded soundfonts
   });
 
   expect(names).not.toContain("rj-songs-shell-v1");
+  expect(names).not.toContain("rj-songs-font-awesome-v1");
   expect(names.some((n) => n.startsWith("rj-songs-shell-"))).toBe(true);
   // The cache surviving by name is the property under test: the worker only
   // ever deletes whole caches (activate()), never individual entries, and
