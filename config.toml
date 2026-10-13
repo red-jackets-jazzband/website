@@ -158,3 +158,18 @@ copyright = "&copy;2019 Red Jackets Jazzband"
   [markup.goldmark]
     [markup.goldmark.renderer]
       unsafe = true
+
+# static/script is also mounted into Hugo's assets pipeline, so the /songs/
+# shortcode can bundle its ES module graph into one minified file with
+# js.Build (see layouts/shortcodes/songs-app.html). Declaring any mount
+# replaces Hugo's default for that root, so the defaults are listed again.
+[module]
+  [[module.mounts]]
+    source = "assets"
+    target = "assets"
+  [[module.mounts]]
+    source = "static/script"
+    target = "assets/script"
+  [[module.mounts]]
+    source = "static"
+    target = "static"
