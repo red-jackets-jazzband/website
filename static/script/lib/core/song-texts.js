@@ -24,14 +24,17 @@ function notifySafely(notify, waiter) {
 export function createSongTexts(read) {
   const texts = new Map();
   const waiting = new Map();
+  // Bumped by clear(): a read started before it neither fills the cleared
+  // store nor answers anyone who asked after it.
+  let generation = 0;
 
   // One shared read answers several callers (a row's key badge, the booklet,
   // the sheet); one of them throwing mustn't leave the others waiting forever,
   // as it couldn't when each made its own request.
-  function settle(file, notify) {
-    const waiters = waiting.get(file) || [];
-    waiting.delete(file);
-    waiters.forEach((waiter) => notifySafely(notify, waiter));
+  // A read answers once: its waiters are taken off the list as it settles.
+  function settle(file, waiters, notify) {
+    if (waiting.get(file) === waiters) waiting.delete(file);
+    waiters.splice(0).forEach((waiter) => notifySafely(notify, waiter));
   }
 
   function get(file, onText, onError) {
@@ -45,15 +48,20 @@ export function createSongTexts(read) {
       waiting.get(file).push(waiter);
       return;
     }
-    waiting.set(file, [waiter]);
+    const waiters = [waiter];
+    const started = generation;
+    waiting.set(file, waiters);
     read(`/songs/${file}`, (text) => {
-      texts.set(file, text);
-      settle(file, (w) => w.onText(text));
-    }, (status) => settle(file, (w) => w.onError(status)));
+      if (started === generation) texts.set(file, text);
+      settle(file, waiters, (w) => w.onText(text));
+    }, (status) => settle(file, waiters, (w) => w.onError(status)));
   }
 
-  return {
-    get,
-    clear: () => texts.clear(),
-  };
+  function clear() {
+    generation += 1;
+    texts.clear();
+    waiting.clear();
+  }
+
+  return { get, clear };
 }

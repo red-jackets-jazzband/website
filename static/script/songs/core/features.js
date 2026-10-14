@@ -133,7 +133,14 @@ export const FEATURES = [
   // face is in, since the app starts at DOMContentLoaded, not `load`.
   {
     name: "deepLink",
-    init: (ctx) => whenFontReady(document.fonts, "16px MuseJazzText", SHEET_FONT_WAIT_MS, () => ctx.nav.start()),
+    init: (ctx) => {
+      // Only a song needs the font; a setlist-only link starts at once.
+      if (!songFileFromHash(window.location.hash)) {
+        ctx.nav.start();
+        return;
+      }
+      whenFontReady(document.fonts, "16px MuseJazzText", SHEET_FONT_WAIT_MS, () => ctx.nav.start());
+    },
   },
   { name: "tour", create: createTour, init: (ctx) => ctx.tour.init() },
 ];
