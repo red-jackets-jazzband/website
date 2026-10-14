@@ -1,6 +1,7 @@
 import { createAppStore, bindAppPrefs } from "../../static/script/songs/core/state.js";
 import { subscribeRerender } from "../../static/script/songs/sheet/sheet.js";
 import { createNavigation } from "../../static/script/songs/core/navigation.js";
+import { createSongTexts } from "../../static/script/lib/core/song-texts.js";
 
 /*
   A minimal stand-in for the app's shared `ctx`, for testing songs/ modules in
@@ -93,6 +94,9 @@ export function makeCtx(overrides = {}) {
   // with any of its methods swapped for a test's spies via `overrides.nav`.
   const nav = globalThis.document ? createNavigation(ctx) : {};
   ctx.nav = { ...nav, ...overrides.nav };
+  // The real shared song-text store, reading through whatever readFile the
+  // test gives (looked up at call time, so a test may swap it later).
+  ctx.songTexts = overrides.songTexts || createSongTexts((path, onLoad, onError) => ctx.readFile(path, onLoad, onError));
   // Like the real sheet, the stand-in re-renders on any store change that
   // needs it — so a test's `sheet.rerender` spy sees what the app would do.
   subscribeRerender(store, () => ctx.sheet.rerender());
