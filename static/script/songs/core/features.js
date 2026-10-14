@@ -1,5 +1,6 @@
 import { byId, qsa } from "../../lib/core/dom.js";
 import { parseSongIndex } from "../../lib/core/song-index.js";
+import { songFileFromHash } from "../../lib/core/song-hash.js";
 import { createNavigation } from "./navigation.js";
 import { createAudioPlayer } from "../audio/player.js";
 import { createMetronome } from "../audio/metronome.js";
@@ -87,7 +88,17 @@ function initSidebar(ctx) {
 export const FEATURES = [
   { name: "nav", create: createNavigation },
   { name: "skipLinks", init: initSkipLinks },
-  { name: "audio", create: createAudioPlayer, init: (ctx) => ctx.audio.warmUp() },
+  {
+    name: "audio",
+    create: createAudioPlayer,
+    // Only when the page opens straight into a song: that first render is
+    // what the warm-up speeds up. On a plain visit the AudioContext is left
+    // until a song is picked, after a click, so the browser lets it start
+    // instead of creating it suspended (and warning about autoplay).
+    init: (ctx) => {
+      if (songFileFromHash(window.location.hash)) ctx.audio.warmUp();
+    },
+  },
   { name: "sheet", create: createSheet },
   {
     name: "sheetToolbar",

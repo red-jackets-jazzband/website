@@ -59,3 +59,19 @@ test("clear() forgets every text, so the next ask fetches again", () => {
   songs.get(PANAMA, () => {});
   assert.equal(requests.length, 2);
 });
+
+test("a caller that throws doesn't keep the others waiting", () => {
+  const { read, requests } = fakeReader();
+  const songs = createSongTexts(read);
+  const got = [];
+  const realError = console.error;
+  console.error = () => {};
+  try {
+    songs.get(PANAMA, () => { throw new Error("render failed"); });
+    songs.get(PANAMA, (text) => got.push(text));
+    requests[0].onLoad("X:1");
+  } finally {
+    console.error = realError;
+  }
+  assert.deepEqual(got, ["X:1"]);
+});

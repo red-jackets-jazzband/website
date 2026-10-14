@@ -52,3 +52,23 @@ export function classifyRequest({
   if (origin === SOUNDFONT_ORIGIN) return "soundfont";
   return null;
 }
+
+const HEX_64 = /^[0-9a-f]{64}$/;
+
+/*
+  The path a build-time-fingerprinted file has with its content hash taken
+  out — "/script/songs-app.<64 hex>.js" -> "/script/songs-app.js",
+  "/css/split.min.<64 hex>.css" -> "/css/split.min.css" — or null for a path
+  that isn't one. Each deploy names these files anew, so the worker uses this
+  to drop the copy a newer one has replaced, instead of keeping every
+  version a visitor ever loaded.
+*/
+export function fingerprintStem(pathname) {
+  const extAt = pathname.lastIndexOf(".");
+  const hashAt = pathname.lastIndexOf(".", extAt - 1);
+  if (extAt === -1 || hashAt === -1) return null;
+  const ext = pathname.slice(extAt);
+  if (ext !== ".js" && ext !== ".css") return null;
+  if (!HEX_64.test(pathname.slice(hashAt + 1, extAt))) return null;
+  return pathname.slice(0, hashAt) + ext;
+}

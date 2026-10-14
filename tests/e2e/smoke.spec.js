@@ -192,6 +192,25 @@ test("the instrument <select> drops native styling (WebKit ignores author styles
   expect(["none", "base-select"]).toContain(appearance);
 });
 
+test("a superseded copy of the fingerprinted bundle is dropped from the offline cache", async ({ page }) => {
+  await page.goto(SONGS_URL);
+  const stale = `/script/songs-app.${"b".repeat(64)}.js`;
+  await page.evaluate(async (path) => {
+    await navigator.serviceWorker.ready;
+    const name = (await caches.keys()).find((n) => n.startsWith("rj-songs-shell-"));
+    await (await caches.open(name)).put(path, new Response("old deploy"));
+  }, stale);
+  // Controlled now: the bundle is served from the cache and refetched in the
+  // background, and storing that fresh copy drops the one it replaced.
+  await page.reload();
+  await expect(page.locator(SONG_ITEM).first()).toBeVisible();
+  await expect.poll(() => page.evaluate(async () => {
+    const name = (await caches.keys()).find((n) => n.startsWith("rj-songs-shell-"));
+    const paths = (await (await caches.open(name)).keys()).map((r) => new URL(r.url).pathname);
+    return paths.filter((p) => p.startsWith("/script/songs-app.")).length;
+  })).toBe(1);
+});
+
 test("a worker upgrade drops the old shell cache but keeps downloaded soundfonts", async ({ page }) => {
   // First visit with the worker blocked: seed the caches an earlier worker
   // version left behind — a shell full of since-moved module paths, and the
