@@ -59,6 +59,11 @@
      (songs/core/features.js's deepLink), since ABCjs measures text as it lays
      the chart out. crossorigin matches the @font-face fetch, or it's fetched twice. -->
 <link rel="preload" href="/fonts/MuseJazzText.woff2" as="font" type="font/woff2" crossorigin />
+<!-- Start the song list and a deep-linked song now, not after the scripts
+     have downloaded and run (static/script/early-requests.js; the app's
+     readFile adopts these requests). Inline, so it costs no request of its own,
+     and ahead of the stylesheet: a script after it would wait for it. -->
+{{ with resources.Get "script/early-requests.js" | js.Build (dict "format" "iife" "target" "es2017" "minify" true) }}<script>{{ .Content | safeJS }}</script>{{ end }}
 {{ end }}
 
 <!-- Structured data -->

@@ -56,6 +56,17 @@ test("icons come from the self-hosted Font Awesome subset, not a CDN", async ({ 
   expect(thirdParty.filter((url) => url.includes("cdnjs"))).toEqual([]);
 });
 
+test("a song link's file is requested once, from the page head, and opens", async ({ page }) => {
+  const reads = [];
+  page.on("request", (req) => {
+    if (req.url().endsWith("/songs/bill_bailey.abc")) reads.push(req.url());
+  });
+  await page.goto(`${SONGS_URL}#s=bill_bailey`);
+  await expect(page.locator("#notation svg").first()).toBeVisible();
+  await expect(page.locator("#songtitle")).toContainText(/bill bailey/i);
+  expect(reads).toHaveLength(1);
+});
+
 test("picking a song renders its title, chord grid and notation", async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto(SONGS_URL);
@@ -157,6 +168,10 @@ test("the service worker installs and precaches the shell, stylesheet, script bu
   expect(cached.some((u) => /^\/script\/songs-app\..+\.js$/.test(u))).toBe(true);
   expect(cached).not.toContain("/script/songs/core/app.js");
   expect(cached.some((u) => /^\/css\/split\.min\..+\.css$/.test(u))).toBe(true);
+  // Only the font format a browser loads (WOFF2), not the fallbacks after it.
+  expect(cached).toContain("/fonts/MuseJazzText.woff2");
+  expect(cached).not.toContain("/fonts/MuseJazzText.ttf");
+  expect(cached).not.toContain("/fonts/MuseJazzText.woff");
 });
 
 test("Export MP3 loads lamejs on demand rather than with the page", async ({ page }) => {
