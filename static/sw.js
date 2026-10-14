@@ -15,7 +15,7 @@
 // works the same as it always did, online-only, same as before this existed.
 import { classifyRequest } from "./script/lib/platform/sw-routing.js";
 import {
-  findStylesheetHrefs, findCssUrls, findScriptSrcs, findModuleImports,
+  findStylesheetHrefs, findPreferredCssUrls, findScriptSrcs, findModuleImports,
 } from "./script/lib/platform/precache-scan.js";
 
 // Two versions, so activate() can clear out what a previous worker left
@@ -27,12 +27,13 @@ import {
 //   served in four languages, so the worker is registered once per language
 //   page and precaches/falls back to its own scope's page, not /songs/; v7: one manifest per language; v8: songs/core/skip-links.js;
 //   v9: the page loads one js.Build bundle instead of the module graph;
-//   v10: Font Awesome self-hosted, MuseJazzText as WOFF2, PNG iRealPro mark).
+//   v10: Font Awesome self-hosted, MuseJazzText as WOFF2, PNG iRealPro mark;
+//   v11: no fallback font formats precached).
 // - ASSET_VERSION: the third-party soundfont samples, which never change
 //   once published. Bump only when caching *those* changes —
 //   it deletes the soundfonts visitors downloaded with "Download for
 //   offline", so their offline playback is gone until they download again.
-const SHELL_VERSION = "v10";
+const SHELL_VERSION = "v11";
 const ASSET_VERSION = "v1";
 // Every cache this worker owns is named under this prefix, and activate()'s
 // cleanup only ever deletes caches under it — CacheStorage is shared across
@@ -81,9 +82,10 @@ const PRECACHE_URLS = [PAGE_URL, MANIFEST_URL, "/script/lamejs-1.2.1-min.js"];
 // its exact filename can't be hardcoded here, and the module entry point's
 // own dependency graph shifts as the app's modules change — both are
 // discovered by scanning the already-precached /songs/ page's own markup
-// instead (findStylesheetHrefs/findScriptSrcs), same for the cross-origin
-// Font Awesome stylesheet. Each stylesheet found is then scanned in turn
-// (findCssUrls) for the webfont files its own @font-face rules point at, and
+// instead (findStylesheetHrefs/findScriptSrcs). Each stylesheet found is then
+// scanned in turn (findPreferredCssUrls) for the webfont files its own
+// @font-face rules point at — the format a browser loads, not the fallbacks
+// after it — and
 // each module script is scanned (findModuleImports) for the modules it
 // imports, recursively — so this all stays in sync with the app's actual
 // source automatically rather than needing separate hardcoded file lists.
@@ -124,7 +126,7 @@ async function precacheStylesheetAndFonts(href) {
   if (!response) return null;
   const css = await response.clone().text();
   return Promise.all(
-    findCssUrls(css)
+    findPreferredCssUrls(css)
       // A url() reference isn't always a real network resource — split.css's
       // hand-drawn dropdown chevron (see its own comment) is an inline
       // `url("data:image/svg+xml,...")`, already fully self-contained in the
@@ -138,7 +140,7 @@ async function precacheStylesheetAndFonts(href) {
 
 // A same-origin <script>'s own src, plus — for a type="module" entry point —
 // every module it statically imports, recursively (findModuleImports scans
-// the fetched source text the same way findCssUrls scans a stylesheet's).
+// the fetched source text the same way findPreferredCssUrls scans a stylesheet's).
 // `seen` de-dupes across the whole recursive walk (many modules share
 // imports like lib/dom.js) so each file is fetched once. A classic,
 // non-module script (ABCJS/Tonal/lamejs) has no import statements to find,

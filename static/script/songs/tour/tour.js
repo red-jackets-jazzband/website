@@ -19,6 +19,7 @@ import {
 } from "../../lib/tour/tour-layout.js";
 import { launchConfetti } from "./confetti.js";
 import { createTourActions, isShown, waitUntil } from "./actions.js";
+import { afterPageLoad } from "../core/after-load.js";
 
 /*
   Guided first-time tour of the songs page: dims the page, spotlights the real
@@ -58,20 +59,6 @@ const stepKey = (step) => `${step.chapterId}/${step.id}`;
 const toBox = (rect) => ({
   left: rect.left, top: rect.top, width: rect.width, height: rect.height,
 });
-
-// The tour's copy (~20 KB, twice that on a translated page) isn't needed
-// until someone presses "?", so it's fetched once the page has finished
-// loading and the browser is idle, not alongside the song the visitor came for.
-function afterPageLoad() {
-  return new Promise((resolve) => {
-    const whenIdle = () => {
-      if (typeof window.requestIdleCallback === "function") window.requestIdleCallback(() => resolve(), { timeout: 2000 });
-      else setTimeout(resolve, 0);
-    };
-    if (document.readyState === "complete") whenIdle();
-    else window.addEventListener("load", whenIdle, { once: true });
-  });
-}
 
 // Safari before 13.1 only knows the prefixed -webkit-clip-path (see
 // CLAUDE.md's Browser support); without it the veil had no hole at all.
@@ -651,6 +638,8 @@ export function createTour(ctx) {
   */
   async function init() {
     lang = pageLanguage();
+    // The copy (~20 KB, twice that on a translated page) isn't needed until
+    // someone presses "?", so it isn't fetched alongside the song.
     await afterPageLoad();
     content = await loadContent(lang);
     if (!content) return;
