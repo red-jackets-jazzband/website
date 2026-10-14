@@ -13,14 +13,25 @@
   kept, so the next ask tries again. `clear()` forgets every text: opening a
   setlist starts from what the server has now.
 */
+function notifySafely(notify, waiter) {
+  try {
+    notify(waiter);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
 export function createSongTexts(read) {
   const texts = new Map();
   const waiting = new Map();
 
+  // One shared read answers several callers (a row's key badge, the booklet,
+  // the sheet); one of them throwing mustn't leave the others waiting forever,
+  // as it couldn't when each made its own request.
   function settle(file, notify) {
     const waiters = waiting.get(file) || [];
     waiting.delete(file);
-    waiters.forEach(notify);
+    waiters.forEach((waiter) => notifySafely(notify, waiter));
   }
 
   function get(file, onText, onError) {

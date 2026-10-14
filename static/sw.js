@@ -13,7 +13,7 @@
 // Module service workers aren't universally supported yet (notably older
 // Safari) — on a browser that can't load this file at all, /songs/ simply
 // works the same as it always did, online-only, same as before this existed.
-import { classifyRequest } from "./script/lib/platform/sw-routing.js";
+import { classifyRequest, fingerprintStem } from "./script/lib/platform/sw-routing.js";
 import {
   findStylesheetHrefs, findPreferredCssUrls, findScriptSrcs, findModuleImports,
 } from "./script/lib/platform/precache-scan.js";
@@ -28,12 +28,13 @@ import {
 //   page and precaches/falls back to its own scope's page, not /songs/; v7: one manifest per language; v8: songs/core/skip-links.js;
 //   v9: the page loads one js.Build bundle instead of the module graph;
 //   v10: Font Awesome self-hosted, MuseJazzText as WOFF2, PNG iRealPro mark;
-//   v11: no fallback font formats precached).
+//   v11: no fallback font formats precached;
+//   v12: a superseded fingerprinted bundle/stylesheet is dropped from the cache).
 // - ASSET_VERSION: the third-party soundfont samples, which never change
 //   once published. Bump only when caching *those* changes —
 //   it deletes the soundfonts visitors downloaded with "Download for
 //   offline", so their offline playback is gone until they download again.
-const SHELL_VERSION = "v11";
+const SHELL_VERSION = "v12";
 const ASSET_VERSION = "v1";
 // Every cache this worker owns is named under this prefix, and activate()'s
 // cleanup only ever deletes caches under it — CacheStorage is shared across
@@ -200,9 +201,32 @@ self.addEventListener("activate", (event) => {
 // dropping the update.
 function fetchAndCache(request, cache) {
   return fetch(request).then((response) => {
-    const stored = response.ok ? cache.put(request, response.clone()) : Promise.resolve();
+    const stored = response.ok ? storeResponse(cache, request, response) : Promise.resolve();
     return stored.then(() => response);
   });
+}
+
+async function storeResponse(cache, request, response) {
+  await cache.put(request, response.clone());
+  await pruneSuperseded(cache, request);
+}
+
+// The app bundle and stylesheet are fingerprinted (songs-app.<hash>.js,
+// split.min.<hash>.css), so every deploy caches them under a new name. Once
+// the new copy is in, drop the ones it replaced — otherwise each deploy a
+// visitor loads leaves another ~300 KB behind for good (until a
+// SHELL_VERSION bump). Only ever after the successor is stored, so an
+// offline reload never finds neither.
+function pruneSuperseded(cache, request) {
+  const { pathname } = new URL(request.url);
+  const stem = fingerprintStem(pathname);
+  if (!stem) return Promise.resolve();
+  return cache.keys().then((keys) => Promise.all(keys
+    .filter((key) => {
+      const other = new URL(key.url).pathname;
+      return other !== pathname && fingerprintStem(other) === stem;
+    })
+    .map((key) => cache.delete(key))));
 }
 
 // Cache-first, but always also refetches in the background and updates the
