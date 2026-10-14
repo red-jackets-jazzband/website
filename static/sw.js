@@ -216,17 +216,29 @@ async function storeResponse(cache, request, response) {
 // the new copy is in, drop the ones it replaced — otherwise each deploy a
 // visitor loads leaves another ~300 KB behind for good (until a
 // SHELL_VERSION bump). Only ever after the successor is stored, so an
-// offline reload never finds neither.
-function pruneSuperseded(cache, request) {
+// offline reload never finds neither; and only for a file the cached page
+// itself links, so an old tab fetching its old copy can't evict the current
+// one.
+async function pruneSuperseded(cache, request) {
   const { pathname } = new URL(request.url);
   const stem = fingerprintStem(pathname);
-  if (!stem) return Promise.resolve();
-  return cache.keys().then((keys) => Promise.all(keys
+  if (!stem || !(await pageLinks(cache, pathname))) return;
+  const keys = await cache.keys();
+  await Promise.all(keys
     .filter((key) => {
       const other = new URL(key.url).pathname;
       return other !== pathname && fingerprintStem(other) === stem;
     })
-    .map((key) => cache.delete(key))));
+    .map((key) => cache.delete(key)));
+}
+
+async function pageLinks(cache, pathname) {
+  const page = await cache.match(PAGE_URL);
+  if (!page) return false;
+  const html = await page.text();
+  const base = new URL(PAGE_URL, self.location.origin);
+  return [...findStylesheetHrefs(html), ...findScriptSrcs(html)]
+    .some((url) => new URL(url, base).pathname === pathname);
 }
 
 // Cache-first, but always also refetches in the background and updates the

@@ -75,3 +75,23 @@ test("a caller that throws doesn't keep the others waiting", () => {
   }
   assert.deepEqual(got, ["X:1"]);
 });
+
+test("a read in flight across clear() answers only its own callers and isn't kept", async () => {
+  const { read, requests } = fakeReader();
+  const songs = createSongTexts(read);
+  const before = [];
+  const after = [];
+  songs.get(PANAMA, (text) => before.push(text));
+  songs.clear();
+  songs.get(PANAMA, (text) => after.push(text));
+  assert.equal(requests.length, 2, "a caller after clear() gets a fresh read");
+  requests[0].onLoad("old");
+  assert.deepEqual(before, ["old"]);
+  assert.deepEqual(after, [], "the old read doesn't answer the new caller");
+  requests[1].onLoad("new");
+  assert.deepEqual(after, ["new"]);
+  const later = await new Promise((resolve) => {
+    songs.get(PANAMA, resolve);
+  });
+  assert.equal(later, "new");
+});
