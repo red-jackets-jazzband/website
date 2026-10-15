@@ -94,7 +94,7 @@
   <div class="sheet-stepper" id="keyStepper" title="{{ i18n "songs_keyStepper_title" }}">
     <button type="button" id="keyDownBtn" class="sheet-stepper-btn" aria-label="{{ i18n "songs_keyDownBtn_aria" }}">&minus;</button>
     <div class="sheet-stepper-value">
-      <input type="number" id="transpose" name="quantity" value="0" min="-12" max="12" aria-label="{{ i18n "songs_transpose_aria" }}">
+      <input type="text" inputmode="text" id="transpose" name="quantity" value="0" min="-12" max="12" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" aria-label="{{ i18n "songs_transpose_aria" }}">
       <span class="sheet-stepper-label">{{ i18n "songs_keyUnit" }}</span>
     </div>
     <button type="button" id="keyUpBtn" class="sheet-stepper-btn" aria-label="{{ i18n "songs_keyUpBtn_aria" }}">&plus;</button>

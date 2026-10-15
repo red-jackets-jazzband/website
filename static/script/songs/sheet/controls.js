@@ -45,11 +45,10 @@ export function printWithTitle(title) {
 }
 
 // Nudge a stepper field's numeric value by delta and dispatch an "input"
-// event, reusing whichever listener re-renders/persists that field — the Key
-// stepper's #transpose (re-renders the chart and, for a personal setlist,
-// writes the offset back into the setlist row) and the Repeat stepper's
-// #repeatCount (ctx.audio.setRepeatCount does the clamping and persisting)
-// both follow this same nudge-and-dispatch pattern.
+// event, reusing whichever listener re-renders/persists that field — the
+// Repeat stepper's #repeatCount (ctx.audio.setRepeatCount does the clamping
+// and persisting). The Key stepper does the same from its own store value
+// (initKeyStepper).
 function stepNumericField(id, delta, fallback) {
   const input = byId(id);
   if (!input) return;
@@ -131,25 +130,55 @@ function initStepperAnnouncements() {
   });
 }
 
+// A typed Key value: a whole number of semitones, optionally signed (an
+// en dash or minus sign counts as "-", for keyboards that offer those).
+// Null while it isn't one yet ("", "-") or never will be ("abc").
+const SEMITONES_RE = /^[+-]?\d{1,2}$/;
+export function parseSemitones(raw) {
+  const text = String(raw).trim().replace(/[\u2012-\u2015\u2212]/g, "-");
+  return SEMITONES_RE.test(text) ? Number(text) : null;
+}
+
 // The Key stepper (#transpose): a view of ctx.state.transpose, in semitones.
 // Typing into it or the -/+ buttons (which nudge it and dispatch "input",
-// see stepNumericField) write the store; a newly opened song seeds the
-// store, and the field follows.
+// see step below) write the store; a newly opened song seeds the
+// store, and the field follows. It's a text field, not type="number": the
+// numeric keypad Android shows for a number field has no minus key, so a
+// negative offset couldn't be typed there. Being text, it does its own
+// clamping, and ↑/↓ step it the way a number field's would.
 function initKeyStepper(ctx) {
   const input = byId("transpose");
   if (!input) return;
+  const min = Number(input.min);
+  const max = Number(input.max);
   const draw = () => {
-    if (Number(input.value) !== ctx.state.transpose) input.value = String(ctx.state.transpose);
+    if (parseSemitones(input.value) !== ctx.state.transpose) input.value = String(ctx.state.transpose);
   };
   draw();
   ctx.store.subscribe("settings", draw);
   input.addEventListener("input", () => {
-    const n = Number(input.value);
-    if (!Number.isFinite(n)) return; // mid-typing ("-")
-    ctx.state.transpose = Math.round(n);
+    const n = parseSemitones(input.value);
+    if (n === null) return; // mid-typing ("-") or not a number
+    ctx.state.transpose = Math.max(min, Math.min(max, n));
   });
-  on("keyUpBtn", "click", () => stepNumericField("transpose", 1, 0));
-  on("keyDownBtn", "click", () => stepNumericField("transpose", -1, 0));
+  // Leaving the field puts back what's in force: a half-typed "-", a value
+  // past ±12 (clamped in the store) or stray text.
+  input.addEventListener("change", () => {
+    input.value = String(ctx.state.transpose);
+  });
+  // Steps from the value in force, not the field's text, which may be a
+  // half-typed "-".
+  const step = (delta) => {
+    input.value = String(Math.max(min, Math.min(max, ctx.state.transpose + delta)));
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  };
+  input.addEventListener("keydown", (e) => {
+    if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+    e.preventDefault();
+    step(e.key === "ArrowUp" ? 1 : -1);
+  });
+  on("keyUpBtn", "click", () => step(1));
+  on("keyDownBtn", "click", () => step(-1));
 }
 
 function initPrintLink() {

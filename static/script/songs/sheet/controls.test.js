@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mountPage } from "../../../../tests/helpers/dom.js";
 import { makeCtx } from "../../../../tests/helpers/ctx.js";
-import { initSheetControls, clearBookletPrintState } from "./controls.js";
+import { initSheetControls, clearBookletPrintState, parseSemitones } from "./controls.js";
 
 function setup(overrides = {}) {
   const page = mountPage();
@@ -41,6 +41,7 @@ test("the Key stepper buttons clamp #transpose and write ctx.state.transpose", (
   try {
     const input = document.getElementById("transpose");
     input.value = "11";
+    input.dispatchEvent(new window.Event("input", { bubbles: true }));
     document.getElementById("keyUpBtn").dispatchEvent(new window.Event("click"));
     assert.equal(input.value, "12");
     assert.equal(ctx.state.transpose, 12);
@@ -50,7 +51,62 @@ test("the Key stepper buttons clamp #transpose and write ctx.state.transpose", (
     assert.equal(input.value, "11");
     assert.equal(ctx.state.transpose, 11);
     // A re-render per actual change; the clamped click changed nothing.
-    assert.equal(calls.rerender, 2);
+    assert.equal(calls.rerender, 3);
+  } finally {
+    cleanup();
+  }
+});
+
+test("parseSemitones reads a signed whole number, or null while it isn't one", () => {
+  assert.equal(parseSemitones("-3"), -3);
+  assert.equal(parseSemitones("+4"), 4);
+  assert.equal(parseSemitones(" 7 "), 7);
+  assert.equal(parseSemitones("\u22125"), -5); // a typographic minus sign
+  assert.equal(parseSemitones("\u20132"), -2); // an en dash
+  for (const raw of ["", "-", "+", "abc", "1.5", "--2", "123"]) assert.equal(parseSemitones(raw), null, raw);
+});
+
+// A text field rather than type="number": Android's number keypad has no
+// minus key, so a negative Key couldn't be typed.
+test("the Key field is a text field that takes a typed negative value", () => {
+  const { ctx, cleanup } = setup();
+  try {
+    const input = document.getElementById("transpose");
+    assert.equal(input.type, "text");
+    const type = (value) => {
+      input.value = value;
+      input.dispatchEvent(new window.Event("input", { bubbles: true }));
+    };
+    type("-");
+    assert.equal(ctx.state.transpose, 0);
+    assert.equal(input.value, "-"); // left alone mid-typing
+    type("-4");
+    assert.equal(ctx.state.transpose, -4);
+    type("-15");
+    assert.equal(ctx.state.transpose, -12); // clamped
+    assert.equal(input.value, "-12");
+    type("x");
+    input.dispatchEvent(new window.Event("change", { bubbles: true }));
+    assert.equal(input.value, "-12"); // leaving the field restores the value in force
+  } finally {
+    cleanup();
+  }
+});
+
+test("the Key buttons and arrow keys step from the value in force", () => {
+  const { ctx, cleanup } = setup();
+  try {
+    const input = document.getElementById("transpose");
+    document.getElementById("keyDownBtn").dispatchEvent(new window.Event("click"));
+    assert.equal(ctx.state.transpose, -1);
+    input.value = "-"; // half-typed
+    document.getElementById("keyDownBtn").dispatchEvent(new window.Event("click"));
+    assert.equal(ctx.state.transpose, -2);
+    assert.equal(input.value, "-2");
+    input.dispatchEvent(new window.KeyboardEvent("keydown", { key: "ArrowUp", bubbles: true, cancelable: true }));
+    assert.equal(ctx.state.transpose, -1);
+    input.dispatchEvent(new window.KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true, cancelable: true }));
+    assert.equal(ctx.state.transpose, -2);
   } finally {
     cleanup();
   }
