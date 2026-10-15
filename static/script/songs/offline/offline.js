@@ -304,6 +304,24 @@ function downloadStatus(failures) {
   it — it used to just start a download in the background, which on a phone
   with a song open shows nothing at all, so the button seemed dead.
 */
+// The hint is aria-modal, so Tab must stay inside it: wrap from its last
+// button to its first (and back with Shift+Tab), and pull focus back in if it
+// has somehow got out.
+function trapTab(overlay, event) {
+  const buttons = Array.from(overlay.querySelectorAll("button")).filter((button) => !button.closest("[hidden]"));
+  if (buttons.length === 0) return;
+  const first = buttons[0];
+  const last = buttons[buttons.length - 1];
+  const active = document.activeElement;
+  let target = null;
+  if (!overlay.contains(active)) target = event.shiftKey ? last : first;
+  else if (event.shiftKey && active === first) target = last;
+  else if (!event.shiftKey && active === last) target = first;
+  if (!target) return;
+  event.preventDefault();
+  target.focus();
+}
+
 export function createOffline(ctx) {
   let downloading = false;
   let deferredInstallPrompt = null;
@@ -338,7 +356,7 @@ export function createOffline(ctx) {
     const overlay = byId("installHint");
     if (!overlay) return;
     overlay.querySelectorAll("[data-install]").forEach((steps) => {
-      steps.hidden = steps.getAttribute("data-install") !== installHint;
+      steps.hidden = steps.dataset.install !== installHint;
     });
     overlay.hidden = false;
     const ok = byId("installHintOk");
@@ -354,7 +372,9 @@ export function createOffline(ctx) {
       if (event.target === overlay) closeInstallHint();
     });
     document.addEventListener("keydown", (event) => {
+      if (overlay.hidden) return;
       if (event.key === "Escape") closeInstallHint();
+      else if (event.key === "Tab") trapTab(overlay, event);
     });
   }
 

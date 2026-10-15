@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { installHintFor, isAppleMobile } from "./install-hint.js";
+import { installHintFor, iosVersion, isAppleMobile } from "./install-hint.js";
 
 const IPHONE_SAFARI = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1";
 const IPHONE_CHROME = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/138.0.7204.156 Mobile/15E148 Safari/604.1";
@@ -34,4 +34,14 @@ test("Mac Safari 17+ gets the Add to Dock instructions; older Safari and other M
 test("nothing for non-Apple browsers, or an app that's already installed", () => {
   assert.equal(installHintFor({ userAgent: ANDROID_CHROME }), null);
   assert.equal(installHintFor({ userAgent: IPHONE_SAFARI, standalone: true }), null);
+});
+
+test("another browser on iOS before 16.4 can't add to the Home Screen, so it gets no steps", () => {
+  const chromeIos15 = "Mozilla/5.0 (iPhone; CPU iPhone OS 15_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/120.0.0.0 Mobile/15E148 Safari/604.1";
+  const chromeIos164 = "Mozilla/5.0 (iPhone; CPU iPhone OS 16_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/120.0.0.0 Mobile/15E148 Safari/604.1";
+  assert.deepEqual(iosVersion(chromeIos15), [15, 7]);
+  assert.equal(installHintFor({ userAgent: chromeIos15 }), null);
+  assert.equal(installHintFor({ userAgent: chromeIos164 }), "ios");
+  // Safari itself could always do it, however old.
+  assert.equal(installHintFor({ userAgent: IPAD_OLD }), "ios");
 });
