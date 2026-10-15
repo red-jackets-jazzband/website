@@ -6189,6 +6189,32 @@ body.rj-sheet-fullscreen #sheetmenu {
   color: var(--rj-gold);
   font: 600 11px "Montserrat", sans-serif;
 }
+/* Apple's "install by hand" steps (#installHint, songs/offline.js): Safari has
+   no install prompt a page can open, so the install button explains it. */
+.rj-modal .rj-install-steps {
+  margin: 0 0 14px;
+  padding: 0 0 0 1.3em;
+  font: 14px/1.4 "Montserrat", sans-serif;
+  list-style: decimal outside;
+}
+.rj-modal .rj-install-steps li {
+  margin: 0 0 6px;
+  padding: 0;
+  line-height: 1.4;
+}
+.rj-install-steps[hidden] {
+  display: none;
+}
+.rj-install-steps .fa-solid {
+  margin-left: 4px;
+  color: var(--rj-gold);
+}
+.rj-modal .rj-install-note {
+  margin: 0;
+  color: var(--rj-body);
+  font-size: 13px;
+  line-height: 1.45;
+}
 
 .rj-tour {
   position: fixed;
