@@ -226,6 +226,27 @@
     </dialog>
   </div>
 
+  <div id="installHint" class="rj-modal-overlay" hidden>
+    <dialog class="rj-modal" open aria-modal="true" aria-labelledby="installHintTitle">
+      <div class="rj-modal-head">
+        <h2 class="rj-modal-title" id="installHintTitle">Install RJ Songs</h2>
+        <button type="button" id="installHintClose" class="rj-modal-close" aria-label="Close">&times;</button>
+      </div>
+      <ol class="rj-install-steps" data-install="ios" hidden>
+        <li>Tap the Share button (in the toolbar, or under ⋯) <span class="fa-solid fa-arrow-up-from-bracket" aria-hidden="true"></span></li>
+        <li>Choose “Add to Home Screen”</li>
+      </ol>
+      <ol class="rj-install-steps" data-install="mac" hidden>
+        <li>Open Safari’s File menu</li>
+        <li>Choose “Add to Dock”</li>
+      </ol>
+      <p class="rj-install-note">The songs are now downloading for offline use in this browser. The installed app keeps its own copy: tap this button there too.</p>
+      <div class="rj-modal-actions">
+        <button type="button" id="installHintOk" class="rj-modal-btn rj-modal-btn-primary">OK</button>
+      </div>
+    </dialog>
+  </div>
+
   <div id="inspirationPanel" class="inspiration-panel hideOnprint" hidden>
     <div class="inspiration-resize-handle" id="inspirationResizeHandle" aria-hidden="true" title="Drag to resize"></div>
     <div class="inspiration-panel-header" id="inspirationPanelHeader">
