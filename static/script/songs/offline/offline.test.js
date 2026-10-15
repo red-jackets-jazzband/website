@@ -271,6 +271,32 @@ test("the install steps close on Escape and on a backdrop click", async () => {
   }
 });
 
+test("Tab stays inside the open install steps, wrapping both ways", async () => {
+  const { offline, cleanup } = setup();
+  globalThis.fetch = fakeFetch([]);
+  try {
+    pretendIphone();
+    offline.init();
+    const download = runWithAbcjs(createAbcjsStub(), () => offline.downloadForOffline());
+    const ok = document.getElementById("installHintOk");
+    const close = document.getElementById("installHintClose");
+    const tab = (shiftKey) => document.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Tab", shiftKey, cancelable: true }));
+    assert.equal(document.activeElement, ok);
+    tab(false);
+    assert.equal(document.activeElement, close, "Tab from the last button wraps to the first");
+    tab(true);
+    assert.equal(document.activeElement, ok, "Shift+Tab from the first wraps to the last");
+    document.getElementById("offlineBtn").focus();
+    tab(false);
+    assert.equal(document.activeElement, close, "focus outside is pulled back in");
+    ok.click();
+    await download;
+  } finally {
+    delete globalThis.fetch;
+    cleanup();
+  }
+});
+
 test("an already-installed app on an iPhone gets a plain download, no install steps", async () => {
   const { offline, cleanup } = setup();
   globalThis.fetch = fakeFetch([]);
