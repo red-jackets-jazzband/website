@@ -423,6 +423,23 @@ test("a background render keeps the old sheet up, then swaps the new one in whol
   }
 });
 
+test("a burst of Key presses keeps the page responsive and engraves once", async () => {
+  const { ctx, abcjs, audioCalls, sheet, cleanup } = setup();
+  try {
+    await withAbcjsAsync(withMarkedLines(abcjs), async () => {
+      sheet.render(TUNE);
+      [1, 2, 3].forEach((transpose) => ctx.store.set("settings", { transpose }, BACKGROUND));
+      assert.equal(abcjs.calls.renderAbc.length, 1, "nothing is engraved during the presses");
+
+      await sheet.whenIdle();
+      assert.equal(abcjs.calls.renderAbc.length, 2, "one engrave for the whole burst");
+      assert.equal(audioCalls.transpose[audioCalls.transpose.length - 1], 3);
+    });
+  } finally {
+    cleanup();
+  }
+});
+
 test("an ordinary render takes over from a background render still on its way", async () => {
   const { ctx, abcjs, sheet, cleanup } = setup();
   try {

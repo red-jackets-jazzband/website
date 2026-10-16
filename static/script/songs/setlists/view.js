@@ -15,7 +15,7 @@ import {
   setPersonalSetlistOrder,
   exportPersonalSetlistText,
 } from "../../lib/setlists/setlists-store.js";
-import { isRenderWrite } from "../core/state.js";
+import { isBackgroundWrite, isRenderWrite } from "../core/state.js";
 import { createSetlistKeys } from "./keys.js";
 import {
   createRowDrag, draggableRows, currentOrder, renumberOpen,
@@ -866,7 +866,29 @@ export function createSetlistView(ctx) {
       const stored = Number.isFinite(n) && n !== 0 ? String(n) : "";
       if (stored === String(song.key == null ? "" : song.key)) return;
       updateSongKeyInPersonalSetlist(ctx.storage(), currentPersonalId, currentSetlistSongIndex, stored);
+      refreshAfterSheet(isBackgroundWrite(meta));
+    });
+  }
+
+  // A Key stepper press re-engraves the sheet in the background; redrawing
+  // the list (and rebuilding the booklet) in the same click would hold the
+  // page up after all, once per press. So the list follows once the sheet is
+  // done, however many presses that took.
+  let refreshPending = false;
+  function refreshAfterSheet(background) {
+    if (!background || !ctx.sheet.whenIdle) {
       refreshOpenPersonal();
+      return;
+    }
+    if (refreshPending) return;
+    refreshPending = true;
+    const id = ctx.state.currentPersonalId;
+    ctx.sheet.whenIdle().then(() => {
+      refreshPending = false;
+      // Not if the visitor has left this setlist in the meantime.
+      if (ctx.state.setlistsView === "open" && ctx.state.currentPersonalId === id) refreshOpenPersonal();
+    }, () => {
+      refreshPending = false;
     });
   }
 

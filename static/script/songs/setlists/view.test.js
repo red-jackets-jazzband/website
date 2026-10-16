@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mountPage } from "../../../../tests/helpers/dom.js";
-import { RENDER } from "../core/state.js";
+import { BACKGROUND, RENDER } from "../core/state.js";
 import { makeCtx, memoryStorage } from "../../../../tests/helpers/ctx.js";
 import {
   createPersonalSetlist, addSongToPersonalSetlist, addDividerToPersonalSetlist,
@@ -391,6 +391,35 @@ test("the Key stepper writes a per-song key override back to the open personal s
     const badge = document.querySelector(KEY_BADGE_SELECTOR);
     assert.equal(badge.textContent, "D", "the badge reflects the stepper's new override");
     assert.equal(badge.classList.contains(IS_TRANSPOSED_CLASS), true);
+  } finally {
+    cleanup();
+  }
+});
+
+test("a background Key press redraws the setlist only once the sheet is done", async () => {
+  let release = null;
+  const { view, ctx, entry, storage, cleanup } = setup({ songs: [{ file: "a.abc" }] });
+  try {
+    ctx.sheet.whenIdle = () => new Promise((resolve) => {
+      release = resolve;
+    });
+    stubAbc(ctx, { "a.abc": "X:1\nK:C\nC2|" });
+    view.initControls();
+    view.renderOpen(entry.name, entry.songs, entry, "");
+    ctx.state.currentSongFile = "a.abc";
+    ctx.state.currentSetlistSongIndex = 0;
+    const before = document.querySelector(KEY_BADGE_SELECTOR);
+
+    ctx.store.set("settings", { transpose: 1 }, BACKGROUND);
+    ctx.store.set("settings", { transpose: 2 }, BACKGROUND);
+    assert.equal(getPersonalSetlist(storage, entry.id).songs[0].key, "2", "stored at once");
+    assert.equal(document.querySelector(KEY_BADGE_SELECTOR), before, "the list waits for the sheet");
+
+    release();
+    await Promise.resolve();
+    await Promise.resolve();
+    assert.notEqual(document.querySelector(KEY_BADGE_SELECTOR), before);
+    assert.equal(document.querySelector(KEY_BADGE_SELECTOR).textContent, "D");
   } finally {
     cleanup();
   }
