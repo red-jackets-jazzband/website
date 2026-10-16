@@ -474,16 +474,20 @@ export function createSheet(ctx) {
     // This render reads the store as it is now, so it stands in for any
     // background render still on its way.
     cancelBackground();
-    const prepared = prepareLive(text, fresh);
-    // #rjSheet / #notation start display:none until a song is active; that
-    // must flip before ABCjs measures the container ("responsive: resize"
-    // reads its width at render time; a display:none box measures 0).
-    activateSheet();
-    const notationEl = byId(LIVE_TARGETS.notationId);
-    const visualObj = engraveInto(prepared.plan, prepared.renderText, notationEl);
-    decorateNotation(prepared.plan, visualObj, notationEl, prepared.voices);
-    publishLive(prepared, visualObj, notationEl);
-    settleIdle();
+    // Waiters are released even when a `tune` subscriber throws.
+    try {
+      const prepared = prepareLive(text, fresh);
+      // #rjSheet / #notation start display:none until a song is active; that
+      // must flip before ABCjs measures the container ("responsive: resize"
+      // reads its width at render time; a display:none box measures 0).
+      activateSheet();
+      const notationEl = byId(LIVE_TARGETS.notationId);
+      const visualObj = engraveInto(prepared.plan, prepared.renderText, notationEl);
+      decorateNotation(prepared.plan, visualObj, notationEl, prepared.voices);
+      publishLive(prepared, visualObj, notationEl);
+    } finally {
+      settleIdle();
+    }
   }
 
   function rerender() {
@@ -499,7 +503,7 @@ export function createSheet(ctx) {
     on screen first. A newer background render, or any ordinary render, takes
     over from one still running. whenIdle() resolves once none is pending.
   */
-  let background = null; // the render in progress: { cancelled, staging }
+  let background = null; // the render in progress: { cancelled, staging, swapped }
   let idleWaiters = [];
 
   function settleIdle() {
@@ -531,9 +535,13 @@ export function createSheet(ctx) {
       () => {
         const notationEl = byId(LIVE_TARGETS.notationId);
         swapInStaging(job.staging, notationEl);
+        job.swapped = true;
         background = null;
-        publishLive(prepared, visualObj, notationEl);
-        settleIdle();
+        try {
+          publishLive(prepared, visualObj, notationEl);
+        } finally {
+          settleIdle();
+        }
       },
     ];
   }
@@ -541,7 +549,7 @@ export function createSheet(ctx) {
   function rerenderInBackground() {
     if (ctx.state.currentSongText === undefined) return;
     cancelBackground();
-    const job = { cancelled: false, staging: null };
+    const job = { cancelled: false, staging: null, swapped: false };
     background = job;
     const steps = backgroundSteps(job);
     const run = (i) => {
@@ -549,15 +557,25 @@ export function createSheet(ctx) {
       try {
         steps[i]();
       } catch (err) {
-        // Draw it the ordinary way instead, so the sheet still follows the store.
         console.warn("Background render failed:", err);
-        cancelBackground();
-        rerender();
+        // Before the swap, draw it the ordinary way instead, so the sheet
+        // still follows the store. After it the new sheet is already up (a
+        // `tune` subscriber threw), and engraving again would only throw again.
+        if (!job.swapped) recoverFromFailedBackground();
         return;
       }
       setTimeout(() => run(i + 1), 0);
     };
     afterPaint(() => run(0));
+  }
+
+  function recoverFromFailedBackground() {
+    cancelBackground();
+    try {
+      rerender();
+    } finally {
+      settleIdle();
+    }
   }
 
   function whenIdle() {
