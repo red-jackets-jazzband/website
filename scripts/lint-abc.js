@@ -61,18 +61,32 @@ function meterFromFraction(num, den) {
   return { barLength, beats: num, halfBar: barLength / 2, checkMidpoint: num % 2 === 0 };
 }
 
+// An additive numerator (`M:(3+2)/8`, which abcjs keeps as the string "3+2")
+// is summed, and a compound meter of several fractions (`M:3/8 2/8`) counts
+// all of them, expressed over the largest denominator.
+function sumNumerator(num) {
+  return String(num)
+    .split("+")
+    .reduce((total, part) => total + Number(part), 0);
+}
+
+function meterFromFractions(fractions) {
+  const den = Math.max(...fractions.map((f) => Number(f.den)));
+  const num = fractions.reduce((total, f) => total + (sumNumerator(f.num) * den) / Number(f.den), 0);
+  return meterFromFraction(num, den);
+}
+
 function tuneMeter(tune) {
   const { num, den } = tune.getMeterFraction();
-  return meterFromFraction(Number(num), Number(den));
+  return nextMeter(tune.getMeter(), meterFromFraction(Number(num), Number(den)));
 }
 
 function nextMeter(spec, current) {
   if (!spec) return current;
   if (spec.type === "common_time") return meterFromFraction(4, 4);
   if (spec.type === "cut_time") return meterFromFraction(2, 2);
-  const first = spec.value && spec.value[0];
-  if (!first) return current;
-  return meterFromFraction(Number(first.num), Number(first.den));
+  if (!Array.isArray(spec.value) || spec.value.length === 0) return current;
+  return meterFromFractions(spec.value);
 }
 
 function newVoiceState(meter) {
