@@ -177,6 +177,8 @@ on the voice that carries the chords. Deliberate gaps:
   by someone with the original chart.)
 - A **melody-only** tune (no chord symbols at all) isn't checked.
 - A **short pickup** first bar may hand the part's/line's chord to the bar after it.
+- A bar that **changes chord partway through** may restate the chord held on its downbeat
+  (`"D7" D4 "Eb" E3E` after a D7 bar), so its chord-table cell shows both halves.
 - A **repeat sign or 1st/2nd ending** resets the chord in effect, so a chord restated right
   after one isn't flagged.
 - The no-rests-before-a-pickup check only looks at a **single-voice** tune's first bar, and

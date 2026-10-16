@@ -215,9 +215,14 @@ function checkRepeatedChords(bars, findings) {
   for (const bar of bars) {
     if (breaksContext(bar.precededBy)) current = null;
     let firstInBar = true;
+    // A bar that changes chord partway through restates the one held on its
+    // downbeat: its table cell shows both halves, and with only the later chord
+    // written the cell would read as that chord for the whole bar.
+    const opensSplitBar = (el) => el === bar.notes[0] && bar.notes.reduce((n, note) => n + realChords(note).length, 0) > 1;
     for (const el of bar.notes) {
       realChords(el).forEach((chord, chordIndex) => {
-        const required = firstInBar && (bar.partStart || bar.lineStart || rowStarts.has(bar));
+        const required =
+          firstInBar && (bar.partStart || bar.lineStart || rowStarts.has(bar) || opensSplitBar(el));
         if (chord.name === current && !required) {
           findings.push({ type: "repeated-chord", at: el.startChar, name: chord.name, el, chordIndex });
         }

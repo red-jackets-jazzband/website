@@ -4,6 +4,7 @@ import ABCJS from "abcjs";
 import { findStyleFindings, findStyleIssues } from "../scripts/lint-abc-style.js";
 
 const HEADER = "X:1\nT:Test\nM:4/4\nL:1/4\n";
+const REPEATED = "repeated-chord";
 
 function findings(body, key = "K:C") {
   const [tune] = ABCJS.parseOnly(`${HEADER}${key}\n${body}\n`);
@@ -48,8 +49,16 @@ test("a pickup may hand the first chord to the next bar", () => {
 });
 
 test("a chord identical to the one already in effect is flagged", () => {
-  assert.deepEqual(findings('"C"CDEF | "C"G4 | "F"c4 |'), ["repeated-chord"]);
-  assert.deepEqual(findings('"C"CD"C"EF | G4 |'), ["repeated-chord"]);
+  assert.deepEqual(findings('"C"CDEF | "C"G4 | "F"c4 |'), [REPEATED]);
+  assert.deepEqual(findings('"C"CD"C"EF | G4 |'), [REPEATED]);
+});
+
+test("a split bar may restate the chord held on its downbeat", () => {
+  const held = '"C"CDEF | ';
+  assert.deepEqual(findings(`${held}"C"G2 "F"G2 | c4 |`), []);
+  // ...but only on the downbeat, and only when the bar really changes chord.
+  assert.deepEqual(findings(`${held}G"C"G "F"G2 | c4 |`), [REPEATED]);
+  assert.deepEqual(findings(`${held}"C"G4 | c4 |`), [REPEATED]);
 });
 
 test("a changed chord, or a restated one at a line or part start, is not flagged", () => {
@@ -95,5 +104,5 @@ function bars(chord, n) {
 test("a chord may be restated where a long scheme's 8-column chord table starts a row", () => {
   const restated = `${bars("C", 8)} | "C"C4 | ${bars("F", 15)} |`;
   assert.deepEqual(findings(restated), []);
-  assert.deepEqual(findings(`${bars("C", 8)} | C4 | "C"C4 | ${bars("F", 14)} |`), ["repeated-chord"]);
+  assert.deepEqual(findings(`${bars("C", 8)} | C4 | "C"C4 | ${bars("F", 14)} |`), [REPEATED]);
 });
