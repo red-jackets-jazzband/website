@@ -28,7 +28,10 @@ function setKeyText(keyEl, text) {
   if (accidental) {
     suffix.append(el("span", { class: "setlist-song-key-badge-acc" }, [accidental]));
   }
-  suffix.append(rest.slice(accidental.length));
+  const quality = rest.slice(accidental.length);
+  if (quality) {
+    suffix.append(el("span", { class: "setlist-song-key-badge-quality" }, [quality]));
+  }
   keyEl.append(text.charAt(0), suffix);
 }
 

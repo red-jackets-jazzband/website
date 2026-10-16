@@ -3844,17 +3844,18 @@ select.rj-modal-input {
   white-space: nowrap;
   /* The fallback ♭/♯ carries its own side bearing; pull it in to the letter. */
   margin-left: -1px;
-  /* A minor key's "m": at full size JetBrains Mono's is as wide as a
-     capital and reads like a third letter, so it's set smaller and tucked
-     in, the way a chord symbol writes it. */
-  font-size: 9px;
-  line-height: 13px;
-  font-weight: 500;
-  letter-spacing: -.5px;
 }
 .setlist-song-key-badge-acc {
-  font-size: 11px;
   margin-right: -1px;
+}
+/* A minor key's "m": at full size JetBrains Mono's is as wide as a capital
+   and reads like a third letter, so it's set smaller, the way a chord symbol
+   writes it. Its own span inside the full-size suffix, so it sits on the
+   letter's baseline rather than setting a line box of its own. */
+.setlist-song-key-badge-quality {
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: -.5px;
 }
 /* The song's key differs from its own written key (a per-setlist override is
    in play) — same gold the personal setlist's key picker uses for the same
