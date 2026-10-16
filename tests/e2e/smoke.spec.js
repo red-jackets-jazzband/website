@@ -51,7 +51,8 @@ test("icons come from the self-hosted Font Awesome subset, not a CDN", async ({ 
     return { family: glyph.fontFamily, content: glyph.content, loaded: document.fonts.check(font, "\uf04b") };
   });
   expect(icon.family.toLowerCase()).toContain("font awesome"); // the minifier lowercases it
-  expect(icon.content).toBe('"\uf04b"');
+  // Font Awesome 7 adds empty alt text: `content: var(--fa) / ""`.
+  expect(icon.content.split(" / ")[0]).toBe('"\uf04b"');
   expect(icon.loaded).toBe(true);
   expect(thirdParty.filter((url) => url.includes("cdnjs"))).toEqual([]);
 });
