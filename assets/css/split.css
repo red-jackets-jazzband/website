@@ -6969,6 +6969,37 @@ body.rj-layers-open #layersTab .rj-layers-count {
   cursor: default;
   opacity: .4;
 }
+/* While the sheet is being redrawn with (or without) this layer, the knob
+   is a turning ring (panel.js's .is-busy). */
+.rj-layer-switch.is-busy .rj-layer-knob {
+  box-sizing: border-box;
+  border: 2px solid #1b1b1b;
+  border-top-color: transparent;
+  background: transparent;
+  animation: rj-layer-spin .7s linear infinite;
+}
+.rj-layer-switch.is-busy[aria-checked="false"] .rj-layer-knob {
+  border-color: #d8d6d0;
+  border-top-color: transparent;
+}
+@keyframes rj-layer-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+/* sheet.js's background render: a hidden copy of #notation, drawn into
+   off screen, its lines then moved into the real one in one go. Laid out
+   (ABCjs and the layers measure what they draw), but invisible and taking
+   no room. */
+.rj-sheet-staging {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+}
 .rj-layer-switch:focus-visible {
   outline: 2px solid var(--rj-gold);
   outline-offset: -2px;
