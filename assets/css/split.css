@@ -3841,6 +3841,13 @@ select.rj-modal-input {
   position: absolute;
   left: 100%;
   top: 0;
+  white-space: nowrap;
+  /* The fallback ♭/♯ carries its own side bearing; pull it in to the letter,
+     and pull a minor key's "m" in after it the same way. */
+  margin-left: -1px;
+}
+.setlist-song-key-badge-acc {
+  margin-right: -1px;
 }
 /* The song's key differs from its own written key (a per-setlist override is
    in play) — same gold the personal setlist's key picker uses for the same

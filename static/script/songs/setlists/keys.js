@@ -22,10 +22,14 @@ function setKeyText(keyEl, text) {
     keyEl.textContent = text;
     return;
   }
-  keyEl.append(
-    text.charAt(0),
-    el("span", { class: "setlist-song-key-badge-suffix" }, [text.slice(1)]),
-  );
+  const rest = text.slice(1);
+  const accidental = /^[♭♯b#]/.test(rest) ? rest.charAt(0) : "";
+  const suffix = el("span", { class: "setlist-song-key-badge-suffix" });
+  if (accidental) {
+    suffix.append(el("span", { class: "setlist-song-key-badge-acc" }, [accidental]));
+  }
+  suffix.append(rest.slice(accidental.length));
+  keyEl.append(text.charAt(0), suffix);
 }
 
 export function createSetlistKeys(ctx) {
