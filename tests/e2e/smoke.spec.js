@@ -26,12 +26,45 @@ function collectErrors(page) {
 
 test.beforeEach(async ({ context }) => { await isolate(context); });
 
-test("/songs/ loads its module graph with no script errors and lists the library", async ({ page }) => {
+test("/songs/ loads its script bundle with no script errors and lists the library", async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto(SONGS_URL);
   await expect(page.locator(SONG_ITEM).first()).toBeVisible();
   expect(await page.locator(SONG_ITEM).count()).toBeGreaterThan(100);
   expect(errors).toEqual([]);
+});
+
+// The subset is generated before every CI build (scripts/build-icons.js), so
+// this is what catches it going missing (head.html would fall back to cdnjs)
+// or a Font Awesome update that no longer draws the icons.
+test("icons come from the self-hosted Font Awesome subset, not a CDN", async ({ page }) => {
+  const thirdParty = [];
+  page.on("request", (req) => {
+    if (!req.url().startsWith("http://127.0.0.1") && !req.url().startsWith("http://localhost")) thirdParty.push(req.url());
+  });
+  await page.goto(SONGS_URL);
+  await expect(page.locator(SONG_ITEM).first()).toBeVisible();
+  const icon = await page.evaluate(async () => {
+    const glyph = getComputedStyle(document.querySelector("#playPauseBtn .fa-play"), "::before");
+    const font = `${glyph.fontWeight} 16px ${glyph.fontFamily}`;
+    await document.fonts.load(font, "\uf04b");
+    return { family: glyph.fontFamily, content: glyph.content, loaded: document.fonts.check(font, "\uf04b") };
+  });
+  expect(icon.family.toLowerCase()).toContain("font awesome"); // the minifier lowercases it
+  expect(icon.content).toBe('"\uf04b"');
+  expect(icon.loaded).toBe(true);
+  expect(thirdParty.filter((url) => url.includes("cdnjs"))).toEqual([]);
+});
+
+test("a song link's file is requested once, from the page head, and opens", async ({ page }) => {
+  const reads = [];
+  page.on("request", (req) => {
+    if (req.url().endsWith("/songs/bill_bailey.abc")) reads.push(req.url());
+  });
+  await page.goto(`${SONGS_URL}#s=bill_bailey`);
+  await expect(page.locator("#notation svg").first()).toBeVisible();
+  await expect(page.locator("#songtitle")).toContainText(/bill bailey/i);
+  expect(reads).toHaveLength(1);
 });
 
 test("picking a song renders its title, chord grid and notation", async ({ page }) => {
@@ -112,7 +145,7 @@ test("a band setlist opens from a deep link and lists its songs", async ({ page 
   expect(errors).toEqual([]);
 });
 
-test("the service worker installs and precaches the shell, stylesheet, module graph and lamejs", async ({ page }) => {
+test("the service worker installs and precaches the shell, stylesheet, script bundle and lamejs", async ({ page }) => {
   await page.goto(SONGS_URL);
   const cached = await page.evaluate(async () => {
     await navigator.serviceWorker.ready;
@@ -130,9 +163,15 @@ test("the service worker installs and precaches the shell, stylesheet, module gr
   expect(cached).toContain(SONGS_URL);
   expect(cached).toContain("/manifest.webmanifest");
   expect(cached).toContain("/script/lamejs-1.2.1-min.js");
-  expect(cached).toContain("/script/songs-page.js");
-  expect(cached).toContain("/script/songs/core/app.js");
+  // The app is one js.Build bundle (layouts/shortcodes/songs-app.html), not
+  // the 100-odd source modules.
+  expect(cached.some((u) => /^\/script\/songs-app\..+\.js$/.test(u))).toBe(true);
+  expect(cached).not.toContain("/script/songs/core/app.js");
   expect(cached.some((u) => /^\/css\/split\.min\..+\.css$/.test(u))).toBe(true);
+  // Only the font format a browser loads (WOFF2), not the fallbacks after it.
+  expect(cached).toContain("/fonts/MuseJazzText.woff2");
+  expect(cached).not.toContain("/fonts/MuseJazzText.ttf");
+  expect(cached).not.toContain("/fonts/MuseJazzText.woff");
 });
 
 test("Export MP3 loads lamejs on demand rather than with the page", async ({ page }) => {
@@ -153,6 +192,25 @@ test("the instrument <select> drops native styling (WebKit ignores author styles
   expect(["none", "base-select"]).toContain(appearance);
 });
 
+test("a superseded copy of the fingerprinted bundle is dropped from the offline cache", async ({ page }) => {
+  await page.goto(SONGS_URL);
+  const stale = `/script/songs-app.${"b".repeat(64)}.js`;
+  await page.evaluate(async (path) => {
+    await navigator.serviceWorker.ready;
+    const name = (await caches.keys()).find((n) => n.startsWith("rj-songs-shell-"));
+    await (await caches.open(name)).put(path, new Response("old deploy"));
+  }, stale);
+  // Controlled now: the bundle is served from the cache and refetched in the
+  // background, and storing that fresh copy drops the one it replaced.
+  await page.reload();
+  await expect(page.locator(SONG_ITEM).first()).toBeVisible();
+  await expect.poll(() => page.evaluate(async () => {
+    const name = (await caches.keys()).find((n) => n.startsWith("rj-songs-shell-"));
+    const paths = (await (await caches.open(name)).keys()).map((r) => new URL(r.url).pathname);
+    return paths.filter((p) => p.startsWith("/script/songs-app.")).length;
+  })).toBe(1);
+});
+
 test("a worker upgrade drops the old shell cache but keeps downloaded soundfonts", async ({ page }) => {
   // First visit with the worker blocked: seed the caches an earlier worker
   // version left behind — a shell full of since-moved module paths, and the
@@ -162,6 +220,9 @@ test("a worker upgrade drops the old shell cache but keeps downloaded soundfonts
   await page.evaluate(async () => {
     const shell = await caches.open("rj-songs-shell-v1");
     await shell.put("/script/songs/app.js", new Response("old"));
+    // The cdnjs Font Awesome cache, from before the icons were self-hosted.
+    const icons = await caches.open("rj-songs-font-awesome-v1");
+    await icons.put("/ajax/libs/font-awesome/all.min.css", new Response("old"));
     const samples = await caches.open("rj-songs-soundfont-v1");
     await samples.put("/test-soundfont-sample.mp3", new Response("sample"));
   });
@@ -181,6 +242,7 @@ test("a worker upgrade drops the old shell cache but keeps downloaded soundfonts
   });
 
   expect(names).not.toContain("rj-songs-shell-v1");
+  expect(names).not.toContain("rj-songs-font-awesome-v1");
   expect(names.some((n) => n.startsWith("rj-songs-shell-"))).toBe(true);
   // The cache surviving by name is the property under test: the worker only
   // ever deletes whole caches (activate()), never individual entries, and

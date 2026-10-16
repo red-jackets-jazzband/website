@@ -19,7 +19,17 @@
 
 <script src="/script/abcjs_midi_6.7.1-min.js" type="text/javascript" defer></script>
 <script src="/script/tonal.4.6.9-min.js" type="text/javascript" defer></script>
-<script type="module" src="/script/songs-page.js"></script>
+{{- /*
+  The app's ES module graph (static/script/songs-page.js and the 100-odd
+  modules it imports, mounted into assets/ by config.toml) is bundled by
+  Hugo's js.Build into one minified, fingerprinted file. Served as separate
+  modules, a browser only finds each level of imports once the level above
+  has downloaded: 11 round trips and 116 requests before any code could run,
+  seconds on an old iPad or a slow connection. es2017 keeps the bundle's
+  syntax inside what Safari 12 parses (CLAUDE.md's Browser support).
+*/ -}}
+{{- $app := resources.Get "script/songs-page.js" | js.Build (dict "format" "esm" "target" "es2017" "minify" true "targetPath" "script/songs-app.js") | fingerprint }}
+<script type="module" src="{{ $app.RelPermalink }}" integrity="{{ $app.Data.Integrity }}"></script>
 
 <div class="rj-songs-layout" data-default-tab="library">
 
@@ -200,7 +210,7 @@
 <div class="rj-sheet-paper">
 <div id="sheetEmpty" class="rj-sheet-empty hideOnprint">
   <span class="rj-sheet-empty-note rj-sheet-empty-note--a" aria-hidden="true">&#9834;</span>
-  <img class="rj-sheet-empty-logo" src="/images/redjackets_logo_small.png" width="290" height="300" alt="{{ i18n "songs_rjSheetEmptyLogo_alt" }}">
+  <img class="rj-sheet-empty-logo" src="/images/redjackets_logo_180.png" srcset="/images/redjackets_logo_180.png 180w, /images/redjackets_logo_small.png 290w" sizes="90px" width="290" height="300" loading="lazy" decoding="async" alt="{{ i18n "songs_rjSheetEmptyLogo_alt" }}">
   <span class="rj-sheet-empty-note rj-sheet-empty-note--c" aria-hidden="true">&#9833;</span>
   <p class="rj-sheet-empty-title">{{ i18n "songs_emptyTitle" }}</p>
   <p class="rj-sheet-empty-text">
@@ -273,6 +283,27 @@
     <div class="rj-modal-actions">
       <button type="button" id="setlistModalCancel" class="rj-modal-btn">{{ i18n "songs_setlistModalCancel" }}</button>
       <button type="button" id="setlistModalCreate" class="rj-modal-btn rj-modal-btn-primary">{{ i18n "songs_setlistModalCreate" }}</button>
+    </div>
+  </dialog>
+</div>
+
+<div id="installHint" class="rj-modal-overlay" hidden>
+  <dialog class="rj-modal" open aria-modal="true" aria-labelledby="installHintTitle">
+    <div class="rj-modal-head">
+      <h2 class="rj-modal-title" id="installHintTitle">{{ i18n "songs_installHintTitle" }}</h2>
+      <button type="button" id="installHintClose" class="rj-modal-close" aria-label="{{ i18n "songs_setlistModalClose_aria" }}">&times;</button>
+    </div>
+    <ol class="rj-install-steps" data-install="ios" hidden>
+      <li>{{ i18n "songs_installHintIosShare" }} <span class="fa-solid fa-arrow-up-from-bracket" aria-hidden="true"></span></li>
+      <li>{{ i18n "songs_installHintIosAdd" }}</li>
+    </ol>
+    <ol class="rj-install-steps" data-install="mac" hidden>
+      <li>{{ i18n "songs_installHintMacFile" }}</li>
+      <li>{{ i18n "songs_installHintMacAdd" }}</li>
+    </ol>
+    <p class="rj-install-note">{{ i18n "songs_installHintNote" }}</p>
+    <div class="rj-modal-actions">
+      <button type="button" id="installHintOk" class="rj-modal-btn rj-modal-btn-primary">{{ i18n "songs_installHintOk" }}</button>
     </div>
   </dialog>
 </div>

@@ -536,8 +536,12 @@ video.video {
 
 @font-face {
   font-family: 'MuseJazzText';
-  src: url('/fonts/MuseJazzText.woff') format('woff'), /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
-   url('/fonts/MuseJazzText.ttf') format('truetype'); /* Chrome 4+, Firefox 3.5, Opera 10+, Safari 3—5 */
+  /* WOFF2 (Safari 10+, every browser this site supports) is ~20% smaller than
+     WOFF; same font data, only the container differs (an OFL font may be
+     re-wrapped, not subset, under its own name). */
+  src: url('/fonts/MuseJazzText.woff2') format('woff2'),
+   url('/fonts/MuseJazzText.woff') format('woff'),
+   url('/fonts/MuseJazzText.ttf') format('truetype');
 }
 
 /*
@@ -1248,7 +1252,10 @@ body.rj-sheet-active .rj-sheet-empty {
 */
 .mixer-panel {
   position: fixed;
-  inset: auto;
+  top: auto;
+  right: auto;
+  bottom: auto;
+  left: auto;
   margin: 0;
   z-index: 20;
   width: 364px;
@@ -1351,7 +1358,10 @@ body.rj-sheet-active .rj-sheet-empty {
 }
 .mixer-fader-fill {
   position: absolute;
-  inset: 0 auto 0 0;
+  top: 0;
+  right: auto;
+  bottom: 0;
+  left: 0;
   width: 100%;
   border-radius: 3px;
   background: var(--rj-gold);
@@ -1380,7 +1390,10 @@ body.rj-sheet-active .rj-sheet-empty {
 }
 .mixer-fader-track input[type="range"] {
   position: absolute;
-  inset: -9px 0;
+  top: -9px;
+  right: 0;
+  bottom: -9px;
+  left: 0;
   width: 100%;
   height: 24px;
   margin: 0;
@@ -1563,7 +1576,10 @@ body.rj-sheet-active .rj-sheet-empty {
 }
 .mixer-backdrop {
   position: fixed;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   z-index: 19;
   background: rgba(0,0,0,.5);
 }
@@ -1585,6 +1601,7 @@ body.rj-sheet-active .rj-sheet-empty {
     top: auto !important;
     width: auto !important;
     max-width: none !important;
+    max-height: calc(100vh - 32px);
     max-height: calc(100dvh - 32px);
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
@@ -1909,15 +1926,24 @@ body.rj-sheet-active .rj-sheet-empty {
 .inspiration-panel-tab:not(.active):active {
   transform: scale(0.94);
 }
+/* 16:9 by padding (a percentage padding is a share of the width), not
+   `aspect-ratio`, which Safari only has from 15: older iPads drew the box at
+   zero height, so the video seemed never to open. Same for `inset` (Safari
+   14.1) everywhere in this file: it's written out as top/right/bottom/left,
+   and stylelint.config.mjs disallows both properties. */
 .inspiration-panel-video {
   position: relative;
   width: 100%;
-  aspect-ratio: 16 / 9;
+  height: 0;
+  padding-top: 56.25%;
   background: #000000;
 }
 .inspiration-panel-video iframe {
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   border: 0;
@@ -3238,7 +3264,10 @@ output.rj-library-print-status:not([hidden]) {
 */
 .rj-modal-overlay {
   position: fixed;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   z-index: 40;
   display: flex;
   align-items: center;
@@ -4760,6 +4789,7 @@ body:not(.rj-sheet-active) .rj-sheet-pager .rj-sheet-step {
     position: sticky;
     top: 12px;
     align-self: flex-start;
+    height: min(30rem, calc(100vh - 72px));
     height: min(30rem, calc(100dvh - 72px));
     width: 26px;
   }
@@ -5984,9 +6014,13 @@ body.rj-sheet-fullscreen .rj-sheet-navrow {
 }
 body.rj-sheet-fullscreen .rj-songs-layout {
   position: fixed;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   z-index: 10;
   width: 100vw;
+  height: 100vh;
   height: 100dvh;
   margin: 0;
   padding: 0;
@@ -6155,10 +6189,39 @@ body.rj-sheet-fullscreen #sheetmenu {
   color: var(--rj-gold);
   font: 600 11px "Montserrat", sans-serif;
 }
+/* Apple's "install by hand" steps (#installHint, songs/offline.js): Safari has
+   no install prompt a page can open, so the install button explains it. */
+.rj-modal .rj-install-steps {
+  margin: 0 0 14px;
+  padding: 0 0 0 1.3em;
+  font: 14px/1.4 "Montserrat", sans-serif;
+  list-style: decimal outside;
+}
+.rj-modal .rj-install-steps li {
+  margin: 0 0 6px;
+  padding: 0;
+  line-height: 1.4;
+}
+.rj-install-steps[hidden] {
+  display: none;
+}
+.rj-install-steps .fa-solid {
+  margin-left: 4px;
+  color: var(--rj-gold);
+}
+.rj-modal .rj-install-note {
+  margin: 0;
+  color: var(--rj-body);
+  font-size: 13px;
+  line-height: 1.45;
+}
 
 .rj-tour {
   position: fixed;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   z-index: 50;
   font-family: "Montserrat", sans-serif;
   /* The root must not catch clicks itself, or the shield's hole would be
@@ -6171,7 +6234,10 @@ body.rj-sheet-fullscreen #sheetmenu {
 /* The dimmed page: clip-path (set inline) cuts a hole around the target. */
 .rj-tour-veil {
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   background: rgba(0,0,0,.74);
   pointer-events: none;
 }
@@ -6179,7 +6245,10 @@ body.rj-sheet-fullscreen #sheetmenu {
    steps only) lets clicks through to the real control. */
 .rj-tour-shield {
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   pointer-events: auto;
 }
 .rj-tour-ring {
@@ -6201,6 +6270,7 @@ body.rj-sheet-fullscreen #sheetmenu {
   position: absolute;
   width: 390px;
   max-width: calc(100vw - 16px);
+  max-height: calc(100vh - 16px);
   max-height: calc(100dvh - 16px);
   display: flex;
   flex-direction: column;
@@ -6221,6 +6291,7 @@ body.rj-sheet-fullscreen #sheetmenu {
   left: 8px;
   width: auto;
   max-width: none;
+  max-height: 56vh;
   max-height: 56dvh;
 }
 /* ...or along the top, when the target is in the lower half of the screen. */
@@ -6897,6 +6968,37 @@ body.rj-layers-open #layersTab .rj-layers-count {
 .rj-layer-switch:disabled {
   cursor: default;
   opacity: .4;
+}
+/* While the sheet is being redrawn with (or without) this layer, the knob
+   is a turning ring (panel.js's .is-busy). */
+.rj-layer-switch.is-busy .rj-layer-knob {
+  box-sizing: border-box;
+  border: 2px solid #1b1b1b;
+  border-top-color: transparent;
+  background: transparent;
+  animation: rj-layer-spin .7s linear infinite;
+}
+.rj-layer-switch.is-busy[aria-checked="false"] .rj-layer-knob {
+  border-color: #d8d6d0;
+  border-top-color: transparent;
+}
+@keyframes rj-layer-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+/* sheet.js's background render: a hidden copy of #notation, drawn into
+   off screen, its lines then moved into the real one in one go. Laid out
+   (ABCjs and the layers measure what they draw), but invisible and taking
+   no room. */
+.rj-sheet-staging {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
 }
 .rj-layer-switch:focus-visible {
   outline: 2px solid var(--rj-gold);

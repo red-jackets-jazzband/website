@@ -1,14 +1,21 @@
 {
-  "path": ["static/script", "assets/css", "tests"],
+  "path": [
+    "static/script",
+    "assets/css",
+    "tests"
+  ],
   "ignore": [
     "**/*min.js",
     "**/abcjs*.js",
-    "**/tonal*.js"
+    "**/tonal*.js",
+    "assets/css/icons.css"
   ],
   "minLines": 10,
   "minTokens": 50,
   "threshold": 1,
-  "reporters": ["console"],
+  "reporters": [
+    "console"
+  ],
   "gitignore": true,
   "absolute": true
 }
