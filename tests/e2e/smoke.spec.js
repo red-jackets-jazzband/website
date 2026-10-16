@@ -89,7 +89,7 @@ test("the translated songs pages render their own language, markup and script al
 
   // Strings JS builds come out in Dutch too: an instrument/Comping dropdown
   // option and a search with no match.
-  await expect(page.locator("#comping option").first()).toHaveText("COMPING: UIT");
+  await expect(page.locator("#comping option").first()).toHaveText("Uit");
   await page.locator("#songSearch").fill("zzzzzzzz");
   await expect(page.locator(".song-list-empty")).toHaveText("Geen songs gevonden voor je zoekopdracht.");
 
