@@ -3,6 +3,8 @@ import {
   DEFAULT_BPM, TEMPO_MIN_BPM, TEMPO_MAX_BPM, clampBpm, resolveBpm, bpmToWarpPercent,
 } from "../../lib/music/tempo.js";
 import { computeVoicesOff, percentToAbcjsSwing } from "../../lib/audio/audio-mix.js";
+import { restampAccompaniment } from "../../lib/music/render-plan.js";
+import { isMixOnlyWrite } from "../core/state.js";
 import { beatsPerMeasure } from "../../lib/audio/metronome.js";
 import { REPEAT_COUNT_MIN, REPEAT_COUNT_MAX, REPEAT_COUNT_DEFAULT } from "./state.js";
 import { tl } from "../../lib/core/i18n.js";
@@ -676,6 +678,33 @@ export function createAudioPlayer(ctx) {
       .catch((err) => console.warn("Tempo change failed:", err));
   }
 
+  /*
+    A Mixer mute (a MIX_ONLY write) without re-engraving the sheet: the
+    Bass/Chords levels are rewritten on the loaded tune object, a voice's
+    mute is the voicesOff synth option, and the controller re-primes with
+    both. setWarp at the current warp is exactly that re-prime, keeping the
+    position and whether it was playing (as a Tempo change does). A tune
+    never played yet has nothing primed: the new options are simply what its
+    first Play uses.
+  */
+  function remix() {
+    const ctrl = state.synthController;
+    if (!ctrl || !state.currentVisualObj) return;
+    restampAccompaniment(state.currentVisualObj, ctx.state.mixer);
+    ctrl.options = synthParams();
+    const reprime = () => ctrl.setWarp(ctrl.warp);
+    let pending;
+    if (ctrl.isLoading) pending = ctrl.runWhenReady(reprime);
+    else if (ctrl.isLoaded) pending = reprime();
+    else return;
+    Promise.resolve(pending)
+      .then(() => {
+        if (silenceIfStale(ctrl)) return;
+        setIsPlaying(Boolean(ctrl.isStarted));
+      })
+      .catch((err) => console.warn("Mixer change failed:", err));
+  }
+
   function stepTempo(delta) {
     const base = ctx.state.tempoOverrideBpm !== null
       ? ctx.state.tempoOverrideBpm
@@ -906,6 +935,10 @@ export function createAudioPlayer(ctx) {
     Tempo stepper to the tune's own tempo, and a fresh SynthController for
     every freshly engraved tune object.
   */
+  ctx.store.subscribe("mixer", (_mixer, _changed, _name, meta) => {
+    if (isMixOnlyWrite(meta)) remix();
+  });
+
   ctx.store.subscribe("tune", (tune, changed) => {
     state.transposeSemitones = tune.audioTranspose;
     state.chordOffset = tune.chordOffset;

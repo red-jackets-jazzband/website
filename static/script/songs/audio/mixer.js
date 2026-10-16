@@ -5,7 +5,7 @@ import { readPref, writePref } from "../../lib/core/preferences.js";
 import { GM_VOICES, defaultVoiceProgram } from "../../lib/audio/gm-voices.js";
 import { GCHORD_PATTERNS, DEFAULT_PROGRAM, isCompingLabel } from "../../lib/audio/audio-mix.js";
 import { CHANNELS } from "./state.js";
-import { BACKGROUND, RENDER } from "../core/state.js";
+import { BACKGROUND, MIX_ONLY, RENDER } from "../core/state.js";
 import { tl } from "../../lib/core/i18n.js";
 
 // A fader drag is committed to the store — and so re-engraved by the sheet,
@@ -437,11 +437,12 @@ export function createMixer(ctx) {
         if (!current) return;
         // Un-muting a lead that Solo silenced is a one-off override (this
         // song, until Solo changes); the persisted mute choice stays as it was.
+        // A mute changes only what's heard (MIX_ONLY): no re-engrave.
         if (current.autoMuted) {
           leadUnmuted = true;
-          setVoice(v.slug, { autoMuted: false });
+          setVoice(v.slug, { autoMuted: false }, MIX_ONLY);
         } else {
-          setVoice(v.slug, { muted: !current.muted });
+          setVoice(v.slug, { muted: !current.muted }, MIX_ONLY);
         }
         drawVoiceRow(row);
       });
@@ -622,7 +623,7 @@ export function createMixer(ctx) {
     }
     on(ids.muteBtn, "click", () => {
       const key = `${channel}Muted`;
-      setChannel({ [key]: !mixerState()[key] });
+      setChannel({ [key]: !mixerState()[key] }, MIX_ONLY);
       updateStripVisual(channel);
       applyNow();
     });

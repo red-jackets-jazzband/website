@@ -224,7 +224,7 @@ test("releasing a fader (change) applies immediately without waiting for the deb
   releaseFaderAppliesImmediately({ rangeId: "mixerBassRange", storageKey: "rj.mixerBassVolume", value: 10 });
 });
 
-test("the Bass mute button flips state, updates the button (icon + label included) and re-renders at once", () => {
+test("the Bass mute button flips state, updates the button (icon + label included) and never re-engraves", () => {
   const { ctx, rerenders, cleanup } = setup();
   try {
     const btn = document.getElementById("mixerBassMuteBtn");
@@ -239,7 +239,7 @@ test("the Bass mute button flips state, updates the button (icon + label include
     assert.equal(btn.getAttribute("aria-label"), "Unmute bass");
     assert.equal(document.getElementById("mixerBassReadout").textContent, "100%");
     assert.equal(document.getElementById("mixerStripBass").classList.contains("is-muted"), true);
-    assert.equal(rerenders.length, 1);
+    assert.equal(rerenders.length, 0, "a mute only changes the sound");
     assert.equal(window.localStorage.getItem("rj.mixerBassMuted"), "1");
 
     btn.dispatchEvent(new window.Event("click"));
@@ -249,7 +249,7 @@ test("the Bass mute button flips state, updates the button (icon + label include
     assert.equal(icon.classList.contains("fa-volume-xmark"), false);
     assert.equal(icon.classList.contains("fa-volume-high"), true);
     assert.equal(btn.title, "Mute bass");
-    assert.equal(rerenders.length, 2);
+    assert.equal(rerenders.length, 0);
     assert.equal(window.localStorage.getItem("rj.mixerBassMuted"), "0");
   } finally {
     window.localStorage.clear();
@@ -783,7 +783,7 @@ test("syncVoices rebuilds when the voice list actually changes (a different song
   }
 });
 
-test("a voice row's mute button toggles state, updates its own row (icon/label/readout), persists under a slug key and re-renders", () => {
+test("a voice row's mute button toggles state, updates its own row (icon/label/readout), persists under a slug key and never re-engraves", () => {
   const { ctx, mixer, rerenders, cleanup } = setup();
   try {
     mixer.syncVoices(FUNKIN_VOICES);
@@ -799,7 +799,7 @@ test("a voice row's mute button toggles state, updates its own row (icon/label/r
     assert.equal(document.querySelector(`#${SOUSAPHONE_STRIP_ID} .mixer-readout`).textContent, "100%");
     assert.equal(document.getElementById(SOUSAPHONE_STRIP_ID).classList.contains("is-muted"), true);
     assert.equal(window.localStorage.getItem("rj.mixerVoice.sousaphone.muted"), "1");
-    assert.equal(rerenders.length, 1);
+    assert.equal(rerenders.length, 0, "a mute only changes the sound");
 
     // Muting one voice leaves the other alone.
     assert.equal(ctx.state.mixerVoices[0].muted, false);
@@ -807,7 +807,7 @@ test("a voice row's mute button toggles state, updates its own row (icon/label/r
     muteBtn.dispatchEvent(new window.Event("click"));
     assert.equal(ctx.state.mixerVoices[1].muted, false);
     assert.equal(window.localStorage.getItem("rj.mixerVoice.sousaphone.muted"), "0");
-    assert.equal(rerenders.length, 2);
+    assert.equal(rerenders.length, 0);
   } finally {
     window.localStorage.clear();
     cleanup();

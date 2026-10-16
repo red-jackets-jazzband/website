@@ -121,7 +121,7 @@ function fakeAudioBuffer() {
 /** @param {{ audioSupported?: boolean, exportAudioBuffer?: any }} [options] */
 export function createAbcjsStub({ audioSupported = false, exportAudioBuffer } = {}) {
   const calls = {
-    renderAbc: [], parseOnly: [], setTune: [], synthControllers: [], createSynths: [], seek: [], go: [],
+    renderAbc: [], parseOnly: [], setTune: [], synthControllers: [], createSynths: [], seek: [], go: [], setWarp: [],
   };
 
   const stub = {
@@ -155,8 +155,13 @@ export function createAbcjsStub({ audioSupported = false, exportAudioBuffer } = 
           this._cursorControl = cursorControl;
           stub.cursorControl = cursorControl;
         };
+        // Like ABCjs: setTune keeps the params as `options`, and go() (also
+        // setWarp's re-prime) reads them from there.
+        this.options = {};
+        this.warp = 100;
         this.setTune = (tune, opts, params) => {
           calls.setTune.push({ tune, opts, params });
+          this.options = params || {};
           this.isStarted = false;
           return Promise.resolve();
         };
@@ -182,7 +187,9 @@ export function createAbcjsStub({ audioSupported = false, exportAudioBuffer } = 
         this.seek = (fraction) => { if (this.isLoaded) calls.seek.push(fraction); };
         // ABCjs's real setWarp() ends with an internal seek that fires one
         // event callback; mirror that so tests can prove the highlight guard.
-        this.setWarp = () => {
+        this.runWhenReady = (fn) => Promise.resolve().then(fn);
+        this.setWarp = (warp) => {
+          calls.setWarp.push({ warp, options: this.options });
           if (this._cursorControl?.onEvent) {
             this._cursorControl.onEvent({ elements: stub._warpEventElements || [] });
           }
