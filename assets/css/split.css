@@ -3829,8 +3829,18 @@ select.rj-modal-input {
   text-align: center;
 }
 .setlist-song-key-badge-key {
+  position: relative;
   font: 600 11px "JetBrains Mono", monospace;
   color: rgba(230,228,224,.4);
+}
+/* The ♭/♯/"m" after the letter (keys.js's setKeyText) hangs outside the
+   centred box, so the letter itself stays over the bpm (JetBrains Mono's
+   latin subset has no ♭/♯, so those come from a fallback font of another
+   width, which pushed the centred letter off to the left). */
+.setlist-song-key-badge-suffix {
+  position: absolute;
+  left: 100%;
+  top: 0;
 }
 /* The song's key differs from its own written key (a per-setlist override is
    in play) — same gold the personal setlist's key picker uses for the same
