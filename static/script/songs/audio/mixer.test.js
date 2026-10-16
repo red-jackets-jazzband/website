@@ -5,6 +5,7 @@ import { makeCtx } from "../../../../tests/helpers/ctx.js";
 import { createMixer } from "./mixer.js";
 import { loadPersisted } from "../../lib/core/persisted.js";
 import { MIXER_SLICE } from "./state.js";
+import { isMixOnlyWrite } from "../core/state.js";
 
 // The persisted values the app store seeds the mixer slice from
 // (songs/audio/state.js's MIXER_SLICE.prefs).
@@ -37,9 +38,15 @@ function setup(mixerState = {}, stateOverrides = {}) {
     },
     sheet: { rerender: () => rerenders.push(1) },
   });
+  // Writes only the synth needs (a Bass/Chords level or instrument, Swing, a
+  // mute): the audio player re-primes, the sheet isn't re-engraved.
+  const remixes = [];
+  ctx.store.subscribe("mixer", (_slice, _changed, _name, meta) => {
+    if (isMixOnlyWrite(meta)) remixes.push(1);
+  });
   const mixer = createMixer(ctx);
   mixer.init();
-  return { page, ctx, mixer, rerenders, cleanup: page.cleanup };
+  return { page, ctx, mixer, rerenders, remixes, cleanup: page.cleanup };
 }
 
 test("init seeds both Bass/Chords range inputs from ctx.state.mixer", () => {
@@ -168,7 +175,7 @@ function dragFaderDebounces(t, {
   rangeId, readoutId, fillId, storageKey, value, getValue,
 }) {
   t.mock.timers.enable({ apis: ["setTimeout"] });
-  const { ctx, rerenders, cleanup } = setup();
+  const { ctx, rerenders, remixes, cleanup } = setup();
   try {
     const range = document.getElementById(rangeId);
     range.value = String(value);
@@ -180,12 +187,13 @@ function dragFaderDebounces(t, {
     assert.equal(getValue(ctx), before);
     assert.equal(document.getElementById(readoutId).textContent, `${value}%`);
     assert.equal(document.getElementById(fillId).style.width, `${value}%`);
-    assert.equal(rerenders.length, 0); // debounced, not yet applied
+    assert.equal(remixes.length, 0); // debounced, not yet applied
 
     t.mock.timers.tick(300);
     assert.equal(getValue(ctx), value);
-    assert.equal(rerenders.length, 1);
+    assert.equal(remixes.length, 1);
     assert.equal(window.localStorage.getItem(storageKey), String(value));
+    assert.equal(rerenders.length, 0, "never re-engraved");
   } finally {
     window.localStorage.clear();
     cleanup();
@@ -195,21 +203,22 @@ function dragFaderDebounces(t, {
 function releaseFaderAppliesImmediately({
   rangeId, storageKey, value,
 }) {
-  const { rerenders, cleanup } = setup();
+  const { rerenders, remixes, cleanup } = setup();
   try {
     const range = document.getElementById(rangeId);
     range.value = String(value);
     range.dispatchEvent(new window.Event("input"));
     range.dispatchEvent(new window.Event("change"));
-    assert.equal(rerenders.length, 1);
+    assert.equal(remixes.length, 1);
     assert.equal(window.localStorage.getItem(storageKey), String(value));
+    assert.equal(rerenders.length, 0, "never re-engraved");
   } finally {
     window.localStorage.clear();
     cleanup();
   }
 }
 
-test("dragging a fader updates its readout live, and re-renders only once settled", (t) => {
+test("dragging a fader updates its readout live, and applies only once settled", (t) => {
   dragFaderDebounces(t, {
     rangeId: "mixerBassRange",
     readoutId: "mixerBassReadout",
@@ -318,7 +327,7 @@ test("refresh() redraws each strip's fill/readout/mute button and the Quality to
 
 test("dragging a fader repeatedly before it settles still applies only once (the pending apply is cancelled and rescheduled, not stacked)", (t) => {
   t.mock.timers.enable({ apis: ["setTimeout"] });
-  const { ctx, rerenders, cleanup } = setup();
+  const { ctx, rerenders, remixes, cleanup } = setup();
   try {
     const range = document.getElementById("mixerBassRange");
     for (const value of [10, 20, 30]) {
@@ -326,8 +335,9 @@ test("dragging a fader repeatedly before it settles still applies only once (the
       range.dispatchEvent(new window.Event("input"));
     }
     t.mock.timers.tick(300);
-    assert.equal(rerenders.length, 1); // not 3
+    assert.equal(remixes.length, 1); // not 3
     assert.equal(ctx.state.mixer.bassVolume, 30);
+    assert.equal(rerenders.length, 0, "never re-engraved");
   } finally {
     window.localStorage.clear();
     cleanup();
@@ -336,16 +346,17 @@ test("dragging a fader repeatedly before it settles still applies only once (the
 
 test("releasing a fader (change) right after dragging it cancels the pending debounced apply instead of double-applying", (t) => {
   t.mock.timers.enable({ apis: ["setTimeout"] });
-  const { rerenders, cleanup } = setup();
+  const { rerenders, remixes, cleanup } = setup();
   try {
     const range = document.getElementById("mixerBassRange");
     range.value = "15";
     range.dispatchEvent(new window.Event("input"));
     range.value = "25";
     range.dispatchEvent(new window.Event("change"));
-    assert.equal(rerenders.length, 1);
+    assert.equal(remixes.length, 1);
     t.mock.timers.tick(300);
-    assert.equal(rerenders.length, 1); // the cancelled debounce never fires a second apply
+    assert.equal(remixes.length, 1); // the cancelled debounce never fires a second apply
+    assert.equal(rerenders.length, 0, "never re-engraved");
   } finally {
     window.localStorage.clear();
     cleanup();
@@ -468,14 +479,15 @@ test("init populates every Voice select from GM_VOICES, grouped, with no Default
   }
 });
 
-test("choosing a Voice persists the GM program and re-renders immediately", () => {
-  const { ctx, rerenders, cleanup } = setup();
+test("choosing a Voice persists the GM program and applies immediately without re-engraving", () => {
+  const { ctx, rerenders, remixes, cleanup } = setup();
   try {
     const select = document.getElementById("mixerBassVoiceSelect");
     select.value = "33";
     select.dispatchEvent(new window.Event("change"));
     assert.equal(ctx.state.mixer.bassProgram, 33);
-    assert.equal(rerenders.length, 1);
+    assert.equal(remixes.length, 1);
+    assert.equal(rerenders.length, 0);
     assert.equal(window.localStorage.getItem("rj.mixerBassProgram"), "33");
   } finally {
     window.localStorage.clear();
@@ -564,7 +576,7 @@ test("init seeds the Swing range, readout, and fill from a non-default ctx.state
   }
 });
 
-test("dragging the Swing fader updates its readout live, and re-renders only once settled", (t) => {
+test("dragging the Swing fader updates its readout live, and applies only once settled", (t) => {
   dragFaderDebounces(t, {
     rangeId: "mixerSwingRange",
     readoutId: "mixerSwingReadout",

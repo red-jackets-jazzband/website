@@ -21,7 +21,9 @@ import { parseChordScheme, computeChordOffset } from "./chords.js";
 import { convertChordsToRoman } from "./music-theory.js";
 import { buildCompingTune } from "./comping.js";
 import { extractWordsTables, extractPartOrderRows } from "./words-table.js";
-import { injectMixerAudio, percentToMidiVolume, resolveGchordPattern } from "../audio/audio-mix.js";
+import {
+  DEFAULT_PROGRAM, injectMixerAudio, percentToMidiVolume, resolveGchordPattern,
+} from "../audio/audio-mix.js";
 import { annotateLayers } from "./layers.js";
 import { defaultVoiceProgram } from "../audio/gm-voices.js";
 
@@ -202,18 +204,27 @@ function channelPercent(mixer, channel) {
 }
 
 /*
-  Bring an engraved tune's Bass/Chords levels in line with the Mixer without
-  engraving it again: the `%%MIDI bassvol`/`chordvol` lines mixRenderText
-  stamps before K: end up in the tune object's `formatting.midi`, which
-  ABCjs's synth reads afresh every time it primes. Only touches a tune that
-  carries them (one with chords). Returns whether it changed anything.
+  Bring an engraved tune's Bass/Chords levels and instruments in line with
+  the Mixer without engraving it again: the `%%MIDI bassvol`/`chordvol`/
+  `bassprog`/`chordprog` lines mixRenderText stamps before K: end up in the
+  tune object's `formatting.midi`, which ABCjs's synth reads afresh every
+  time it primes (checked against the real abcjs in render-plan.test.js).
+  Only touches a tune that carries them (one with chords). Returns whether
+  it changed anything.
 */
 export function restampAccompaniment(visualObj, mixer) {
   const midi = visualObj && visualObj.formatting && visualObj.formatting.midi;
   if (!midi || !midi.bassvol || !midi.chordvol) return false;
   midi.bassvol = [percentToMidiVolume(channelPercent(mixer, "bass"))];
   midi.chordvol = [percentToMidiVolume(channelPercent(mixer, "chords"))];
+  midi.bassprog = [restampedProgram(mixer, "bass")];
+  midi.chordprog = [restampedProgram(mixer, "chords")];
   return true;
+}
+
+function restampedProgram(mixer, channel) {
+  const program = channelProgram(mixer, channel);
+  return program === undefined ? DEFAULT_PROGRAM[channel] : program;
 }
 
 // null (the Voice picker left un-overridden) has to become undefined, not

@@ -366,18 +366,25 @@ export function createMixer(ctx) {
   }
 
   // `meta` tags the writes — RENDER when flushed from inside a render
-  // (syncVoices), so they don't trigger a second one.
+  // (syncVoices), so they don't trigger a second one. Otherwise the Bass/
+  // Chords faders and Swing only change what's heard (MIX_ONLY: the player
+  // re-primes, no re-engrave), while a voice's fader is a %%MIDI line inside
+  // the tune and re-engraves (BACKGROUND) — two batches, since one batch
+  // mixing both tags would notify as an ordinary write.
   function commitDrafts(meta = BACKGROUND) {
     if (drafts.size === 0) return;
     const pending = new Map(drafts);
     drafts.clear();
+    const mixMeta = meta === BACKGROUND ? MIX_ONLY : meta;
     ctx.store.batch(() => {
       const channelPatch = {};
       CHANNELS.forEach((channel) => {
         if (pending.has(channel)) channelPatch[`${channel}Volume`] = pending.get(channel);
       });
-      if (Object.keys(channelPatch).length > 0) setChannel(channelPatch, meta);
-      if (pending.has("swing")) ctx.store.set("mixer", { swing: pending.get("swing") }, meta);
+      if (Object.keys(channelPatch).length > 0) setChannel(channelPatch, mixMeta);
+      if (pending.has("swing")) ctx.store.set("mixer", { swing: pending.get("swing") }, mixMeta);
+    });
+    ctx.store.batch(() => {
       ctx.state.mixerVoices.forEach((v) => {
         const key = `voice:${v.slug}`;
         if (pending.has(key)) setVoice(v.slug, { volume: pending.get(key) }, meta);
@@ -634,7 +641,8 @@ export function createMixer(ctx) {
       const program = mixerState()[`${channel}Program`];
       select.value = String(resolveEffectiveProgram(program, DEFAULT_PROGRAM[channel]));
       select.addEventListener("change", () => {
-        setChannel({ [`${channel}Program`]: Number(select.value) });
+        // Like a mute, only what's heard changes (MIX_ONLY): no re-engrave.
+        setChannel({ [`${channel}Program`]: Number(select.value) }, MIX_ONLY);
         applyNow();
       });
     }
