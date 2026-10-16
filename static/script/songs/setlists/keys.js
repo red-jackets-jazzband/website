@@ -1,4 +1,4 @@
-import { byId, el, qsa } from "../../lib/core/dom.js";
+import { byId, clear, el, qsa } from "../../lib/core/dom.js";
 import {
   extractKeyFromAbc, setlistTransposeSteps, formatSetlistKeyLabel,
   resolvedSetlistKeyName, tempoBpmFromAbc,
@@ -11,6 +11,23 @@ import {
   (createSetlistKeys keeps the cache for the life of the setlist view) and
   every rendered row's badge refreshes in place once it lands.
 */
+// A key name's letter is what sits centred over the bpm; whatever follows it
+// (♭/♯, "m") hangs to its right, so every row's letter lines up in one column
+// whether or not the key has an accidental. A non-key fallback ("+2") is
+// centred whole.
+function setKeyText(keyEl, text) {
+  clear(keyEl);
+  const isKeyName = /^[A-G]./.test(text);
+  if (!isKeyName) {
+    keyEl.textContent = text;
+    return;
+  }
+  keyEl.append(
+    text.charAt(0),
+    el("span", { class: "setlist-song-key-badge-suffix" }, [text.slice(1)]),
+  );
+}
+
 export function createSetlistKeys(ctx) {
   // A song's own written key (its K: field) and native tempo (its Q: field),
   // fetched once per file (one XHR covers both) and kept for the life of
@@ -73,7 +90,7 @@ export function createSetlistKeys(ctx) {
   function applyBadgeDisplay(badge, song) {
     const info = keyDisplayInfo(song);
     const keyEl = badge.querySelector(".setlist-song-key-badge-key");
-    keyEl.textContent = info.text;
+    setKeyText(keyEl, info.text);
     badge.classList.toggle("is-transposed", info.isTransposed);
 
     // The tune's own native bpm (Q: field) — read-only everywhere, same as
