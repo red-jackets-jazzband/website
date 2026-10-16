@@ -52,8 +52,31 @@ function formatBeats(n) {
   return String(Math.round(n * 1000) / 1000);
 }
 
-function newVoiceState() {
-  return { acc: 0, tripletMultiplier: 1, pendingSectionStart: true, bars: [] };
+// A mid-tune meter change (an `M:` field line, which abcjs reports as the
+// new line's `staff.meter`, or an inline `[M:...]`, an `el_type: "meter"`
+// element) applies from there on, so each voice strand tracks its own
+// current meter instead of reading the header's once.
+function meterFromFraction(num, den) {
+  const barLength = num / den;
+  return { barLength, beats: num, halfBar: barLength / 2, checkMidpoint: num % 2 === 0 };
+}
+
+function tuneMeter(tune) {
+  const { num, den } = tune.getMeterFraction();
+  return meterFromFraction(Number(num), Number(den));
+}
+
+function nextMeter(spec, current) {
+  if (!spec) return current;
+  if (spec.type === "common_time") return meterFromFraction(4, 4);
+  if (spec.type === "cut_time") return meterFromFraction(2, 2);
+  const first = spec.value && spec.value[0];
+  if (!first) return current;
+  return meterFromFraction(Number(first.num), Number(first.den));
+}
+
+function newVoiceState(meter) {
+  return { acc: 0, tripletMultiplier: 1, pendingSectionStart: true, bars: [], meter };
 }
 
 function closePreviousBarForPart(state) {
@@ -65,7 +88,12 @@ function closePreviousBarForPart(state) {
 
 function closeBar(state, el) {
   if (state.acc > DURATION_EPSILON) {
-    state.bars.push({ acc: state.acc, startChar: el.startChar, exemptUnderfull: state.pendingSectionStart });
+    state.bars.push({
+      acc: state.acc,
+      startChar: el.startChar,
+      exemptUnderfull: state.pendingSectionStart,
+      meter: state.meter,
+    });
     state.pendingSectionStart = false;
   }
   state.acc = 0;
@@ -89,6 +117,10 @@ function accumulateVoice(state, voice) {
       closePreviousBarForPart(state);
       continue;
     }
+    if (el.el_type === "meter") {
+      state.meter = nextMeter(el, state.meter);
+      continue;
+    }
     if (el.startTriplet) state.tripletMultiplier = el.tripletMultiplier;
     if (el.el_type === "bar") {
       closeBar(state, el);
@@ -99,14 +131,17 @@ function accumulateVoice(state, voice) {
 }
 
 function collectVoiceStrands(tune) {
+  const initialMeter = tuneMeter(tune);
   const strands = new Map();
   for (const line of tune.lines) {
     if (!line.staff) continue;
     line.staff.forEach((staff, staffIndex) => {
       staff.voices.forEach((voice, voiceIndex) => {
         const key = `${staffIndex}-${voiceIndex}`;
-        if (!strands.has(key)) strands.set(key, newVoiceState());
-        accumulateVoice(strands.get(key), voice);
+        if (!strands.has(key)) strands.set(key, newVoiceState(initialMeter));
+        const state = strands.get(key);
+        state.meter = nextMeter(staff.meter, state.meter);
+        accumulateVoice(state, voice);
       });
     });
   }
@@ -114,14 +149,13 @@ function collectVoiceStrands(tune) {
 }
 
 function findBarLengthIssues(tune, content) {
-  const barLength = tune.getBarLength();
-  const expectedBeats = tune.getMeterFraction().num;
   const strands = collectVoiceStrands(tune);
   const issues = [];
 
   for (const state of strands.values()) {
     state.bars.forEach((bar, index) => {
       const isLast = index === state.bars.length - 1;
+      const { barLength, beats: expectedBeats } = bar.meter;
       const overfull = bar.acc > barLength + DURATION_EPSILON;
       const underfull = bar.acc < barLength - DURATION_EPSILON;
       if (!overfull && !(underfull && !bar.exemptUnderfull && !isLast)) return;
@@ -185,8 +219,8 @@ function hasRealChord(el) {
   return Array.isArray(el.chord) && el.chord.some(isRealChord);
 }
 
-function newRhythmState() {
-  return { acc: 0, tripletMultiplier: 1, elements: [], pendingTie: null };
+function newRhythmState(meter) {
+  return { acc: 0, tripletMultiplier: 1, elements: [], pendingTie: null, meter };
 }
 
 function isOnBeatGrid(start, meter) {
@@ -304,7 +338,12 @@ function flushRhythmState(state, carryTie, meter, content, issues) {
   state.acc = 0;
 }
 
-function processRhythmElement(state, el, meter, content, issues) {
+function processRhythmElement(state, el, content, issues) {
+  if (el.el_type === "meter") {
+    state.meter = nextMeter(el, state.meter);
+    return;
+  }
+  const { meter } = state;
   if (el.el_type === "overlay") {
     flushRhythmState(state, false, meter, content, issues);
     return;
@@ -326,8 +365,7 @@ function processRhythmElement(state, el, meter, content, issues) {
 }
 
 function findChordAndBeamIssues(tune, content) {
-  const barLength = tune.getBarLength();
-  const meter = { barLength, halfBar: barLength / 2, checkMidpoint: tune.getMeterFraction().num % 2 === 0 };
+  const initialMeter = tuneMeter(tune);
   const issues = [];
   const strands = new Map();
 
@@ -336,13 +374,14 @@ function findChordAndBeamIssues(tune, content) {
     line.staff.forEach((staff, staffIndex) => {
       staff.voices.forEach((voice, voiceIndex) => {
         const key = `${staffIndex}-${voiceIndex}`;
-        if (!strands.has(key)) strands.set(key, newRhythmState());
+        if (!strands.has(key)) strands.set(key, newRhythmState(initialMeter));
         const state = strands.get(key);
-        for (const el of voice) processRhythmElement(state, el, meter, content, issues);
+        state.meter = nextMeter(staff.meter, state.meter);
+        for (const el of voice) processRhythmElement(state, el, content, issues);
       });
     });
   }
-  for (const state of strands.values()) flushRhythmState(state, false, meter, content, issues);
+  for (const state of strands.values()) flushRhythmState(state, false, state.meter, content, issues);
   return issues;
 }
 
