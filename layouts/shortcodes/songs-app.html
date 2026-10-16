@@ -287,6 +287,27 @@
   </dialog>
 </div>
 
+<div id="installHint" class="rj-modal-overlay" hidden>
+  <dialog class="rj-modal" open aria-modal="true" aria-labelledby="installHintTitle">
+    <div class="rj-modal-head">
+      <h2 class="rj-modal-title" id="installHintTitle">{{ i18n "songs_installHintTitle" }}</h2>
+      <button type="button" id="installHintClose" class="rj-modal-close" aria-label="{{ i18n "songs_setlistModalClose_aria" }}">&times;</button>
+    </div>
+    <ol class="rj-install-steps" data-install="ios" hidden>
+      <li>{{ i18n "songs_installHintIosShare" }} <span class="fa-solid fa-arrow-up-from-bracket" aria-hidden="true"></span></li>
+      <li>{{ i18n "songs_installHintIosAdd" }}</li>
+    </ol>
+    <ol class="rj-install-steps" data-install="mac" hidden>
+      <li>{{ i18n "songs_installHintMacFile" }}</li>
+      <li>{{ i18n "songs_installHintMacAdd" }}</li>
+    </ol>
+    <p class="rj-install-note">{{ i18n "songs_installHintNote" }}</p>
+    <div class="rj-modal-actions">
+      <button type="button" id="installHintOk" class="rj-modal-btn rj-modal-btn-primary">{{ i18n "songs_installHintOk" }}</button>
+    </div>
+  </dialog>
+</div>
+
 <div id="inspirationPanel" class="inspiration-panel hideOnprint" hidden>
   <div class="inspiration-resize-handle" id="inspirationResizeHandle" aria-hidden="true" title="{{ i18n "songs_inspirationResizeHandle_title" }}"></div>
   <div class="inspiration-panel-header" id="inspirationPanelHeader">
