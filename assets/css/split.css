@@ -4009,17 +4009,28 @@ body.setlist-dragging {
   opacity: 1;
 }
 /* Touch has no hover: the gap under the open (highlighted) song always shows
-   its scissors — tapping any other row would just open that song instead. */
+   its scissors — tapping any other row would just open that song instead.
+   The gap keeps its zero height (the button straddles the line between the
+   two rows, as on desktop): growing it here made every row below jump each
+   time a different song was opened. A slightly larger circle, plus an
+   invisible ring round it, gives a finger enough to hit. */
 @media (hover: none) {
-  .setlist-song-row.is-current-song + .setlist-split-gap { height: 30px; }
   .setlist-song-row.is-current-song + .setlist-split-gap .setlist-split-btn {
     opacity: 1;
-    left: 4px;
-    top: 4px;
-    width: 34px;
-    height: 24px;
-    border-radius: 12px;
-    font-size: 13px;
+    left: -13px;
+    top: -13px;
+    width: 26px;
+    height: 26px;
+    font-size: 12px;
+  }
+  .setlist-song-row.is-current-song + .setlist-split-gap .setlist-split-btn::after {
+    content: "";
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    bottom: -8px;
+    left: -8px;
+    border-radius: 50%;
   }
 }
 .setlist-set-add {
