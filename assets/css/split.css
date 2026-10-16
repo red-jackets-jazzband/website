@@ -4879,8 +4879,14 @@ body:not(.rj-sheet-active) .rj-sheet-pager .rj-sheet-step {
 */
 @media (min-width: 744px) and (max-width: 1024px),
        (max-width: 1024px) and (orientation: landscape) {
+  /*
+    Key/Tempo and Play/Print/Export share one centred line when it has the
+    width (a tablet in portrait, ~780px and up); narrower, the second group
+    wraps onto its own centred line. Each .sheet-adjust is content-sized
+    rather than a full-width row, so the two only split when they must.
+  */
   #sheetmenu {
-    justify-content: flex-start;
+    justify-content: center;
     /* Tightened from the base 10px so the row still fits the narrowest
        width this block now applies to (744px, iPad Mini portrait) without
        spilling a control onto a third line. */
@@ -4889,7 +4895,7 @@ body:not(.rj-sheet-active) .rj-sheet-pager .rj-sheet-step {
   .sheet-adjust {
     display: flex;
     flex-wrap: wrap;
-    flex-basis: 100%;
+    flex: 0 1 auto;
     justify-content: center;
     gap: 10px;
     row-gap: 8px;
