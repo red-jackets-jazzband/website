@@ -3830,7 +3830,7 @@ select.rj-modal-input {
 }
 .setlist-song-key-badge-key {
   position: relative;
-  font: 600 11px "JetBrains Mono", monospace;
+  font: 600 11px/13px "JetBrains Mono", monospace;
   color: rgba(230,228,224,.4);
 }
 /* The ♭/♯/"m" after the letter (keys.js's setKeyText) hangs outside the
@@ -3842,11 +3842,18 @@ select.rj-modal-input {
   left: 100%;
   top: 0;
   white-space: nowrap;
-  /* The fallback ♭/♯ carries its own side bearing; pull it in to the letter,
-     and pull a minor key's "m" in after it the same way. */
+  /* The fallback ♭/♯ carries its own side bearing; pull it in to the letter. */
   margin-left: -1px;
+  /* A minor key's "m": at full size JetBrains Mono's is as wide as a
+     capital and reads like a third letter, so it's set smaller and tucked
+     in, the way a chord symbol writes it. */
+  font-size: 9px;
+  line-height: 13px;
+  font-weight: 500;
+  letter-spacing: -.5px;
 }
 .setlist-song-key-badge-acc {
+  font-size: 11px;
   margin-right: -1px;
 }
 /* The song's key differs from its own written key (a per-setlist override is
