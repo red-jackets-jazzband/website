@@ -193,7 +193,14 @@ export function createAbcjsStub({ audioSupported = false, exportAudioBuffer } = 
           if (this._cursorControl?.onEvent) {
             this._cursorControl.onEvent({ elements: stub._warpEventElements || [] });
           }
-          return Promise.resolve();
+          // Like ABCjs, a controller playing when setWarp is called is
+          // playing again once its re-prime is done — Stop or no Stop in
+          // between. A test may hold the re-prime in flight with
+          // stub._warpPromise.
+          const wasPlaying = this.isStarted;
+          return (stub._warpPromise || Promise.resolve()).then(() => {
+            if (wasPlaying) this.isStarted = true;
+          });
         };
         calls.synthControllers.push(this);
       },
