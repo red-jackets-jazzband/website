@@ -96,10 +96,13 @@ function scanIconNames(faCss) {
 }
 
 // `.fa-play{--fa:"\f04b"}` (plus the duotone `--fa--fa` twin some icons
-// carry): a rule that only names one icon's glyph.
+// carry): a rule that only names one icon's glyph. Not a style rule like
+// Font Awesome 7's `.fa-solid{--fa-style:900}`, which sets other --fa-* props.
+const GLYPH_PROPS = new Set(["--fa", "--fa--fa"]);
 function iconRuleName(rule) {
   const decls = rule.nodes.filter((node) => node.type === "decl");
-  if (decls.length === 0 || !decls.every((decl) => decl.prop.startsWith("--fa"))) return null;
+  if (!decls.some((decl) => decl.prop === "--fa")) return null;
+  if (!decls.every((decl) => GLYPH_PROPS.has(decl.prop))) return null;
   const selectors = rule.selectors.map((sel) => sel.trim());
   if (!selectors.every((sel) => /^\.fa-[a-z0-9-]+$/.test(sel))) return null;
   return selectors.map((sel) => sel.slice(1));
