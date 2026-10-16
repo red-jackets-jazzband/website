@@ -70,8 +70,9 @@ export function isRenderWrite(meta) {
 
 // The meta tag for a write whose re-render may be done in the background: the
 // sheet on screen stays until the new one is ready, then is swapped in at once
-// (a Layers switch: songs/layers/panel.js; a Key stepper press:
-// sheet/controls.js — sheet.js's rerenderInBackground).
+// (sheet.js's rerenderInBackground): every control a visitor uses that
+// changes the drawing — a Layers switch, the Key stepper, the Instrument,
+// Comping, Solo and Practice pickers, and the Mixer.
 export const BACKGROUND = Object.freeze({ source: "background" });
 
 export function isBackgroundWrite(meta) {

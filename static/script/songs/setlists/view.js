@@ -866,29 +866,31 @@ export function createSetlistView(ctx) {
       const stored = Number.isFinite(n) && n !== 0 ? String(n) : "";
       if (stored === String(song.key == null ? "" : song.key)) return;
       updateSongKeyInPersonalSetlist(ctx.storage(), currentPersonalId, currentSetlistSongIndex, stored);
-      refreshAfterSheet(isBackgroundWrite(meta));
+      afterSheet(isBackgroundWrite(meta), "list", refreshOpenPersonal);
     });
   }
 
-  // A Key stepper press re-engraves the sheet in the background; redrawing
-  // the list (and rebuilding the booklet) in the same click would hold the
-  // page up after all, once per press. So the list follows once the sheet is
-  // done, however many presses that took.
-  let refreshPending = false;
-  function refreshAfterSheet(background) {
+  // A Key stepper press (or an Instrument pick) re-engraves the sheet in the
+  // background; redrawing the list or rebuilding the booklet in the same
+  // click would hold the page up after all, once per press. So `fn` runs
+  // once the sheet is done, however many presses that took — once per `key`
+  // — and only if the visitor is still in the same open setlist.
+  const pendingAfterSheet = new Set();
+  function afterSheet(background, key, fn) {
     if (!background || !ctx.sheet.whenIdle) {
-      refreshOpenPersonal();
+      fn();
       return;
     }
-    if (refreshPending) return;
-    refreshPending = true;
+    if (pendingAfterSheet.has(key)) return;
+    pendingAfterSheet.add(key);
     const id = ctx.state.currentPersonalId;
+    const setlist = ctx.state.currentOpenSetlistName;
     ctx.sheet.whenIdle().then(() => {
-      refreshPending = false;
-      // Not if the visitor has left this setlist in the meantime.
-      if (ctx.state.setlistsView === "open" && ctx.state.currentPersonalId === id) refreshOpenPersonal();
+      pendingAfterSheet.delete(key);
+      const { setlistsView, currentPersonalId, currentOpenSetlistName } = ctx.state;
+      if (setlistsView === "open" && currentPersonalId === id && currentOpenSetlistName === setlist) fn();
     }, () => {
-      refreshPending = false;
+      pendingAfterSheet.delete(key);
     });
   }
 
@@ -944,8 +946,9 @@ export function createSetlistView(ctx) {
 
     // The booklet is engraved for whichever instrument the sheet is on; rebuild
     // it off-screen when the instrument changes so a later "Print …" is current.
-    ctx.store.subscribe("settings", (_settings, changed) => {
-      if (!changed.includes("instrument")) return;
+    // After the sheet, when it's being redrawn in the background (a pick in
+    // the Instrument dropdown), so the two don't share the click.
+    const rebuildBooklet = () => {
       if (ctx.state.setlistsView === "open" && ctx.state.currentOpenSongs) {
         ctx.setlistPrint.buildBooklet(
           ctx.state.currentOpenSetlistName,
@@ -953,6 +956,10 @@ export function createSetlistView(ctx) {
           ctx.state.currentOpenSetlistDesc,
         );
       }
+    };
+    ctx.store.subscribe("settings", (_settings, changed, _name, meta) => {
+      if (!changed.includes("instrument")) return;
+      afterSheet(isBackgroundWrite(meta), "booklet", rebuildBooklet);
     });
 
     initTransposeWriteBack();

@@ -440,6 +440,22 @@ test("a burst of Key presses keeps the page responsive and engraves once", async
   }
 });
 
+test("an Instrument pick or a Mixer change redraws in the background too", async () => {
+  const { ctx, abcjs, sheet, cleanup } = setup();
+  try {
+    await withAbcjsAsync(withMarkedLines(abcjs), async () => {
+      sheet.render(TUNE);
+      ctx.store.set("settings", { instrument: "trumpet" }, BACKGROUND);
+      ctx.store.set("mixer", { swing: 40 }, BACKGROUND);
+      assert.equal(abcjs.calls.renderAbc.length, 1, "nothing is engraved during the clicks");
+      await sheet.whenIdle();
+      assert.equal(abcjs.calls.renderAbc.length, 2);
+    });
+  } finally {
+    cleanup();
+  }
+});
+
 test("an ordinary render takes over from a background render still on its way", async () => {
   const { ctx, abcjs, sheet, cleanup } = setup();
   try {
