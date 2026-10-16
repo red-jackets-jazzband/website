@@ -6,6 +6,7 @@ import { createAbcjsStub, withAbcjs } from "../../../../tests/helpers/stubs.js";
 import { createAudioPlayer } from "./player.js";
 import { loadPersisted } from "../../lib/core/persisted.js";
 import { PLAYBACK_SLICE } from "./state.js";
+import { MIX_ONLY } from "../core/state.js";
 
 // The persisted value the app store seeds repeatCount from (songs/audio/state.js).
 const loadRepeatCountState = () => loadPersisted(PLAYBACK_SLICE.prefs).repeatCount;
@@ -1207,4 +1208,41 @@ test("warmUp survives a browser where asking throws", async () => {
     throw new Error("no AudioContext");
   };
   await assert.doesNotReject(warmUpWith(abcjs));
+});
+
+test("a Mixer mute re-primes the loaded synth in place, never loading a new tune", async () => {
+  const { ctx, audio, cleanup } = setup({
+    mixerVoices: [
+      { id: "1", index: 0, label: "Trumpet", muted: false },
+      { id: "2", index: 1, label: "Sousaphone", muted: false },
+    ],
+  });
+  const abcjs = createAbcjsStub({ audioSupported: true });
+  try {
+    const tune = { metaText: {}, formatting: { midi: { bassvol: [64], chordvol: [64] } } };
+    withAbcjs(abcjs, () => audio.initForTune(tune));
+    await flush();
+    const ctrl = abcjs.calls.synthControllers.at(-1);
+
+    // Never played: nothing primed, the new options wait for the first Play.
+    const voices = ctx.state.mixerVoices.map((v) => (v.index === 1 ? { ...v, muted: true } : v));
+    withAbcjs(abcjs, () => ctx.store.set("mixer", { mixerVoices: voices }, MIX_ONLY));
+    await flush();
+    assert.deepEqual(ctrl.options.voicesOff, [1]);
+    assert.equal(abcjs.calls.setWarp.length, 0);
+
+    withAbcjs(abcjs, () => audio.playPause());
+    await flush();
+    const setTunes = abcjs.calls.setTune.length;
+    withAbcjs(abcjs, () => ctx.store.set("mixer", { mixer: { ...ctx.state.mixer, bassMuted: true, chordsMuted: false, chordsVolume: 100 } }, MIX_ONLY));
+    await flush();
+    assert.equal(abcjs.calls.setWarp.length, 1, "re-primed at the same warp, keeping position");
+    assert.equal(abcjs.calls.setWarp[0].warp, 100);
+    assert.deepEqual(tune.formatting.midi.bassvol, [0], "the muted bass is silent in the loaded tune");
+    assert.deepEqual(tune.formatting.midi.chordvol, [127], "an unmuted channel at full volume");
+    assert.equal(abcjs.calls.setTune.length, setTunes, "no new tune");
+    assert.equal(abcjs.calls.synthControllers.length, 1);
+  } finally {
+    cleanup();
+  }
 });

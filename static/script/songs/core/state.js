@@ -79,6 +79,15 @@ export function isBackgroundWrite(meta) {
   return Boolean(meta) && meta.source === BACKGROUND.source;
 }
 
+// The meta tag for a Mixer write only the synth needs — a mute: the sheet
+// isn't re-engraved (the drawing doesn't change); the audio player re-primes
+// the loaded tune with the new levels instead (songs/audio/player.js).
+export const MIX_ONLY = Object.freeze({ source: "mix-only" });
+
+export function isMixOnlyWrite(meta) {
+  return Boolean(meta) && meta.source === MIX_ONLY.source;
+}
+
 export const APP_SLICES = [CATALOG_SLICE, NAV_SLICE, SETTINGS_SLICE, TUNE_SLICE, MIXER_SLICE, PLAYBACK_SLICE, LAYERS_SLICE];
 
 const NOTHING_STORED = () => null;

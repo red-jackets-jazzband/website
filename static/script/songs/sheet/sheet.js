@@ -15,7 +15,7 @@ import { renderChordTable, scanRepeatBoundaries, fitChordTable, fitSongForms } f
 import { stylePartMarkers, keepPartsTogether, applyCompingColors, applySplitCompingColors } from "./decorations.js";
 import { updateIrealProLink } from "./irealpro-link.js";
 import { decorateLayers } from "../layers/overlays.js";
-import { RENDER, isBackgroundWrite, isRenderWrite } from "../core/state.js";
+import { RENDER, isBackgroundWrite, isMixOnlyWrite, isRenderWrite } from "../core/state.js";
 import { tl } from "../../lib/core/i18n.js";
 
 const LIVE_TARGETS = { notationId: "notation", chordId: "chordtable", titleId: "songtitle" };
@@ -364,7 +364,8 @@ const SETTINGS_VIEW_KEYS = new Set(["advancedOpen"]);
   render makes itself (tagged RENDER: the Key stepper seeded by render(), the
   Mixer's voice list), which must not loop back. A write tagged BACKGROUND
   (core/state.js: every sheet control and Mixer change a visitor makes) calls
-  `rerenderInBackground` instead, when given.
+  `rerenderInBackground` instead, when given. A Mixer write tagged MIX_ONLY
+  (a mute) isn't drawn at all: the audio player applies it.
   Exported so a test double of the sheet re-renders on exactly the same
   changes (tests/helpers/ctx.js).
 */
@@ -375,7 +376,8 @@ export function subscribeRerender(store, rerender, rerenderInBackground = rerend
     else rerender();
   });
   const offMixer = store.subscribe("mixer", (_mixer, changed, _name, meta) => {
-    if (isRenderWrite(meta) || !changed.some((key) => MIXER_RENDER_KEYS.has(key))) return;
+    if (isRenderWrite(meta) || isMixOnlyWrite(meta)) return;
+    if (!changed.some((key) => MIXER_RENDER_KEYS.has(key))) return;
     if (isBackgroundWrite(meta)) rerenderInBackground();
     else rerender();
   });
