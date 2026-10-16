@@ -425,6 +425,36 @@ test("a background Key press redraws the setlist only once the sheet is done", a
   }
 });
 
+test("a pending redraw for one setlist doesn't swallow the same redraw for the next", async () => {
+  const releases = [];
+  const { view, ctx, entry, cleanup } = setup({ songs: [{ file: "a.abc" }] });
+  try {
+    ctx.sheet.whenIdle = () => new Promise((resolve) => {
+      releases.push(resolve);
+    });
+    const rebuilt = [];
+    ctx.setlistPrint.buildBooklet = (name) => rebuilt.push(name);
+    view.initControls();
+    view.renderOpen(entry.name, entry.songs, entry, "");
+    ctx.state.setlistsView = "open";
+    ctx.state.currentOpenSongs = entry.songs;
+    rebuilt.length = 0; // opening it built the booklet once
+
+    ctx.state.currentOpenSetlistName = "First";
+    ctx.store.set("settings", { instrument: "trumpet" }, BACKGROUND);
+    ctx.state.currentOpenSetlistName = "Second";
+    ctx.store.set("settings", { instrument: "trombone" }, BACKGROUND);
+    assert.equal(releases.length, 2, "each setlist waits for the sheet itself");
+
+    releases.forEach((release) => release());
+    await Promise.resolve();
+    await Promise.resolve();
+    assert.deepEqual(rebuilt, ["Second"], "only the setlist still open is rebuilt");
+  } finally {
+    cleanup();
+  }
+});
+
 test("clicking the '+ note' button reveals an editable field; blur saves the trimmed text", () => {
   const { view, entry, storage, cleanup } = setup({ songs: [{ file: "a.abc" }] });
   try {

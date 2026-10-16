@@ -874,23 +874,24 @@ export function createSetlistView(ctx) {
   // background; redrawing the list or rebuilding the booklet in the same
   // click would hold the page up after all, once per press. So `fn` runs
   // once the sheet is done, however many presses that took — once per `key`
-  // — and only if the visitor is still in the same open setlist.
+  // and open setlist — and only if the visitor is still in that setlist.
   const pendingAfterSheet = new Set();
   function afterSheet(background, key, fn) {
     if (!background || !ctx.sheet.whenIdle) {
       fn();
       return;
     }
-    if (pendingAfterSheet.has(key)) return;
-    pendingAfterSheet.add(key);
     const id = ctx.state.currentPersonalId;
     const setlist = ctx.state.currentOpenSetlistName;
+    const pendingKey = JSON.stringify([key, id, setlist]);
+    if (pendingAfterSheet.has(pendingKey)) return;
+    pendingAfterSheet.add(pendingKey);
     ctx.sheet.whenIdle().then(() => {
-      pendingAfterSheet.delete(key);
+      pendingAfterSheet.delete(pendingKey);
       const { setlistsView, currentPersonalId, currentOpenSetlistName } = ctx.state;
       if (setlistsView === "open" && currentPersonalId === id && currentOpenSetlistName === setlist) fn();
     }, () => {
-      pendingAfterSheet.delete(key);
+      pendingAfterSheet.delete(pendingKey);
     });
   }
 

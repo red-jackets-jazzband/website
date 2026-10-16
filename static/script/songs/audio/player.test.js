@@ -1246,3 +1246,67 @@ test("a Mixer mute re-primes the loaded synth in place, never loading a new tune
     cleanup();
   }
 });
+
+function setupRemix() {
+  const env = setup({ mixerVoices: [{ id: "1", index: 0, label: "Melody", muted: false }] });
+  const abcjs = createAbcjsStub({ audioSupported: true });
+  return { ...env, abcjs };
+}
+
+const muteBass = (ctx) => ctx.store.set("mixer", { mixer: { ...ctx.state.mixer, bassMuted: true } }, MIX_ONLY);
+
+test("a remix of a playing tune pauses it, re-primes, then resumes where it was", async () => {
+  const { ctx, audio, abcjs, cleanup } = setupRemix();
+  try {
+    withAbcjs(abcjs, () => audio.initForTune({ metaText: {} }));
+    await flush();
+    withAbcjs(abcjs, () => audio.playPause());
+    await flush();
+    const ctrl = abcjs.calls.synthControllers.at(-1);
+    ctrl.percent = 0.4;
+    withAbcjs(abcjs, () => muteBass(ctx));
+    await flush();
+    assert.equal(abcjs.calls.setWarp.length, 1);
+    assert.equal(ctrl.isStarted, true, "playing again");
+    assert.equal(abcjs.calls.seek.at(-1), 0.4, "from where it was");
+  } finally {
+    cleanup();
+  }
+});
+
+test("a Stop while a remix is re-priming keeps the tune stopped", async () => {
+  const { ctx, audio, abcjs, cleanup } = setupRemix();
+  try {
+    withAbcjs(abcjs, () => audio.initForTune({ metaText: {} }));
+    await flush();
+    withAbcjs(abcjs, () => audio.playPause());
+    await flush();
+    const ctrl = abcjs.calls.synthControllers.at(-1);
+    let release;
+    abcjs._warpPromise = new Promise((resolve) => { release = resolve; });
+    withAbcjs(abcjs, () => muteBass(ctx));
+    await flush();
+    withAbcjs(abcjs, () => audio.stop());
+    release();
+    await flush();
+    await flush();
+    assert.equal(ctrl.isStarted, false, "the remix never restarts a stopped tune");
+    assert.equal(audio.isPlaying, false);
+  } finally {
+    cleanup();
+  }
+});
+
+test("a new tune takes the Mixer's current Bass/Chords levels, whatever text it was engraved from", async () => {
+  const { ctx, audio, abcjs, cleanup } = setupRemix();
+  try {
+    ctx.store.set("mixer", { mixer: { ...ctx.state.mixer, bassMuted: true } }, MIX_ONLY);
+    // Engraved by a background render that started before that mute.
+    const tune = { metaText: {}, formatting: { midi: { bassvol: [100], chordvol: [100] } } };
+    withAbcjs(abcjs, () => audio.initForTune(tune));
+    await flush();
+    assert.deepEqual(tune.formatting.midi.bassvol, [0]);
+  } finally {
+    cleanup();
+  }
+});

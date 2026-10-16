@@ -692,17 +692,43 @@ export function createAudioPlayer(ctx) {
     if (!ctrl || !state.currentVisualObj) return;
     restampAccompaniment(state.currentVisualObj, ctx.state.mixer);
     ctrl.options = synthParams();
-    const reprime = () => ctrl.setWarp(ctrl.warp);
-    let pending;
-    if (ctrl.isLoading) pending = ctrl.runWhenReady(reprime);
-    else if (ctrl.isLoaded) pending = reprime();
-    else return;
+    if (!ctrl.isLoading && !ctrl.isLoaded) return;
+    // setWarp left to itself resumes a playing controller once its async
+    // rebuild is done, Stop or no Stop in between. So pause it here (play()
+    // toggles a playing controller to paused), re-prime it paused, and only
+    // resume if no Stop came along meanwhile.
+    const token = state.stopToken;
+    const reprime = () => {
+      const wasPlaying = Boolean(ctrl.isStarted);
+      const percent = ctrl.percent;
+      const paused = wasPlaying ? ctrl.play() : undefined;
+      return Promise.resolve(paused)
+        .then(() => ctrl.setWarp(ctrl.warp))
+        .then(() => ({ wasPlaying, percent }));
+    };
+    const pending = ctrl.isLoading ? ctrl.runWhenReady(reprime) : reprime();
     Promise.resolve(pending)
-      .then(() => {
-        if (silenceIfStale(ctrl)) return;
-        setIsPlaying(Boolean(ctrl.isStarted));
-      })
+      .then((result) => finishRemix(ctrl, token, result))
       .catch((err) => console.warn("Mixer change failed:", err));
+  }
+
+  function finishRemix(ctrl, token, { wasPlaying, percent }) {
+    if (silenceIfStale(ctrl)) return undefined;
+    if (token !== state.stopToken) {
+      // Stopped while re-priming: the rebuild has put the position back where
+      // it was, so reset it to the top again — unless Play has since started.
+      if (!ctrl.isStarted) stop();
+      return undefined;
+    }
+    if (!wasPlaying || ctrl.isStarted) {
+      setIsPlaying(Boolean(ctrl.isStarted));
+      return undefined;
+    }
+    return Promise.resolve(ctrl.play()).then(() => {
+      if (silenceIfStale(ctrl) || token !== state.stopToken) return;
+      ctrl.seek(percent);
+      setIsPlaying(Boolean(ctrl.isStarted));
+    });
   }
 
   function stepTempo(delta) {
@@ -839,6 +865,9 @@ export function createAudioPlayer(ctx) {
     state.firstBarMs = undefined;
     state.measureStartMs = [];
     state.currentVisualObj = visualObj;
+    // A Bass/Chords change made while a background render was on its way
+    // isn't in the text it engraved: bring the new tune up to date.
+    restampAccompaniment(visualObj, ctx.state.mixer);
     // ABCjs's own getBpm(), not a raw read of metaText.tempo.bpm: a tune with
     // no Q: field at all has metaText.tempo undefined, but ABCjs's synth
     // still plays it at its own default tempo (180qpm, or 120 for a compound
