@@ -374,7 +374,8 @@ function withMarkedLines(abcjs) {
     const line = document.createElement("div");
     line.className = "line";
     line.textContent = `render ${n}`;
-    target.replaceChildren(line); // ABCjs empties its target first too
+    target.textContent = ""; // ABCjs empties its target first too
+    target.append(line);
     return renderAbc(target, abc, params);
   };
   return abcjs;
@@ -457,6 +458,25 @@ test("whenIdle resolves at once when nothing is being drawn", async () => {
     }, () => false);
     await Promise.resolve();
     assert.equal(idle, true);
+  } finally {
+    cleanup();
+  }
+});
+
+test("a tune subscriber that throws after a background swap still releases whenIdle, without re-engraving", async (t) => {
+  const { ctx, abcjs, sheet, cleanup } = setup();
+  t.mock.method(console, "warn", () => {});
+  try {
+    await withAbcjsAsync(withMarkedLines(abcjs), async () => {
+      sheet.render(TUNE);
+      ctx.store.subscribe("tune", () => {
+        throw new Error("synth can't start");
+      });
+      toggleLayer(ctx, "scale-degrees");
+      await sheet.whenIdle();
+      assert.equal(abcjs.calls.renderAbc.length, 2, "engraved once in the background, never retried");
+      assert.equal(document.getElementById("notation").textContent, "render 2");
+    });
   } finally {
     cleanup();
   }
