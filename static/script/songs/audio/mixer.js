@@ -5,7 +5,7 @@ import { readPref, writePref } from "../../lib/core/preferences.js";
 import { GM_VOICES, defaultVoiceProgram } from "../../lib/audio/gm-voices.js";
 import { GCHORD_PATTERNS, DEFAULT_PROGRAM, isCompingLabel } from "../../lib/audio/audio-mix.js";
 import { CHANNELS } from "./state.js";
-import { RENDER } from "../core/state.js";
+import { BACKGROUND, RENDER } from "../core/state.js";
 import { tl } from "../../lib/core/i18n.js";
 
 // A fader drag is committed to the store — and so re-engraved by the sheet,
@@ -349,14 +349,16 @@ export function createMixer(ctx) {
   const swingValue = () => (drafts.has("swing") ? drafts.get("swing") : ctx.state.swing);
   const voiceWithDraft = (v) => (drafts.has(`voice:${v.slug}`) ? { ...v, volume: drafts.get(`voice:${v.slug}`) } : v);
 
-  function setChannel(patch, meta) {
+  // Every write re-engraves the sheet; a user's own (no `meta`) does so in
+  // the background, so a mute or fader never holds the page up.
+  function setChannel(patch, meta = BACKGROUND) {
     ctx.store.set("mixer", { mixer: { ...mixerState(), ...patch } }, meta);
   }
 
   // Replace one voice's entry (by slug) in ctx.state.mixerVoices; voice
   // channels persist per voice name (dynamic keys, so outside the slice's
   // own pref schema) and are written here.
-  function setVoice(slug, patch, meta) {
+  function setVoice(slug, patch, meta = BACKGROUND) {
     const voices = ctx.state.mixerVoices.map((v) => (v.slug === slug ? { ...v, ...patch } : v));
     ctx.store.set("mixer", { mixerVoices: voices }, meta);
     const updated = voices.find((v) => v.slug === slug);
@@ -365,7 +367,7 @@ export function createMixer(ctx) {
 
   // `meta` tags the writes — RENDER when flushed from inside a render
   // (syncVoices), so they don't trigger a second one.
-  function commitDrafts(meta) {
+  function commitDrafts(meta = BACKGROUND) {
     if (drafts.size === 0) return;
     const pending = new Map(drafts);
     drafts.clear();
@@ -687,7 +689,7 @@ export function createMixer(ctx) {
     buildGchordPatternOptions(select);
     select.value = ctx.state.gchordPattern;
     select.addEventListener("change", () => {
-      ctx.state.gchordPattern = select.value;
+      ctx.store.set("mixer", { gchordPattern: select.value }, BACKGROUND);
     });
   }
 
@@ -711,7 +713,7 @@ export function createMixer(ctx) {
   // (see audio-player.js's initForTune), so there's nothing to debounce here.
   function wireQuality() {
     on("mixerHighQualityToggleBtn", "click", () => {
-      ctx.state.highQualityAudio = !ctx.state.highQualityAudio;
+      ctx.store.set("mixer", { highQualityAudio: !ctx.state.highQualityAudio }, BACKGROUND);
       updateQualityToggleVisual();
     });
   }
