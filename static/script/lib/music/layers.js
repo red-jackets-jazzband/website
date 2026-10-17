@@ -83,7 +83,7 @@ export const LAYERS = [
     id: "key-centers",
     group: tl("layers_group_harmony", "Harmony"),
     label: tl("layer_key_centers_label", "Key centres"),
-    hint: tl("layer_key_centers_hint", "Tints each stretch of the tune by the key it is in — a part in the minor, a ii–V–I that moves to a new key — and names the key where it starts."),
+    hint: tl("layer_key_centers_hint", "Tints each stretch of the tune by the key signature it is written in — a part in the minor, a modulation — and names the key where it starts."),
     order: 7,
     availableFor: () => true,
     appliesTo: () => true,
