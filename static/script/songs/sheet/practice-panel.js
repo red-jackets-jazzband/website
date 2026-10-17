@@ -89,13 +89,9 @@ function buildPanel() {
     el("div", { class: "practice-choices practice-choices--shapes" }, shapes),
   ]);
   const rhythmNum = el("span", { class: "practice-step-num", text: "3" });
-  const patternHint = el("p", {
-    class: "practice-pattern-hint", id: "practicePatternHint",
-    text: tl("practice_pattern_hint", "Tick one rhythm to keep it all the way through, or several to switch between them every two bars."),
-  });
   const patternGrid = el("div", {
     class: "practice-choices practice-choices--patterns", id: "practicePatterns",
-    attrs: { role: "group", "aria-labelledby": "practicePatternHint" },
+    attrs: { role: "group", "aria-labelledby": "practiceRhythmTitle" },
   }, patterns);
   const done = el("button", { type: "button", class: "practice-done", id: "practiceDone", text: tl("practice_done", "Done") });
   const panel = el("section", {
@@ -111,8 +107,7 @@ function buildPanel() {
     ]),
     shapeStep,
     el("div", { class: "practice-step" }, [
-      el("div", { class: "practice-step-title" }, [rhythmNum, el("span", { text: tl("practice_step_rhythm", "Rhythm") })]),
-      patternHint,
+      el("div", { class: "practice-step-title" }, [rhythmNum, el("span", { id: "practiceRhythmTitle", text: tl("practice_step_rhythm", "Rhythm") })]),
       patternGrid,
     ]),
     el("div", { class: "practice-foot" }, [
