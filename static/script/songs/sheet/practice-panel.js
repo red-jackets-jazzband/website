@@ -17,7 +17,7 @@ import { rhythmSvg } from "./rhythm-svg.js";
   run kind), 3 rhythm (every PRACTICE_RHYTHMS pattern drawn as one bar of
   rhythm notation, with a tick box: one ticked plays all the way, several
   take turns; never none — with none stored yet, the exercise's own set
-  shows ticked), then a one-bar preview and Done. Any pick also switches practice on; the switch
+  shows ticked), then Done. Any pick also switches practice on; the switch
   remembers the exercise it last turned off. sheet.js appends the exercise
   as one more staff.
 */
@@ -97,7 +97,6 @@ function buildPanel() {
     class: "practice-choices practice-choices--patterns", id: "practicePatterns",
     attrs: { role: "group", "aria-labelledby": "practicePatternHint" },
   }, patterns);
-  const preview = el("span", { class: "practice-preview" });
   const done = el("button", { type: "button", class: "practice-done", id: "practiceDone", text: tl("practice_done", "Done") });
   const panel = el("section", {
     class: "practice-panel", id: "practicePanel", attrs: { "aria-label": tl("practice_title", "Practice routine") },
@@ -117,12 +116,11 @@ function buildPanel() {
       patternGrid,
     ]),
     el("div", { class: "practice-foot" }, [
-      el("div", { class: "practice-foot-text" }, [preview]),
       done,
     ]),
   ]);
   panel.hidden = true;
-  return { panel, kinds, shapes, patterns, shapeStep, rhythmNum, preview, done };
+  return { panel, kinds, shapes, patterns, shapeStep, rhythmNum, done };
 }
 
 export function createPracticePanel(ctx) {
@@ -183,10 +181,8 @@ export function createPracticePanel(ctx) {
     markPressed(ui.shapes, on ? runs : null);
     ui.shapeStep.hidden = !runKind;
     ui.rhythmNum.textContent = runKind ? "3" : "2";
-    ui.preview.textContent = "";
     const ticked = tickedRhythms(rhythm, kind);
     markPressed(ui.patterns, (value) => ticked.includes(value));
-    ui.preview.append(rhythmSvg((PRACTICE_RHYTHMS.find((r) => ticked.includes(r.value)) || PRACTICE_RHYTHMS[0]).cell));
   };
   draw();
   ctx.store.subscribe("settings", draw);
