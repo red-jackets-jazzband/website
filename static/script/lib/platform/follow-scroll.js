@@ -28,16 +28,18 @@ export const LEAD_PX = 16;
 // "about to run off": scrolling a little early keeps the next line in sight.
 export const BOTTOM_MARGIN = 0.1;
 
-// Whether any of `rect` shows inside the band.
-function inBand(rect, band) {
-  return rect.bottom > band.top && rect.top < band.bottom && rect.bottom > rect.top;
+// Whether any of the chord table (its rect, or null for none) shows inside
+// the band — while it does, playback leaves the page where it is.
+export function chordTableInView(chordTable, band) {
+  return Boolean(chordTable && band)
+    && chordTable.bottom > band.top && chordTable.top < band.bottom && chordTable.bottom > chordTable.top;
 }
 
 export function followScrollTarget({ line, band, scrollTop, chordTable = null }) {
   if (!line || !band || !Number.isFinite(scrollTop) || scrollTop <= AT_TOP_PX) return null;
   const height = band.bottom - band.top;
   if (height <= 0) return null;
-  if (chordTable && inBand(chordTable, band)) return null;
+  if (chordTableInView(chordTable, band)) return null;
   const bottom = band.bottom - height * BOTTOM_MARGIN;
   if (line.top >= band.top && line.bottom <= bottom) return null;
   // A line taller than the band that already starts at its top is as

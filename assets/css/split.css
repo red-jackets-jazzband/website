@@ -5925,12 +5925,6 @@ body:not(.rj-sheet-active) .rj-sheet-pager .rj-sheet-step {
     padding: 0 24px 0 14px;
     background-position: right 8px center;
   }
-  #sheetmenu #compingSlot .sheet-icon-btn {
-    width: 34px;
-  }
-  .comping-part-btn {
-    width: 30px;
-  }
 }
 #sheetmenu #compingSlot .sheet-icon-btn {
   box-sizing: border-box;
@@ -5964,6 +5958,16 @@ body:not(.rj-sheet-active) .rj-sheet-pager .rj-sheet-step {
   color: rgba(236,234,230,.72);
   font: 600 13px "Montserrat", sans-serif;
   cursor: pointer;
+}
+/* After both buttons' default widths (same specificity), so these win on
+   a phone and the whole comping pill fits. */
+@media (max-width: 600px) {
+  #sheetmenu #compingSlot .sheet-icon-btn {
+    width: 34px;
+  }
+  .comping-part-btn {
+    width: 30px;
+  }
 }
 .comping-part-btn[aria-pressed="true"] {
   background: var(--rj-gold);
