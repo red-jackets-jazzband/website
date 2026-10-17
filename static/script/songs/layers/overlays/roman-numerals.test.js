@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { JSDOM } from "jsdom";
 import ABCJS from "abcjs";
 import { drawRomanNumerals } from "./roman-numerals.js";
+import { decorateLayers } from "../overlays.js";
 
 let dom;
 
@@ -66,4 +67,17 @@ test("a numeral running into the next chord on its line shrinks, not below 60%",
 test("a tune with no key draws nothing", () => {
   drawRomanNumerals(tuneWithChordGroups('"C" C |', [], "none"));
   assert.equal(spans().length, 0);
+});
+
+test("with Outside chords on too, the magenta shade takes in the numeral", () => {
+  const tune = tuneWithChordGroups('"C" C | "D7" D |');
+  // A symbol measures 20 wide, 12 more once its numeral is appended.
+  for (const text of document.querySelectorAll("text.abcjs-chord")) {
+    text.getBBox = () => ({ x: 100, y: 0, width: text.querySelector("tspan") ? 32 : 20, height: 10 });
+  }
+  decorateLayers(document.getElementById("notation"), tune, { layersApplied: ["outside-chords", "roman-numerals"], progressions: [] });
+  const shades = [...document.querySelectorAll("rect.rj-layer-outside-chord")];
+  assert.equal(shades.length, 1, "only D7 is outside C");
+  assert.equal(shades[0].nextSibling.textContent, "D7II7");
+  assert.equal(Number(shades[0].getAttribute("width")), 32 + 6);
 });
