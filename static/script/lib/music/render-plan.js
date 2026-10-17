@@ -41,12 +41,6 @@ const ROMAN_INSTRUMENT = "concert_+_roman";
   layers slice's activeLayers) are live-sheet only as well: a booklet prints
   the plain chart.
 */
-// The patterns switched off in the current rhythm mix (none for one pattern).
-function practiceSkip(settings) {
-  const skips = settings.practiceSkips;
-  return (skips && skips[settings.practiceRhythm]) || [];
-}
-
 export function effectiveSheetSettings(settings, { booklet = false, layers = {} } = {}) {
   const live = !booklet;
   return {
@@ -57,7 +51,7 @@ export function effectiveSheetSettings(settings, { booklet = false, layers = {} 
     compingParts: settings.compingSplit ? settings.compingParts : null,
     solo: live && settings.soloEnabled ? settings.solo : "off",
     practice: live && settings.practice ? settings.practice : "off",
-    practiceOptions: { rhythm: settings.practiceRhythm, skip: practiceSkip(settings) },
+    practiceOptions: { rhythms: settings.practiceRhythms },
   };
 }
 

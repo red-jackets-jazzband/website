@@ -31,14 +31,6 @@ const SETTINGS = {
   soloEnabled: false,
 };
 
-test("effectiveSheetSettings passes on the patterns switched off in the current mix", () => {
-  const practiceSkips = { varied: ["tied"], syncopated: ["pushes"] };
-  assert.deepEqual(
-    effectiveSheetSettings({ ...SETTINGS, practiceRhythm: "syncopated", practiceSkips }).practiceOptions,
-    { rhythm: "syncopated", skip: ["pushes"] },
-  );
-});
-
 test("effectiveSheetSettings: comping, solo and practice stay on with the drawer closed", () => {
   const picked = { ...SETTINGS, comping: "charleston", practice: "scales" };
   for (const advancedOpen of [false, true]) {
@@ -50,8 +42,8 @@ test("effectiveSheetSettings: comping, solo and practice stay on with the drawer
   }
   assert.equal(effectiveSheetSettings(picked, { booklet: true }).practice, "off");
   assert.deepEqual(
-    effectiveSheetSettings({ ...SETTINGS, practiceRhythm: "pairs" }).practiceOptions,
-    { rhythm: "pairs", skip: [] },
+    effectiveSheetSettings({ ...SETTINGS, practiceRhythms: ["pairs", "tied"] }).practiceOptions,
+    { rhythms: ["pairs", "tied"] },
   );
 });
 
