@@ -5,6 +5,7 @@ import {
 } from "../../lib/music/practice.js";
 import { tl } from "../../lib/core/i18n.js";
 import { BACKGROUND } from "../core/state.js";
+import { rhythmSvg } from "./rhythm-svg.js";
 
 /*
   The practice routine (#practiceSlot, in the More-controls drawer): a view
@@ -14,7 +15,7 @@ import { BACKGROUND } from "../core/state.js";
   opens #practicePanel inline below it, three numbered steps read top to
   bottom: 1 what to play (PRACTICE_KINDS), 2 the run's shape (only for a
   run kind), 3 rhythm (One pattern / Syncopated / Varied, the first opening a
-  grid of PRACTICE_RHYTHMS drawn as eight eighth-note cells), then a one-bar
+  grid of PRACTICE_RHYTHMS, each drawn as one bar of rhythm notation), then a one-bar
   preview and Done. Any pick also switches practice on; the switch
   remembers the exercise it last turned off. sheet.js appends the exercise
   as one more staff.
@@ -30,20 +31,6 @@ const DEFAULT_PATTERN = "charleston";
 
 const isPattern = (value) => PRACTICE_RHYTHMS.some((r) => r.value === value);
 const cellOf = (value) => PRACTICE_RHYTHMS.find((r) => r.value === value).cell;
-
-// One bar as eight cells: a note, its hold, or a rest; a tie over the bar line marks the last.
-function cellStrip(cell) {
-  const strip = el("span", { class: "practice-cells", attrs: { "aria-hidden": "true" } });
-  const body = cell.slice(0, 8);
-  [...body].forEach((mark, i) => {
-    let kind = "rest";
-    if (mark === "x") kind = body[i + 1] === "-" ? "note is-held" : "note";
-    else if (mark === "-") kind = "hold";
-    if (i === 7 && cell.endsWith(">")) kind += " is-tied";
-    strip.append(el("span", { class: `practice-cell practice-cell--${kind}` }));
-  });
-  return strip;
-}
 
 function contour(points) {
   const svg = document.createElementNS(SVG_NS, "svg");
@@ -97,7 +84,7 @@ function buildPanel() {
     ...PRACTICE_RHYTHM_MIXES.map((mix) => ({ value: mix.value, label: mix.choice })).reverse()]
     .map((mix) => choice("practice-mix", mix.value, [el("span", { class: "practice-choice-label", text: mix.label })]));
   const patterns = PRACTICE_RHYTHMS.map((rhythm) => choice("practice-pattern", rhythm.value, [
-    cellStrip(rhythm.cell),
+    rhythmSvg(rhythm.cell),
     el("span", { class: "practice-choice-label", text: rhythm.label }),
   ]));
   const shapeStep = el("div", { class: "practice-step", id: "practiceShapeStep" }, [
@@ -198,7 +185,7 @@ export function createPracticePanel(ctx) {
     ui.rhythmNum.textContent = runKind ? "3" : "2";
     ui.patternGrid.hidden = !fixed;
     ui.preview.textContent = "";
-    ui.preview.append(cellStrip(cellOf(fixed ? rhythm : MIX_PREVIEW[rhythm] || DEFAULT_PATTERN)));
+    ui.preview.append(rhythmSvg(cellOf(fixed ? rhythm : MIX_PREVIEW[rhythm] || DEFAULT_PATTERN)));
   };
   draw();
   ctx.store.subscribe("settings", draw);
