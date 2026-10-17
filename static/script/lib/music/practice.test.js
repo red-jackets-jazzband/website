@@ -173,6 +173,13 @@ test("a chromatic note leading up is spelled sharp", () => {
 test("a cell ending in > ties its last note into the next bar's chord", () => {
   assert.equal(rhythmSlots(2, new Set(), ["xxxxxx.x>"]), "xxxxxx.x-xxxxx.x");
   assert.equal(rhythmSlots(2, new Set([1]), ["xxxxxx.x>"]), "xxxxxx.x........", "never into a break");
+  // Into a pattern that opens with a rest (Anticipate, then Late start): the
+  // tied note still carries over onto the downbeat.
+  const handover = rhythmSlots(4, new Set(), ["xxxxxx.x>", ".x--x---"]);
+  assert.equal(handover.slice(8, 16), "-xxxxx.x", "bar 2: the anticipation again, tied into from bar 1");
+  assert.equal(handover.slice(16), "-x--x---.x--x---");
+  const notes = practiceNotes([["F"], ["F"], ["F"], ["F"]], "scales", { rhythms: ["anticipate", "late"], breathEvery: 0 });
+  assert.equal(notes.find((n) => n.start === 7.5).duration, 1, "the and of 4 held into bar 3");
   // The fifth cell (bars 9-10) is the anticipated one.
   const names = [...Array.from({ length: 8 }, () => ["F"]), ["F"], ["C7"]];
   const anticipation = practiceNotes(names, "rhythm").find((n) => n.start === 35.5);

@@ -205,7 +205,9 @@ export function rhythmSlots(bars, breaks, cells, breathEvery = 0) {
       const breath = breathEvery > 0 && bar % breathEvery === breathEvery - 1;
       const cell = cells[Math.floor(bar / CELL_BARS) % cells.length];
       let body = cell.slice(0, SLOTS_PER_BAR);
-      if (tieIn && body[0] === "x") body = "-" + body.slice(1);
+      // A tie over the bar line always lands: the next bar's first eighth
+      // continues the note, even when its own pattern opens with a rest.
+      if (tieIn) body = "-" + body.slice(1);
       if (breath) body = body.slice(0, SLOTS_PER_BAR - BREATH_SLOTS) + ".".repeat(BREATH_SLOTS);
       out += body;
       tieIn = !breath && cell.endsWith(">") && !breaks.has(bar + 1) && bar + 1 < bars;
