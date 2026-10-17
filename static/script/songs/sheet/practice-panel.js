@@ -1,7 +1,7 @@
 import { byId, clear, el } from "../../lib/core/dom.js";
 import {
-  joinExercise, practiceSummary, practiceSummaryParts, PRACTICE_KINDS, PRACTICE_RHYTHM_MIXES, PRACTICE_RHYTHMS, PRACTICE_SHAPES,
-  splitExercise,
+  joinExercise, practiceMixRhythms, practiceSummary, practiceSummaryParts, PRACTICE_KINDS, PRACTICE_RHYTHM_MIXES,
+  PRACTICE_RHYTHMS, PRACTICE_SHAPES, splitExercise,
 } from "../../lib/music/practice.js";
 import { tl } from "../../lib/core/i18n.js";
 import { BACKGROUND } from "../core/state.js";
@@ -14,9 +14,11 @@ import { rhythmSvg } from "./rhythm-svg.js";
   button ("PRACTICE  Scale runs, Up & down · Syncopated rhythm"); the summary
   opens #practicePanel inline below it, three numbered steps read top to
   bottom: 1 what to play (PRACTICE_KINDS), 2 the run's shape (only for a
-  run kind), 3 rhythm (One pattern / Syncopated / Varied, the first opening a
-  grid of PRACTICE_RHYTHMS, each drawn as one bar of rhythm notation), then a one-bar
-  preview and Done. Any pick also switches practice on; the switch
+  run kind), 3 rhythm (One pattern / Syncopated / Varied, each opening a
+  grid of PRACTICE_RHYTHMS drawn as one bar of rhythm notation: pick one for
+  One pattern, tick any number of the mix's own for the other two — kept as
+  the patterns each mix leaves out, `practiceSkips`), then a one-bar preview
+  and Done. Any pick also switches practice on; the switch
   remembers the exercise it last turned off. sheet.js appends the exercise
   as one more staff.
 */
@@ -24,8 +26,6 @@ import { rhythmSvg } from "./rhythm-svg.js";
 const SVG_NS = "http://www.w3.org/2000/svg";
 const FIXED = "fixed";
 const VALUE_ATTR = "data-value";
-// Shown in the preview for the two cycling mixes: one of their own patterns.
-const MIX_PREVIEW = { varied: "tied", syncopated: "pushes" };
 const DEFAULT_EXERCISE = "scales-updown";
 const DEFAULT_PATTERN = "charleston";
 
@@ -55,9 +55,11 @@ function choice(className, value, children) {
   return el("button", { type: "button", class: `practice-choice ${className}`, attrs: { [VALUE_ATTR]: value } }, children);
 }
 
-function markPressed(buttons, value) {
+// Tick the buttons `isOn` says yes to (a value, or a test on the value).
+function markPressed(buttons, isOn) {
+  const test = typeof isOn === "function" ? isOn : (value) => value === isOn;
   for (const button of buttons) {
-    const on = button.getAttribute(VALUE_ATTR) === value;
+    const on = test(button.getAttribute(VALUE_ATTR));
     button.classList.toggle("is-selected", on);
     button.setAttribute("aria-pressed", on ? "true" : "false");
   }
@@ -68,6 +70,34 @@ function onPick(buttons, pick) {
   for (const button of buttons) {
     button.addEventListener("click", () => pick(button.getAttribute(VALUE_ATTR)));
   }
+}
+
+// The patterns a mix plays for `kind`, as values: all of its set but the
+// ones skipped (all of it again if none would be left, as practice.js does).
+function mixPicks(kind, mix, skips) {
+  const all = practiceMixRhythms(kind, mix).map((r) => r.value);
+  const skip = (skips && skips[mix]) || [];
+  const kept = all.filter((value) => !skip.includes(value));
+  return { all, kept: kept.length > 0 ? kept : all };
+}
+
+/*
+  The pattern grid: every pattern, one picked, for One pattern; for a mix
+  only its own patterns, the ones it plays ticked. Returns the pattern the
+  preview shows.
+*/
+function drawPatterns(ui, kind, rhythm, skips) {
+  if (isPattern(rhythm)) {
+    for (const button of ui.patterns) button.hidden = false;
+    markPressed(ui.patterns, rhythm);
+    ui.patternHint.textContent = tl("practice_pattern_hint_one", "Pick the pattern to keep all the way through.");
+    return rhythm;
+  }
+  const { all, kept } = mixPicks(kind, rhythm, skips);
+  for (const button of ui.patterns) button.hidden = !all.includes(button.getAttribute(VALUE_ATTR));
+  markPressed(ui.patterns, (value) => kept.includes(value));
+  ui.patternHint.textContent = tl("practice_pattern_hint_mix", "Tick the patterns to switch between, every two bars.");
+  return kept[0] || DEFAULT_PATTERN;
 }
 
 function buildPanel() {
@@ -92,6 +122,7 @@ function buildPanel() {
     el("div", { class: "practice-choices practice-choices--shapes" }, shapes),
   ]);
   const rhythmNum = el("span", { class: "practice-step-num", text: "3" });
+  const patternHint = el("p", { class: "practice-pattern-hint", id: "practicePatternHint" });
   const patternGrid = el("div", { class: "practice-choices practice-choices--patterns", id: "practicePatterns" }, patterns);
   const preview = el("span", { class: "practice-preview" });
   const done = el("button", { type: "button", class: "practice-done", id: "practiceDone", text: tl("practice_done", "Done") });
@@ -110,6 +141,7 @@ function buildPanel() {
     el("div", { class: "practice-step" }, [
       el("div", { class: "practice-step-title" }, [rhythmNum, el("span", { text: tl("practice_step_rhythm", "Rhythm") })]),
       el("div", { class: "practice-choices practice-choices--mixes" }, mixes),
+      patternHint,
       patternGrid,
     ]),
     el("div", { class: "practice-foot" }, [
@@ -118,7 +150,7 @@ function buildPanel() {
     ]),
   ]);
   panel.hidden = true;
-  return { panel, kinds, shapes, mixes, patterns, shapeStep, rhythmNum, patternGrid, preview, done };
+  return { panel, kinds, shapes, mixes, patterns, shapeStep, rhythmNum, patternHint, patternGrid, preview, done };
 }
 
 export function createPracticePanel(ctx) {
@@ -180,12 +212,12 @@ export function createPracticePanel(ctx) {
     markPressed(ui.kinds, on ? kind : null);
     markPressed(ui.shapes, on ? runs : null);
     markPressed(ui.mixes, fixed ? FIXED : rhythm);
-    markPressed(ui.patterns, rhythm);
     ui.shapeStep.hidden = !runKind;
     ui.rhythmNum.textContent = runKind ? "3" : "2";
-    ui.patternGrid.hidden = !fixed;
+    ui.patternGrid.classList.toggle("is-multi", !fixed);
+    ui.patternGrid.setAttribute("aria-label", fixed ? tl("practice_mix_fixed", "One pattern") : parts && parts.rhythm || "");
     ui.preview.textContent = "";
-    ui.preview.append(rhythmSvg(cellOf(fixed ? rhythm : MIX_PREVIEW[rhythm] || DEFAULT_PATTERN)));
+    ui.preview.append(rhythmSvg(cellOf(drawPatterns(ui, kind, rhythm, ctx.state.practiceSkips))));
   };
   draw();
   ctx.store.subscribe("settings", draw);
@@ -224,7 +256,18 @@ export function createPracticePanel(ctx) {
   });
   onPick(ui.mixes, (mix) => write({ practiceRhythm: mix === FIXED ? lastPattern : mix }));
   onPick(ui.patterns, (pattern) => {
-    lastPattern = pattern;
-    write({ practiceRhythm: pattern });
+    const rhythm = ctx.state.practiceRhythm;
+    if (isPattern(rhythm)) {
+      lastPattern = pattern;
+      write({ practiceRhythm: pattern });
+      return;
+    }
+    // A mix: tick or untick, never leaving it with nothing to play.
+    const skips = ctx.state.practiceSkips;
+    const skip = skips[rhythm] || [];
+    const { kept } = mixPicks(splitExercise(current()).kind, rhythm, skips);
+    if (kept.includes(pattern) && kept.length === 1) return;
+    const next = kept.includes(pattern) ? [...skip.filter((value) => value !== pattern), pattern] : skip.filter((value) => value !== pattern);
+    write({ practiceSkips: { ...skips, [rhythm]: next } });
   });
 }

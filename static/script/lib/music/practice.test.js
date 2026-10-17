@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import ABCJS from "abcjs";
 import {
   buildPracticeTune, joinExercise, practiceNotes, practiceSummary, practiceSummaryParts, PRACTICE_EXERCISES, PRACTICE_KINDS,
-  PRACTICE_RHYTHM_MIXES, PRACTICE_RHYTHMS, PRACTICE_SHAPES, splitExercise,
+  PRACTICE_RHYTHM_MIXES, practiceMixRhythms, PRACTICE_RHYTHMS, PRACTICE_SHAPES, splitExercise,
   rhythmSlots,
 } from "./practice.js";
 import { buildCompingTune, COMPING_PATTERNS } from "./comping.js";
@@ -406,6 +406,25 @@ test("Syncopated is a rhythm choice: it cycles only through syncopated patterns"
   const bars = barRhythms(practiceNotes(Array.from({ length: 12 }, () => ["F"]), "scales", { rhythm: "syncopated", breathEvery: 0 }), 12);
   assert.ok(new Set(bars).size >= 6, bars.join(" | "));
   assert.equal(bars[0], bars[1]);
+});
+
+test("a mix leaves out the patterns switched off in it, but never all of them", () => {
+  const twelve = Array.from({ length: 12 }, () => ["F"]);
+  const sync = practiceMixRhythms("scales", "syncopated");
+  assert.ok(sync.length > 2 && sync.every((r) => r.sync && r.run));
+  assert.ok(practiceMixRhythms("guide", "varied").every((r) => r.long));
+  assert.deepEqual(practiceMixRhythms("nope", "varied"), []);
+  // Only Charleston left: every bar plays it.
+  const skip = sync.filter((r) => r.value !== "charleston").map((r) => r.value);
+  const only = practiceNotes(twelve, "scales", { rhythm: "syncopated", skip, breathEvery: 0 });
+  const charleston = practiceNotes(twelve, "scales", { rhythm: "charleston", breathEvery: 0 });
+  assert.deepEqual(barRhythms(only, 12), barRhythms(charleston, 12));
+  // Everything skipped plays the whole mix again.
+  const all = sync.map((r) => r.value);
+  assert.deepEqual(
+    practiceNotes(twelve, "scales", { rhythm: "syncopated", skip: all, breathEvery: 0 }),
+    practiceNotes(twelve, "scales", { rhythm: "syncopated", breathEvery: 0 }),
+  );
 });
 
 test("Pushes on the \"and\": the and of 2 held over beat 3, the and of 4 tied over the bar", () => {
