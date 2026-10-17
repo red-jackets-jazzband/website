@@ -7385,28 +7385,28 @@ body.rj-layers-open #layersTab .rj-layers-count {
 }
 
 /* Key centres (overlays/key-centers.js): each key's stretch of the sheet
-   sits on a dim tint, one cool shade per key (the progressions' bands are
-   warm, so the two read apart when both are on), its name at the left edge
-   in a darker tone of the same hue. */
+   sits on a dim tint, one shade per key from the site's warm palette
+   (yellow, magenta, orange, coral, berry), its name at the left edge in a
+   darker tone of the same hue. */
 .notation .rj-layer-key-band {
   stroke: none;
 }
-.notation .rj-layer-key-band.rj-layer-key--0 { fill: rgba(120, 160, 130, 0.16); }
-.notation .rj-layer-key-band.rj-layer-key--1 { fill: rgba(150, 120, 185, 0.16); }
-.notation .rj-layer-key-band.rj-layer-key--2 { fill: rgba(95, 140, 190, 0.16); }
-.notation .rj-layer-key-band.rj-layer-key--3 { fill: rgba(80, 160, 160, 0.16); }
-.notation .rj-layer-key-band.rj-layer-key--4 { fill: rgba(185, 160, 110, 0.18); }
+.notation .rj-layer-key-band.rj-layer-key--0 { fill: rgba(240, 200, 40, 0.2); }
+.notation .rj-layer-key-band.rj-layer-key--1 { fill: rgba(202, 72, 109, 0.14); }
+.notation .rj-layer-key-band.rj-layer-key--2 { fill: rgba(235, 130, 40, 0.17); }
+.notation .rj-layer-key-band.rj-layer-key--3 { fill: rgba(240, 110, 90, 0.15); }
+.notation .rj-layer-key-band.rj-layer-key--4 { fill: rgba(170, 60, 140, 0.13); }
 .notation text.rj-layer-key-label {
   font-family: Montserrat, Arial, sans-serif;
   font-weight: 700;
   font-style: normal;
   stroke: none;
 }
-.notation text.rj-layer-key-label.rj-layer-key--0 { fill: #4f7a5a; }
-.notation text.rj-layer-key-label.rj-layer-key--1 { fill: #6c4f8f; }
-.notation text.rj-layer-key-label.rj-layer-key--2 { fill: #3f6690; }
-.notation text.rj-layer-key-label.rj-layer-key--3 { fill: #2f7373; }
-.notation text.rj-layer-key-label.rj-layer-key--4 { fill: #7d6631; }
+.notation text.rj-layer-key-label.rj-layer-key--0 { fill: #8a6d00; }
+.notation text.rj-layer-key-label.rj-layer-key--1 { fill: #a8325a; }
+.notation text.rj-layer-key-label.rj-layer-key--2 { fill: #a45412; }
+.notation text.rj-layer-key-label.rj-layer-key--3 { fill: #a63e2c; }
+.notation text.rj-layer-key-label.rj-layer-key--4 { fill: #7f2a66; }
 
 /* Outside chords (overlays/outside-chords.js): a chord with a note outside
    the key sits in a soft magenta shade; with the Chord skeleton on, its
