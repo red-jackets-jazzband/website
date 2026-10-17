@@ -190,6 +190,24 @@ happens on a sheet written for a transposing instrument, each section can have i
 written key too — convert every section with the same M2 offset but against *its own*
 signature; re-derive each section's accidental spelling, never copy across sections.
 
+**Write a `K:` for every change of key centre, not only where the sheet prints a new
+signature.** Two easy misses:
+
+- **Parallel key** (F major ↔ F minor): lead sheets often keep one signature and spell the
+  minor strain's flats by hand. `st_louis_blues.abc` was written that way — `K:Fmaj` with
+  `_A` all through its F-minor A strain — and is now `K:Fm` for part A (plain `A` is A♭
+  there) and `K:F` from part B.
+- **Relative key** (B♭ major ↔ G minor): the signature is identical, so nothing on the
+  page changes. `be_like_you.abc`'s verse is in G minor and its chorus in B♭; the header
+  is `K:Gm` and the chorus starts with `K:Bb`. No note changes, but the site now knows.
+
+How to tell: the section's first and last chords (where it starts and cadences) are the
+tonic of a different key, and its chords sit diatonically in that key. A tune that merely
+*opens* on vi7 and settles back in the home key isn't a key change. When the whole tune is
+in the minor, the header `K:` itself should be minor. Converting a section between parallel
+keys means re-spelling its accidentals against the new signature (drop the `_A`s that are
+now in the key, add `=` where a note leaves it); a relative-key change needs no note edits.
+
 ## Repeats, endings, pickups, breaks
 
 `|:` … `:|` for repeat signs; 1st/2nd endings as `…|[1 c2 z2 :|[2 c c c c ||` (shown at the

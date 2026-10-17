@@ -51,6 +51,14 @@ if anything's missing (common on a fresh remote environment), see
   freely), but they can be two *unrelated* charts that just happen to have matching bar
   counts, and finding that out after transcribing 30 bars is expensive.
 - If only a MIDI is given, you still need the key — infer it from the MIDI or ask.
+- **Be alert for key changes, including ones the sheet doesn't print.** Besides a new key
+  signature mid-sheet, look at each section's chords: a part that opens and cadences on
+  the parallel or relative minor/major (St. Louis Blues' F-minor strain under one F
+  signature; I Wanna Be Like You's G-minor verse under B♭'s two flats) is in another key
+  and gets its own `K:` line, even when the sheet just hand-writes accidentals or the
+  signature doesn't change. The site reads the key only from `K:` — the Key centres
+  layer, scale degrees, solfège and the setlist key badge — so a missed change shows up
+  wrong everywhere. Note each section's key now; it's written in step 5.
 
 ## 2. OMR the lead sheet (if any image/PDF)
 
