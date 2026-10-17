@@ -47,8 +47,9 @@ import { uncropChords } from "./overlays/viewbox.js";
 function drawHarmony(visualObj, applied) {
   if (applied.includes("key-centers")) drawKeyCenters(visualObj);
   if (applied.includes("chord-skeleton")) drawChordSkeleton(visualObj, { markOutside: applied.includes("outside-chords") });
-  if (applied.includes("outside-chords")) markOutsideChords(visualObj);
+  // Numerals first, so an outside chord's shade takes in its numeral too.
   if (applied.includes("roman-numerals")) drawRomanNumerals(visualObj);
+  if (applied.includes("outside-chords")) markOutsideChords(visualObj);
 }
 
 export function decorateLayers(notationEl, visualObj, plan) {
