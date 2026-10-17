@@ -31,6 +31,8 @@ test("PREF_KEYS pins the persisted key names", () => {
     solo: "rj.solo",
     practice: "rj.practice",
     practiceRhythm: "rj.practiceRhythm",
+    practiceSkipVaried: "rj.practiceSkip.varied",
+    practiceSkipSyncopated: "rj.practiceSkip.syncopated",
     sheetAdvanced: "rj.sheetAdvanced",
     inspirationWidth: "rj.inspirationWidth",
     mixerBassVolume: "rj.mixerBassVolume",

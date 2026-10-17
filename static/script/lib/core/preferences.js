@@ -13,6 +13,8 @@ export const PREF_KEYS = {
   solo: "rj.solo",
   practice: "rj.practice",
   practiceRhythm: "rj.practiceRhythm",
+  practiceSkipVaried: "rj.practiceSkip.varied",
+  practiceSkipSyncopated: "rj.practiceSkip.syncopated",
   sheetAdvanced: "rj.sheetAdvanced",
   inspirationWidth: "rj.inspirationWidth",
   mixerBassVolume: "rj.mixerBassVolume",

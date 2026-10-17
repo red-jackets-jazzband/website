@@ -625,11 +625,24 @@ const EXERCISES = {
   rhythm: { cells: RUN_CELLS, pitches: rhythmPitches },
 };
 
-// The cells an exercise cycles through: its own set, or the one picked.
-function cellsFor(spec, rhythm) {
-  if (rhythm === "syncopated") return spec.cells.filter((cell) => SYNC_CELLS.has(cell));
+// The patterns a mix cycles through for an exercise kind: the kind's own set
+// (runs or long notes), only the syncopated ones for "syncopated". Empty for
+// an unknown kind.
+export function practiceMixRhythms(kind, mix) {
+  const spec = EXERCISES[kind];
+  if (!spec) return [];
+  return PRACTICE_RHYTHMS.filter((r) => spec.cells.includes(r.cell) && (mix !== "syncopated" || SYNC_CELLS.has(r.cell)));
+}
+
+// The cells an exercise cycles through: the one picked, or the mix's set
+// less the patterns switched off in it (`skip`, rhythm values) — all of the
+// set again if that would leave none.
+function cellsFor(kind, rhythm, skip) {
   const picked = PRACTICE_RHYTHMS.find((r) => r.value === rhythm);
-  return picked ? [picked.cell] : spec.cells;
+  if (picked) return [picked.cell];
+  const all = practiceMixRhythms(kind, rhythm);
+  const kept = all.filter((r) => !skip.includes(r.value));
+  return (kept.length > 0 ? kept : all).map((r) => r.cell);
 }
 
 /*
@@ -637,7 +650,8 @@ function cellsFor(spec, rhythm) {
   as [{ start, duration, midi, leadsUp }] in beats from the first chord bar — the
   shape solo.js's barFragments draws. Empty for an unknown exercise.
   `rhythm` is a PRACTICE_RHYTHM_MIXES value ("varied", "syncopated") or a
-  PRACTICE_RHYTHMS one to keep all the way;
+  PRACTICE_RHYTHMS one to keep all the way; `skip` the patterns switched
+  off in that mix (rhythm values);
   `breathEvery` how many bars to a breath (0: none, for the tests); `key`
   the tune's key as a Set of pitch-class chromas, which picks each chord's
   scale tensions (null: the default scales); `tonic` its tonic's chroma, the
@@ -645,7 +659,7 @@ function cellsFor(spec, rhythm) {
   chord holds it (null: no such ending).
 */
 export function practiceNotes(names, exercise, {
-  rhythm = "varied", breathEvery = BREATH_EVERY, key = null, tonic = null,
+  rhythm = "varied", skip = [], breathEvery = BREATH_EVERY, key = null, tonic = null,
 } = {}) {
   const { kind, runs } = splitExercise(exercise);
   const spec = EXERCISES[kind];
@@ -655,7 +669,7 @@ export function practiceNotes(names, exercise, {
     if (row.every((name) => name === null)) breaks.add(bar);
   });
   const timeline = chordTimeline(names, key);
-  const notes = onsetsOf(rhythmSlots(names.length, breaks, cellsFor(spec, rhythm), breathEvery))
+  const notes = onsetsOf(rhythmSlots(names.length, breaks, cellsFor(kind, rhythm, skip), breathEvery))
     .map((note) => ({ ...note, at: chordFor(timeline, note) }))
     .filter((note) => note.at);
   const midis = spec.pitches(notes, runs, tonic);
@@ -689,7 +703,7 @@ function createPracticeSpeller(keyScale) {
   tune. `text`, `chords` and `song` are as for buildSoloTune; `text` may
   already carry the Comping / Solo voices. Returns { abc, notes }, or null
   when it can't apply (no chords, no such exercise, an unsupported meter, no
-  K: line). `options` is practiceNotes' { rhythm }.
+  K: line). `options` is practiceNotes' { rhythm, skip }.
 */
 export function buildPracticeTune(text, chords, song, exercise, options = {}) {
   if (!chords || chords.length === 0 || !EXERCISES[splitExercise(exercise).kind]) return null;

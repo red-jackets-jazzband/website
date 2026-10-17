@@ -14,7 +14,7 @@
   migration.
 */
 import { PREF_KEYS } from "../../lib/core/preferences.js";
-import { boolPref, enumPref } from "../../lib/core/persisted.js";
+import { boolPref, enumPref, objectPref } from "../../lib/core/persisted.js";
 import { INSTRUMENTS } from "../../lib/music/instruments.js";
 import { COMPING_PATTERNS } from "../../lib/music/comping.js";
 import { SOLO_STYLES } from "../../lib/music/solo.js";
@@ -38,6 +38,21 @@ const compingPartsPref = {
   },
 };
 
+// The practice patterns switched off in one rhythm mix, stored by value
+// ("tied,pushes"); an unknown value (a removed pattern) is dropped.
+const RHYTHM_VALUES = PRACTICE_RHYTHMS.map((r) => r.value);
+function skipPref(key) {
+  return {
+    load(read) {
+      const names = new Set((read(key) || "").split(","));
+      return RHYTHM_VALUES.filter((value) => names.has(value));
+    },
+    save(values, write) {
+      write(key, values.join(","));
+    },
+  };
+}
+
 export const SETTINGS_SLICE = {
   name: "settings",
   initial: {
@@ -59,6 +74,11 @@ export const SETTINGS_SLICE = {
     practiceRhythm: enumPref(
       PREF_KEYS.practiceRhythm, [...PRACTICE_RHYTHM_MIXES, ...PRACTICE_RHYTHMS].map((r) => r.value), "varied",
     ),
+    // Per mix, the patterns it leaves out (the practice panel's multi-select).
+    practiceSkips: objectPref({
+      varied: skipPref(PREF_KEYS.practiceSkipVaried),
+      syncopated: skipPref(PREF_KEYS.practiceSkipSyncopated),
+    }),
   },
 };
 

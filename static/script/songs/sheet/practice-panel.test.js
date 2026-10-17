@@ -68,11 +68,14 @@ test("each step writes its own setting, and any pick switches practice on", () =
 
     click('.practice-mix[data-value="syncopated"]');
     assert.equal(ctx.state.practiceRhythm, "syncopated");
-    assert.equal($("#practicePatterns").hidden, true);
+    const shown = [...document.querySelectorAll(".practice-pattern")].filter((b) => !b.hidden).map((b) => b.getAttribute("data-value"));
+    const sync = PRACTICE_RHYTHMS.filter((r) => r.sync && r.run).map((r) => r.value);
+    assert.deepEqual(shown, sync, "only the mix's own patterns, for this kind");
+    assert.deepEqual(pressed("pattern"), sync, "all ticked to start with");
 
     click('.practice-mix[data-value="fixed"]');
     assert.equal(ctx.state.practiceRhythm, "charleston", "one pattern starts on the Charleston");
-    assert.equal($("#practicePatterns").hidden, false);
+    assert.equal([...document.querySelectorAll(".practice-pattern")].every((b) => !b.hidden), true);
     assert.equal(document.querySelectorAll(".practice-pattern").length, PRACTICE_RHYTHMS.length);
     click('.practice-pattern[data-value="pushes"]');
     assert.equal(ctx.state.practiceRhythm, "pushes");
@@ -137,4 +140,25 @@ test("each pattern choice and the preview show the rhythm as one bar of notation
   const eighths = document.querySelector('.practice-pattern[data-value="eighths"] svg');
   assert.equal(eighths.querySelectorAll("ellipse").length, 8);
   assert.equal(eighths.querySelectorAll("rect").length, 4);
+});
+
+test("a mix's patterns are ticked and unticked, never down to none", () => {
+  const { page, ctx } = setup();
+  try {
+    click(SUMMARY);
+    click('.practice-mix[data-value="syncopated"]');
+    click('.practice-pattern[data-value="pushes"]');
+    assert.deepEqual(ctx.state.practiceSkips.syncopated, ["pushes"]);
+    assert.equal(window.localStorage.getItem("rj.practiceSkip.syncopated"), "pushes");
+    assert.equal(pressed("pattern").includes("pushes"), false);
+    click('.practice-pattern[data-value="pushes"]');
+    assert.deepEqual(ctx.state.practiceSkips.syncopated, []);
+
+    const sync = PRACTICE_RHYTHMS.filter((r) => r.sync && r.run).map((r) => r.value);
+    for (const value of sync) click(`.practice-pattern[data-value="${value}"]`);
+    assert.deepEqual(pressed("pattern"), [sync[sync.length - 1]], "the last one stays ticked");
+    assert.deepEqual(ctx.state.practiceSkips.varied, [], "each mix keeps its own picks");
+  } finally {
+    page.cleanup();
+  }
 });
