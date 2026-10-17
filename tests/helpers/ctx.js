@@ -59,6 +59,7 @@ export function makeCtx(overrides = {}) {
       setupNotationClickHandler: () => {},
       updateTempoLabel: () => {},
       stepTempo: () => {},
+      setTempo: () => {},
       playPause: () => {},
       stop: () => {},
     },
