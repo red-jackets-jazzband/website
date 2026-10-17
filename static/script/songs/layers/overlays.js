@@ -11,8 +11,8 @@
   - an outside chord (one with a note outside the key: lib/music/diatonic.js)
     gets a soft magenta shade behind its chord symbol, and, with the Chord
     skeleton on, its out-of-key ghost notes are tinted to match;
-  - a key centre (lib/music/key-centers.js: a key signature's stretch, or
-    a ii–V–I's tonicized one) gets a dim tint behind its staves, one shade
+  - a key centre (lib/music/key-centers.js: each key signature's stretch)
+    gets a dim tint behind its staves, one shade
     per key, with the key's name at its left edge;
   - scale degrees ("\u25CF3", "\u25CB\u266D7": lib/music/scale-degrees.js) lose their
     marker and sit centred under the note, a chord tone inside a magenta

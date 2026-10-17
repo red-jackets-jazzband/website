@@ -4,8 +4,8 @@
   behind its staves, one shade per key, and the key's name (the `_` label
   annotation the layer wrote at the stretch's first note) loses its marker
   and moves to the tint's left edge, in the tint's colour. A tint starts and
-  ends at a bar line where the key changes on one (a key signature, a ii–V–I
-  on the downbeat), else halfway between the two notes, and runs out to the
+  ends at the bar line where the key signature changes (else halfway
+  between the two notes), and runs out to the
   staff's edge where the stretch carries on to the next printed line.
 */
 import { keyCenterShades, keyCenters, parseKeyCenterText } from "../../../lib/music/key-centers.js";
