@@ -5896,13 +5896,10 @@ body:not(.rj-sheet-active) .rj-sheet-pager .rj-sheet-step {
   overflow: hidden;
 }
 /* On a phone the picker plus Split / R / 3 / 5 overflows the screen: stack
-   the caption over the pick, as the Practice control does there, and narrow
-   the buttons so the whole pill fits. */
+   the caption over the pick, as the Practice control does there, inside the
+   same 46px as the Repeat stepper, and narrow the buttons so the whole pill
+   fits. */
 @media (max-width: 600px) {
-  #compingSlot {
-    height: auto;
-    min-height: 46px;
-  }
   #compingSlot .dropdown {
     flex: 0 1 150px;
     width: 150px;
@@ -5911,7 +5908,7 @@ body:not(.rj-sheet-active) .rj-sheet-pager .rj-sheet-step {
     flex-direction: column;
     align-items: stretch;
     justify-content: center;
-    padding: 6px 0;
+    gap: 2px;
   }
   .sheet-picker-label {
     font-size: 10px;
@@ -7550,33 +7547,37 @@ body.rj-layers-open #layersTab .rj-layers-count {
   text-overflow: ellipsis;
 }
 /* A phone has no room for the label and a whole line beside it: the label
-   goes on top and the exercise and its rhythm stack under it, wrapping
-   if they must, so nothing is cut off. */
+   goes on top and the exercise and its rhythm share one line under it, cut
+   short with an ellipsis (the full text is the button's title, and the
+   panel spells it out). The pill keeps the Repeat stepper's 46px height and
+   shares its line, taking whatever room the stepper leaves. */
 @media (max-width: 600px) {
-  .practice-control {
-    height: auto;
-    min-height: 46px;
+  #practiceSlot:not(.is-open) {
+    flex: 1 1 150px;
+  }
+  #practiceSlot:not(.is-open) .practice-control {
+    width: 100%;
+  }
+  .practice-switch {
+    width: 44px;
   }
   .practice-summary {
+    flex: 1 1 auto;
     flex-direction: column;
     align-items: flex-start;
     justify-content: center;
     gap: 2px;
-    padding: 6px 34px 6px 14px;
+    padding: 0 28px 0 12px;
+    background-position: right 10px center;
     text-align: left;
   }
   .practice-summary-label {
     font-size: 10px;
   }
   .practice-summary-text {
-    display: flex;
-    flex-direction: column;
-    white-space: normal;
+    max-width: 100%;
     font-size: 12px;
     line-height: 1.3;
-  }
-  .practice-summary-sep {
-    display: none;
   }
   .practice-summary-rhythm {
     color: #b9b2a7;
