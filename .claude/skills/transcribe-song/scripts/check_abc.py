@@ -21,7 +21,12 @@ Lyrics: for each music line with a w: line, the number of note slots vs
 syllable slots (`-`-split syllables, `_`, `*`; ties consume a slot). abcjs
 silently drops extra syllables, so the count is done here as well.
 
-Exit status 1 if anything but `ties` is reported. Run with tools/OMR/.venv/bin/python3.
+Keys: for each P: part, a KEY? line when it opens on the tonic triad of the
+parallel or relative minor/major of the K: in force there (see check_keys)
+— a part that likely needs its own K: line. Advisory only:
+it never changes the exit status, but every KEY? line needs a look.
+
+Exit status 1 if anything but `ties` or `KEY?` is reported. Run with tools/OMR/.venv/bin/python3.
 """
 import argparse, json, os, re, subprocess, sys
 from fractions import Fraction
@@ -163,6 +168,74 @@ def compare(text, data, args):
 NAMES = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"]
 
 
+# ---- key changes -----------------------------------------------------------
+# A part in another key (the minor strain of St. Louis Blues, the G minor verse
+# of I Wanna Be Like You) must get its own K: line: the Key centres layer, the
+# scale degrees and solfège all read the key from K:, never from the chords.
+# The tell, per P: part, against the K: in force there: the part opens on a
+# plain tonic triad of the parallel or relative key ("Fm" in K:F, "Gm" in
+# K:Bb, "C" in K:Cm). A seventh chord there is usually just a vi7/ii7 opening
+# and isn't flagged. Hand-written accidentals are no tell: blue notes and
+# chromatic approaches fill trad tunes that never change key.
+LETTER_PC = {"C": 0, "D": 2, "E": 4, "F": 5, "G": 7, "A": 9, "B": 11}
+ACC_PC = {"#": 1, "b": -1}
+KEY_RE = re.compile(r"^K:\s*([A-G])([#b]?)\s*([A-Za-z]*)")
+CHORD_RE = re.compile(r'"([^"]*)"')
+TRIAD_RE = re.compile(r"([A-G])([#b]?)(m?)")
+
+
+def parse_key(line):
+    m = KEY_RE.match(line)
+    if not m:
+        return None
+    pc = (LETTER_PC[m.group(1)] + ACC_PC.get(m.group(2), 0)) % 12
+    mode = m.group(3).lower()
+    minor = mode.startswith("aeo") or (mode.startswith("m") and not mode.startswith(("maj", "mix")))
+    return pc, minor, line[2:].strip()
+
+
+def part_alert(name, key, music):
+    if key is None or not music:
+        return []
+    tonic, minor, key_text = key
+    alerts = []
+    # The part's opening chord symbol (an annotation starts with ^_<>@).
+    opening = next((c for c in CHORD_RE.findall("\n".join(music)) if c[:1] not in "^_<>@"), "")
+    first = TRIAD_RE.fullmatch(opening)
+    if first:
+        root = (LETTER_PC[first.group(1)] + ACC_PC.get(first.group(2), 0)) % 12
+        is_minor = first.group(3) == "m"
+        chord = "".join(first.groups())
+        if is_minor and not minor and root in (tonic, (tonic + 9) % 12):
+            kind = "parallel" if root == tonic else "relative"
+            alerts.append(f"opens on {chord} under K:{key_text} - a part in the {kind} minor may need its own K: line")
+        if not is_minor and minor and root in (tonic, (tonic + 3) % 12):
+            kind = "parallel" if root == tonic else "relative"
+            alerts.append(f"opens on {chord} under K:{key_text} - a part in the {kind} major may need its own K: line")
+    return [f"KEY?     part {name}: {a}" for a in alerts]
+
+
+def check_keys(text):
+    key, part, music, alerts = None, "(start)", [], []
+    in_body = False
+    for line in text.splitlines():
+        if line.startswith("K:"):
+            if in_body and music:
+                alerts += part_alert(part, key, music)
+                music = []
+            key = parse_key(line) or key
+            in_body = True
+        elif in_body and line.startswith("P:"):
+            alerts += part_alert(part, key, music)
+            part, music = line[2:].strip(), []
+        elif in_body and line and not re.match(r"^[A-Za-z]:|^%", line):
+            music.append(line)
+    alerts += part_alert(part, key, music)
+    for a in alerts:
+        print(a)
+    return alerts
+
+
 def midi_name(m):
     return f"{NAMES[m % 12]}{m // 12 - 1}"
 
@@ -178,6 +251,7 @@ def main():
     data = abc_stream(a.abc)
     for w in data["warnings"]:
         print("abcjs warning:", w)
+    check_keys(text)
     bad = check_lyrics(text, data)
     if a.musicxml:
         bad += compare(text, data, a)

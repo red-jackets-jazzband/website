@@ -17,6 +17,13 @@ into ties" (fine), a corrected pitch shows as `PITCH` (confirm it was homr that 
 then move on), anything else is a slip. Skip `--musicxml` for a MIDI-only or from-scratch
 transcription — the lyrics check still runs.
 
+It also prints a `KEY?` line for a part that opens on the tonic triad of the parallel or
+relative minor/major of the `K:` in force there (a `"Fm"` opening a part under `K:F`, a
+`"Gm"` under `K:Bb`) — the shape of a key change the sheet never printed. It doesn't fail
+the run, since a tune can simply open on vi, but settle each one: add the section's own
+`K:` (see **Key changes mid-tune** in `references/abc-style.md`) or confirm the part
+really is in the written key.
+
 **It only compares as far as the bar grids agree.** Once a sheet has 1st/2nd endings or a
 key change the merged MusicXML mangles, every later bar is reported as a mismatch — trust
 it up to that point, then compare by eye/diff against `omr_staves.py`'s per-staff text and
