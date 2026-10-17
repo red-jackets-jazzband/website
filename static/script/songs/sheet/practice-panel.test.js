@@ -127,3 +127,14 @@ test("Escape inside the panel closes it", () => {
     page.cleanup();
   }
 });
+
+test("each pattern choice and the preview show the rhythm as one bar of notation", () => {
+  setup();
+  const svgs = document.querySelectorAll(".practice-pattern svg.practice-rhythm");
+  assert.equal(svgs.length, PRACTICE_RHYTHMS.length);
+  assert.ok(document.querySelector(".practice-preview svg.practice-rhythm"));
+  // Straight eighths: eight noteheads beamed in four pairs, no flags or rests.
+  const eighths = document.querySelector('.practice-pattern[data-value="eighths"] svg');
+  assert.equal(eighths.querySelectorAll("ellipse").length, 8);
+  assert.equal(eighths.querySelectorAll("rect").length, 4);
+});

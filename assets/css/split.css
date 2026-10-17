@@ -7724,41 +7724,17 @@ body.rj-layers-open #layersTab .rj-layers-count {
 .practice-pattern {
   gap: 6px;
 }
-/* One bar in eighths: a note, its hold (joined to it), a rest; a tie over
-   the bar line sticks out of the last cell. */
-.practice-cells {
-  display: grid;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
-  gap: 2px;
+/* One bar of rhythm notation (songs/sheet/rhythm-svg.js), in currentColor. */
+.practice-rhythm {
+  display: block;
   width: 100%;
+  max-width: 132px;
+  height: auto;
+  fill: currentColor;
+  color: var(--rj-gold);
 }
-.practice-cell {
-  height: 8px;
-  border-radius: 2px;
-  background: rgba(255,255,255,.12);
-}
-.practice-cell--note,
-.practice-cell--hold {
-  background: var(--rj-gold);
-}
-.practice-cell--note.is-held {
-  border-radius: 2px 0 0 2px;
-}
-.practice-cell--hold {
-  border-radius: 0 2px 2px 0;
-}
-.practice-cell.is-tied {
-  box-shadow: 4px 0 0 0 var(--rj-gold);
-}
-.practice-choice.is-selected .practice-cell {
-  background: rgba(27,27,27,.18);
-}
-.practice-choice.is-selected .practice-cell--note,
-.practice-choice.is-selected .practice-cell--hold {
-  background: #1b1b1b;
-}
-.practice-choice.is-selected .practice-cell.is-tied {
-  box-shadow: 4px 0 0 0 #1b1b1b;
+.practice-choice.is-selected .practice-rhythm {
+  color: #1b1b1b;
 }
 .practice-foot {
   display: flex;
@@ -7774,11 +7750,9 @@ body.rj-layers-open #layersTab .rj-layers-count {
   flex-direction: column;
   gap: 6px;
 }
-.practice-preview .practice-cells {
-  width: 128px;
-}
-.practice-preview .practice-cell {
-  height: 10px;
+.practice-preview .practice-rhythm {
+  width: 150px;
+  max-width: none;
 }
 .practice-done {
   flex: none;
