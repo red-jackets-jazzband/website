@@ -7438,6 +7438,13 @@ body.rj-layers-open #layersTab .rj-layers-count {
 .notation text.rj-layer-outside-text {
   fill: #a8325a;
 }
+/* Roman numerals layer: the numeral sits right behind its chord symbol, in
+   a lighter face, keeping the symbol's colour (magenta for an outside chord). */
+.notation .rj-layer-roman,
+.rj-layer-mini .rj-layer-roman {
+  font-weight: 400;
+  fill-opacity: 0.72;
+}
 .notation .rj-layer-skeleton-note.rj-layer-skeleton--outside {
   fill: #e3a0b6;
 }
