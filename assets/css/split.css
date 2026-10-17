@@ -7384,6 +7384,30 @@ body.rj-layers-open #layersTab .rj-layers-count {
   stroke: none;
 }
 
+/* Key centres (overlays/key-centers.js): each key's stretch of the sheet
+   sits on a dim tint, one cool shade per key (the progressions' bands are
+   warm, so the two read apart when both are on), its name at the left edge
+   in a darker tone of the same hue. */
+.notation .rj-layer-key-band {
+  stroke: none;
+}
+.notation .rj-layer-key-band.rj-layer-key--0 { fill: rgba(120, 160, 130, 0.16); }
+.notation .rj-layer-key-band.rj-layer-key--1 { fill: rgba(150, 120, 185, 0.16); }
+.notation .rj-layer-key-band.rj-layer-key--2 { fill: rgba(95, 140, 190, 0.16); }
+.notation .rj-layer-key-band.rj-layer-key--3 { fill: rgba(80, 160, 160, 0.16); }
+.notation .rj-layer-key-band.rj-layer-key--4 { fill: rgba(185, 160, 110, 0.18); }
+.notation text.rj-layer-key-label {
+  font-family: Montserrat, Arial, sans-serif;
+  font-weight: 700;
+  font-style: normal;
+  stroke: none;
+}
+.notation text.rj-layer-key-label.rj-layer-key--0 { fill: #4f7a5a; }
+.notation text.rj-layer-key-label.rj-layer-key--1 { fill: #6c4f8f; }
+.notation text.rj-layer-key-label.rj-layer-key--2 { fill: #3f6690; }
+.notation text.rj-layer-key-label.rj-layer-key--3 { fill: #2f7373; }
+.notation text.rj-layer-key-label.rj-layer-key--4 { fill: #7d6631; }
+
 /* Outside chords (overlays/outside-chords.js): a chord with a note outside
    the key sits in a soft magenta shade; with the Chord skeleton on, its
    out-of-key ghost notes are tinted to match. */
