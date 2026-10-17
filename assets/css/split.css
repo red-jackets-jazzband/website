@@ -7757,20 +7757,11 @@ body.rj-layers-open #layersTab .rj-layers-count {
 .practice-foot {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 12px;
   margin-top: 10px;
   padding: 12px 18px 14px;
   border-top: 1px solid rgba(255,255,255,.08);
-}
-.practice-foot-text {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.practice-preview .practice-rhythm {
-  width: 150px;
-  max-width: none;
 }
 .practice-done {
   flex: none;
@@ -7799,12 +7790,6 @@ body.rj-layers-open #layersTab .rj-layers-count {
   .practice-foot {
     padding-left: 12px;
     padding-right: 12px;
-  }
-  .practice-foot {
-    flex-wrap: wrap;
-  }
-  .practice-foot-text {
-    min-width: 0;
   }
   .practice-choice {
     min-width: 0;
