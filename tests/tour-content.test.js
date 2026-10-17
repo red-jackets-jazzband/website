@@ -43,7 +43,7 @@ const RUNTIME_TARGETS = {
   "#practicePanel": ["static/script/songs/sheet/practice-panel.js", 'id: "practicePanel"'],
   ".practice-choices--kinds": ["static/script/songs/sheet/practice-panel.js", "practice-choices--kinds"],
   "#practiceShapeStep": ["static/script/songs/sheet/practice-panel.js", 'id: "practiceShapeStep"'],
-  ".practice-choices--mixes": ["static/script/songs/sheet/practice-panel.js", "practice-choices--mixes"],
+  ".practice-choices--patterns": ["static/script/songs/sheet/practice-panel.js", "practice-choices--patterns"],
 };
 
 const allSteps = english.chapters.flatMap((chapter) => chapter.steps.map((step) => ({ chapter, step })));

@@ -7659,9 +7659,6 @@ body.rj-layers-open #layersTab .rj-layers-count {
 .practice-choices--shapes {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
-.practice-choices--mixes {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
 .practice-choices--patterns {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -7701,8 +7698,7 @@ body.rj-layers-open #layersTab .rj-layers-count {
 .practice-choice.is-selected .practice-choice-hint {
   color: #3a2a06;
 }
-.practice-shape,
-.practice-mix {
+.practice-shape {
   align-items: center;
   justify-content: center;
   text-align: center;
@@ -7721,23 +7717,18 @@ body.rj-layers-open #layersTab .rj-layers-count {
 .practice-shape.is-selected polyline {
   stroke: #1b1b1b;
 }
-.practice-pattern {
-  gap: 6px;
-}
-.practice-pattern[hidden] {
-  display: none;
-}
 .practice-pattern-hint {
-  margin: 10px 0 8px;
+  margin: 0 0 8px;
   font: italic 12px/1.3 "Lora", serif;
   color: #b9b2a7;
 }
-/* A mix's patterns are ticked, any number of them: a checkbox in the corner. */
-.practice-choices--patterns.is-multi .practice-pattern {
+/* Any number of rhythms can be ticked: a checkbox in the corner. */
+.practice-pattern {
   position: relative;
+  gap: 6px;
   padding-right: 30px;
 }
-.practice-choices--patterns.is-multi .practice-pattern::after {
+.practice-pattern::after {
   content: "";
   position: absolute;
   top: 8px;
@@ -7747,7 +7738,7 @@ body.rj-layers-open #layersTab .rj-layers-count {
   border: 1.5px solid rgba(226,157,15,.6);
   border-radius: 4px;
 }
-.practice-choices--patterns.is-multi .practice-pattern.is-selected::after {
+.practice-pattern.is-selected::after {
   border-color: #1b1b1b;
   background: #1b1b1b url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M3 7.2l2.6 2.6L11 4.4' fill='none' stroke='%23e29d0f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 100% no-repeat;
 }
@@ -7820,14 +7811,10 @@ body.rj-layers-open #layersTab .rj-layers-count {
     overflow-wrap: anywhere;
   }
 }
-/* The narrowest phones (320px): the run shapes go two by two and the
-   rhythm mixes stack. */
+/* The narrowest phones (320px): the run shapes go two by two. */
 @media (max-width: 400px) {
   .practice-choices--shapes {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .practice-choices--mixes {
-    grid-template-columns: minmax(0, 1fr);
   }
 }
 
