@@ -103,10 +103,10 @@
 
   <div class="sheet-stepper" id="tempoStepper" title="{{ i18n "songs_tempoStepper_title" }}">
     <button type="button" id="tempoDownBtn" class="sheet-stepper-btn" aria-label="{{ i18n "songs_tempoDownBtn_aria" }}">&minus;</button>
-    <div class="sheet-stepper-value">
+    <button type="button" id="tempoTapBtn" class="sheet-stepper-value sheet-stepper-tap" title="{{ i18n "songs_tempoTapBtn_title" }}">
       <span id="tempoValueLabel">120</span>
       <span class="sheet-stepper-label">{{ i18n "songs_tempoUnit" }}</span>
-    </div>
+    </button>
     <button type="button" id="tempoUpBtn" class="sheet-stepper-btn" aria-label="{{ i18n "songs_tempoUpBtn_aria" }}">&plus;</button>
     <span class="rj-sr-only sheet-stepper-announce" aria-live="polite"></span>
   </div>

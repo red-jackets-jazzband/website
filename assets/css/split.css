@@ -1105,6 +1105,25 @@ body.rj-sheet-active .rj-sheet-empty {
   border-right: 1px solid rgba(255,255,255,.1);
   padding: 0 6px;
 }
+/* The Tempo stepper's value is a tap-tempo button (controls.js's initTapTempo). */
+.sheet-stepper-tap {
+  margin: 0;
+  border-top: 0;
+  border-bottom: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background 0.1s;
+}
+.sheet-stepper-tap:active {
+  background: rgba(226,157,15,.25);
+}
+@media (hover: hover) {
+  .sheet-stepper-tap:hover {
+    background: rgba(255,255,255,.06);
+  }
+}
 .sheet-stepper-value #tempoValueLabel {
   font: 600 13px/1 "Montserrat", sans-serif;
   color: var(--rj-gold);
