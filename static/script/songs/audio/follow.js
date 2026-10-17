@@ -1,5 +1,5 @@
 import { byId } from "../../lib/core/dom.js";
-import { followScrollTarget } from "../../lib/platform/follow-scroll.js";
+import { chordTableInView, followScrollTarget } from "../../lib/platform/follow-scroll.js";
 
 /*
   Follow playback: while a tune plays, keep the staff line being played in
@@ -92,14 +92,22 @@ export function createFollowPlayback() {
     // ABCjs engraves one <svg> per staff line (sheet.js's oneSvgPerLine).
     const line = node.closest("svg");
     if (!line || line === lastLine) return;
-    lastLine = line;
-    if (Date.now() - userScrolledAt < USER_SCROLL_PAUSE_MS) return;
+    if (Date.now() - userScrolledAt < USER_SCROLL_PAUSE_MS) {
+      lastLine = line;
+      return;
+    }
     const container = scrollContainerOf(line);
+    const band = visibleBand(container);
+    const chordTable = chordTableRect();
+    // Held back only by the chord table: don't count this line as handled,
+    // so it's tried again on its next note once the table has left view.
+    if (chordTableInView(chordTable, band)) return;
+    lastLine = line;
     const target = followScrollTarget({
       line: line.getBoundingClientRect(),
-      band: visibleBand(container),
+      band,
       scrollTop: container.scrollTop,
-      chordTable: chordTableRect(),
+      chordTable,
     });
     if (target !== null) scrollTo(container, target);
   }

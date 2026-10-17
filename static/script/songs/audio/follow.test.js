@@ -61,10 +61,16 @@ test("a visitor at the top of the page (reading the chord table) is left alone",
 test("a visitor scrolled only a little, with the chord table still in view, is left alone", () => {
   const { follow, scrolls, cleanup } = setup({ scrollTop: 120 });
   try {
-    document.getElementById("chordtable").getBoundingClientRect = () => ({ top: -100, bottom: 200, height: 300 });
+    const table = document.getElementById("chordtable");
+    table.getBoundingClientRect = () => ({ top: -100, bottom: 200, height: 300 });
     const [line] = drawLines([window.innerHeight + 50]);
     follow.reveal(line);
     assert.deepEqual(scrolls, []);
+    // Once the visitor has scrolled the table out of view, the very same
+    // line is followed on its next note.
+    table.getBoundingClientRect = () => ({ top: -400, bottom: -100, height: 300 });
+    follow.reveal(line);
+    assert.equal(scrolls.length, 1);
   } finally {
     cleanup();
   }
