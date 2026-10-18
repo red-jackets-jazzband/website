@@ -60,7 +60,8 @@ Chords go in quotes right before the note: `"Bb"`, `"F7"`, `"Cm7"`, `"C7#5"`, `"
 | Aim for a chord on beat 1 or on the exact midpoint (beat 3 in 4/4) when the source's harmonic rhythm is that simple. Beat 2/4 chords are fine when the source really has them (cadential approach chords, syncopated punches, three chords in one bar). Don't tie-split or overlay-hack a chord onto the beat 1/3 grid just because it's there. | review |
 | A chord must not sit on the **first half of a tie whose continuation lands on beat 1 or the midpoint**. Move it to the continuation. If one long note spans the beat, split it into two tied notes of the same pitch and put the chord on the second. | lint |
 | A chord change under one long note (a dotted half spanning beats 1–3) that has no note starting there: use an overlay with an invisible rest, `C6 & x4 "Bb7"x2`. | review |
-| Spell chords so abcjs/Tonal understand them: `"Adim"` not `A°`; `7#5`, `mØ` style jazz extensions are fine; a rootless `"G5"` is fine. (The Roman-numeral analysis, the Comping generator and the Mixer's Bass/Chords channels are all driven by these names.) | review |
+| Augmented and diminished chords are spelled out: `"Gaug"`, `"Faug7"`, `"Adim"`, never `G+`, `F+7` or `A°`. A raised fifth on an extended chord is `#5` (`"C7#5"`, `"C9#5"`). | lint |
+| Spell chords so abcjs/Tonal understand them: `7#5`, `mØ` style jazz extensions are fine; a rootless `"G5"` is fine. (The Roman-numeral analysis, the Comping generator and the Mixer's Bass/Chords channels are all driven by these names.) | review |
 | If the sheet has both a boxed chord grid and chord labels over the staff, compare a few bars of each before transcribing. They are usually the same harmony, but can be two unrelated charts. | review |
 | Chord labels printed over the middle of a bar on the source are usually just placement. Put the chord at the bar start unless the sheet really shows a change mid-bar. | review |
 

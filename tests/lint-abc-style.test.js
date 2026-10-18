@@ -106,3 +106,10 @@ test("a chord may be restated where a long scheme's 8-column chord table starts 
   assert.deepEqual(findings(restated), []);
   assert.deepEqual(findings(`${bars("C", 8)} | C4 | "C"C4 | ${bars("F", 14)} |`), [REPEATED]);
 });
+
+test("augmented and diminished chords are spelled out, not written with + or °", () => {
+  assert.deepEqual(findings('"G+"G4 | "Cm"c4 |'), ["chord-symbol-spelling"]);
+  assert.deepEqual(findings('"F+7"F4 | "Bb"B4 |'), ["chord-symbol-spelling"]);
+  assert.deepEqual(findings('"B°"B4 | "C"c4 |'), ["chord-symbol-spelling"]);
+  assert.deepEqual(findings('"Gaug"G4 | "Faug7"F4 | "Bdim"B4 | "C7#5"c4 |'), []);
+});

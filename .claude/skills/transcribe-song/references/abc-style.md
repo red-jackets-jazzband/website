@@ -17,8 +17,10 @@ or a 2/4 march needs its own `M:` and every bar-sum check below scaled to match)
 
 Inline in quotes right before their note: `"Bb"`, `"F7"`, `"Cm7"`, `"C7#5"`, `"N.C."`.
 
-A degree sign for a diminished chord on the sheet (`A°`) is not a valid ABC/abc2midi
-chord name — respell it `"Adim"` (matches existing house files). A rootless `"G5"`-style
+A degree sign for a diminished chord on the sheet (`A°`) is respelled `"Adim"`, and a
+plus sign for an augmented one (`G+`, `F+7`) `"Gaug"`/`"Faug7"` — a `+` after an extension
+(`C7+5`, `C9+`) is a raised fifth, `"C7#5"`/`"C9#5"`. `lint:abc` rejects `+` and `°` in a
+chord name. A rootless `"G5"`-style
 power-chord symbol is fine as printed; both `abc2midi` and the live site's abcjs accept
 it, though `render.py` (music21/MuseScore) may reprint it oddly — check such symbols
 against `render_site.mjs`'s rendering (what the site actually uses), not `render.py`'s.
