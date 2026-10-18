@@ -254,8 +254,8 @@ function decorateNotation(plan, visualObj, notationEl, voices) {
 }
 
 // Both of the above, in place — the notation container is an element id (the
-// live sheet) or the element itself (a booklet song, engraved later in idle
-// time, by which point its id may have moved).
+// live sheet) or the element itself (a booklet song, engraved later — when a
+// songbook is printed — by which point its id may have moved).
 function engraveNotation(plan, renderText, notation, voices) {
   const notationEl = typeof notation === "string" ? byId(notation) : notation;
   const visualObj = engraveInto(plan, renderText, notationEl);
