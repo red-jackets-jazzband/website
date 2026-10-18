@@ -349,9 +349,11 @@ function paint(plan, renderText, targets, { titlePrefix = "", voices = [] } = {}
   Mixer's render-affecting keys) — so a control only has to write the store.
 */
 // Mixer keys that change the render text or the synth's construction
-// (soundfont, swing, voicesOff), i.e. need a re-engrave. mixerVoices is
-// written by the render itself (syncVoices) as well as by the Mixer.
-const MIXER_RENDER_KEYS = new Set(["mixer", "gchordPattern", "swing", "highQualityAudio", "mixerVoices"]);
+// (swing, voicesOff), i.e. need a re-engrave unless the write is MIX_ONLY.
+// mixerVoices is written by the render itself (syncVoices) as well as by the
+// Mixer. The soundfont (highQualityAudio) isn't one: it only reaches the synth,
+// through the player's remix.
+const MIXER_RENDER_KEYS = new Set(["mixer", "gchordPattern", "swing", "mixerVoices"]);
 // Settings keys that never change the render: opening or closing the
 // More-controls drawer only shows/hides controls (Comping, Solo and Practice
 // stay on with it closed), so it mustn't re-engrave — that would stop playback.
