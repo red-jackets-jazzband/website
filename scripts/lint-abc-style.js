@@ -13,6 +13,8 @@
 //    tune must not be a full bar that starts with rests and ends on a double or
 //    repeat bar line (or on a plain bar line when it has no chord) - drop the
 //    rests and let the first bar be short.
+// 6. Augmented and diminished chords are spelled out: `Gaug`, `Faug7`, `Bdim`,
+//    never `G+`, `F+7` or `B°` (a raised fifth on a seventh chord is `C7#5`).
 //
 // Nothing is required before a tune's very first chord (a chordless intro or
 // lead-in has no chord to restate, and inventing one is not the linter's job).
@@ -233,10 +235,28 @@ function checkRepeatedChords(bars, findings) {
   }
 }
 
+// "+" and "°" (and its look-alike "º") as chord-quality symbols; see rule 6.
+const SYMBOL_SPELLINGS = [
+  ["+", "aug"],
+  ["°", "dim"],
+  ["º", "dim"],
+];
+
+function checkChordSpelling(strand, findings) {
+  for (const { el } of strand) {
+    if (!el) continue;
+    for (const chord of realChords(el)) {
+      const found = SYMBOL_SPELLINGS.find(([symbol]) => chord.name.includes(symbol));
+      if (found) findings.push({ type: "chord-symbol-spelling", at: el.startChar, name: chord.name, symbol: found[0], word: found[1] });
+    }
+  }
+}
+
 const MESSAGES = {
   "plain-bar-before-part": () => "Part change must be preceded by a double bar line (||), not |",
   "missing-chord": (f) => `First bar of a ${f.scope} has no chord symbol`,
   "pickup-rests": () => "Pickup is written with leading rests - drop them and let the first bar be short",
+  "chord-symbol-spelling": (f) => `Chord "${f.name}" uses "${f.symbol}" - write "${f.word}" instead`,
   "repeated-chord": (f) => `Chord "${f.name}" repeats the chord already in effect - leave it out`,
 };
 
@@ -253,6 +273,7 @@ export function findStyleFindings(tune) {
   if (strands.size === 1) checkPickup(bars, tune.getBarLength(), findings);
   checkRequiredChords(bars, tune.getBarLength(), findings);
   checkRepeatedChords(bars, findings);
+  checkChordSpelling(strand, findings);
   return findings;
 }
 
