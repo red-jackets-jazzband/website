@@ -592,7 +592,12 @@ export function createSheet(ctx) {
     });
   }
 
+  // Opening a song (any path) supersedes a renderFromFile read still in
+  // flight: a slow earlier pick must not land over the song now open.
+  let fileLoadSeq = 0;
+
   function render(text, { transposeSemitones = 0 } = {}) {
+    fileLoadSeq += 1;
     ctx.store.set("settings", { transpose: transposeSemitones || 0 }, RENDER);
     renderLive(text, { fresh: true });
   }
@@ -619,7 +624,11 @@ export function createSheet(ctx) {
     rerenderInBackground,
     whenIdle,
     renderFromFile(path) {
-      ctx.readFile(`/songs/${path}`, (text) => render(text));
+      fileLoadSeq += 1;
+      const seq = fileLoadSeq;
+      ctx.readFile(`/songs/${path}`, (text) => {
+        if (seq === fileLoadSeq) render(text);
+      });
     },
     renderIntoBooklet(text, targets, { deferEngrave = false } = {}) {
       const { titlePrefix = "", extraTransposeSteps = 0, ...ids } = targets;
