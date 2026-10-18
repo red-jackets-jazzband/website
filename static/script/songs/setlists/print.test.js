@@ -428,6 +428,22 @@ test("a rebuild re-attaches the finished blocks, renumbered, without reading or 
   }
 });
 
+test("a rebuild from the cache still fills the stage list's keys and tempos", async () => {
+  const { print, page } = deferredSetup();
+  try {
+    withAbcjs(createAbcjsStub(), () => print.buildBooklet("Gig", SONGS, ""));
+    await flush();
+    // e.g. the setlist view re-rendering when a song in it is opened
+    withAbcjs(createAbcjsStub(), () => print.buildBooklet("Gig", SONGS, ""));
+    assert.equal(document.getElementById("setlistStageConcert-1").textContent, "B♭");
+    assert.equal(document.getElementById("setlistStageConcert-2").textContent, "G"); // F + 2
+    assert.equal(document.getElementById("setlistStageTempo-2").textContent, "90");
+    await new Promise((resolve) => { setTimeout(resolve, 400); }); // let the idle drain finish
+  } finally {
+    page.cleanup();
+  }
+});
+
 test("changing a song's key redoes only that song", async () => {
   const { print, renders, page } = deferredSetup();
   try {

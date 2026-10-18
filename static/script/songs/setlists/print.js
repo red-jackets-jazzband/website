@@ -379,20 +379,22 @@ export function createSetlistPrint(ctx) {
     enqueueEngrave(record);
   }
 
-  // A song already engraved for this key + instrument: re-attach it.
-  function reuseSong(entry, record) {
+  // A song already engraved for this key + instrument: re-attach it. Its
+  // key/tempo meta is filled by buildBooklet once the stage list exists
+  // (reusedMeta) — filling it here, synchronously, would find no cells yet.
+  function reuseSong(entry, record, reusedMeta) {
     const n = entry.songCount;
     stampIds(record.parts, entry);
     if (record.baseTitle) record.parts.title.textContent = `${entry.displayNumber}. ${record.baseTitle}`;
-    fillSongMeta(n, record.meta);
+    reusedMeta.push({ n, meta: record.meta });
     listenSongs[n - 1] = { title: ctx.songName(entry.item.file), sources: record.sources };
     enqueueEngrave(record);
     return record.parts.block;
   }
 
-  function songBlock(entry, seq, cacheKey) {
+  function songBlock(entry, seq, cacheKey, reusedMeta) {
     const cached = songCache.get(cacheKey);
-    if (cached) return reuseSong(entry, cached);
+    if (cached) return reuseSong(entry, cached, reusedMeta);
 
     const parts = songParts();
     stampIds(parts, entry);
@@ -452,6 +454,7 @@ export function createSetlistPrint(ctx) {
 
     const occurrences = new Map();
     const usedKeys = new Set();
+    const reusedMeta = [];
     songTotal = 0;
     walkSetlist(songs).entries.forEach((entry) => {
       if (entry.kind === "set-heading") {
@@ -464,7 +467,7 @@ export function createSetlistPrint(ctx) {
       const cacheKey = songCacheKey(entry, occurrence);
       usedKeys.add(cacheKey);
       songTotal += 1;
-      container.append(songBlock(entry, seq, cacheKey));
+      container.append(songBlock(entry, seq, cacheKey, reusedMeta));
     });
     // Blocks of songs no longer in the list (or at another key) are dropped.
     Array.from(songCache.keys()).forEach((key) => {
@@ -475,6 +478,7 @@ export function createSetlistPrint(ctx) {
     // Appended after the (hidden-in-setlist-mode) chart stack: for "Print
     // setlist" the stack collapses and this lands right under the front matter.
     appendStageList(container, songs);
+    reusedMeta.forEach(({ n, meta }) => fillSongMeta(n, meta));
 
     // A rebuild (e.g. instrument change) with a print still queued: keep
     // counting against the fresh read total, or release the print now if the
