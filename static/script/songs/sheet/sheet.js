@@ -14,7 +14,7 @@ import { parseInspirationLinks } from "../../lib/media/inspiration-links.js";
 import { renderChordTable, scanRepeatBoundaries, fitChordTable, fitSongForms } from "./chord-table.js";
 import { stylePartMarkers, keepPartsTogether, applyCompingColors, applySplitCompingColors } from "./decorations.js";
 import { updateIrealProLink } from "./irealpro-link.js";
-import { decorateLayers } from "../layers/overlays.js";
+import { layerSteps } from "../layers/overlays.js";
 import { RENDER, isBackgroundWrite, isMixOnlyWrite, isRenderWrite } from "../core/state.js";
 import { tl } from "../../lib/core/i18n.js";
 
@@ -242,15 +242,25 @@ function engraveInto(plan, renderText, notationEl) {
 
 // Everything drawn onto ABCjs's output: comping colours, the layers, the
 // boxed part markers. Measures too, so the same rule as engraveInto holds.
-function decorateNotation(plan, visualObj, notationEl, voices) {
-  colorComping(notationEl, plan.comping, voices);
-  decorateLayers(notationEl, visualObj, plan);
+// What follows ABCjs's drawing, as steps: the comping colours, one step per
+// switched-on layer, then the part markers. A background render runs each
+// as its own task; decorateNotation runs them back to back.
+function decorateSteps(plan, visualObj, notationEl, voices) {
+  return [
+    () => colorComping(notationEl, plan.comping, voices),
+    ...layerSteps(notationEl, visualObj, plan),
+    () => {
+      notationEl.querySelectorAll(".abcjs-title, .abcjs-part-order").forEach((node) => {
+        node.setAttribute("display", "none");
+      });
+      stylePartMarkers(notationEl);
+      keepPartsTogether(notationEl);
+    },
+  ];
+}
 
-  notationEl.querySelectorAll(".abcjs-title, .abcjs-part-order").forEach((node) => {
-    node.setAttribute("display", "none");
-  });
-  stylePartMarkers(notationEl);
-  keepPartsTogether(notationEl);
+function decorateNotation(plan, visualObj, notationEl, voices) {
+  decorateSteps(plan, visualObj, notationEl, voices).forEach((step) => step());
 }
 
 // Both of the above, in place — the notation container is an element id (the
@@ -505,8 +515,8 @@ export function createSheet(ctx) {
 
   /*
     rerender(), without holding the page up: the work is split into steps
-    (plan, engrave, decorate, swap), each its own task, so a click or scroll
-    in between is answered at once; the new sheet is drawn off screen
+    (plan, engrave, each layer's overlay, swap, publish), each its own task,
+    so a click or scroll in between is answered at once; the new sheet is drawn off screen
     (createStaging) and replaces the old one in one go. Starts after the next
     paint, so whatever the caller just showed (a Layers switch's spinner) is
     on screen first. A newer background render, or any ordinary render, takes
@@ -540,14 +550,18 @@ export function createSheet(ctx) {
         job.staging = createStaging(byId(LIVE_TARGETS.notationId));
         visualObj = engraveInto(prepared.plan, prepared.renderText, job.staging.inner);
       },
-      () => decorateNotation(prepared.plan, visualObj, job.staging.inner, prepared.voices),
+      // Known only once engraved: hands back the decorate steps to run next.
+      () => decorateSteps(prepared.plan, visualObj, job.staging.inner, prepared.voices),
       () => {
-        const notationEl = byId(LIVE_TARGETS.notationId);
-        swapInStaging(job.staging, notationEl);
+        swapInStaging(job.staging, byId(LIVE_TARGETS.notationId));
         job.swapped = true;
+      },
+      // Its own task: the browser lays the swapped-in sheet out when it paints
+      // it, so the chord grid's fit here doesn't pay for that layout as well.
+      () => {
         background = null;
         try {
-          publishLive(prepared, visualObj, notationEl);
+          publishLive(prepared, visualObj, byId(LIVE_TARGETS.notationId));
         } finally {
           settleIdle();
         }
@@ -564,7 +578,8 @@ export function createSheet(ctx) {
     const run = (i) => {
       if (job.cancelled || i === steps.length) return;
       try {
-        steps[i]();
+        const more = steps[i]();
+        if (Array.isArray(more)) steps.splice(i + 1, 0, ...more);
       } catch (err) {
         console.warn("Background render failed:", err);
         // Before the swap, draw it the ordinary way instead, so the sheet
