@@ -242,12 +242,21 @@ const SYMBOL_SPELLINGS = [
   ["º", "dim"],
 ];
 
+// A "+" after an extension (C7+5, C9+) raises the fifth: that's "#5", not "aug".
+function spellingFor(name, [symbol, word]) {
+  const at = name.indexOf(symbol);
+  const isDigit = (ch) => ch >= "0" && ch <= "9";
+  return symbol === "+" && at > 0 && isDigit(name[at - 1]) ? "#5" : word;
+}
+
 function checkChordSpelling(strand, findings) {
   for (const { el } of strand) {
     if (!el) continue;
     for (const chord of realChords(el)) {
       const found = SYMBOL_SPELLINGS.find(([symbol]) => chord.name.includes(symbol));
-      if (found) findings.push({ type: "chord-symbol-spelling", at: el.startChar, name: chord.name, symbol: found[0], word: found[1] });
+      if (found) {
+        findings.push({ type: "chord-symbol-spelling", at: el.startChar, name: chord.name, symbol: found[0], word: spellingFor(chord.name, found) });
+      }
     }
   }
 }
