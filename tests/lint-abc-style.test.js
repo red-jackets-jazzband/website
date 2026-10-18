@@ -113,3 +113,14 @@ test("augmented and diminished chords are spelled out, not written with + or °"
   assert.deepEqual(findings('"B°"B4 | "C"c4 |'), ["chord-symbol-spelling"]);
   assert.deepEqual(findings('"Gaug"G4 | "Faug7"F4 | "Bdim"B4 | "C7#5"c4 |'), []);
 });
+
+function issues(body) {
+  const [tune] = ABCJS.parseOnly(`${HEADER}K:C\n${body}\n`);
+  return findStyleIssues(tune, () => "1:1");
+}
+
+test("a + after an extension is spelled #5, not aug", () => {
+  assert.match(issues('"C7+5"c4 | "F"F4 |')[0], /write "#5" instead/);
+  assert.match(issues('"C9+"c4 | "F"F4 |')[0], /write "#5" instead/);
+  assert.match(issues('"F+7"F4 | "Bb"B4 |')[0], /write "aug" instead/);
+});
