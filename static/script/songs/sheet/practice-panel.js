@@ -261,8 +261,8 @@ export function createPracticePanel(ctx) {
       // Custom's card draws the set it holds (redrawn only when that changes).
       const card = notes.groups[kind].cards.find((c) => c.getAttribute(VALUE_ATTR) === CUSTOM);
       const held = (kind === parsed.kind && picked === CUSTOM ? parsed.degrees : custom[kind]).join("");
-      if (card.getAttribute("data-held") !== held) {
-        card.setAttribute("data-held", held);
+      if (card.dataset.held !== held) {
+        card.dataset.held = held;
         card.firstChild.replaceWith(noteSetSvg(degreeItems(held.split("").map(Number)), { stacked: kind === "arpeggios" }));
       }
     }
