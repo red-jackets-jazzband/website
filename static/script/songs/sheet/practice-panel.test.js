@@ -170,6 +170,26 @@ test("a click on a card's staff keeps the panel open, even as the click redraws 
   }
 });
 
+test("the Blues card plays the blues scale, with flats and a sharp on its staff", () => {
+  const { page, ctx } = setup();
+  try {
+    click('.practice-kind[data-value="scales"]');
+    const blues = setCard("blues");
+    assert.equal(document.querySelectorAll(`${blues} .practice-notes-head`).length, 6);
+    assert.equal(document.querySelectorAll(`${blues} .practice-notes-accidental`).length, 3);
+    click(blues);
+    assert.equal(ctx.state.practice, "scales-updown@blues", "keeps the shape");
+    assert.deepEqual(pressed("set"), ["blues"]);
+    assert.equal($("#practiceShapeStep").hidden, false);
+    assert.equal($('.practice-degrees[data-kind="scales"]').hidden, true, "no degree row");
+    assert.equal($(SUMMARY_TEXT).textContent, "Blues scale, Up & down · Varied rhythm");
+    click(setCard("five"));
+    assert.equal(ctx.state.practice, "scales-updown@12345");
+  } finally {
+    page.cleanup();
+  }
+});
+
 test("a stored set that isn't a preset opens on Custom", () => {
   const page = mountPage();
   try {

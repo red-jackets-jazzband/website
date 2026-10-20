@@ -7777,7 +7777,7 @@ body.rj-layers-open #layersTab .rj-layers-count {
   opacity: .25;
 }
 .practice-notes-ledger,
-.practice-notes-sharp {
+.practice-notes-accidental {
   stroke: currentColor;
   stroke-width: 1.1;
   fill: none;
