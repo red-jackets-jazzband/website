@@ -94,11 +94,20 @@ export const PRACTICE_NOTE_SETS = {
       value: "octave", degrees: [1, 2, 3, 4, 5, 6, 7, 8], default: true,
       label: tl("practice_set_octave", "Octave"), name: tl("practice_scales", "Scale runs"),
     },
-    // The key's blues scale through the whole tune, not each chord's scale
-    // (Aebersold: over a Bb blues, the Bb blues scale). `degrees` only
-    // stands in for its length; `draw` is what its card shows.
+    // Named scales, not a set of the chord's scale degrees (`named`; their
+    // `degrees` only stand in for the length, `draw` is what the card shows).
+    // Pentatonic: over each chord its major pentatonic, 1 2 3 5 6, or over a
+    // minor chord its minor pentatonic, 1 b3 4 5 b7 (Aebersold's first
+    // scales after the chord tones).
     {
-      value: "blues", blues: true, degrees: [1, 3, 4, 5, 7, 8],
+      value: "penta", named: true, degrees: [1, 2, 3, 5, 6, 8],
+      label: tl("practice_set_penta", "Pentatonic"), name: tl("practice_name_penta", "Pentatonic scale"),
+      draw: [{ degree: 1 }, { degree: 2 }, { degree: 3 }, { degree: 5 }, { degree: 6 }, { degree: 8 }],
+    },
+    // Blues: the key's blues scale through the whole tune, not each chord's
+    // scale (Aebersold: over a Bb blues, the Bb blues scale).
+    {
+      value: "blues", named: true, degrees: [1, 3, 4, 5, 7, 8],
       label: tl("practice_set_blues", "Blues"), name: tl("practice_name_blues", "Blues scale"),
       draw: [{ degree: 1 }, { degree: 3, flat: true }, { degree: 4 }, { degree: 4, sharp: true }, { degree: 5 }, { degree: 7, flat: true }],
     },
@@ -124,14 +133,15 @@ const GUIDE_SET = [3, 7];
 const sameDegrees = (a, b) => a.length === b.length && a.every((d, i) => d === b[i]);
 const defaultDegrees = (kind) => PRACTICE_NOTE_SETS[kind].find((set) => set.default).degrees;
 
-// The preset card a kind's degrees match, if any (`blues`: the blues scale's).
-export function practiceNoteSet(kind, degrees, blues = false) {
+// The preset card a kind's degrees match, if any (`named`: that named scale's).
+export function practiceNoteSet(kind, degrees, named = null) {
   const sets = PRACTICE_NOTE_SETS[kind];
   if (!sets) return undefined;
-  return sets.find((set) => (blues ? set.blues : !set.blues && sameDegrees(set.degrees, degrees)));
+  return sets.find((set) => (named ? set.value === named : !set.named && sameDegrees(set.degrees, degrees)));
 }
 const BLUES = "blues";
-const bluesSet = () => PRACTICE_NOTE_SETS.scales.find((set) => set.blues);
+const PENTA = "penta";
+const namedSet = (value) => PRACTICE_NOTE_SETS.scales.find((set) => set.named && set.value === value);
 
 // The exercise values from before note sets: guide tones are the 3rd-and-7th
 // set, rhythm on one note the root alone.
@@ -140,10 +150,10 @@ const LEGACY = { guide: "arpeggios@37", rhythm: "arpeggios@1" };
 /*
   An exercise value — "kind", "kind-variant", "kind@degrees" or
   "kind-variant@degrees" ("scales-updown", "arpeggios@1357", "enclosures-below")
-  or "scales…@blues" — read as { kind, variant, degrees } (plus `blues:
-  true` for the blues scale): the variant is a run kind's shape or
-  an approach's style, `degrees` a run kind's note set (ascending; the
-  kind's default when none is written). Null for anything else.
+  or a named scale, "scales…@blues" or "scales…@penta" — read as { kind,
+  variant, degrees } (plus `named`: "blues" or "penta"): the variant is a
+  run kind's shape or an approach's style, `degrees` a run kind's note set
+  (ascending; the kind's default when none is written). Null for anything else.
 */
 export function parseExercise(value) {
   const text = Object.prototype.hasOwnProperty.call(LEGACY, value) ? LEGACY[value] : String(value);
@@ -161,15 +171,12 @@ export function parseExercise(value) {
   return parseNotes(kind, shape, digits);
 }
 
-// A run kind's note set from what follows "@": none (the default), "blues"
-// (scales only) or its degrees as digits.
+// A run kind's note set from what follows "@": none (the default), a named
+// scale (scales only) or its degrees as digits.
 function parseNotes(kind, shape, digits) {
   if (digits === undefined) return { kind, variant: shape, degrees: defaultDegrees(kind) };
-  if (digits === BLUES) {
-    return kind === "scales" ? {
-      kind, degrees: bluesSet().degrees, variant: shape, blues: true,
-    } : null;
-  }
+  const named = namedSet(digits);
+  if (named) return kind === "scales" ? { kind, degrees: named.degrees, variant: shape, named: named.value } : null;
   const degrees = PRACTICE_DEGREES[kind].filter((d) => digits.includes(String(d)));
   if (degrees.length === 0 || degrees.length !== digits.length) return null;
   return { kind, degrees, variant: shape };
@@ -184,18 +191,18 @@ export function exerciseTakesShape({ kind, degrees }) {
 
 /**
   { kind, variant, degrees } -> the shortest value that reads back the same
-  (no `degrees`: the kind's default set; `blues`: the blues scale).
-  @param {{ kind: string, variant?: string, degrees?: number[] | null, blues?: boolean }} exercise
+  (no `degrees`: the kind's default set; `named`: a named scale's value).
+  @param {{ kind: string, variant?: string, degrees?: number[] | null, named?: string | null }} exercise
 */
 export function formatExercise({
-  kind, variant, degrees = null, blues = false,
+  kind, variant, degrees = null, named = null,
 }) {
   const found = PRACTICE_KINDS.find((k) => k.value === kind);
   if (!found) return String(kind);
   if (!found.runs) return variant && variant !== DEFAULT_APPROACH ? `${kind}-${variant}` : kind;
   const set = degrees || defaultDegrees(kind);
   const shape = exerciseTakesShape({ kind, degrees: set }) && variant && variant !== "alternate" ? `-${variant}` : "";
-  if (blues) return `${kind}${shape}@${BLUES}`;
+  if (named) return `${kind}${shape}@${named}`;
   const notes = sameDegrees(set, defaultDegrees(kind)) ? "" : `@${set.join("")}`;
   return `${kind}${shape}${notes}`;
 }
@@ -212,7 +219,7 @@ export const PRACTICE_EXERCISES = [
   ...["arpeggios", "scales"].flatMap((kind) => PRACTICE_NOTE_SETS[kind]
     .filter((set) => !set.default)
     .map((set) => formatExercise({
-      kind, variant: "updown", degrees: set.degrees, blues: set.blues,
+      kind, variant: "updown", degrees: set.degrees, named: set.named ? set.value : null,
     }))),
   ...PRACTICE_APPROACHES.map((a) => formatExercise({ kind: "enclosures", variant: a.value })),
 ];
@@ -279,7 +286,7 @@ export function practiceSummaryParts(practice, rhythms) {
 // "7th chords, Up & down", "Guide tones", "Chord tones: 3rd, 5th, 9th", "Enclosures".
 function exerciseName(parsed) {
   if (parsed.degrees === null) return PRACTICE_APPROACHES.find((a) => a.value === parsed.variant).name;
-  const set = practiceNoteSet(parsed.kind, parsed.degrees, parsed.blues);
+  const set = practiceNoteSet(parsed.kind, parsed.degrees, parsed.named);
   let what = set ? set.name : null;
   if (what === null) {
     const notes = parsed.degrees.map((d) => PRACTICE_DEGREE_LABELS[d]).join(", ");
@@ -350,6 +357,7 @@ function degreeOf(chord, s) {
 */
 function noteOffsets(chord, kind, degrees) {
   if (kind === BLUES) return BLUES_OFFSETS;
+  if (kind === PENTA) return pentatonicOffsets(chord);
   const out = new Set();
   for (const d of degrees) {
     let offsets;
@@ -394,6 +402,19 @@ function bluesChord(chord, tonic) {
     ...chord, root: tonic === null ? chord.root : tonic, tones: [0, 3, 7, 10], scale: BLUES_OFFSETS.slice(0, -1),
   };
 }
+/*
+  A chord's pentatonic, with the octave: minor (1 b3 4 5 b7) over a minor
+  3rd, else major (1 2 3 5 6, a sus chord's 4th for the 3rd), each with
+  the chord's own 5th (a m7b5's b5, an augmented 5th).
+*/
+const PENTA_RUN = { kind: PENTA, degrees: [] };
+function pentatonicOffsets(chord) {
+  const notes = chord.third === 3 ? [0, 3, 5, chord.fifth, 10] : [0, 2, chord.third, chord.fifth, 9];
+  const unique = [...new Set(notes), 12];
+  unique.sort((a, b) => a - b);
+  return unique;
+}
+
 const onBlues = (notes, tonic) => notes.map((note) => ({ ...note, at: { ...note.at, chord: bluesChord(note.at.chord, tonic) } }));
 
 // A set's notes over a chord across the whole range: the pool a voice-led
@@ -898,7 +919,8 @@ function shapedRun(notes, set, runs) {
 
 // How a parsed exercise plays: its own rhythm cells and its pitch rule.
 function planFor(parsed) {
-  if (parsed.blues) return { cells: RUN_CELLS, pitches: (notes, tonic) => shapedRun(onBlues(notes, tonic), BLUES_RUN, parsed.variant) };
+  if (parsed.named === BLUES) return { cells: RUN_CELLS, pitches: (notes, tonic) => shapedRun(onBlues(notes, tonic), BLUES_RUN, parsed.variant) };
+  if (parsed.named === PENTA) return { cells: RUN_CELLS, pitches: (notes) => shapedRun(notes, PENTA_RUN, parsed.variant) };
   if (parsed.degrees === null) {
     return { cells: RUN_CELLS, pitches: (notes, tonic) => approachPitches(notes, parsed.variant, tonic) };
   }

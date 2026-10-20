@@ -252,7 +252,7 @@ export function createPracticePanel(ctx) {
     for (const kind of Object.keys(notes.groups)) notes.groups[kind].box.hidden = kind !== parsed.kind;
     let picked = parsed.variant;
     if (parsed.degrees !== null) {
-      const preset = practiceNoteSet(parsed.kind, parsed.degrees, parsed.blues);
+      const preset = practiceNoteSet(parsed.kind, parsed.degrees, parsed.named);
       picked = customOpen[parsed.kind] || !preset ? CUSTOM : preset.value;
     }
     markPressed(notes.groups[parsed.kind].cards, on ? picked : null);
@@ -336,7 +336,7 @@ export function createPracticePanel(ctx) {
       const preset = PRACTICE_NOTE_SETS[kind].find((set) => set.value === value);
       const degrees = value === CUSTOM ? custom[kind] : preset.degrees;
       writeExercise({
-        kind, degrees, blues: Boolean(preset && preset.blues), variant: exerciseTakesShape(now) ? now.variant : lastShape,
+        kind, degrees, named: preset && preset.named ? preset.value : null, variant: exerciseTakesShape(now) ? now.variant : lastShape,
       });
     });
   }
