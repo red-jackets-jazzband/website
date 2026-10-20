@@ -81,7 +81,10 @@ function tickedRhythms(rhythms, exercise) {
   return rhythms && rhythms.length > 0 ? rhythms : practiceDefaultRhythms(exercise);
 }
 
-const setCard = (value, label, svg) => choice("practice-set", value, [svg, el("span", { class: "practice-choice-label", text: label })]);
+const STEP_CLASS = "practice-step";
+const choiceLabel = (text) => el("span", { class: "practice-choice-label", text });
+
+const setCard = (value, label, svg) => choice("practice-set", value, [svg, choiceLabel(label)]);
 
 // One kind's cards: its preset note sets and Custom, or the approach styles.
 function buildCards(kind) {
@@ -116,24 +119,24 @@ function buildNotesStep() {
     rows.push(degrees[kind].box);
   }
   const title = el("span", { id: "practiceNotesTitle" });
-  const step = el("div", { class: "practice-step", id: "practiceNotesStep" }, [stepTitle(stepNum("2"), title), ...rows]);
+  const step = el("div", { class: STEP_CLASS, id: "practiceNotesStep" }, [stepTitle(stepNum("2"), title), ...rows]);
   return { step, title, groups, degrees };
 }
 
 function buildPanel() {
   const kinds = PRACTICE_KINDS.map((kind) => choice("practice-kind", kind.value, [
-    el("span", { class: "practice-choice-label", text: kind.label }),
+    choiceLabel(kind.label),
   ]));
   const shapes = PRACTICE_SHAPES.map((shape) => choice("practice-shape", shape.value, [
     contour(shape.points),
-    el("span", { class: "practice-choice-label", text: shape.label }),
+    choiceLabel(shape.label),
   ]));
   const patterns = PRACTICE_RHYTHMS.map((rhythm) => choice("practice-pattern", rhythm.value, [
     rhythmSvg(rhythm.cell),
-    el("span", { class: "practice-choice-label", text: rhythm.label }),
+    choiceLabel(rhythm.label),
   ]));
   const notes = buildNotesStep();
-  const shapeStep = el("div", { class: "practice-step", id: "practiceShapeStep" }, [
+  const shapeStep = el("div", { class: STEP_CLASS, id: "practiceShapeStep" }, [
     stepTitle(stepNum("3"), tl("practice_step_shape", "Run shape")),
     el("div", { class: "practice-choices practice-choices--shapes" }, shapes),
   ]);
@@ -149,13 +152,13 @@ function buildPanel() {
     el("div", { class: "practice-head" }, [
       el("p", { class: "practice-title", text: tl("practice_title", "Practice routine") }),
     ]),
-    el("div", { class: "practice-step" }, [
+    el("div", { class: STEP_CLASS }, [
       stepTitle(stepNum("1"), tl("practice_step_what", "What to play")),
       el("div", { class: "practice-choices practice-choices--kinds" }, kinds),
     ]),
     notes.step,
     shapeStep,
-    el("div", { class: "practice-step" }, [
+    el("div", { class: STEP_CLASS }, [
       stepTitle(rhythmNum, el("span", { id: "practiceRhythmTitle", text: tl("practice_step_rhythm", "Rhythm") })),
       patternGrid,
     ]),
@@ -329,7 +332,7 @@ export function createPracticePanel(ctx) {
       }
       customOpen[kind] = value === CUSTOM;
       const degrees = value === CUSTOM ? custom[kind] : PRACTICE_NOTE_SETS[kind].find((set) => set.value === value).degrees;
-      writeExercise({ kind, variant: exerciseTakesShape(now) ? now.variant : lastShape, degrees });
+      writeExercise({ kind, degrees, variant: exerciseTakesShape(now) ? now.variant : lastShape });
     });
   }
   // A degree of Custom's row switched on or off; the last one stays on.
@@ -342,7 +345,7 @@ export function createPracticePanel(ctx) {
         : PRACTICE_DEGREES[kind].filter((x) => x === d || now.degrees.includes(x));
       if (degrees.length === 0) return;
       custom[kind] = degrees;
-      writeExercise({ kind, variant: exerciseTakesShape(now) ? now.variant : lastShape, degrees });
+      writeExercise({ kind, degrees, variant: exerciseTakesShape(now) ? now.variant : lastShape });
     });
   }
   onPick(ui.shapes, (shape) => {
