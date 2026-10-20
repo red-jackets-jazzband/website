@@ -245,6 +245,19 @@ test("a note tied into a bar doesn't set its accidental for the rest of the bar"
   });
 });
 
+test("the blues scale's raised 4th rising to the 5th is spelled sharp, and sounds as generated", () => {
+  // In C: F# into G, never Gb; Eb and Bb flat.
+  const text = ["X:1", "T:Blues", "M:4/4", "L:1/8", "K:C", "\"C7\"c8|\"F7\"c8|\"C7\"c8|\"G7\"B8|]", ""].join("\n");
+  withRealTonal(() => {
+    const built = practiceOf(text, "scales-up@blues");
+    const [first] = practiceBars(built.abc);
+    assert.match(first, /\^F/);
+    assert.doesNotMatch(first, /_G/);
+    assert.match(first, /_E/);
+    assert.deepEqual(practicePlayback(built.abc), built.notes.map((n) => n.midi));
+  });
+});
+
 // The onsets of each bar, as "slot:length" in eighths.
 function barRhythms(notes, bars) {
   return Array.from({ length: bars }, (_, bar) => notes
@@ -340,7 +353,7 @@ test("the Practice list offers each run in each shape, each set and each approac
     "arpeggios", "arpeggios-up", "arpeggios-down", "arpeggios-updown",
     "scales", "scales-up", "scales-down", SCALES_UPDOWN,
     "arpeggios@1", "arpeggios-updown@135", "arpeggios-updown@13579", "arpeggios-updown@1356", GUIDE_TONES,
-    "scales-updown@123", "scales-updown@12345",
+    "scales-updown@123", "scales-updown@12345", "scales-updown@blues",
     "enclosures-below", "enclosures-above", "enclosures",
   ]);
   for (const value of values) assert.ok(practiceNotes(EIGHT_BARS, value).length > 0, value);
@@ -481,8 +494,10 @@ test("the old guide tones and one-note exercises carry over as note sets", () =>
 test("every preset is a set the summary names; a card's set reads back as that preset", () => {
   for (const kind of ["arpeggios", "scales"]) {
     for (const set of PRACTICE_NOTE_SETS[kind]) {
-      assert.equal(practiceNoteSet(kind, set.degrees), set, `${kind} ${set.value}`);
-      const value = formatExercise({ kind, variant: "alternate", degrees: set.degrees });
+      assert.equal(practiceNoteSet(kind, set.degrees, set.blues), set, `${kind} ${set.value}`);
+      const value = formatExercise({
+        kind, variant: "alternate", degrees: set.degrees, blues: set.blues,
+      });
       assert.ok(practiceSummary(value, null).startsWith(set.name), value);
     }
   }
@@ -526,6 +541,24 @@ test("scale sets: the first 3 or 5 notes, up and back or up and again", () => {
   assert.deepEqual(runOverF("scales-updown@123"), [65, 67, 69, 67, 65, 67, 69, 67]);
   // F G A Bb C, then again from F.
   assert.deepEqual(runOverF("scales-up@12345"), [65, 67, 69, 70, 72, 65, 67, 69]);
+});
+
+test("the blues scale plays the key's 1 b3 4 #4 5 b7 through every chord", () => {
+  // An F blues: over F7, Bb7 and C7 alike, F Ab Bb B C Eb.
+  const notes = practiceNotes([["F7"], ["Bb7"], ["C7"], ["F7"]], "scales-up@blues", { rhythms: ["eighths"], breathEvery: 0, tonic: 5 });
+  assert.deepEqual([...new Set(notes.map((n) => mod12(n.midi)))].sort((a, b) => a - b), [0, 3, 5, 8, 10, 11]);
+  // Always up: every chord starts again on the key's F.
+  [0, 1, 2, 3].forEach((bar) => assert.equal(mod12(notes.find((n) => n.start === bar * 4).midi), 5, `bar ${bar}`));
+  // No key: each chord's own blues scale.
+  const own = practiceNotes([["C7"]], "scales-up@blues", { rhythms: ["eighths"], breathEvery: 0 }).map((n) => mod12(n.midi));
+  assert.deepEqual(own.slice(0, 6), [0, 3, 5, 6, 7, 10]);
+  assert.deepEqual(parseExercise("scales-down@blues"), {
+    kind: "scales", degrees: [1, 3, 4, 5, 7, 8], variant: "down", blues: true,
+  });
+  assert.equal(parseExercise("arpeggios@blues"), null, "only a scale");
+  assert.ok(exerciseTakesShape(parseExercise("scales@blues")));
+  assert.equal(practiceSummary("scales-updown@blues", null), "Blues scale, Up & down · Varied rhythm");
+  assert.equal(practiceNoteSet("scales", [1, 3, 4, 5, 7, 8]), undefined, "a custom set with the same degrees isn't the blues scale");
 });
 
 test("approach from below or above: one note leads into the target", () => {
