@@ -202,7 +202,7 @@ export function createPracticePanel(ctx) {
   const start = parsedNow();
   lastOfKind[start.kind] = formatExercise(start);
   let lastShape = exerciseTakesShape(start) ? start.variant : "updown";
-  if (start.degrees !== null && !practiceNoteSet(start.kind, start.degrees)) {
+  if (start.degrees !== null && !practiceNoteSet(start.kind, start.degrees, start.named)) {
     customOpen[start.kind] = true;
     custom[start.kind] = start.degrees;
   }
