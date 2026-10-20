@@ -7763,10 +7763,13 @@ body.rj-layers-open #layersTab .rj-layers-count {
   text-align: center;
   padding: 6px 4px 8px;
 }
+/* Its own width/height attributes size it (72×46); no `height: auto`,
+   which leans on the viewBox's intrinsic ratio, where older WebKit has
+   sized inline SVG wrong. Narrower than 72px it shrinks and the drawing
+   scales inside the box (preserveAspectRatio's default). */
 .practice-notes {
   display: block;
   max-width: 100%;
-  height: auto;
 }
 .practice-notes-line {
   stroke: currentColor;
