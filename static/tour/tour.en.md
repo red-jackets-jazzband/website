@@ -287,10 +287,10 @@ Pick what the exercise plays: **Chord tones**, **Scales**, or an **Approach** in
 setup: openDrawer, openPractice, practiceOn
 target: #practiceNotesStep
 interactive: true
-Each card shows its notes on a little staff. Start with the roots, then triads, 7th chords and 9th chords, the way you learn a new tune's changes. **Guide tones** plays just the 3rd and 7th, each 7th falling a half step onto the next chord's 3rd. **Custom** lets you pick the notes one by one. For an approach, pick how to reach the target: a half step from below, a step from above, or both.
+Each card shows its notes on a little staff. Start with the roots, then triads, 7th chords and 9th chords, the way you learn a new tune's changes; for scales, the first 3 notes, then 5, then the whole octave. **Guide tones** plays just the 3rd and 7th, each 7th falling a half step onto the next chord's 3rd. **Custom** lets you pick the notes one by one. For an approach, pick how to reach the target: a half step from below, a step from above, or both.
 
 ## shape: Runs on every chord shape
-setup: openDrawer, openPractice, practiceOn
+setup: openDrawer, openPractice, practiceRunsOn
 target: #practiceShapeStep
 interactive: true
 Play the runs **up**, **down**, **up and down**, or voice-led from chord to chord. Practising different runs over each chord shape fixes the tune's harmony under your fingers, and that's the basis for improvising your own lines: a solo, an ad lib, or an obbligato around the melody.
