@@ -9,6 +9,7 @@ const TOGGLE = "#practiceToggle";
 const PANEL = "#practicePanel";
 const SUMMARY = "#practiceSummary";
 const SUMMARY_TEXT = "#practiceSummaryText";
+const SCALE_DEGREES = '.practice-degrees[data-kind="scales"]';
 const $ = (selector) => document.querySelector(selector);
 const click = (selector) => $(selector).dispatchEvent(new window.MouseEvent("click", { bubbles: true }));
 // The values ticked in one group of choices ("kind", "shape", "mix", "pattern").
@@ -181,7 +182,7 @@ test("the Blues card plays the blues scale, with flats and a sharp on its staff"
     assert.equal(ctx.state.practice, "scales-updown@blues", "keeps the shape");
     assert.deepEqual(pressed("set"), ["blues"]);
     assert.equal($("#practiceShapeStep").hidden, false);
-    assert.equal($('.practice-degrees[data-kind="scales"]').hidden, true, "no degree row");
+    assert.equal($(SCALE_DEGREES).hidden, true, "no degree row");
     assert.equal($(SUMMARY_TEXT).textContent, "Blues scale, Up & down · Varied rhythm");
     click(setCard("penta"));
     assert.equal(ctx.state.practice, "scales-updown@penta");
@@ -200,7 +201,7 @@ test("a stored set that isn't a preset opens on Custom", () => {
     const ctx = makeCtx({ state: { practice: "scales-up@1235" } });
     createPracticePanel(ctx);
     assert.deepEqual(pressed("set"), ["custom"]);
-    assert.equal($('.practice-degrees[data-kind="scales"]').hidden, false);
+    assert.equal($(SCALE_DEGREES).hidden, false);
     assert.deepEqual(pressed("degree"), ["1", "2", "3", "5"]);
   } finally {
     page.cleanup();
@@ -213,7 +214,7 @@ test("a stored named scale opens on its own card, not Custom", () => {
     try {
       createPracticePanel(makeCtx({ state: { practice: `scales-up@${named}` } }));
       assert.deepEqual(pressed("set"), [named]);
-      assert.equal($('.practice-degrees[data-kind="scales"]').hidden, true);
+      assert.equal($(SCALE_DEGREES).hidden, true);
     } finally {
       page.cleanup();
     }

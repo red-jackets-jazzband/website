@@ -21,6 +21,8 @@ after(() => {
 });
 
 const SCALES_UPDOWN = "scales-updown";
+const SCALES_THIRDS = "scales-thirds";
+const BLUES_UP = "scales-up@blues";
 const GUIDE_TONES = "arpeggios@37";
 const NAMES = [["F"], ["C7"], ["F", "F7"], [null]];
 
@@ -253,7 +255,7 @@ test("the blues scale's raised 4th rising to the 5th is spelled sharp, and sound
   // In C: F# into G, never Gb; Eb and Bb flat.
   const text = ["X:1", "T:Blues", "M:4/4", "L:1/8", "K:C", "\"C7\"c8|\"F7\"c8|\"C7\"c8|\"G7\"B8|]", ""].join("\n");
   withRealTonal(() => {
-    const built = practiceOf(text, "scales-up@blues");
+    const built = practiceOf(text, BLUES_UP);
     const [first] = practiceBars(built.abc);
     assert.match(first, /\^F/);
     assert.doesNotMatch(first, /_G/);
@@ -355,7 +357,7 @@ test("the Practice list offers each run in each shape, each set and each approac
   const values = PRACTICE_EXERCISES;
   assert.deepEqual(values, [
     "arpeggios", "arpeggios-up", "arpeggios-down", "arpeggios-updown", "arpeggios-thirds",
-    "scales", "scales-up", "scales-down", SCALES_UPDOWN, "scales-thirds",
+    "scales", "scales-up", "scales-down", SCALES_UPDOWN, SCALES_THIRDS,
     "arpeggios@1", "arpeggios-updown@135", "arpeggios-updown@13579", "arpeggios-updown@1356", GUIDE_TONES,
     "scales-updown@123", "scales-updown@12345", "scales-updown@penta", "scales-updown@blues",
     "enclosures-below", "enclosures-above", "enclosures",
@@ -542,11 +544,11 @@ const runOverF = (value) => practiceNotes([["F"]], value, { rhythms: ["eighths"]
 
 test("runs in thirds: 1 3 2 4 3 5 … from each chord's root", () => {
   // F A G Bb A C Bb D.
-  assert.deepEqual(runOverF("scales-thirds"), [65, 69, 67, 70, 69, 72, 70, 74]);
+  assert.deepEqual(runOverF(SCALES_THIRDS), [65, 69, 67, 70, 69, 72, 70, 74]);
   // F's chord tones 1 3 5 6 1': F C A D C F', then back down C D.
   assert.deepEqual(runOverF("arpeggios-thirds"), [65, 72, 69, 74, 72, 77, 72, 74]);
   // A new chord starts again from its own root.
-  const notes = practiceNotes([["F"], ["C7"]], "scales-thirds", { rhythms: ["eighths"], breathEvery: 0 });
+  const notes = practiceNotes([["F"], ["C7"]], SCALES_THIRDS, { rhythms: ["eighths"], breathEvery: 0 });
   assert.equal(mod12(notes.find((n) => n.start === 4).midi), 0);
 });
 
@@ -569,7 +571,8 @@ test("the phrase rhythms are tick-only: four eighths into a held note, a rest on
   assert.equal(restOne.length, 7);
   for (const exercise of ["scales", GUIDE_TONES]) {
     const own = practiceDefaultRhythms(exercise);
-    assert.ok(!own.includes("target") && !own.includes("restone"), exercise);
+    assert.ok(!own.includes("target"), exercise);
+    assert.ok(!own.includes("restone"), exercise);
   }
 });
 
@@ -602,12 +605,12 @@ test("the pentatonic scale: major over a major chord, minor over a minor one", (
 
 test("the blues scale plays the key's 1 b3 4 #4 5 b7 through every chord", () => {
   // An F blues: over F7, Bb7 and C7 alike, F Ab Bb B C Eb.
-  const notes = practiceNotes([["F7"], ["Bb7"], ["C7"], ["F7"]], "scales-up@blues", { rhythms: ["eighths"], breathEvery: 0, tonic: 5 });
+  const notes = practiceNotes([["F7"], ["Bb7"], ["C7"], ["F7"]], BLUES_UP, { rhythms: ["eighths"], breathEvery: 0, tonic: 5 });
   assert.deepEqual([...new Set(notes.map((n) => mod12(n.midi)))].sort((a, b) => a - b), [0, 3, 5, 8, 10, 11]);
   // Always up: every chord starts again on the key's F.
   [0, 1, 2, 3].forEach((bar) => assert.equal(mod12(notes.find((n) => n.start === bar * 4).midi), 5, `bar ${bar}`));
   // No key: each chord's own blues scale.
-  const own = practiceNotes([["C7"]], "scales-up@blues", { rhythms: ["eighths"], breathEvery: 0 }).map((n) => mod12(n.midi));
+  const own = practiceNotes([["C7"]], BLUES_UP, { rhythms: ["eighths"], breathEvery: 0 }).map((n) => mod12(n.midi));
   assert.deepEqual(own.slice(0, 6), [0, 3, 5, 6, 7, 10]);
   assert.deepEqual(parseExercise("scales-down@blues"), {
     kind: "scales", degrees: [1, 3, 4, 5, 7, 8], variant: "down", named: "blues",
