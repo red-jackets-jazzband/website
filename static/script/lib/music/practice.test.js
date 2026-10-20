@@ -102,7 +102,11 @@ test("an enclosure's target takes the long note: on a long downbeat it's enclose
 });
 
 test("scale runs keep chord tones on the beats, whatever the rhythm", () => {
-  const fullScales = PRACTICE_EXERCISES.filter((e) => parseExercise(e).kind === "scales" && parseExercise(e).degrees.length === 8);
+  // Not in thirds: a broken-thirds pattern is the exercise, whatever lands on the beat.
+  const fullScales = PRACTICE_EXERCISES.filter((e) => {
+    const { kind, degrees, variant } = parseExercise(e);
+    return kind === "scales" && degrees.length === 8 && variant !== "thirds";
+  });
   assert.equal(fullScales.length, 4);
   for (const exercise of fullScales) {
     for (const rhythm of PRACTICE_RHYTHMS.filter((r) => r.run)) {
@@ -350,8 +354,8 @@ test("runs: a fixed shape stays within one octave of a root on the staff", () =>
 test("the Practice list offers each run in each shape, each set and each approach, read back from one value", () => {
   const values = PRACTICE_EXERCISES;
   assert.deepEqual(values, [
-    "arpeggios", "arpeggios-up", "arpeggios-down", "arpeggios-updown",
-    "scales", "scales-up", "scales-down", SCALES_UPDOWN,
+    "arpeggios", "arpeggios-up", "arpeggios-down", "arpeggios-updown", "arpeggios-thirds",
+    "scales", "scales-up", "scales-down", SCALES_UPDOWN, "scales-thirds",
     "arpeggios@1", "arpeggios-updown@135", "arpeggios-updown@13579", "arpeggios-updown@1356", GUIDE_TONES,
     "scales-updown@123", "scales-updown@12345", "scales-updown@blues",
     "enclosures-below", "enclosures-above", "enclosures",
@@ -461,7 +465,7 @@ test("Pushes on the \"and\": the and of 2 held over beat 3, the and of 4 tied ov
 
 test("an exercise value reads back as kind, variant and note set, and writes back the same", () => {
   assert.deepEqual(PRACTICE_KINDS.map((k) => k.value), ["arpeggios", "scales", "enclosures"]);
-  assert.deepEqual(PRACTICE_SHAPES.map((s) => s.value), ["alternate", "up", "down", "updown"]);
+  assert.deepEqual(PRACTICE_SHAPES.map((s) => s.value), ["alternate", "up", "down", "updown", "thirds"]);
   assert.deepEqual(parseExercise("arpeggios-down"), { kind: "arpeggios", variant: "down", degrees: [1, 3, 5, 7] });
   assert.deepEqual(parseExercise("scales"), { kind: "scales", variant: "alternate", degrees: [1, 2, 3, 4, 5, 6, 7, 8] });
   assert.deepEqual(parseExercise("scales-up@12345"), { kind: "scales", variant: "up", degrees: [1, 2, 3, 4, 5] });
@@ -535,6 +539,34 @@ test("Root alone holds each chord's root for the rhythm", () => {
 
 // One bar of F in eighths, as MIDI notes.
 const runOverF = (value) => practiceNotes([["F"]], value, { rhythms: ["eighths"], breathEvery: 0 }).map((n) => n.midi);
+
+test("runs in thirds: 1 3 2 4 3 5 … from each chord's root", () => {
+  // F A G Bb A C Bb D.
+  assert.deepEqual(runOverF("scales-thirds"), [65, 69, 67, 70, 69, 72, 70, 74]);
+  // F's chord tones 1 3 5 6 1': F C A D C F', then back down C D.
+  assert.deepEqual(runOverF("arpeggios-thirds"), [65, 72, 69, 74, 72, 77, 72, 74]);
+  // A new chord starts again from its own root.
+  const notes = practiceNotes([["F"], ["C7"]], "scales-thirds", { rhythms: ["eighths"], breathEvery: 0 });
+  assert.equal(mod12(notes.find((n) => n.start === 4).midi), 0);
+});
+
+test("runs in thirds turn round at the top of the set", () => {
+  // F G A Bb C: F A G Bb A C, then the same mirrored down, C A Bb G A F,
+  // without playing the C twice.
+  assert.deepEqual(runOverF("scales-thirds@12345"), [65, 69, 67, 70, 69, 72, 69, 70]);
+});
+
+test("the phrase rhythms are tick-only: four eighths into a held note, a rest on one", () => {
+  const target = practiceNotes([["F"]], "scales", { rhythms: ["target"], breathEvery: 0 });
+  assert.deepEqual(target.map((n) => n.duration), [0.5, 0.5, 0.5, 0.5, 2]);
+  const restOne = practiceNotes([["F"]], "scales", { rhythms: ["restone"], breathEvery: 0 });
+  assert.equal(restOne[0].start, 0.5);
+  assert.equal(restOne.length, 7);
+  for (const exercise of ["scales", GUIDE_TONES]) {
+    const own = practiceDefaultRhythms(exercise);
+    assert.ok(!own.includes("target") && !own.includes("restone"), exercise);
+  }
+});
 
 test("scale sets: the first 3 or 5 notes, up and back or up and again", () => {
   // F G A G F G A G: up to the 3rd and back.

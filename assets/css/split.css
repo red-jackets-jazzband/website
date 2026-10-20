@@ -7716,7 +7716,7 @@ body.rj-layers-open #layersTab .rj-layers-count {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 .practice-choices--shapes {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 .practice-choices--patterns {
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -7894,6 +7894,9 @@ body.rj-layers-open #layersTab .rj-layers-count {
   cursor: pointer;
 }
 @media (max-width: 640px) {
+  .practice-choices--shapes {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
   .practice-choices--patterns {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -7928,9 +7931,6 @@ body.rj-layers-open #layersTab .rj-layers-count {
 /* The narrowest phones (320px): the run shapes go two by two, and the
    degrees' names get a size smaller to fit eight across. */
 @media (max-width: 400px) {
-  .practice-choices--shapes {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
   .practice-degree,
   .practice-set .practice-choice-label {
     font-size: 10px;

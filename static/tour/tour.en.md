@@ -293,7 +293,7 @@ Each card shows its notes on a little staff. Start with the roots, then triads, 
 setup: openDrawer, openPractice, practiceRunsOn
 target: #practiceShapeStep
 interactive: true
-Play the runs **up**, **down**, **up and down**, or voice-led from chord to chord. Practising different runs over each chord shape fixes the tune's harmony under your fingers, and that's the basis for improvising your own lines: a solo, an ad lib, or an obbligato around the melody.
+Play the runs **up**, **down**, **up and down**, **in thirds** (1 3 2 4 3 5 …), or voice-led from chord to chord. Practising different runs over each chord shape fixes the tune's harmony under your fingers, and that's the basis for improvising your own lines: a solo, an ad lib, or an obbligato around the melody.
 
 > Try one shape through the whole tune, then the next.
 

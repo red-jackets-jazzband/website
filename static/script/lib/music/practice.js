@@ -53,6 +53,7 @@ export const PRACTICE_SHAPES = [
   { value: "up", label: tl("practice_shape_up", "Up"), points: "4,22 18,16 32,10 46,4 50,22 60,16" },
   { value: "down", label: tl("practice_shape_down", "Down"), points: "4,4 18,10 32,16 46,22 50,4 60,10" },
   { value: "updown", label: tl("practice_shape_updown", "Up & down"), points: "4,22 18,13 32,4 46,13 60,20" },
+  { value: "thirds", label: tl("practice_shape_thirds", "In thirds"), points: "4,22 13,14 22,18 31,10 40,14 49,6 58,10" },
 ];
 // The degrees a set can hold: a chord's own tones (and its 9th), or the
 // scale's up to the octave. (A scale's 9th never sounds: a run has one
@@ -244,6 +245,11 @@ export const PRACTICE_RHYTHMS = [
   { value: "threefour", cell: "x--x--x-", run: true, label: tl("practice_rhythm_threefour", "Three against four") },
   { value: "and", cell: ".xxx.xxx", run: true, label: tl("practice_rhythm_and", "Start on the \"and\"") },
   { value: "pairs", cell: "xx.xx.xx>", run: true, sync: true, label: tl("practice_rhythm_pairs", "Pairs, last one anticipated") },
+  // Tick-only (neither `run` nor `long`, so in no exercise's own set): the
+  // Aebersold handbook's phrase shapes (p.29) — four eighths leading into a
+  // held target note, and a line that starts after a rest on beat 1.
+  { value: "target", cell: "xxxxx---", label: tl("practice_rhythm_target", "Four into a target") },
+  { value: "restone", cell: ".xxxxxxx", label: tl("practice_rhythm_restone", "Rest on one") },
   { value: "halves", cell: "x---x---", long: true, label: tl("practice_rhythm_halves", "Half notes") },
   { value: "halfanticipate", cell: "x---...x>", long: true, sync: true, label: tl("practice_rhythm_halfanticipate", "Half note, anticipate") },
   { value: "late", cell: ".x--x---", long: true, sync: true, label: tl("practice_rhythm_late", "Late start") },
@@ -859,15 +865,46 @@ function approachPitches(notes, style, tonic) {
   return out;
 }
 
+/*
+  "In thirds": the set's notes above each chord's root (fixedPool, as up and
+  down take them) in broken thirds — up 1 3 2 4 3 5 …, then back down from
+  the top, round and round — starting again from the root at every chord,
+  like the other fixed shapes. Aebersold's last rung for a scale (p.9).
+*/
+function brokenThirds(length) {
+  if (length < 3) return [0, 1].slice(0, length);
+  const up = [];
+  for (let i = 0; i + 2 < length; i++) up.push(i, i + 2);
+  // Down is up mirrored; the turns at the top and the bottom aren't played twice.
+  const down = up.map((i) => length - 1 - i);
+  return [...up, ...down.slice(1, -1)];
+}
+
+function thirdsPitches(notes, set) {
+  const out = [];
+  segmentsOf(notes).forEach((seg) => {
+    const root = pitchesOf(seg.chord, [0], RUN_ROOTS)[0];
+    const pool = fixedPool(set, seg.chord, root, "updown");
+    const order = brokenThirds(pool.length);
+    for (let i = seg.start; i < seg.end; i++) out.push(pool[order[(i - seg.start) % order.length]]);
+  });
+  return out;
+}
+
+// A run in its shape: broken thirds, or a walk through the set (runPitches).
+function shapedRun(notes, set, runs) {
+  return runs === "thirds" ? thirdsPitches(notes, set) : runPitches(notes, set, runs);
+}
+
 // How a parsed exercise plays: its own rhythm cells and its pitch rule.
 function planFor(parsed) {
-  if (parsed.blues) return { cells: RUN_CELLS, pitches: (notes, tonic) => runPitches(onBlues(notes, tonic), BLUES_RUN, parsed.variant) };
+  if (parsed.blues) return { cells: RUN_CELLS, pitches: (notes, tonic) => shapedRun(onBlues(notes, tonic), BLUES_RUN, parsed.variant) };
   if (parsed.degrees === null) {
     return { cells: RUN_CELLS, pitches: (notes, tonic) => approachPitches(notes, parsed.variant, tonic) };
   }
   if (parsed.kind === "arpeggios" && sameDegrees(parsed.degrees, GUIDE_SET)) return { cells: LONG_CELLS, pitches: guidePitches };
   if (parsed.degrees.length === 1) return { cells: RUN_CELLS, pitches: (notes, tonic) => holdPitches(notes, parsed, tonic) };
-  return { cells: RUN_CELLS, pitches: (notes) => runPitches(notes, parsed, parsed.variant) };
+  return { cells: RUN_CELLS, pitches: (notes) => shapedRun(notes, parsed, parsed.variant) };
 }
 
 // The ticked patterns (rhythm values, in any order) in PRACTICE_RHYTHMS order.
