@@ -7502,8 +7502,9 @@ body.rj-layers-open #layersTab .rj-layers-count {
 /* ── Practice routine (songs/sheet/practice-panel.js) ─────────────────────
    Closed: one control — an on/off switch and a summary button. The summary
    opens #practicePanel inline below the drawer row (not a popover: #rjSheet
-   clips overflow), three numbered steps top to bottom, then a preview and
-   Done. Selected choices are gold; the panel takes the drawer row's full
+   clips overflow), numbered steps top to bottom — what to play, which notes
+   (cards drawing each note set on a little staff), the run's shape, the
+   rhythm — then Done. Selected choices are gold; the panel takes the drawer row's full
    width while open. */
 #practiceSlot.is-open {
   flex-basis: 100%;
@@ -7650,7 +7651,8 @@ body.rj-layers-open #layersTab .rj-layers-count {
 }
 .practice-panel[hidden],
 .practice-step[hidden],
-.practice-choices[hidden] {
+.practice-choices[hidden],
+.practice-degrees[hidden] {
   display: none;
 }
 .practice-head {
@@ -7672,10 +7674,6 @@ body.rj-layers-open #layersTab .rj-layers-count {
 #practicePanel .practice-title {
   font: 700 16px/1.3 "Montserrat", sans-serif;
   color: #f2efe9;
-}
-#practicePanel .practice-sub {
-  font: italic 13px/1.35 "Lora", serif;
-  color: #b9b2a7;
 }
 .practice-step {
   display: flex;
@@ -7708,7 +7706,14 @@ body.rj-layers-open #layersTab .rj-layers-count {
   gap: 6px;
 }
 .practice-choices--kinds {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.practice-choices--sets {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+/* Approach has three cards: one row of three. */
+.practice-choices--sets[data-kind="enclosures"] {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 .practice-choices--shapes {
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -7745,12 +7750,74 @@ body.rj-layers-open #layersTab .rj-layers-count {
   font-weight: 700;
   line-height: 1.2;
 }
-.practice-choice-hint {
-  font: 11px/1.25 "Lora", serif;
-  color: #b9b2a7;
+.practice-kind {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
-.practice-choice.is-selected .practice-choice-hint {
-  color: #3a2a06;
+/* A note set card: its notes on a little staff (songs/sheet/notes-svg.js),
+   in the card's own text colour, its name under it. */
+.practice-set {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 6px 4px 8px;
+}
+.practice-notes {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+.practice-notes-line {
+  stroke: currentColor;
+  stroke-width: 1;
+  opacity: .25;
+}
+.practice-notes-ledger,
+.practice-notes-sharp {
+  stroke: currentColor;
+  stroke-width: 1.1;
+  fill: none;
+}
+.practice-notes-head {
+  fill: currentColor;
+}
+.practice-notes-head.is-hollow {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.3;
+}
+/* Custom's row of degrees, each switched on or off by itself. */
+.practice-degrees {
+  display: flex;
+  min-height: 44px;
+  border: 1px solid rgba(255,255,255,.11);
+  border-radius: 9px;
+  background: #2f2f2f;
+  overflow: hidden;
+}
+.practice-degree {
+  flex: 1 1 0;
+  min-width: 0;
+  border: 0;
+  border-left: 1px solid rgba(255,255,255,.08);
+  padding: 0 2px;
+  background: transparent;
+  color: #a8a29a;
+  font: 700 11px "Montserrat", sans-serif;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.practice-degree:first-child {
+  border-left: 0;
+}
+.practice-degree:hover {
+  color: #f2efe9;
+}
+.practice-degree.is-selected {
+  background: var(--rj-gold);
+  border-left-color: rgba(27,27,27,.18);
+  color: #1b1b1b;
 }
 .practice-shape {
   align-items: center;
@@ -7824,9 +7891,11 @@ body.rj-layers-open #layersTab .rj-layers-count {
   cursor: pointer;
 }
 @media (max-width: 640px) {
-  .practice-choices--kinds,
   .practice-choices--patterns {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .practice-choices--sets {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .practice-panel {
     max-width: none;
@@ -7844,11 +7913,24 @@ body.rj-layers-open #layersTab .rj-layers-count {
     min-width: 0;
     overflow-wrap: anywhere;
   }
+  /* The kinds and the note-set cards stay three to a row: a name wraps
+     between words, never inside one. */
+  .practice-kind,
+  .practice-set {
+    padding-left: 4px;
+    padding-right: 4px;
+    overflow-wrap: normal;
+  }
 }
-/* The narrowest phones (320px): the run shapes go two by two. */
+/* The narrowest phones (320px): the run shapes go two by two, and the
+   degrees' names get a size smaller to fit eight across. */
 @media (max-width: 400px) {
   .practice-choices--shapes {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .practice-degree,
+  .practice-set .practice-choice-label {
+    font-size: 10px;
   }
 }
 
