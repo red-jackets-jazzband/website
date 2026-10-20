@@ -134,6 +134,6 @@ export function practiceChord(sym, key = null) {
   const tones = [0, ...guide, shape.fifth].filter((s, i, all) => all.indexOf(s) === i).sort((a, b) => a - b);
   const inKey = (s) => key !== null && key.has(mod12(root + s));
   return {
-    sym, root, tones, guide, scale: scaleOf(family, shape, tones, inKey), third, fifth: shape.fifth, top,
+    sym, root, tones, guide, third, top, scale: scaleOf(family, shape, tones, inKey), fifth: shape.fifth,
   };
 }

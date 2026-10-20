@@ -148,7 +148,7 @@ export function parseExercise(value) {
   if (digits === undefined) return { kind, variant: shape, degrees: defaultDegrees(kind) };
   const degrees = PRACTICE_DEGREES[kind].filter((d) => digits.includes(String(d)));
   if (degrees.length === 0 || degrees.length !== digits.length) return null;
-  return { kind, variant: shape, degrees };
+  return { kind, degrees, variant: shape };
 }
 
 // Whether a parsed exercise is runs with a shape to pick: not one held note, not guide tones.
