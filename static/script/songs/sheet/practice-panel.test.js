@@ -183,6 +183,10 @@ test("the Blues card plays the blues scale, with flats and a sharp on its staff"
     assert.equal($("#practiceShapeStep").hidden, false);
     assert.equal($('.practice-degrees[data-kind="scales"]').hidden, true, "no degree row");
     assert.equal($(SUMMARY_TEXT).textContent, "Blues scale, Up & down · Varied rhythm");
+    click(setCard("penta"));
+    assert.equal(ctx.state.practice, "scales-updown@penta");
+    assert.deepEqual(pressed("set"), ["penta"]);
+    assert.equal($(SUMMARY_TEXT).textContent, "Pentatonic scale, Up & down · Varied rhythm");
     click(setCard("five"));
     assert.equal(ctx.state.practice, "scales-updown@12345");
   } finally {
