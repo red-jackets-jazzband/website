@@ -19,6 +19,7 @@ const songsPage = read("layouts/shortcodes/songs-app.html");
 
 // Targets the tour points at that the songs-app shortcode doesn't contain: they're created at
 // runtime, by the module (and string) named here.
+const PRACTICE_PANEL = "static/script/songs/sheet/practice-panel.js";
 const RUNTIME_TARGETS = {
   "#tourBtn": ["layouts/partials/intro.html", 'id="tourBtn"'],
   ".songForm": ["static/script/songs/sheet/sheet.js", 'class: "songForm"'],
@@ -40,10 +41,11 @@ const RUNTIME_TARGETS = {
   ".rj-layer-degree-circle": ["static/script/songs/layers/overlays/degrees.js", "rj-layer-degree-circle"],
   ".rj-layer-prog-band": ["static/script/songs/layers/overlays/progression-bands.js", "rj-layer-prog-band"],
   ".setlist-song-note-add": ["static/script/songs/setlists/view.js", 'class: "setlist-song-note-add"'],
-  "#practicePanel": ["static/script/songs/sheet/practice-panel.js", 'id: "practicePanel"'],
-  ".practice-choices--kinds": ["static/script/songs/sheet/practice-panel.js", "practice-choices--kinds"],
-  "#practiceShapeStep": ["static/script/songs/sheet/practice-panel.js", 'id: "practiceShapeStep"'],
-  ".practice-choices--patterns": ["static/script/songs/sheet/practice-panel.js", "practice-choices--patterns"],
+  "#practicePanel": [PRACTICE_PANEL, 'id: "practicePanel"'],
+  ".practice-choices--kinds": [PRACTICE_PANEL, "practice-choices--kinds"],
+  "#practiceNotesStep": [PRACTICE_PANEL, 'id: "practiceNotesStep"'],
+  "#practiceShapeStep": [PRACTICE_PANEL, 'id: "practiceShapeStep"'],
+  ".practice-choices--patterns": [PRACTICE_PANEL, "practice-choices--patterns"],
 };
 
 const allSteps = english.chapters.flatMap((chapter) => chapter.steps.map((step) => ({ chapter, step })));
