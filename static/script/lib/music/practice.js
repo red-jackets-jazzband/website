@@ -325,7 +325,11 @@ function noteOffsets(chord, kind, degrees) {
     offsets.forEach((s) => out.add(s));
   }
   // Nothing the chord has (an augmented triad's 7th alone): its root.
-  return out.size > 0 ? [...out].sort((a, b) => a - b) : [0];
+  if (out.size === 0) return [0];
+  // Sorted in place, on a copy: toSorted() is Safari 16+.
+  const offsets = [...out];
+  offsets.sort((a, b) => a - b);
+  return offsets;
 }
 
 const scaleDegree = (chord, d) => chord.scale.filter((s) => degreeOf(chord, s) === d);
@@ -536,7 +540,9 @@ function fixedPool(set, chord, root, runs) {
     if (runs === "down") offsets = [...offsets.filter((o) => o !== 0), 12];
     else if (runs === "updown") offsets = [...offsets, 12];
   }
-  return [...new Set(offsets)].sort((a, b) => a - b).map((o) => root + o);
+  const unique = [...new Set(offsets)];
+  unique.sort((a, b) => a - b);
+  return unique.map((o) => root + o);
 }
 
 /*
