@@ -207,6 +207,19 @@ test("a stored set that isn't a preset opens on Custom", () => {
   }
 });
 
+test("a stored named scale opens on its own card, not Custom", () => {
+  for (const named of ["penta", "blues"]) {
+    const page = mountPage();
+    try {
+      createPracticePanel(makeCtx({ state: { practice: `scales-up@${named}` } }));
+      assert.deepEqual(pressed("set"), [named]);
+      assert.equal($('.practice-degrees[data-kind="scales"]').hidden, true);
+    } finally {
+      page.cleanup();
+    }
+  }
+});
+
 test("approach: how to approach the target, from below, above or both", () => {
   const { page, ctx } = setup();
   try {

@@ -894,6 +894,8 @@ function approachPitches(notes, style, tonic) {
 */
 function brokenThirds(length) {
   if (length < 3) return [0, 1].slice(0, length);
+  // Three notes: 1 3 2 up, 3 1 2 back (the general rule would skip the 2).
+  if (length === 3) return [0, 2, 1, 2, 0, 1];
   const up = [];
   for (let i = 0; i + 2 < length; i++) up.push(i, i + 2);
   // Down is up mirrored; the turns at the top and the bottom aren't played twice.

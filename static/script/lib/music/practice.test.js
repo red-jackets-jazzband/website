@@ -550,6 +550,11 @@ test("runs in thirds: 1 3 2 4 3 5 … from each chord's root", () => {
   assert.equal(mod12(notes.find((n) => n.start === 4).midi), 0);
 });
 
+test("runs in thirds over three notes play all three", () => {
+  // F G A: F A G, then A F G.
+  assert.deepEqual(runOverF("scales-thirds@123"), [65, 69, 67, 69, 65, 67, 65, 69]);
+});
+
 test("runs in thirds turn round at the top of the set", () => {
   // F G A Bb C: F A G Bb A C, then the same mirrored down, C A Bb G A F,
   // without playing the C twice.
