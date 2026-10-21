@@ -20,8 +20,9 @@ const $$ = (selector) => [...document.querySelectorAll(selector)];
 const click = (node) => node.dispatchEvent(new window.Event("click", { bubbles: true }));
 const label = (selector) => $(selector).getAttribute("aria-label");
 const CARD = ".songForm-card";
+const CHIP = ".songForm-chip";
 const leads = () => $$(".songForm .songForm-lead").map((node) => node.textContent);
-const parts = (round) => $$(CARD)[round].querySelectorAll(".songForm-chip").length;
+const parts = (round) => $$(CARD)[round].querySelectorAll(CHIP).length;
 
 async function setup({ stored } = {}) {
   const page = mountPage();
@@ -78,7 +79,7 @@ test("the pencil opens one card per round, and the strip follows every edit", as
     assert.equal(parts(0), 3);
     click($$(CARD)[0].querySelector('[aria-label="Repeat round 1 as long as it takes"]'));
     assert.equal($$(CARD)[0].querySelector(".songForm-chip--more").textContent, "…×");
-    click($$(CARD)[0].querySelector(".songForm-chip"));
+    click($$(CARD)[0].querySelector(CHIP));
     assert.equal(parts(0), 3);
   } finally {
     cleanup();
@@ -212,9 +213,9 @@ test("a chip's arrow keys move it within its round", async () => {
   try {
     openSong();
     click(editButton());
-    const first = $$(CARD)[0].querySelector(".songForm-chip");
+    const first = $$(CARD)[0].querySelector(CHIP);
     first.dispatchEvent(new window.KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
-    const names = $$(CARD)[0].querySelectorAll(".songForm-chip");
+    const names = $$(CARD)[0].querySelectorAll(CHIP);
     assert.deepEqual([...names].map((node) => node.firstChild.textContent), ["B", "A"]);
     assert.equal(document.activeElement, names[1]);
   } finally {
@@ -254,5 +255,77 @@ test("nothing is drawn until the page has loaded, and then the pencil comes", as
     assert.ok($(".songForm-tools"));
   } finally {
     page.cleanup();
+  }
+});
+
+const press = (node, key, mods = {}) => node.dispatchEvent(new window.KeyboardEvent("keydown", { key, bubbles: true, cancelable: true, ...mods }));
+
+test("the setlist editor's keys: Ctrl+Enter saves, Escape cancels", async () => {
+  const { openSong, leads, cleanup } = await setup();
+  try {
+    openSong();
+    click(editButton());
+    click($(DELETE_LAST));
+    press($(".songForm-field--lead"), "Enter", { ctrlKey: true });
+    assert.equal($(".songForm-editor"), null);
+    assert.deepEqual(leads(), ["Collective", "Vocals"]);
+
+    click(editButton());
+    click($('[aria-label="Delete round 1"]'));
+    press($(".songForm-field"), "Escape");
+    assert.equal($(".songForm-editor"), null);
+    assert.deepEqual(leads(), ["Collective", "Vocals"]);
+  } finally {
+    cleanup();
+  }
+});
+
+test("Alt+↑/↓ moves the round the focus is in, and the focus goes with it", async () => {
+  const { openSong, leads, cleanup } = await setup();
+  try {
+    openSong();
+    click(editButton());
+    press($$(".songForm-field")[1], "ArrowDown", { altKey: true });
+    assert.deepEqual(leads(), ["Vocals", "Collective", CLARINET]);
+    assert.equal(document.activeElement, $$(".songForm-field")[3]);
+    press(document.activeElement, "ArrowUp", { altKey: true });
+    assert.deepEqual(leads(), ["Collective", "Vocals", CLARINET]);
+  } finally {
+    cleanup();
+  }
+});
+
+test("Delete on a grip removes its round; Enter steps through the fields", async () => {
+  const { openSong, leads, cleanup } = await setup();
+  try {
+    openSong();
+    click(editButton());
+    press($('[aria-label="Drag to move round 2"]'), "Delete");
+    assert.deepEqual(leads(), ["Collective", CLARINET]);
+    assert.equal(document.activeElement, $('[aria-label="Drag to move round 2"]'));
+    const fields = $$(".songForm-field");
+    fields[0].focus();
+    press(fields[0], "Enter");
+    assert.equal(document.activeElement, fields[1]);
+    press(fields[1], "Enter");
+    assert.equal(document.activeElement, fields[2]);
+  } finally {
+    cleanup();
+  }
+});
+
+test("↑/↓ inside the editor never reach the page (an open setlist would change song)", async () => {
+  const { openSong, cleanup } = await setup();
+  try {
+    openSong();
+    click(editButton());
+    let reached = 0;
+    document.addEventListener("keydown", () => {
+      reached += 1;
+    });
+    press($(CHIP), "ArrowDown");
+    assert.equal(reached, 0);
+  } finally {
+    cleanup();
   }
 });
