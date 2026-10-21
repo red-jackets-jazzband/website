@@ -80,6 +80,14 @@ function copyText(textarea, text) {
   return Promise.resolve();
 }
 
+// Enter in a field goes on to the next one: Who plays, Note, the next round's Who plays.
+function nextField(e, input) {
+  e.preventDefault();
+  const fields = qsa(".songForm-field", input.closest(".songForm-editor"));
+  const next = fields[fields.indexOf(input) + 1];
+  if (next) next.focus();
+}
+
 export function createSongForm(ctx) {
   let file = null;
   let band = [];
@@ -188,7 +196,12 @@ export function createSongForm(ctx) {
       type: "button",
       class: name === MORE ? "songForm-chip songForm-chip--more" : "songForm-chip",
       dataset: { part: String(j) },
-      attrs: { "aria-label": label, title: name === MORE ? tl("form_more", "Repeat as long as it takes") : label, "data-focus": `part-${i}-${j}` },
+      attrs: {
+        "aria-label": label,
+        title: name === MORE ? tl("form_more", "Repeat as long as it takes") : label,
+        "aria-keyshortcuts": "Alt+ArrowLeft Alt+ArrowRight Delete",
+        "data-focus": `part-${i}-${j}`,
+      },
       on: {
         click: () => {
           if (!drag.clickWasDrag()) edit(removePart(draft, i, j), `card-${i}`);
@@ -200,8 +213,9 @@ export function createSongForm(ctx) {
     return node;
   }
 
-  // Arrow keys move a focused chip within its round; Delete removes it.
+  // ← / → (with or without Alt) move a focused chip within its round; Delete removes it.
   function chipKey(e, i, j) {
+    if (e.ctrlKey || e.metaKey || e.shiftKey) return;
     const parts = draft[i].parts;
     let to = null;
     if (e.key === "ArrowLeft") to = j - 1;
@@ -250,18 +264,32 @@ export function createSongForm(ctx) {
           draft = setText(draft, i, field, input.value);
           redrawStrip();
         },
+        keydown: (e) => {
+          if (e.key === "Enter" && !e.ctrlKey && !e.metaKey && !e.altKey) nextField(e, input);
+        },
       },
     });
     return input;
   }
 
+  /*
+    A round, laid out on one grid so every control lines up with the rest:
+    a handle column (grip and number), a field column (the parts, as one
+    tag field holding its chips and add buttons, over "Who plays" and
+    "Note"), and the round's own actions, all the fields' height.
+  */
   function card(round, i) {
-    // Drag it, or ↑ / ↓ while it has the focus.
-    const gripLabel = tl("form_drag_round", "Drag to move round {n}", { n: i + 1 });
+    const n = i + 1;
+    const gripLabel = tl("form_drag_round", "Drag to move round {n}", { n });
     const grip = el("button", {
       type: "button",
       class: "songForm-grip",
-      attrs: { "aria-label": gripLabel, title: gripLabel, "data-focus": `grip-${i}` },
+      attrs: {
+        "aria-label": gripLabel,
+        title: gripLabel,
+        "aria-keyshortcuts": "Alt+ArrowUp Alt+ArrowDown Delete",
+        "data-focus": `grip-${i}`,
+      },
       on: { keydown: (e) => gripKey(e, i) },
     }, [icon("fa-grip-vertical")]);
     const adds = choices.map((name) => addButton(i, name));
@@ -269,7 +297,7 @@ export function createSongForm(ctx) {
     const repeat = round.repeat ? el("button", {
       type: "button",
       class: "songForm-chip songForm-chip--repeat",
-      attrs: { "aria-label": tl("form_remove_repeat", "Remove {repeat} from round {n}", { repeat: round.repeat, n: i + 1 }) },
+      attrs: { "aria-label": tl("form_remove_repeat", "Remove {repeat} from round {n}", { repeat: round.repeat, n }) },
       on: { click: () => edit(removeRepeat(draft, i), `card-${i}`) },
     }, [round.repeat, el("span", { class: "songForm-chip-x", attrs: { "aria-hidden": "true" }, text: "×" })]) : null;
     const cardNode = el("div", {
@@ -277,18 +305,18 @@ export function createSongForm(ctx) {
       dataset: { round: String(i) },
       attrs: { tabindex: "-1", "data-focus": `card-${i}` },
     }, [
-      el("div", { class: "songForm-card-top" }, [
-        el("div", { class: "songForm-card-parts" }, [
-          grip,
-          el("span", { class: "songForm-card-num", text: String(i + 1) }),
-          ...round.parts.map((name, j) => chip(round, i, name, j)),
-          repeat,
-          ...adds,
-        ]),
-        el("div", { class: "songForm-card-actions" }, [
-          iconButton(ICON_BTN, "fa-copy", tl("form_duplicate", "Duplicate round {n}", { n: i + 1 }), () => edit(duplicateRound(draft, i), `card-${i + 1}`), `dup-${i}`),
-          iconButton(`${ICON_BTN} songForm-icon-btn--danger`, "fa-trash-can", tl("form_delete", "Delete round {n}", { n: i + 1 }), () => edit(deleteRound(draft, i), "addRound"), `del-${i}`),
-        ]),
+      el("div", { class: "songForm-card-handle" }, [
+        grip,
+        el("span", { class: "songForm-card-num", text: String(n) }),
+      ]),
+      el("div", { class: "songForm-parts", attrs: { role: "group", "aria-label": tl("form_parts_round", "Parts of round {n}", { n }) } }, [
+        ...round.parts.map((name, j) => chip(round, i, name, j)),
+        repeat,
+        el("span", { class: "songForm-parts-adds" }, adds),
+      ]),
+      el("div", { class: "songForm-card-actions" }, [
+        iconButton(ICON_BTN, "fa-copy", tl("form_duplicate", "Duplicate round {n}", { n }), () => edit(duplicateRound(draft, i), `grip-${i + 1}`), `dup-${i}`),
+        iconButton(`${ICON_BTN} songForm-icon-btn--danger`, "fa-trash-can", tl("form_delete", "Delete round {n}", { n }), () => edit(deleteRound(draft, i), afterDelete(i)), `del-${i}`),
       ]),
       el("div", { class: "songForm-card-fields" }, [textField(round, i, "lead"), textField(round, i, "note")]),
     ]);
@@ -296,13 +324,58 @@ export function createSongForm(ctx) {
     return cardNode;
   }
 
+  // Where the focus goes once round `i` is deleted: the grip now in its place.
+  function afterDelete(i) {
+    if (draft.length > 1) return `grip-${Math.min(i, draft.length - 2)}`;
+    return "addRound";
+  }
+
+  // On the grip, as on a setlist row's handle: ↑ / ↓ move the round, Delete removes it.
   function gripKey(e, i) {
-    let to = null;
-    if (e.key === "ArrowUp") to = i - 1;
-    else if (e.key === "ArrowDown") to = i + 1;
-    if (to === null) return;
+    if (e.key === "Delete" || e.key === "Backspace") {
+      e.preventDefault();
+      edit(deleteRound(draft, i), afterDelete(i));
+      return;
+    }
+    if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    if (e.key === "ArrowUp" || e.key === "ArrowDown") moveRoundBy(e, i, e.key === "ArrowDown" ? 1 : -1);
+  }
+
+  // Move round `i` one place up or down, keeping the focus on the control the
+  // key was pressed in, now in the round's new place ("lead-2" -> "lead-3").
+  function moveRoundBy(e, i, step) {
     e.preventDefault();
-    if (to >= 0 && to < draft.length) edit(moveRound(draft, i, to), `grip-${to}`);
+    const to = i + step;
+    if (to < 0 || to >= draft.length) return;
+    const key = e.target.getAttribute("data-focus") || `grip-${i}`;
+    const dash = key.indexOf("-");
+    const rest = key.slice(dash + 1);
+    const after = rest.indexOf("-");
+    edit(moveRound(draft, i, to), `${key.slice(0, dash)}-${to}${after < 0 ? "" : rest.slice(after)}`);
+  }
+
+  /*
+    The editor's own keys, the setlist editor's: Ctrl/Cmd+Enter saves, Escape
+    cancels (or closes the text first), Alt+↑ / ↓ moves the round the focus is
+    in. ↑ / ↓ never reach the page's own handlers from in here: in an open
+    setlist they'd step to the next song and drop the edit.
+  */
+  function editorKey(e) {
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      save();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
+      if (textOpen) setTextOpen(false);
+      else cancel();
+    } else if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+      e.stopPropagation();
+      const cardEl = e.target.closest(".songForm-card");
+      if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey && cardEl) {
+        moveRoundBy(e, Number(cardEl.dataset.round), e.key === "ArrowDown" ? 1 : -1);
+      }
+    }
   }
 
   function leadSuggestions() {
@@ -342,7 +415,11 @@ export function createSongForm(ctx) {
   }
 
   function editor() {
-    return el("section", { class: "songForm-editor", attrs: { "aria-label": tl("form_editor", "Edit your song form") } }, [
+    return el("section", {
+      class: "songForm-editor",
+      attrs: { "aria-label": tl("form_editor", "Edit your song form") },
+      on: { keydown: editorKey },
+    }, [
       leadSuggestions(),
       ...draft.map((round, i) => card(round, i)),
       el("button", {
@@ -355,8 +432,18 @@ export function createSongForm(ctx) {
         iconButton(ICON_BTN, "fa-rotate-left", tl("form_restart", "Back to the band's form"), () => edit(cloneRounds(band), "restart"), "restart"),
         iconButton(ICON_BTN, "fa-file-lines", tl("form_copy_text", "Copy as text"), () => setTextOpen(!textOpen), "copyText"),
         el("span", { class: "songForm-footer-gap" }),
-        el("button", { type: "button", class: "songForm-btn", on: { click: cancel } }, tl("form_cancel", "Cancel")),
-        el("button", { type: "button", class: "songForm-btn songForm-btn--primary", on: { click: save } }, tl("form_save", "Save")),
+        el("button", {
+          type: "button",
+          class: "songForm-btn",
+          attrs: { title: tl("form_cancel_hint", "Cancel (Esc)"), "aria-keyshortcuts": "Escape" },
+          on: { click: cancel },
+        }, tl("form_cancel", "Cancel")),
+        el("button", {
+          type: "button",
+          class: "songForm-btn songForm-btn--primary",
+          attrs: { title: tl("form_save_hint", "Save (Ctrl+Enter)"), "aria-keyshortcuts": "Control+Enter Meta+Enter" },
+          on: { click: save },
+        }, tl("form_save", "Save")),
       ]),
       textOpen ? textPanel() : null,
     ]);

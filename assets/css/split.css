@@ -952,27 +952,45 @@ body.rj-sheet-active .rj-sheet-empty {
   }
 }
 
-/* The editor, below the strip: one card per round. */
+/* The editor, below the strip: one card per round.
+   One system for every control in it, so buttons and fields read as one
+   piece: the same height, corner and line colour (the --sf-* values), gold
+   on focus. A card is a grid, handle | fields | actions, and everything
+   below the cards (Add a round, the footer) lines up with its columns.
+   Spacing is margins and grid gaps, never flex `gap` (Safari 14.1+). */
 .songForm-editor {
+    --sf-h: 36px;
+    --sf-radius: 8px;
+    --sf-line: #cfd3d8;
+    --sf-ink: #1b1b1b;
+    --sf-muted: #5f6770;
+    --sf-hover: #f0f1f3;
+    --sf-handle: 54px;
     width: 90%;
     box-sizing: border-box;
     margin: 12px auto 4px;
     padding: 12px;
-    border: 1px solid #dcdcdc;
-    border-radius: 12px;
-    background: #fafafa;
-    color: #1b1b1b;
+    border: 1px solid #e2e4e7;
+    border-radius: 14px;
+    background: #f7f8f9;
+    color: var(--sf-ink);
     font: 500 13px "Montserrat", sans-serif;
 }
 .songForm-editor > * + *,
-.songForm-card > * + *,
 .songForm-text > * + * {
     margin-top: 8px;
 }
 .songForm-card {
-    padding: 8px 10px;
-    border: 1px solid #e3e3e3;
-    border-radius: 10px;
+    display: grid;
+    grid-template-columns: var(--sf-handle) minmax(0, 1fr) auto;
+    grid-template-areas:
+        "handle parts actions"
+        ".      fields .";
+    gap: 8px; /* a grid gap: Safari 12 has these (flex gap is the 14.1+ one) */
+    align-items: start;
+    padding: 10px 10px 10px 4px;
+    border: 1px solid #e2e4e7;
+    border-radius: 12px;
     background: #ffffff;
 }
 .songForm-card.is-changed {
@@ -990,131 +1008,191 @@ body.rj-sheet-active .rj-sheet-empty {
 .songForm-card.is-drop-into {
     box-shadow: 0 0 0 2px var(--rj-gold);
 }
-.songForm-card-top {
-    display: flex;
-    align-items: flex-start;
-}
-.songForm-card-parts {
-    flex: 1 1 0;
-    min-width: 0;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    margin: -3px;
-}
-.songForm-card-parts > * {
-    margin: 3px;
-}
-.songForm-card-actions {
-    flex: none;
+.songForm-card-handle {
+    grid-area: handle;
     display: flex;
     align-items: center;
-    margin-left: 6px;
+    height: var(--sf-h);
 }
-.songForm-grip {
+.songForm-editor .songForm-grip {
     width: 24px;
-    margin-left: -4px;
+    height: var(--sf-h);
     border-radius: 6px;
-    color: #6b7178;
+    color: #8a9099;
     cursor: grab;
     touch-action: none;
+}
+.songForm-editor .songForm-grip:hover {
+    background: var(--sf-hover);
+    color: var(--sf-ink);
 }
 .songForm-card-num {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 26px;
-    height: 26px;
+    width: 24px;
+    height: 24px;
+    margin-left: 4px;
     border-radius: 50%;
-    background: #1b1b1b;
+    background: var(--sf-ink);
     color: #ffffff;
     font-size: 12px;
     font-weight: 700;
+}
+/* The parts: one tag field, its chips and its add buttons inside it. */
+.songForm-parts {
+    grid-area: parts;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    min-width: 0;
+    min-height: var(--sf-h);
+    box-sizing: border-box;
+    padding: 2px;
+    border: 1px solid var(--sf-line);
+    border-radius: var(--sf-radius);
+    background: #ffffff;
+}
+.songForm-parts:focus-within,
+.songForm-field:focus {
+    border-color: var(--rj-gold);
+    box-shadow: 0 0 0 3px rgba(226, 157, 15, .2);
+    outline: none;
 }
 .songForm-chip,
 .songForm-add-part {
     display: flex;
     align-items: center;
-    height: 30px;
-    padding: 0 6px 0 8px;
-    border: 1px solid #1b1b1b;
-    border-radius: 4px;
-    background: #ffffff;
-    color: #1b1b1b;
+    height: 28px;
+    margin: 2px;
+    border: 0;
+    border-radius: 5px;
     font: 700 13px "Montserrat", sans-serif;
-    cursor: pointer;
 }
 .songForm-chip {
+    padding: 0 6px 0 9px;
+    background: #eceef1;
+    color: var(--sf-ink);
     cursor: grab;
     touch-action: none;
 }
+.songForm-chip:hover {
+    background: #e1e4e8;
+}
+.songForm-chip:focus {
+    outline: 2px solid var(--rj-gold);
+    outline-offset: 0;
+}
 .songForm-chip--more {
-    border-style: dashed;
     background: #fbf1dc;
 }
+.songForm-chip--more:hover {
+    background: #f6e3bb;
+}
 .songForm-chip--repeat {
-    cursor: pointer;
     font-weight: 600;
+    cursor: pointer;
 }
 .songForm-chip.is-dragging {
     opacity: .4;
 }
 .songForm-chip.is-drop-before {
-    box-shadow: -4px 0 0 var(--rj-gold);
+    box-shadow: -3px 0 0 var(--rj-gold);
 }
 .songForm-chip.is-drop-after {
-    box-shadow: 4px 0 0 var(--rj-gold);
+    box-shadow: 3px 0 0 var(--rj-gold);
 }
 .songForm-chip-x {
-    margin-left: 4px;
-    color: #5f6770;
+    margin-left: 5px;
+    color: #7b828b;
     font-weight: 400;
-    font-size: 12px;
+    font-size: 13px;
+}
+/* The add buttons sit at the field's end, set off by a hairline, quieter than the chips. */
+.songForm-parts-adds {
+    display: flex;
+    flex-wrap: wrap;
+    margin-left: auto;
+    padding-left: 4px;
+    border-left: 1px solid #e6e8eb;
 }
 .songForm-add-part {
-    padding: 0 8px;
-    border: 1px dashed #9aa1a8;
+    padding: 0 7px;
     background: transparent;
-    color: #3d434a;
+    color: var(--sf-muted);
     font-weight: 600;
     font-size: 12px;
+    cursor: pointer;
 }
 .songForm-add-part:hover {
-    border-color: #1b1b1b;
-    color: #1b1b1b;
+    background: var(--sf-hover);
+    color: var(--sf-ink);
+}
+.songForm-card-actions {
+    grid-area: actions;
+    display: flex;
+    height: var(--sf-h);
+}
+.songForm-editor .songForm-icon-btn {
+    width: var(--sf-h);
+    height: var(--sf-h);
+    border-radius: var(--sf-radius);
+    color: var(--sf-muted);
+}
+.songForm-editor .songForm-icon-btn:hover {
+    background: var(--sf-hover);
+    color: var(--sf-ink);
+}
+.songForm-editor .songForm-icon-btn--danger,
+.songForm-editor .songForm-icon-btn--danger:hover {
+    color: #a8304f;
 }
 .songForm-card-fields {
+    grid-area: fields;
     display: flex;
 }
 .songForm-field {
     flex: 1 1 0;
     min-width: 0;
-    height: 36px;
+    height: var(--sf-h);
     box-sizing: border-box;
     padding: 0 10px;
-    border: 1px solid #c9c9c9;
-    border-radius: 7px;
+    border: 1px solid var(--sf-line);
+    border-radius: var(--sf-radius);
     background: #ffffff;
-    color: #1b1b1b;
+    color: var(--sf-ink);
     font: 500 14px "Montserrat", sans-serif;
+}
+.songForm-field::placeholder {
+    color: #8a9099;
 }
 .songForm-field + .songForm-field {
     margin-left: 8px;
 }
+/* Starts where a card's fields start, so it reads as "one more round". */
 .songForm-add-round {
-    display: block;
-    width: 100%;
-    height: 40px;
-    border: 1px dashed #9aa1a8;
-    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    width: calc(100% - var(--sf-handle) - 13px);
+    height: var(--sf-h);
+    box-sizing: border-box;
+    margin-left: calc(var(--sf-handle) + 13px);
+    padding: 0 12px;
+    border: 1px dashed var(--sf-line);
+    border-radius: var(--sf-radius);
     background: transparent;
-    color: #3d434a;
+    color: var(--sf-muted);
     font: 600 13px "Montserrat", sans-serif;
     cursor: pointer;
 }
+.songForm-add-round .fa-plus {
+    margin-right: 8px;
+    font-size: 11px;
+}
 .songForm-add-round:hover {
-    border-color: #1b1b1b;
-    color: #1b1b1b;
+    border-color: var(--sf-ink);
+    color: var(--sf-ink);
+    background: #ffffff;
 }
 .songForm-footer,
 .songForm-text-actions {
@@ -1126,26 +1204,33 @@ body.rj-sheet-active .rj-sheet-empty {
     margin-left: 8px;
 }
 .songForm-footer {
-    padding-top: 6px;
-    border-top: 1px solid #e6e6e6;
+    padding-top: 10px;
+    border-top: 1px solid #e6e8eb;
 }
 .songForm-footer-gap {
     flex: 1 1 0;
 }
 .songForm-btn {
-    height: 36px;
+    height: var(--sf-h);
     padding: 0 16px;
-    border: 1px solid #c9c9c9;
-    border-radius: 999px;
+    border: 1px solid var(--sf-line);
+    border-radius: var(--sf-radius);
     background: #ffffff;
-    color: #1b1b1b;
+    color: var(--sf-ink);
     font: 600 13px "Montserrat", sans-serif;
     cursor: pointer;
+}
+.songForm-btn:hover {
+    border-color: var(--sf-ink);
 }
 .songForm-btn--primary {
     border-color: var(--rj-gold);
     background: var(--rj-gold);
     font-weight: 700;
+}
+.songForm-btn--primary:hover {
+    border-color: #c98a0b;
+    background: #efab1e;
 }
 .songForm-text-actions {
     justify-content: flex-end;
@@ -1155,10 +1240,10 @@ body.rj-sheet-active .rj-sheet-empty {
     box-sizing: border-box;
     width: 100%;
     padding: 8px 10px;
-    border: 1px solid #c9c9c9;
-    border-radius: 7px;
+    border: 1px solid var(--sf-line);
+    border-radius: var(--sf-radius);
     background: #ffffff;
-    color: #1b1b1b;
+    color: var(--sf-ink);
     font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace;
     white-space: pre;
     overflow-x: auto;
@@ -1172,8 +1257,19 @@ body.songForm-dragging {
 }
 @media (max-width: 480px) {
   .songForm-editor {
+    --sf-handle: 46px;
     width: 100%;
     padding: 8px;
+  }
+  /* Too narrow for three columns: the handle and actions become a header
+     row, and the parts and fields get the card's full width under it. */
+  .songForm-card {
+    padding: 6px 10px 10px;
+    gap: 6px;
+    grid-template-areas:
+        "handle .      actions"
+        "parts  parts  parts"
+        "fields fields fields";
   }
   .songForm-card-fields {
     display: block;
@@ -1184,6 +1280,10 @@ body.songForm-dragging {
   }
   .songForm-field + .songForm-field {
     margin: 8px 0 0;
+  }
+  .songForm-add-round {
+    width: 100%;
+    margin-left: 0;
   }
 }
 
