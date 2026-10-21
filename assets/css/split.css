@@ -1065,61 +1065,58 @@ body.rj-sheet-active .rj-sheet-empty {
   }
 }
 
-/* The editor, below the strip: one card per round.
-   One system for every control in it, so buttons and fields read as one
-   piece: the same height, corner and line colour (the --sf-* values), gold
-   on focus. A card is a grid, handle | fields | actions, and everything
-   below the cards (Add a round, the footer) lines up with its columns.
-   Spacing is margins and grid gaps, never flex `gap` (Safari 14.1+). */
+/* The editor, below the strip: a plain list, one line per round.
+   Quiet by default: the fields look like text until hovered or focused, and
+   each round's tools (add a part, how often, a note, duplicate and delete)
+   show only on the round being worked on (.is-active), so the list reads as
+   the form itself. One height, corner and colour set (--sf-*) for every
+   control. Spacing is margins and grid gaps, never flex `gap` (Safari 14.1+). */
 .songForm-editor {
-    --sf-h: 36px;
-    --sf-radius: 8px;
-    --sf-line: #cfd3d8;
+    --sf-h: 34px;
+    --sf-radius: 7px;
+    --sf-line: #e3e5e8;
     --sf-ink: #1b1b1b;
-    --sf-muted: #5f6770;
-    --sf-hover: #f0f1f3;
-    --sf-handle: 54px;
+    --sf-muted: #6b727a;
+    --sf-hover: #f2f3f5;
+    --sf-handle: 52px;
     width: 90%;
     box-sizing: border-box;
-    margin: 12px auto 4px;
-    padding: 12px;
-    border: 1px solid #e2e4e7;
-    border-radius: 14px;
-    background: #f7f8f9;
+    margin: 14px auto 4px;
+    border: 1px solid var(--sf-line);
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .04), 0 4px 16px rgba(0, 0, 0, .05);
     color: var(--sf-ink);
     font: 500 13px "Montserrat", sans-serif;
-}
-.songForm-editor > * + *,
-.songForm-text > * + * {
-    margin-top: 8px;
+    overflow: hidden;
 }
 .songForm-card {
     display: grid;
-    grid-template-columns: var(--sf-handle) minmax(0, 1fr) auto;
+    grid-template-columns: var(--sf-handle) minmax(0, 3fr) minmax(0, 2fr) auto;
     grid-template-areas:
-        "handle parts actions"
-        ".      fields .";
-    gap: 8px; /* a grid gap: Safari 12 has these (flex gap is the 14.1+ one) */
+        "handle parts lead actions"
+        ".      tools tools tools";
+    column-gap: 8px; /* a grid gap: Safari 12 has these (flex gap is the 14.1+ one) */
     align-items: start;
-    padding: 10px 10px 10px 4px;
-    border: 1px solid #e2e4e7;
-    border-radius: 12px;
+    padding: 6px 10px 6px 4px;
+    border-bottom: 1px solid var(--sf-line);
     background: #ffffff;
+    outline: none;
 }
-.songForm-card.is-changed {
-    border-color: var(--rj-gold);
+.songForm-card.is-active {
+    background: #fafafb;
 }
 .songForm-card.is-dragging {
     opacity: .45;
 }
 .songForm-card.is-drop-before {
-    box-shadow: 0 -4px 0 var(--rj-gold);
+    box-shadow: inset 0 3px 0 var(--rj-gold);
 }
 .songForm-card.is-drop-after {
-    box-shadow: 0 4px 0 var(--rj-gold);
+    box-shadow: inset 0 -3px 0 var(--rj-gold);
 }
 .songForm-card.is-drop-into {
-    box-shadow: 0 0 0 2px var(--rj-gold);
+    box-shadow: inset 0 0 0 2px var(--rj-gold);
 }
 .songForm-card-handle {
     grid-area: handle;
@@ -1128,31 +1125,39 @@ body.rj-sheet-active .rj-sheet-empty {
     height: var(--sf-h);
 }
 .songForm-editor .songForm-grip {
-    width: 24px;
+    width: 22px;
     height: var(--sf-h);
-    border-radius: 6px;
-    color: #8a9099;
+    border-radius: var(--sf-radius);
+    color: #b3b8be;
+    font-size: 12px;
     cursor: grab;
     touch-action: none;
 }
 .songForm-editor .songForm-grip:hover {
-    background: var(--sf-hover);
     color: var(--sf-ink);
 }
+/* The round's number, with a gold dot when it differs from the band's form. */
 .songForm-card-num {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
+    position: relative;
+    width: 22px;
     margin-left: 4px;
-    border-radius: 50%;
-    background: var(--sf-ink);
-    color: #ffffff;
-    font-size: 12px;
+    color: var(--sf-muted);
+    font-size: 13px;
     font-weight: 700;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
 }
-/* The parts: one tag field, its chips and its add buttons inside it. */
+.songForm-card.is-changed .songForm-card-num::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: -3px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--rj-gold);
+}
+/* The parts: a token field, as a mail address field holds addresses. */
 .songForm-parts {
     grid-area: parts;
     display: flex;
@@ -1161,29 +1166,32 @@ body.rj-sheet-active .rj-sheet-empty {
     min-width: 0;
     min-height: var(--sf-h);
     box-sizing: border-box;
-    padding: 2px;
-    border: 1px solid var(--sf-line);
+    padding: 0 2px;
     border-radius: var(--sf-radius);
-    background: #ffffff;
+    cursor: text;
+}
+.songForm-parts:hover,
+.songForm-field:hover {
+    background: var(--sf-hover);
 }
 .songForm-parts:focus-within,
 .songForm-field:focus {
-    border-color: var(--rj-gold);
-    box-shadow: 0 0 0 3px rgba(226, 157, 15, .2);
+    background: #ffffff;
+    box-shadow: inset 0 0 0 1px var(--rj-gold), 0 0 0 3px rgba(226, 157, 15, .18);
     outline: none;
 }
 .songForm-chip,
 .songForm-add-part {
     display: flex;
     align-items: center;
-    height: 28px;
+    height: 24px;
     margin: 2px;
     border: 0;
     border-radius: 5px;
     font: 700 13px "Montserrat", sans-serif;
 }
 .songForm-chip {
-    padding: 0 6px 0 9px;
+    padding: 0 7px;
     background: #eceef1;
     color: var(--sf-ink);
     cursor: grab;
@@ -1202,56 +1210,6 @@ body.rj-sheet-active .rj-sheet-empty {
 .songForm-chip--more:hover {
     background: #f6e3bb;
 }
-/* How often the round plays: a quiet "1x" until set, then a chip like the parts. */
-.songForm-repeat-pick {
-    -webkit-appearance: none;
-    appearance: none;
-    height: 28px;
-    margin: 2px;
-    padding: 0 7px;
-    border: 1px dashed var(--sf-line);
-    border-radius: 5px;
-    background: transparent;
-    color: var(--sf-muted);
-    font: 600 12px "Montserrat", sans-serif;
-    cursor: pointer;
-}
-.songForm-repeat-pick:hover {
-    background: var(--sf-hover);
-    color: var(--sf-ink);
-}
-.songForm-repeat-pick.is-set {
-    border-style: solid;
-    border-color: transparent;
-    background: #eceef1;
-    color: var(--sf-ink);
-    font-weight: 700;
-    font-size: 13px;
-}
-.songForm-repeat-pick:focus,
-.songForm-type:focus {
-    outline: 2px solid var(--rj-gold);
-    outline-offset: 0;
-}
-/* Parts typed by hand, for a tune whose music marks no A / B parts. */
-.songForm-type {
-    flex: 1 1 64px;
-    min-width: 64px;
-    max-width: 140px;
-    height: 28px;
-    margin: 2px;
-    padding: 0 6px;
-    box-sizing: border-box;
-    border: 0;
-    border-radius: 5px;
-    background: transparent;
-    color: var(--sf-ink);
-    font: 700 13px "Montserrat", sans-serif;
-}
-.songForm-type::placeholder {
-    color: var(--sf-muted);
-    font-weight: 500;
-}
 .songForm-chip.is-dragging {
     opacity: .4;
 }
@@ -1261,20 +1219,106 @@ body.rj-sheet-active .rj-sheet-empty {
 .songForm-chip.is-drop-after {
     box-shadow: 3px 0 0 var(--rj-gold);
 }
+/* A part's × only on the round being worked on (a tap removes it there). */
 .songForm-chip-x {
-    margin-left: 5px;
-    color: #7b828b;
+    display: none;
+    margin-left: 4px;
+    color: #8a9099;
     font-weight: 400;
+}
+.songForm-card.is-active .songForm-chip-x,
+.songForm-chip:focus .songForm-chip-x {
+    display: inline;
+}
+.songForm-parts-repeat {
+    margin: 0 4px;
+    color: var(--sf-muted);
+    font-weight: 700;
+}
+.songForm-type {
+    flex: 1 1 24px;
+    min-width: 24px;
+    height: 28px;
+    padding: 0 4px;
+    box-sizing: border-box;
+    border: 0;
+    background: transparent;
+    color: var(--sf-ink);
+    font: 700 13px "Montserrat", sans-serif;
+    outline: none;
+}
+.songForm-type::placeholder {
+    color: #9aa0a7;
+    font-weight: 500;
+}
+.songForm-field {
+    min-width: 0;
+    height: var(--sf-h);
+    box-sizing: border-box;
+    padding: 0 8px;
+    border: 0;
+    border-radius: var(--sf-radius);
+    background: transparent;
+    color: var(--sf-ink);
+    font: 500 14px "Montserrat", sans-serif;
+}
+.songForm-field::placeholder {
+    color: #9aa0a7;
+}
+.songForm-field--lead {
+    grid-area: lead;
+}
+.songForm-card-actions {
+    grid-area: actions;
+    display: flex;
+    visibility: hidden;
+}
+.songForm-card.is-active .songForm-card-actions {
+    visibility: visible;
+}
+@media (hover: hover) {
+  .songForm-card:hover .songForm-card-actions {
+      visibility: visible;
+  }
+}
+.songForm-editor .songForm-icon-btn {
+    width: 30px;
+    height: var(--sf-h);
+    border-radius: var(--sf-radius);
+    color: #9aa0a7;
     font-size: 13px;
 }
-/* The add buttons sit at the field's end, set off by a hairline, quieter than the chips. */
-/* The add buttons follow the chips, told apart by their ghost style (no
-   divider line: once they wrap, a line beside them reads as a stray bar). */
+.songForm-editor .songForm-icon-btn:hover {
+    background: var(--sf-hover);
+    color: var(--sf-ink);
+}
+.songForm-editor .songForm-icon-btn--danger:hover {
+    color: #a8304f;
+}
+/* The tools under the round being worked on; a note shows on any round that has one. */
+.songForm-card-tools {
+    grid-area: tools;
+    display: none;
+    flex-wrap: wrap;
+    align-items: center;
+    min-width: 0;
+}
+.songForm-card.is-active .songForm-card-tools,
+.songForm-card.has-note .songForm-card-tools {
+    display: flex;
+}
+.songForm-card:not(.is-active) .songForm-parts-adds,
+.songForm-card:not(.is-active) .songForm-repeat-step {
+    display: none;
+}
+/* The stepper shows the count of the round being worked on. */
+.songForm-card.is-active .songForm-parts-repeat {
+    display: none;
+}
 .songForm-parts-adds {
     display: flex;
     flex-wrap: wrap;
-    margin-left: auto;
-    padding-left: 4px;
+    margin-left: -2px;
 }
 .songForm-add-part {
     padding: 0 7px;
@@ -1288,61 +1332,69 @@ body.rj-sheet-active .rj-sheet-empty {
     background: var(--sf-hover);
     color: var(--sf-ink);
 }
-.songForm-card-actions {
-    grid-area: actions;
+/* How often: − 2x +, a quiet segmented pill. */
+.songForm-repeat-step {
     display: flex;
-    height: var(--sf-h);
+    align-items: center;
+    height: 26px;
+    margin: 2px 8px;
+    border: 1px solid var(--sf-line);
+    border-radius: 13px;
 }
-.songForm-editor .songForm-icon-btn {
-    width: var(--sf-h);
-    height: var(--sf-h);
-    border-radius: var(--sf-radius);
+.songForm-step-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 24px;
+    padding: 0;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
     color: var(--sf-muted);
+    font-size: 10px;
+    cursor: pointer;
 }
-.songForm-editor .songForm-icon-btn:hover {
+.songForm-step-btn:hover {
     background: var(--sf-hover);
     color: var(--sf-ink);
 }
-.songForm-editor .songForm-icon-btn--danger,
-.songForm-editor .songForm-icon-btn--danger:hover {
-    color: #a8304f;
+.songForm-repeat-value {
+    min-width: 22px;
+    color: #9aa0a7;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
 }
-.songForm-card-fields {
-    grid-area: fields;
-    display: flex;
-}
-.songForm-field {
-    flex: 1 1 0;
-    min-width: 0;
-    height: var(--sf-h);
-    box-sizing: border-box;
-    padding: 0 10px;
-    border: 1px solid var(--sf-line);
-    border-radius: var(--sf-radius);
-    background: #ffffff;
+.songForm-repeat-step.is-set .songForm-repeat-value {
     color: var(--sf-ink);
-    font: 500 14px "Montserrat", sans-serif;
 }
-.songForm-field::placeholder {
-    color: #8a9099;
+/* The note first, on a line of its own, where it is on every round that has one. */
+.songForm-card-tools .songForm-field {
+    order: -1;
+    flex: 1 1 100%;
+    height: 28px;
+    color: var(--sf-muted);
+    font-size: 13px;
+    font-style: italic;
 }
-.songForm-field + .songForm-field {
-    margin-left: 8px;
+.songForm-card-tools .songForm-field:focus {
+    color: var(--sf-ink);
+    font-style: normal;
 }
-/* Starts where a card's fields start, so it reads as "one more round". */
 .songForm-add-round {
     display: flex;
     align-items: center;
-    width: calc(100% - var(--sf-handle) - 13px);
-    height: var(--sf-h);
+    width: 100%;
+    height: 42px;
     box-sizing: border-box;
-    margin-left: calc(var(--sf-handle) + 13px);
-    padding: 0 12px;
-    border: 1px dashed var(--sf-line);
-    border-radius: var(--sf-radius);
+    padding: 0 0 0 calc(var(--sf-handle) + 12px);
+    border: 0;
+    border-bottom: 1px solid var(--sf-line);
     background: transparent;
     color: var(--sf-muted);
     font: 600 13px "Montserrat", sans-serif;
+    text-align: left;
     cursor: pointer;
 }
 .songForm-add-round .fa-plus {
@@ -1350,9 +1402,8 @@ body.rj-sheet-active .rj-sheet-empty {
     font-size: 11px;
 }
 .songForm-add-round:hover {
-    border-color: var(--sf-ink);
+    background: #fafafb;
     color: var(--sf-ink);
-    background: #ffffff;
 }
 .songForm-footer,
 .songForm-text-actions {
@@ -1364,8 +1415,8 @@ body.rj-sheet-active .rj-sheet-empty {
     margin-left: 8px;
 }
 .songForm-footer {
-    padding-top: 10px;
-    border-top: 1px solid #e6e8eb;
+    padding: 10px 12px;
+    background: #fafafb;
 }
 .songForm-footer-gap {
     flex: 1 1 0;
@@ -1381,7 +1432,7 @@ body.rj-sheet-active .rj-sheet-empty {
     cursor: pointer;
 }
 .songForm-btn:hover {
-    border-color: var(--sf-ink);
+    border-color: #b9bec4;
 }
 .songForm-btn--primary {
     border-color: var(--rj-gold);
@@ -1391,6 +1442,13 @@ body.rj-sheet-active .rj-sheet-empty {
 .songForm-btn--primary:hover {
     border-color: #c98a0b;
     background: #efab1e;
+}
+.songForm-text {
+    padding: 0 12px 12px;
+    background: #fafafb;
+}
+.songForm-text > * + * {
+    margin-top: 8px;
 }
 .songForm-text-actions {
     justify-content: flex-end;
@@ -1417,33 +1475,17 @@ body.songForm-dragging {
 }
 @media (max-width: 480px) {
   .songForm-editor {
-    --sf-handle: 46px;
+    --sf-handle: 44px;
     width: 100%;
-    padding: 8px;
   }
-  /* Too narrow for three columns: the handle and actions become a header
-     row, and the parts and fields get the card's full width under it. */
+  /* Too narrow for one line: the parts keep the handle's row, who plays
+     goes under them. */
   .songForm-card {
-    padding: 6px 10px 10px;
-    gap: 6px;
+    grid-template-columns: var(--sf-handle) minmax(0, 1fr) auto;
     grid-template-areas:
-        "handle .      actions"
-        "parts  parts  parts"
-        "fields fields fields";
-  }
-  .songForm-card-fields {
-    display: block;
-  }
-  .songForm-field {
-    display: block;
-    width: 100%;
-  }
-  .songForm-field + .songForm-field {
-    margin: 8px 0 0;
-  }
-  .songForm-add-round {
-    width: 100%;
-    margin-left: 0;
+        "handle parts actions"
+        ".      lead  lead"
+        ".      tools tools";
   }
 }
 
