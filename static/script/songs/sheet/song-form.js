@@ -80,12 +80,45 @@ function copyText(textarea, text) {
   return Promise.resolve();
 }
 
+// Copy `text` with no field of its own on the page: a throwaway one for the
+// select-and-copy fallback.
+function copyPlain(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text);
+  const area = el("textarea", { value: text, readOnly: true, class: "rj-sr-only" });
+  document.body.append(area);
+  try {
+    return copyText(area, text);
+  } finally {
+    area.remove();
+  }
+}
+
 // Enter in a field goes on to the next one: Who plays, Note, the next round's Who plays.
 function nextField(e, input) {
   e.preventDefault();
   const fields = qsa(".songForm-field", input.closest(".songForm-editor"));
   const next = fields[fields.indexOf(input) + 1];
   if (next) next.focus();
+}
+
+// One item of the song form menu; `checked` (true/false) makes it a radio item.
+function menuItem(key, iconName, label, onPick, checked) {
+  const radio = checked !== undefined;
+  return el("button", {
+    type: "button",
+    class: "songForm-menu-item",
+    attrs: {
+      role: radio ? "menuitemradio" : "menuitem",
+      "aria-checked": radio ? String(checked) : null,
+      tabindex: "-1",
+      "data-focus": `menu-${key}`,
+    },
+    on: { click: onPick },
+  }, [
+    icon(iconName),
+    el("span", { class: "songForm-menu-label", text: label }),
+    checked ? icon("fa-check") : null,
+  ]);
 }
 
 export function createSongForm(ctx) {
@@ -96,6 +129,7 @@ export function createSongForm(ctx) {
   let show = "band"; // which one the strip shows when not editing
   let draft = null; // the rounds being edited, or null
   let textOpen = false;
+  let menuOpen = false;
   // Nothing is drawn until the page has loaded (init): the sheet comes first.
   let ready = false;
 
@@ -116,6 +150,7 @@ export function createSongForm(ctx) {
     show = stored ? stored.show : "band";
     draft = null;
     textOpen = false;
+    menuOpen = false;
   }
 
   function persist() {
@@ -158,27 +193,90 @@ export function createSongForm(ctx) {
 
   // ---- the switch and the pencil -------------------------------------------
 
-  function switchButton(which, iconName, label) {
-    const pressed = which === "mine" ? showingMine() : !showingMine();
+  /*
+    One small square at the strip's end, drawn like the strip's own part
+    boxes, with a ≡ in it (not "…": a dashed "…" box in the strip already
+    means "as long as it takes"). It opens a menu: the band's form or mine
+    (once there is one), edit, and copy as text. Gold while your version
+    shows.
+  */
+  function menuButton() {
     return el("button", {
       type: "button",
-      class: `songForm-switch-btn songForm-switch-btn--${which}${pressed ? " is-active" : ""}`,
-      attrs: { "aria-pressed": String(pressed), "aria-label": label, title: label, "data-focus": `show-${which}` },
-      on: { click: () => setShow(which) },
-    }, [icon(iconName)]);
+      class: showingMine() ? "songForm-menu-btn is-mine" : "songForm-menu-btn",
+      attrs: {
+        "aria-label": tl("form_menu", "Song form options"),
+        title: tl("form_menu", "Song form options"),
+        "aria-haspopup": "menu",
+        "aria-expanded": String(menuOpen),
+        "data-focus": "menu",
+      },
+      on: { click: () => setMenuOpen(!menuOpen, "menu-first") },
+    }, [el("span", { class: "songForm-menu-box", attrs: { "aria-hidden": "true" } }, [icon("fa-bars")])]);
+  }
+
+  function menu() {
+    const items = [];
+    if (mine) {
+      items.push(
+        menuItem("band", "fa-users", tl("form_band", "The band's form"), () => setShow("band"), !showingMine()),
+        menuItem("mine", "fa-user", tl("form_mine", "My version"), () => setShow("mine"), showingMine()),
+        el("div", { class: "songForm-menu-sep", attrs: { role: "separator" } }),
+      );
+    }
+    items.push(
+      menuItem("edit", "fa-pen", mine ? tl("form_edit_mine", "Edit my version") : tl("form_edit_new", "Make my own version"), () => {
+        menuOpen = false;
+        startEdit();
+      }),
+      menuItem("copy", "fa-file-lines", tl("form_copy_text", "Copy as text"), copyFromMenu),
+    );
+    return el("div", {
+      class: "songForm-menu",
+      attrs: { role: "menu", "aria-label": tl("form_menu", "Song form options") },
+      on: { keydown: menuKey },
+    }, items);
   }
 
   function tools() {
-    const editLabel = mine
-      ? tl("form_edit_mine", "Edit my version of the song form")
-      : tl("form_edit_new", "Make your own version of the song form");
-    return el("div", { class: "songForm-tools" }, [
-      mine ? el("div", { class: "songForm-switch", attrs: { role: "group", "aria-label": tl("form_which", "Which song form") } }, [
-        switchButton("band", "fa-users", tl("form_band", "The band's form")),
-        switchButton("mine", "fa-user", tl("form_mine", "My version")),
-      ]) : null,
-      iconButton(ICON_BTN, "fa-pen", editLabel, startEdit, "edit"),
-    ]);
+    return el("div", { class: "songForm-tools" }, [menuButton(), menuOpen ? menu() : null]);
+  }
+
+  // ↑ / ↓ (and Home / End) walk the menu, Escape or Tab closes it.
+  function menuKey(e) {
+    const items = qsa(".songForm-menu-item", e.currentTarget);
+    const at = items.indexOf(document.activeElement);
+    let to = null;
+    if (e.key === "ArrowDown") to = (at + 1) % items.length;
+    else if (e.key === "ArrowUp") to = (at - 1 + items.length) % items.length;
+    else if (e.key === "Home") to = 0;
+    else if (e.key === "End") to = items.length - 1;
+    if (to !== null) {
+      e.preventDefault();
+      e.stopPropagation();
+      items[to].focus();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
+      setMenuOpen(false, "menu");
+    } else if (e.key === "Tab") {
+      setMenuOpen(false);
+    }
+  }
+
+  function setMenuOpen(open, focus) {
+    if (menuOpen === open) return;
+    menuOpen = open;
+    draw(focus);
+  }
+
+  // Copy the form on show as the W: lines, and say so on the item itself.
+  function copyFromMenu(e) {
+    const item = e.currentTarget;
+    copyPlain(formText(shownRounds())).then(() => {
+      const labelEl = item.querySelector(".songForm-menu-label");
+      if (labelEl) labelEl.textContent = tl("form_copied", "Copied ✓");
+    }, () => {});
   }
 
   // ---- the editor ----------------------------------------------------------
@@ -451,8 +549,9 @@ export function createSongForm(ctx) {
 
   // ---- drawing -------------------------------------------------------------
 
-  // Everything under the chord table: the strip, then the pencil (and switch),
-  // or the editor while editing. `focus` names the control to focus after.
+  // Everything under the chord table: the strip, then the menu button (and its
+  // menu), or the editor while editing. `focus` names the control to focus
+  // after ("menu-first": the menu's first item).
   function draw(focus) {
     const chordEl = byId("chordtable");
     if (!chordEl || !chordEl.parentNode || ctx.state.currentSongText === undefined) return;
@@ -462,15 +561,25 @@ export function createSongForm(ctx) {
     const below = editing() ? editor() : tools();
     last.after(below);
     fitSongForms(chordEl);
-    refocus(parent, focus);
+    const first = focus === "menu-first" ? parent.querySelector(".songForm-menu-item") : null;
+    if (first) first.focus();
+    else refocus(parent, focus);
+  }
+
+  // A click anywhere outside the open menu (and its button) closes it. A
+  // click inside may already have redrawn it, leaving its target detached.
+  function closeMenuOnOutsideClick(e) {
+    if (!menuOpen || !e.target.isConnected || e.target.closest(".songForm-tools")) return;
+    setMenuOpen(false);
   }
 
   // ---- actions -------------------------------------------------------------
 
   function setShow(which) {
     show = which;
+    menuOpen = false;
     persist();
-    draw(`show-${which}`);
+    draw("menu");
   }
 
   function startEdit() {
@@ -484,7 +593,7 @@ export function createSongForm(ctx) {
   function cancel() {
     draft = null;
     textOpen = false;
-    draw("edit");
+    draw("menu");
   }
 
   function save() {
@@ -523,9 +632,10 @@ export function createSongForm(ctx) {
   });
 
   return {
-    // The pencil, and a version of your own, only once the page has loaded and
+    // The menu button, and a version of your own, only once the page has loaded and
     // the browser is idle: the sheet and its band's form come first.
     init() {
+      document.addEventListener("click", closeMenuOnOutsideClick);
       return afterPageLoad().then(() => {
         ready = true;
         draw();
