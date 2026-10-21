@@ -886,30 +886,49 @@ body.rj-sheet-active .rj-sheet-empty {
   }
 }
 
-/* The song form menu (song-form.js): one small square at the strip's end,
-   drawn like the strip's own part boxes (white, a thin black border) with a
-   ≡ in it, gold while your own version shows. The button itself is the
-   24px target WCAG 2.5.8 asks for; the box drawn in it is 16px.
-   Spacing here is margins, not flex `gap`: Safari 12 has no flex gap (14.1+). */
+/* The song form menu (song-form.js): one small square drawn like the
+   strip's own part boxes (white, a thin black border) with a ≡ in it, gold
+   while your own version shows. It hangs outside the strip's left edge,
+   level with the first arrow, the way the chord grid's part markers
+   (.chordPartMarker--outsideLeft) hang outside its rows, so it takes no room
+   of its own: the tools box sits just before the strip, as wide as it and 0
+   tall. The button is the 24px target WCAG 2.5.8 asks for; the box drawn in
+   it is 16px, the arrow row's height. 5px clears the dashed frame round your
+   own version (its outline-offset). */
 .songForm-tools {
     position: relative;
-    display: flex;
-    justify-content: flex-end;
     width: 90%;
-    height: 24px;
+    height: 0;
     margin: 0 auto;
 }
 .songForm-menu-btn {
+    position: absolute;
+    /* The strip's own margin-top (10px), less the target's 4px around the box. */
+    top: 6px;
+    right: calc(100% + 5px);
     display: flex;
     align-items: center;
     justify-content: center;
     width: 24px;
     height: 24px;
-    margin-right: -4px;
     padding: 0;
     border: 0;
     background: transparent;
     cursor: pointer;
+}
+/* A tune with no form: nothing to hang beside, so a line of its own. */
+.songForm-tools--alone {
+    height: 24px;
+    margin-top: 6px;
+}
+.songForm-tools--alone .songForm-menu-btn {
+    top: 0;
+    right: auto;
+    left: -4px;
+}
+.songForm-tools--alone .songForm-menu {
+    top: 26px;
+    left: 0;
 }
 .songForm-menu-box {
     display: flex;
@@ -934,8 +953,9 @@ body.rj-sheet-active .rj-sheet-empty {
 }
 .songForm-menu {
     position: absolute;
-    top: 100%;
-    right: -4px;
+    /* Opens under the square, from its left edge. */
+    top: 32px;
+    left: -25px;
     z-index: 5;
     min-width: 210px;
     margin-top: 2px;

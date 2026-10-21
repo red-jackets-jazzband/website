@@ -238,8 +238,14 @@ export function createSongForm(ctx) {
     }, items);
   }
 
-  function tools() {
-    return el("div", { class: "songForm-tools" }, [menuButton(), menuOpen ? menu() : null]);
+  // Hung outside the strip's left edge, level with its first arrow, the way
+  // the chord grid's part markers hang outside its rows; on its own line when
+  // the tune has no form to hang beside.
+  function tools(hasStrip) {
+    return el("div", { class: hasStrip ? "songForm-tools" : "songForm-tools songForm-tools--alone" }, [
+      menuButton(),
+      menuOpen ? menu() : null,
+    ]);
   }
 
   // ↑ / ↓ (and Home / End) walk the menu, Escape or Tab closes it.
@@ -549,8 +555,8 @@ export function createSongForm(ctx) {
 
   // ---- drawing -------------------------------------------------------------
 
-  // Everything under the chord table: the strip, then the menu button (and its
-  // menu), or the editor while editing. `focus` names the control to focus
+  // Everything under the chord table: the menu button (and its menu) at the
+  // strip's start, the strip, and the editor below it while editing. `focus` names the control to focus
   // after ("menu-first": the menu's first item).
   function draw(focus) {
     const chordEl = byId("chordtable");
@@ -558,8 +564,8 @@ export function createSongForm(ctx) {
     const parent = chordEl.parentNode;
     qsa(".songForm-tools, .songForm-editor", parent).forEach((old) => old.remove());
     const last = drawStrip(chordEl);
-    const below = editing() ? editor() : tools();
-    last.after(below);
+    if (editing()) last.after(editor());
+    else chordEl.after(tools(last !== chordEl));
     fitSongForms(chordEl);
     const first = focus === "menu-first" ? parent.querySelector(".songForm-menu-item") : null;
     if (first) first.focus();
