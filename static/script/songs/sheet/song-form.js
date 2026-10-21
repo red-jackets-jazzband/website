@@ -44,6 +44,9 @@ const LEAD_SUGGESTIONS = [
 ];
 const DATALIST_ID = "songFormWho";
 const ICON_BTN = "songForm-icon-btn";
+// How long the menu square stays once the pointer leaves the form: enough to
+// cross the few pixels between the strip and the square.
+const REVEAL_GRACE_MS = 400;
 
 function icon(name) {
   return el("span", { class: `fa-solid ${name}`, attrs: { "aria-hidden": "true" } });
@@ -121,6 +124,15 @@ function menuItem(key, iconName, label, onPick, checked) {
   ]);
 }
 
+const TOOLS = ".songForm-tools";
+
+// Whether `target` is where hovering or tapping shows the menu square: the
+// form strip, or the chord grid when the tune has no form to hang it beside.
+function inRevealArea(target) {
+  if (target.closest(".songForm")) return true;
+  return Boolean(target.closest("#chordtable")) && Boolean(document.querySelector(".songForm-tools--alone"));
+}
+
 export function createSongForm(ctx) {
   let file = null;
   let band = [];
@@ -130,6 +142,9 @@ export function createSongForm(ctx) {
   let draft = null; // the rounds being edited, or null
   let textOpen = false;
   let menuOpen = false;
+  // The menu square shows only while the form is hovered, tapped or focused.
+  let revealed = false;
+  let hideTimer = null;
   // Nothing is drawn until the page has loaded (init): the sheet comes first.
   let ready = false;
 
@@ -242,7 +257,9 @@ export function createSongForm(ctx) {
   // the chord grid's part markers hang outside its rows; on its own line when
   // the tune has no form to hang beside.
   function tools(hasStrip) {
-    return el("div", { class: hasStrip ? "songForm-tools" : "songForm-tools songForm-tools--alone" }, [
+    let cls = hasStrip ? "songForm-tools" : "songForm-tools songForm-tools--alone";
+    if (revealed || menuOpen) cls += " is-revealed";
+    return el("div", { class: cls }, [
       menuButton(),
       menuOpen ? menu() : null,
     ]);
@@ -575,8 +592,53 @@ export function createSongForm(ctx) {
   // A click anywhere outside the open menu (and its button) closes it. A
   // click inside may already have redrawn it, leaving its target detached.
   function closeMenuOnOutsideClick(e) {
-    if (!menuOpen || !e.target.isConnected || e.target.closest(".songForm-tools")) return;
-    setMenuOpen(false);
+    if (!e.target.isConnected || e.target.closest(TOOLS)) return;
+    // A tap on the form shows the square (a touch screen has no hover).
+    if (inRevealArea(e.target)) {
+      setRevealed(true);
+      return;
+    }
+    setRevealed(false);
+    if (menuOpen) setMenuOpen(false);
+  }
+
+  /*
+    The square is hidden until wanted: hovering or tapping the form strip
+    (the chord grid, for a tune with no form), or the keyboard focus reaching
+    it, shows it; it stays while its menu is open. Leaving it waits a moment,
+    so the pointer can cross the gap from the strip to the square.
+  */
+  function setRevealed(on) {
+    clearTimeout(hideTimer);
+    revealed = on;
+    const toolsEl = document.querySelector(TOOLS);
+    if (toolsEl) toolsEl.classList.toggle("is-revealed", on || menuOpen);
+  }
+
+  function hideSoon() {
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(() => {
+      const toolsEl = document.querySelector(TOOLS);
+      if (!menuOpen && !(toolsEl && toolsEl.contains(document.activeElement))) setRevealed(false);
+    }, REVEAL_GRACE_MS);
+  }
+
+  function onPointerOver(e) {
+    if (e.target.closest(TOOLS) || inRevealArea(e.target)) setRevealed(true);
+  }
+
+  function onPointerOut(e) {
+    const to = e.relatedTarget;
+    if (to && (to.closest(TOOLS) || inRevealArea(to))) return;
+    if (e.target.closest(TOOLS) || inRevealArea(e.target)) hideSoon();
+  }
+
+  function onFocusIn(e) {
+    if (e.target.closest(TOOLS)) setRevealed(true);
+  }
+
+  function onFocusOut(e) {
+    if (e.target.closest(TOOLS)) hideSoon();
   }
 
   // ---- actions -------------------------------------------------------------
@@ -642,6 +704,10 @@ export function createSongForm(ctx) {
     // the browser is idle: the sheet and its band's form come first.
     init() {
       document.addEventListener("click", closeMenuOnOutsideClick);
+      document.addEventListener("mouseover", onPointerOver);
+      document.addEventListener("mouseout", onPointerOut);
+      document.addEventListener("focusin", onFocusIn);
+      document.addEventListener("focusout", onFocusOut);
       return afterPageLoad().then(() => {
         ready = true;
         draw();

@@ -901,7 +901,18 @@ body.rj-sheet-active .rj-sheet-empty {
     height: 0;
     margin: 0 auto;
 }
+/* Hidden until wanted (song-form.js's setRevealed): hovering or tapping the
+   strip shows it, and so does the keyboard focus or its open menu. Still in
+   the tab order while hidden, so the keyboard can reach it. */
+.songForm-tools.is-revealed .songForm-menu-btn,
+.songForm-menu-btn:focus {
+    opacity: 1;
+    pointer-events: auto;
+}
 .songForm-menu-btn {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .15s;
     position: absolute;
     /* The strip's own margin-top (10px), less the target's 4px around the box. */
     top: 6px;
