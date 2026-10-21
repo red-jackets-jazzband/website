@@ -838,6 +838,21 @@ body.rj-sheet-active .rj-sheet-empty {
     font-style: italic;
     overflow-wrap: break-word;
 }
+/* fitSongForms's fallback for a strip that would shrink past reading: the
+   arrows wrap onto more lines at full size. Every arrow gets a notched tail
+   and a point, since any of them may now start or end a line. */
+.split-bio ol.songForm--wrap {
+    flex-wrap: wrap;
+    row-gap: 6px;
+}
+.songForm--wrap .songForm-step:first-child .songForm-num {
+    margin-left: 6px;
+}
+.songForm--wrap .songForm-step .songForm-arrow,
+.songForm--wrap .songForm-step:first-child .songForm-arrow,
+.songForm--wrap .songForm-step:last-child .songForm-arrow {
+    clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 50%, calc(100% - 6px) 100%, 0 100%, 6px 50%);
+}
 @media print {
   /* fitChordTable / fitSongForms pin a width and zoom measured for the screen
      (a narrow sheet column, a phone), and nothing re-fits for the page: drop
@@ -849,6 +864,10 @@ body.rj-sheet-active .rj-sheet-empty {
   }
   .split-bio ol.songForm {
     font-size: x-small;
+  }
+  /* The page has room for the whole strip on one line. */
+  .split-bio ol.songForm--wrap {
+    flex-wrap: nowrap;
   }
 }
 @media (max-width: 480px) {
@@ -1194,12 +1213,13 @@ body.rj-sheet-active .rj-sheet-empty {
     font-size: 13px;
 }
 /* The add buttons sit at the field's end, set off by a hairline, quieter than the chips. */
+/* The add buttons follow the chips, told apart by their ghost style (no
+   divider line: once they wrap, a line beside them reads as a stray bar). */
 .songForm-parts-adds {
     display: flex;
     flex-wrap: wrap;
     margin-left: auto;
     padding-left: 4px;
-    border-left: 1px solid #e6e8eb;
 }
 .songForm-add-part {
     padding: 0 7px;
