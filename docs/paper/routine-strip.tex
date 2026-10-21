@@ -97,7 +97,7 @@ A jazz performance has two layers of structure. The \emph{form} belongs to the
 composition: a 12-bar blues, a 32-bar AABA song, a multi-strain march. The
 \emph{routine} belongs to a particular band's performance: the intro, the number of
 choruses, who sings, who solos and for how long, where the band stops, how the tune
-ends. \citet{berliner1994} describes how such arrangements are decided
+ends. \citet[chs.~11--12]{berliner1994} describes how such arrangements are decided
 in rehearsal and filled in through shared conventions.
 
 An unwritten routine depends on every player remembering it. That assumption is
@@ -154,8 +154,8 @@ list the play order of lettered parts, with repeat counts and grouping
 \citep{walshaw2011}. MusicXML~4.0 encodes repeats, endings and jumps, and its
 \texttt{time-only} attribute restricts an element to particular passes through a
 repeated section \citep{musicxml2021}. MEI's \texttt{<expansion>} element gives the
-performed order of sections as an ordered list, and a piece may carry several
-expansions for different readings of its repeats \citep{mei}. All three represent
+performed order of sections as an ordered list of section and ending identifiers
+\citep{mei}. All three represent
 \emph{order}. None has a concept of a soloist, an instrument sitting out, or a
 change of feel.
 
@@ -169,7 +169,7 @@ tracks. JSD \citep{balke2022} segments 340 jazz recordings into over 3,000 segme
 each segment lists its active instruments, marking the soloist and the
 accompanying instruments. The Weimar Jazz Database \citep{pfleiderer2017} annotates
 transcribed solos with chorus and form structure and with per-solo metadata,
-including a rhythm feel, defined as the basic groove organisation of the solo.
+including a rhythm feel.
 
 These corpora show that roles and feel can be annotated systematically. JSD's
 pairing of soloist and accompaniment and the database's per-solo rhythm feel
@@ -524,8 +524,7 @@ bebop or Latin band would need different groove labels.
 
 \paragraph{What is left out.} \emph{Cues:} the strip shows the plan that cues steer,
 not who gives them. \emph{Alternative
-routines:} MEI allows several performed orders per piece \citep{mei}; the strip shows
-one routine per tune, and alternatives remain remarks. \emph{Within-round positions}
+routines:} the strip shows one routine per tune, and alternatives remain remarks. \emph{Within-round positions}
 are not represented. \emph{Bar counts:} drummers' own charts give each section's
 length in bars (Section~\ref{sec:drumcharts}); the strip does not, and relies on the
 band knowing the tune's form.
@@ -665,7 +664,7 @@ W3C Music Notation Community Group. (2021). \emph{MusicXML 4.0}.
 \url{https://www.w3.org/2021/06/musicxml40/}
 
 \bibitem[Walshaw(2011)]{walshaw2011}
-Walshaw, C. (Ed.). (2011). \emph{The abc music standard 2.1}.
+Walshaw, C. (2011). \emph{The abc music standard 2.1}.
 \url{https://abcnotation.com/wiki/abc:standard:v2.1}
 
 \bibitem[Williams(2012)]{williams2012}
