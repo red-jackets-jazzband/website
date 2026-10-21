@@ -120,7 +120,6 @@ export const FEATURES = [
   { name: "swipeNav", create: createSwipeNav, init: (ctx) => ctx.swipeNav.init() },
   { name: "fullscreen", create: createFullscreen, init: (ctx) => ctx.fullscreen.init() },
   { name: "history", create: createSongHistory, init: (ctx) => ctx.history.init() },
-  { name: "songForm", create: createSongForm },
   { name: "layers", create: createLayersPanel, init: (ctx) => ctx.layers.init() },
   { name: "library", create: createLibraryTab },
   { name: "setlistData", create: createSetlistData },
@@ -144,5 +143,8 @@ export const FEATURES = [
       whenFontReady(document.fonts, "16px MuseJazzText", SHEET_FONT_WAIT_MS, () => ctx.nav.start());
     },
   },
+  // After the deep link: its pencil and a visitor's own version wait for the
+  // page to finish loading anyway (song-form.js's init).
+  { name: "songForm", create: createSongForm, init: (ctx) => ctx.songForm.init() },
   { name: "tour", create: createTour, init: (ctx) => ctx.tour.init() },
 ];

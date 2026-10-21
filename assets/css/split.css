@@ -888,24 +888,30 @@ body.rj-sheet-active .rj-sheet-empty {
 
 /* The pencil, and once there's a version of your own the band / mine
    switch: small and grey in the strip's bottom-right corner, so the sheet
-   reads as before for anyone who never touches them. */
+   reads as before for anyone who never touches them.
+   Spacing here is margins, not flex `gap`: Safari 12 has no flex gap (14.1+). */
 .songForm-tools {
     display: flex;
     justify-content: flex-end;
     align-items: center;
-    gap: 2px;
     width: 90%;
     margin: 6px auto 0;
 }
+.songForm-tools > * + * {
+    margin-left: 2px;
+}
 .songForm-switch {
     display: flex;
-    gap: 2px;
     padding: 2px;
     border: 1px solid #c9c9c9;
     border-radius: 999px;
 }
+.songForm-switch-btn + .songForm-switch-btn {
+    margin-left: 2px;
+}
 .songForm-switch-btn,
-.songForm-icon-btn {
+.songForm-icon-btn,
+.songForm-grip {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -932,14 +938,10 @@ body.rj-sheet-active .rj-sheet-empty {
     background: var(--rj-gold);
     color: #1b1b1b;
 }
-.songForm-icon-btn:hover:not(:disabled),
+.songForm-icon-btn:hover,
 .songForm-switch-btn:hover:not(.is-active) {
     color: #1b1b1b;
     background: #efefef;
-}
-.songForm-icon-btn:disabled {
-    opacity: .35;
-    cursor: default;
 }
 .songForm-icon-btn--danger {
     color: #a8304f;
@@ -952,9 +954,6 @@ body.rj-sheet-active .rj-sheet-empty {
 
 /* The editor, below the strip: one card per round. */
 .songForm-editor {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
     width: 90%;
     box-sizing: border-box;
     margin: 12px auto 4px;
@@ -965,10 +964,12 @@ body.rj-sheet-active .rj-sheet-empty {
     color: #1b1b1b;
     font: 500 13px "Montserrat", sans-serif;
 }
+.songForm-editor > * + *,
+.songForm-card > * + *,
+.songForm-text > * + * {
+    margin-top: 8px;
+}
 .songForm-card {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
     padding: 8px 10px;
     border: 1px solid #e3e3e3;
     border-radius: 10px;
@@ -992,7 +993,6 @@ body.rj-sheet-active .rj-sheet-empty {
 .songForm-card-top {
     display: flex;
     align-items: flex-start;
-    gap: 6px;
 }
 .songForm-card-parts {
     flex: 1 1 0;
@@ -1000,20 +1000,21 @@ body.rj-sheet-active .rj-sheet-empty {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 6px;
+    margin: -3px;
+}
+.songForm-card-parts > * {
+    margin: 3px;
 }
 .songForm-card-actions {
     flex: none;
     display: flex;
     align-items: center;
+    margin-left: 6px;
 }
 .songForm-grip {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 18px;
-    height: 32px;
+    width: 24px;
     margin-left: -4px;
+    border-radius: 6px;
     color: #6b7178;
     cursor: grab;
     touch-action: none;
@@ -1034,7 +1035,6 @@ body.rj-sheet-active .rj-sheet-empty {
 .songForm-add-part {
     display: flex;
     align-items: center;
-    gap: 4px;
     height: 30px;
     padding: 0 6px 0 8px;
     border: 1px solid #1b1b1b;
@@ -1066,6 +1066,7 @@ body.rj-sheet-active .rj-sheet-empty {
     box-shadow: 4px 0 0 var(--rj-gold);
 }
 .songForm-chip-x {
+    margin-left: 4px;
     color: #5f6770;
     font-weight: 400;
     font-size: 12px;
@@ -1083,11 +1084,10 @@ body.rj-sheet-active .rj-sheet-empty {
     color: #1b1b1b;
 }
 .songForm-card-fields {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
+    display: flex;
 }
 .songForm-field {
+    flex: 1 1 0;
     min-width: 0;
     height: 36px;
     box-sizing: border-box;
@@ -1098,7 +1098,12 @@ body.rj-sheet-active .rj-sheet-empty {
     color: #1b1b1b;
     font: 500 14px "Montserrat", sans-serif;
 }
+.songForm-field + .songForm-field {
+    margin-left: 8px;
+}
 .songForm-add-round {
+    display: block;
+    width: 100%;
     height: 40px;
     border: 1px dashed #9aa1a8;
     border-radius: 10px;
@@ -1115,7 +1120,10 @@ body.rj-sheet-active .rj-sheet-empty {
 .songForm-text-actions {
     display: flex;
     align-items: center;
-    gap: 8px;
+}
+.songForm-footer > * + *,
+.songForm-text-actions > * + * {
+    margin-left: 8px;
 }
 .songForm-footer {
     padding-top: 6px;
@@ -1139,15 +1147,11 @@ body.rj-sheet-active .rj-sheet-empty {
     background: var(--rj-gold);
     font-weight: 700;
 }
-.songForm-text {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
 .songForm-text-actions {
     justify-content: flex-end;
 }
 .songForm-text-area {
+    display: block;
     box-sizing: border-box;
     width: 100%;
     padding: 8px 10px;
@@ -1160,7 +1164,7 @@ body.rj-sheet-active .rj-sheet-empty {
     overflow-x: auto;
     resize: vertical;
 }
-/* No text selection or page scroll while a round or a part is dragged. */
+/* No text selection while a round or a part is dragged. */
 body.songForm-dragging {
     -webkit-user-select: none;
     user-select: none;
@@ -1172,7 +1176,14 @@ body.songForm-dragging {
     padding: 8px;
   }
   .songForm-card-fields {
-    grid-template-columns: minmax(0, 1fr);
+    display: block;
+  }
+  .songForm-field {
+    display: block;
+    width: 100%;
+  }
+  .songForm-field + .songForm-field {
+    margin: 8px 0 0;
   }
 }
 
