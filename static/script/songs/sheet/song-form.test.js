@@ -400,7 +400,9 @@ test("the menu square shows on hovering or tapping the strip, and hides again", 
     mouse("mouseover", strip);
     assert.equal(shown(), true);
     mouse("mouseout", strip, document.getElementById("chordtable"));
-    await new Promise((resolve) => setTimeout(resolve, 450));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 450);
+    });
     assert.equal(shown(), false);
 
     click(strip);
