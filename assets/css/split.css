@@ -886,29 +886,105 @@ body.rj-sheet-active .rj-sheet-empty {
   }
 }
 
-/* The pencil, and once there's a version of your own the band / mine
-   switch: small and grey in the strip's bottom-right corner, so the sheet
-   reads as before for anyone who never touches them.
+/* The song form menu (song-form.js): one small square at the strip's end,
+   drawn like the strip's own part boxes (white, a thin black border) with a
+   ≡ in it, gold while your own version shows. The button itself is the
+   24px target WCAG 2.5.8 asks for; the box drawn in it is 16px.
    Spacing here is margins, not flex `gap`: Safari 12 has no flex gap (14.1+). */
 .songForm-tools {
+    position: relative;
     display: flex;
     justify-content: flex-end;
-    align-items: center;
     width: 90%;
     height: 24px;
-    /* Tucked up against the strip: no row of its own beyond the controls' own 24px. */
     margin: 0 auto;
 }
-.songForm-tools > * + * {
-    margin-left: 2px;
-}
-.songForm-switch {
+.songForm-menu-btn {
     display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    margin-right: -4px;
     padding: 0;
-    border: 1px solid #d5d8dc;
-    border-radius: 999px;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
 }
-.songForm-switch-btn,
+.songForm-menu-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    box-sizing: border-box;
+    border: 1px solid #000000;
+    background: #ffffff;
+    color: #000000;
+    font-size: 9px;
+}
+.songForm-menu-btn.is-mine .songForm-menu-box {
+    border-color: #b07a08;
+    background: var(--rj-gold);
+}
+.songForm-menu-btn:hover .songForm-menu-box,
+.songForm-menu-btn[aria-expanded="true"] .songForm-menu-box {
+    background: #1b1b1b;
+    color: #ffffff;
+}
+.songForm-menu {
+    position: absolute;
+    top: 100%;
+    right: -4px;
+    z-index: 5;
+    min-width: 210px;
+    margin-top: 2px;
+    padding: 4px;
+    border: 1px solid #e2e4e7;
+    border-radius: 10px;
+    background: #ffffff;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .14);
+    font: 600 13px "Montserrat", sans-serif;
+}
+.songForm-menu-item {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    height: 36px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: #1b1b1b;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.songForm-menu-item:hover,
+.songForm-menu-item:focus {
+    background: #f0f1f3;
+    outline: none;
+}
+.songForm-menu-item > .fa-solid:first-child {
+    width: 18px;
+    margin-right: 10px;
+    color: #5f6770;
+    font-size: 12px;
+    text-align: center;
+}
+.songForm-menu-label {
+    flex: 1 1 auto;
+}
+.songForm-menu-item > .fa-check {
+    margin-left: 10px;
+    color: #b07a08;
+    font-size: 11px;
+}
+.songForm-menu-sep {
+    height: 1px;
+    margin: 4px 6px;
+    background: #e6e8eb;
+}
 .songForm-icon-btn,
 .songForm-grip {
     display: flex;
@@ -923,35 +999,6 @@ body.rj-sheet-active .rj-sheet-empty {
     color: #5f6770;
     font-size: 14px;
     cursor: pointer;
-}
-/* 24px tall in all, the smallest target WCAG 2.5.8 allows; the two halves
-   sit 26px apart, so their 24px target circles don't overlap. */
-.songForm-switch-btn {
-    width: 26px;
-    height: 22px;
-    border-radius: 999px;
-    font-size: 11px;
-}
-.songForm-tools .songForm-icon-btn {
-    width: 24px;
-    height: 24px;
-    font-size: 12px;
-}
-.songForm-switch-btn.is-active {
-    background: #1b1b1b;
-    color: #ffffff;
-}
-.songForm-switch-btn--mine.is-active {
-    background: var(--rj-gold);
-    color: #1b1b1b;
-}
-.songForm-icon-btn:hover,
-.songForm-switch-btn:hover:not(.is-active) {
-    color: #1b1b1b;
-    background: #efefef;
-}
-.songForm-icon-btn--danger {
-    color: #a8304f;
 }
 @media (max-width: 480px) {
   .songForm-tools {

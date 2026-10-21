@@ -18,7 +18,6 @@ const TABLES = [{
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 const click = (node) => node.dispatchEvent(new window.Event("click", { bubbles: true }));
-const label = (selector) => $(selector).getAttribute("aria-label");
 const CARD = ".songForm-card";
 const CHIP = ".songForm-chip";
 const leads = () => $$(".songForm .songForm-lead").map((node) => node.textContent);
@@ -44,17 +43,29 @@ async function setup({ stored } = {}) {
   return { ctx, openSong, leads, parts, cleanup };
 }
 
-const editButton = () => $(".songForm-tools .songForm-icon-btn");
+const MENU_BTN = ".songForm-menu-btn";
+const MENU = ".songForm-menu";
+// Open the song form menu (if it isn't) and return its item `key` (band, mine, edit, copy).
+const menuItem = (key) => {
+  if (!$(MENU)) click($(MENU_BTN));
+  return $(`.songForm-menu [data-focus="menu-${key}"]`);
+};
+const editButton = () => menuItem("edit");
+// Whether the menu offers the band / mine choice (only once there's a version of your own).
+const hasChoice = () => Boolean(menuItem("mine"));
 const button = (text) => $$(".songForm-editor button").find((node) => node.textContent === text);
 
-test("a song shows the band's strip with only a pencil under it", async () => {
+test("a song shows the band's strip with only the menu button under it", async () => {
   const { openSong, leads, cleanup } = await setup();
   try {
     openSong();
     assert.deepEqual(leads(), ["Collective", "Vocals", CLARINET]);
     assert.equal($(".songForm--mine"), null);
-    assert.equal($(".songForm-switch"), null);
-    assert.equal(label(".songForm-tools .songForm-icon-btn"), "Make your own version of the song form");
+    assert.equal($(MENU), null);
+    assert.equal($(MENU_BTN).getAttribute("aria-expanded"), "false");
+    assert.equal(hasChoice(), false);
+    assert.equal(editButton().textContent, "Make my own version");
+    assert.equal($(MENU_BTN).getAttribute("aria-expanded"), "true");
   } finally {
     cleanup();
   }
@@ -122,15 +133,19 @@ test("save keeps your version, and the switch flips between it and the band's", 
     assert.equal(stored.show, "mine");
     assert.deepEqual(stored.rows.map((row) => row[2]), ["Collective; count-off: 3 tempo ticks", "Vocals"]);
 
-    click($('[aria-label="The band\'s form"]'));
+    assert.ok($(MENU_BTN).classList.contains("is-mine"));
+    click(menuItem("band"));
+    assert.equal($(MENU), null);
     assert.deepEqual(leads(), ["Collective", "Vocals", CLARINET]);
     assert.equal($(".songForm--mine"), null);
+    assert.equal($(MENU_BTN).classList.contains("is-mine"), false);
     assert.equal(JSON.parse(localStorage.getItem(STORE_KEY)).show, "band");
-    assert.equal(label(".songForm-tools .songForm-icon-btn"), "Edit my version of the song form");
+    assert.equal(editButton().textContent, "Edit my version");
 
-    click($('[aria-label="My version"]'));
+    click(menuItem("mine"));
     assert.deepEqual(leads(), ["Collective", "Vocals"]);
-    assert.equal($('[aria-label="My version"]').getAttribute("aria-pressed"), "true");
+    assert.equal(menuItem("mine").getAttribute("aria-checked"), "true");
+    assert.equal(menuItem("band").getAttribute("aria-checked"), "false");
   } finally {
     cleanup();
   }
@@ -145,7 +160,7 @@ test("a version that matches the band's isn't kept", async () => {
     click($('[aria-label="Back to the band\'s form"]'));
     click(button("Save"));
     assert.equal(localStorage.getItem(STORE_KEY), null);
-    assert.equal($(".songForm-switch"), null);
+    assert.equal(hasChoice(), false);
   } finally {
     cleanup();
   }
@@ -190,7 +205,7 @@ test("each song has its own version, read back when it opens again", async () =>
     assert.ok($(".songForm-part--more"));
     openSong("other.abc");
     assert.deepEqual(leads(), ["Collective", "Vocals", CLARINET]);
-    assert.equal($(".songForm-switch"), null);
+    assert.equal(hasChoice(), false);
   } finally {
     cleanup();
   }
@@ -243,7 +258,7 @@ test("dragging a round by its grip moves it", async () => {
   }
 });
 
-test("nothing is drawn until the page has loaded, and then the pencil comes", async () => {
+test("nothing is drawn until the page has loaded, and then the menu button comes", async () => {
   const page = mountPage();
   try {
     const ctx = makeCtx();
@@ -325,6 +340,49 @@ test("↑/↓ inside the editor never reach the page (an open setlist would chan
     });
     press($(CHIP), "ArrowDown");
     assert.equal(reached, 0);
+  } finally {
+    cleanup();
+  }
+});
+
+test("the menu copies the form on show, closes on Escape and on a click outside it", async () => {
+  const { openSong, cleanup } = await setup();
+  try {
+    openSong();
+    let copied = null;
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText: (text) => { copied = text; return Promise.resolve(); } },
+      configurable: true,
+    });
+    click(menuItem("copy"));
+    await Promise.resolve();
+    assert.equal(copied.split("\n")[0], "W:| 1 | A B | Collective; count-off: 3 tempo ticks |");
+    assert.equal(menuItem("copy").textContent, "Copied ✓");
+
+    press(menuItem("copy"), "Escape");
+    assert.equal($(MENU), null);
+    assert.equal(document.activeElement, $(MENU_BTN));
+
+    menuItem("edit");
+    click(document.getElementById("chordtable"));
+    assert.equal($(MENU), null);
+  } finally {
+    cleanup();
+  }
+});
+
+test("↑/↓ walk the menu's items", async () => {
+  const stored = JSON.stringify({ show: "mine", rows: [["1", "A", "Collective"]] });
+  const { openSong, cleanup } = await setup({ stored });
+  try {
+    openSong();
+    click($(MENU_BTN));
+    assert.equal(document.activeElement, menuItem("band"));
+    press(document.activeElement, "ArrowDown");
+    assert.equal(document.activeElement, menuItem("mine"));
+    press(document.activeElement, "ArrowUp");
+    press(document.activeElement, "ArrowUp");
+    assert.equal(document.activeElement, menuItem("copy"));
   } finally {
     cleanup();
   }
