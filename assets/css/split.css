@@ -965,6 +965,28 @@ body.rj-sheet-active .rj-sheet-empty {
     right: auto;
     left: -4px;
 }
+/* "+ Song form" under the chord grid of a song that has none: a quiet
+   labelled pill, shown the same way as the menu square. */
+.songForm-tools--alone .songForm-add-form {
+    width: auto;
+    height: 26px;
+    padding: 0 12px 0 10px;
+    border: 1px dashed #8a9099;
+    border-radius: 13px;
+    background: transparent;
+    color: #4a5058;
+    font: 600 12px "Montserrat", sans-serif;
+    white-space: nowrap;
+}
+.songForm-tools--alone .songForm-add-form .fa-plus {
+    margin-right: 6px;
+    font-size: 10px;
+}
+.songForm-tools--alone .songForm-add-form:hover {
+    border-style: solid;
+    border-color: #1b1b1b;
+    color: #1b1b1b;
+}
 .songForm-tools--alone .songForm-menu {
     top: 26px;
     left: 0;

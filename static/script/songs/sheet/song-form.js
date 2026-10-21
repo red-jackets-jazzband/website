@@ -264,10 +264,22 @@ export function createSongForm(ctx) {
   function tools(hasStrip) {
     let cls = hasStrip ? "songForm-tools" : "songForm-tools songForm-tools--alone";
     if (revealed || menuOpen) cls += " is-revealed";
+    // A song with no form at all: one labelled button straight into the
+    // editor, since a menu would hold nothing else worth picking.
+    if (!hasStrip && !mine) return el("div", { class: cls }, [addFormButton()]);
     return el("div", { class: cls }, [
       menuButton(),
       menuOpen ? menu() : null,
     ]);
+  }
+
+  function addFormButton() {
+    return el("button", {
+      type: "button",
+      class: "songForm-menu-btn songForm-add-form",
+      attrs: { "data-focus": "menu" },
+      on: { click: startEdit },
+    }, [icon("fa-plus"), ` ${tl("form_add_form", "Song form")}`]);
   }
 
   // ↑ / ↓ (and Home / End) walk the menu, Escape or Tab closes it.
@@ -503,8 +515,11 @@ export function createSongForm(ctx) {
       },
       on: { keydown: (e) => gripKey(e, i) },
     }, [icon("fa-grip-vertical")]);
-    // A part typed into an earlier round is offered in every round.
-    const adds = partChoices(songText, [...band, ...draft]).map((name) => addButton(i, name));
+    // A part typed into an earlier round is offered in every round; a tune
+    // whose music marks no parts gets A and B, the letters forms are written in.
+    let names = partChoices(songText, [...band, ...draft]);
+    if (names.length === 0) names = ["A", "B"];
+    const adds = names.map((name) => addButton(i, name));
     if (!round.parts.includes(MORE)) adds.push(addButton(i, MORE));
     let cls = "songForm-card";
     if (!sameRound(round, band[i])) cls += " is-changed";
@@ -773,8 +788,9 @@ export function createSongForm(ctx) {
     if (start.length === 0) start = addRound([], choices);
     textOpen = false;
     active = 0;
-    // The card, not its text field: on a phone a field would pop the keyboard up.
-    edit(start, "card-0");
+    // The card, not its text field (on a phone a field would pop the keyboard
+    // up), unless there's nothing yet: then the parts field, to type in.
+    edit(start, start[0].parts.length === 0 ? "type-0" : "card-0");
   }
 
   function cancel() {
