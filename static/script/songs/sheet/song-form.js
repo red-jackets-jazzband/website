@@ -486,6 +486,16 @@ export function createSongForm(ctx) {
     }
   }
 
+  /*
+    A change that adds, removes or moves rounds: what's half typed in a part
+    field goes into its round first, since a redraw puts typed text back by
+    position, and the positions are about to change.
+  */
+  function reshape(change, i, focus) {
+    commitTyped();
+    edit(change(draft, i), focus);
+  }
+
   // Parts still sitting typed in a field count too, once the form is saved or shown as text.
   function commitTyped() {
     qsa(TYPE_FIELD).forEach((input) => {
@@ -541,8 +551,8 @@ export function createSongForm(ctx) {
       ]),
       textField(round, i, "lead"),
       el("div", { class: "songForm-card-actions" }, [
-        iconButton(ICON_BTN, "fa-copy", tl("form_duplicate", "Duplicate round {n}", { n }), () => edit(duplicateRound(draft, i), `grip-${i + 1}`), `dup-${i}`),
-        iconButton(`${ICON_BTN} songForm-icon-btn--danger`, "fa-trash-can", tl("form_delete", "Delete round {n}", { n }), () => edit(deleteRound(draft, i), afterDelete(i)), `del-${i}`),
+        iconButton(ICON_BTN, "fa-copy", tl("form_duplicate", "Duplicate round {n}", { n }), () => reshape(duplicateRound, i, `grip-${i + 1}`), `dup-${i}`),
+        iconButton(`${ICON_BTN} songForm-icon-btn--danger`, "fa-trash-can", tl("form_delete", "Delete round {n}", { n }), () => reshape(deleteRound, i, afterDelete(i)), `del-${i}`),
       ]),
       el("div", { class: "songForm-card-tools" }, [
         el("span", { class: "songForm-parts-adds" }, adds),
@@ -579,7 +589,7 @@ export function createSongForm(ctx) {
   function gripKey(e, i) {
     if (e.key === "Delete" || e.key === "Backspace") {
       e.preventDefault();
-      edit(deleteRound(draft, i), afterDelete(i));
+      reshape(deleteRound, i, afterDelete(i));
       return;
     }
     if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
@@ -596,7 +606,7 @@ export function createSongForm(ctx) {
     const dash = key.indexOf("-");
     const rest = key.slice(dash + 1);
     const after = rest.indexOf("-");
-    edit(moveRound(draft, i, to), `${key.slice(0, dash)}-${to}${after < 0 ? "" : rest.slice(after)}`);
+    reshape((rounds) => moveRound(rounds, i, to), i, `${key.slice(0, dash)}-${to}${after < 0 ? "" : rest.slice(after)}`);
   }
 
   /*
@@ -820,7 +830,7 @@ export function createSongForm(ctx) {
 
   function dropped(source, target) {
     if (source.kind === "round") {
-      edit(moveRound(draft, source.round, target.round), `card-${target.round}`);
+      reshape((rounds) => moveRound(rounds, source.round, target.round), source.round, `card-${target.round}`);
     } else {
       edit(movePart(draft, source, target.round, target.part), `card-${target.round}`);
     }

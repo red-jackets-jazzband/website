@@ -137,6 +137,10 @@ test("typed parts: a form a reader says, names, ... and a count", () => {
   assert.deepEqual(parseTypedParts("Intro, Head …"), { parts: ["Intro", "Head", MORE], repeat: null });
   assert.deepEqual(parseTypedParts("Bad 1x"), { parts: ["Bad"], repeat: "" });
   assert.deepEqual(parseTypedParts("A|B"), { parts: ["A", "B"], repeat: null });
+  // Tabs and no-break spaces separate too; a trailing ... or … is its own part.
+  assert.deepEqual(parseTypedParts("A\tB\u00a0C"), { parts: ["A", "B", "C"], repeat: null });
+  assert.deepEqual(parseTypedParts("Solos... aab…"), { parts: ["Solos", MORE, "A", "A", "B", MORE], repeat: null });
+  assert.deepEqual(parseTypedParts("Riff...out"), { parts: ["Riff...out"], repeat: null });
 });
 
 test("typed parts go into a round, before its ..., and a count sets its repeat", () => {

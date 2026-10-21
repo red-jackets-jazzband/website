@@ -145,14 +145,19 @@ function typedToken(token, typed) {
   const count = COUNT.exec(token);
   if (count) {
     typed.repeat = Number(count[1]) > 1 ? `${Number(count[1])}x` : "";
-  } else if (token === MORE || token === "…") {
-    typed.parts.push(MORE);
-  } else if (LETTERS.test(token)) {
-    typed.parts.push(...token.toUpperCase().split(""));
   } else {
-    typed.parts.push(token);
+    // "A..." is A, then as long as it takes; "..." inside a name stays put.
+    let name = token;
+    if (name.endsWith(MORE)) name = name.slice(0, -MORE.length);
+    else if (name.endsWith("…")) name = name.slice(0, -1);
+    if (LETTERS.test(name)) typed.parts.push(...name.toUpperCase().split(""));
+    else if (name) typed.parts.push(name);
+    if (name !== token) typed.parts.push(MORE);
   }
 }
+
+// What separates typed parts: any white space (a tab, a no-break space), a comma or a |.
+const SEPARATORS = /[\s|,]+/;
 
 /*
   Parts typed into a round's part field, for a form whose parts the music
@@ -162,8 +167,7 @@ function typedToken(token, typed) {
 */
 export function parseTypedParts(text) {
   const typed = { parts: [], repeat: null };
-  (text || "").split("|").join(" ").split(",").join(" ").split(" ")
-    .map((token) => token.trim())
+  (text || "").split(SEPARATORS)
     .filter(Boolean)
     .forEach((token) => typedToken(token, typed));
   return typed;
