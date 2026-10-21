@@ -62,200 +62,111 @@
 \begin{minipage}{0.86\textwidth}
 \small
 \textbf{Abstract.}
-\emph{Background.} Jazz bands agree their routines in rehearsal: the order of
-choruses, who solos, where the band drops out or stops. Existing music encodings
-represent the order of sections but not these roles. Corpora of structural
-annotations record roles only after the fact, for retrieval research.
-\emph{Aim.} I design one shared visual notation of the routine that every member
-of the band can read at a glance while performing: drummers, the rest of the rhythm
-section and the front line, including players who may not read the lead sheet, such
-as drummers and vocalists.
-\emph{Design.} The notation is a strip of arrows, one per round, drawn under a tune's
-chord grid. Each arrow holds the round's parts, repeat count and lead. Three kinds of
-information get a fixed place and a distinct mark: drop-outs, drawn as minus lines
-paired with plus lines for joins; solo order, drawn as a numbered sequence with
-lengths; and feel, split into groove, texture and dynamics. Groove is drawn only where
-it changes; texture and dynamics apply to one round. The design draws on research on
-preattentive visual features.
-\emph{Status.} The notation is a proposal. It has not been tested with players, and no
-band's routines have been coded against it. Whether it is read faster than written
-remarks is open; I specify a within-subjects study to test it and outline the coding
-of existing routines as further research.
+Jazz bands agree their routines in rehearsal: the order of choruses, who solos,
+where the band drops out or stops. Existing music encodings represent the order of
+sections but not these roles, and corpora of structural annotations record roles only
+after the fact. I propose one visual notation of the routine that every member of the
+band can read at a glance while performing, including players who may not read the
+lead sheet, such as drummers and vocalists. It is a strip of arrows, one per round,
+drawn under a tune's chord grid. Drop-outs, solo order and feel (groove, texture and
+dynamics) each get a fixed place and a distinct mark, following research on
+preattentive visual features. The notation is a proposal: it has not been tested with
+players. I specify a within-subjects study to test it, and outline the coding of
+existing routines as further research.
 
 \smallskip
 \textbf{Keywords:} jazz, performance routine, head arrangement, music notation,
 information visualisation, rehearsal
 \end{minipage}
 \end{center}
-\vspace{2ex}
+\vspace{1ex}
 \end{@twocolumnfalse}
 ]
 
 \section{Introduction}
 
 A jazz performance has two layers of structure. The \emph{form} belongs to the
-composition: a 12-bar blues, a 32-bar AABA song, a multi-strain march. The
-\emph{routine} belongs to a particular band's performance: the intro, the number of
-choruses, who sings, who solos and for how long, where the band stops, how the tune
-ends. \citet[chs.~11--12]{berliner1994} describes how such arrangements are decided
-in rehearsal and filled in through shared conventions.
+composition: a 12-bar blues, a 32-bar AABA song. The \emph{routine} belongs to a
+particular band's performance: the intro, the number of choruses, who sings, who
+solos and for how long, where the band stops, how the tune ends.
+\citet[chs.~11--12]{berliner1994} describes how such arrangements are decided in
+rehearsal and filled in through shared conventions.
 
-An unwritten routine depends on every player remembering it. That assumption is
-weakest where rehearsal is most needed: with a new member, a stand-in, or a tune not
-played for months. A written routine helps only if it can be read in the moment
-between two phrases, while the eyes are also needed for the music. Sentences of
-remarks under a lead sheet are a poor fit for that task, because each must be read
-word by word.
+An unwritten routine depends on every player remembering it, which is weakest with a
+new member, a stand-in, or a tune not played for months. A written routine helps only
+if it can be read between two phrases, while the eyes are also needed for the music.
+Sentences of remarks under a lead sheet are a poor fit, because each must be read
+word by word. The routine also matters most to the players least served by the lead
+sheet. A drummer has no melody or chords to follow, and a vocalist may sing from the
+lyrics without reading the chart, yet both need the routine.
 
-The routine also matters most to the players least served by the lead sheet. A
-drummer has no melody or chords to follow, and a vocalist
-may sing from the lyrics without reading the chart. Yet both need the routine: the drummer to
-set up breaks, stop time and the change of groove, the vocalist to know which
-choruses are theirs. A lead sheet gives them nothing to look at. A routine strip
-needs no ability to read notes or chord symbols, so it can be the one written part
-they actually use. Drummers already write their own form charts for this reason
-(Section~\ref{sec:drumcharts}).
-
-The aim is therefore a \emph{universal} notation of the routine: one strip that the
-drummer, the rest of the rhythm section (bass or sousaphone, banjo, piano) and the
-front line (trumpet, clarinet, trombone, voice) all read, instead of a lead sheet
-for some and a private form chart for others. Each role asks different questions of
-the routine, but the answers should sit on the same page, in the same places, for
-everyone.
-
-I address this with a visual notation of the routine: a strip of arrows, one per
-round, drawn under each tune's chord grid. It was designed for the songbook of the
-Red Jackets Jazzband, a traditional-jazz band. The contributions are:
-\begin{enumerate}
-  \item a short review of how routines are represented in music encodings and
-        structure-annotation corpora, and of the perceptual basis for reading a
-        display at a glance (Section~\ref{sec:related});
-  \item the design of the strip, with fixed positions, distinct marks and explicit
-        scopes for drop-outs, solo order and a three-axis model of feel
-        (Section~\ref{sec:design});
-  \item an analysis of where each role in the band finds its answers on the strip
-        (Section~\ref{sec:roles}); and
-  \item a protocol for testing whether the strip is read faster than written remarks
-        (Section~\ref{sec:eval}).
-\end{enumerate}
-The paper concerns the visual form only. How a routine is entered or stored is out
-of scope, and the strip has not yet been evaluated.
+The aim is therefore a \emph{universal} notation: one strip that the drummer, the rest
+of the rhythm section and the front line all read, instead of a lead sheet for some
+and a private form chart for others. I propose a strip of arrows, one per round,
+designed for the songbook of the Red Jackets Jazzband, a traditional-jazz band. The
+paper covers the visual form only; how a routine is entered or stored is out of scope.
 
 \section{Related work}\label{sec:related}
 
-\subsection{Notation and encoding standards}
+\textbf{Encodings.} Conventional notation marks the order of sections with rehearsal
+letters, repeats, endings and \emph{D.S.}, coda and \emph{Fine} jumps. Digital
+encodings carry the same information: the ABC standard lets a tune header list the
+play order of lettered parts with repeat counts \citep{walshaw2011}; MusicXML~4.0
+encodes repeats, endings and jumps, and its \texttt{time-only} type restricts an
+element to particular passes through a repeat \citep{musicxml2021}; MEI's
+\texttt{<expansion>} element lists the performed order of sections
+\citep{mei}. All represent \emph{order}. None has a concept of a soloist, an
+instrument sitting out, or a change of feel.
 
-Conventional notation marks the order of sections inside the music, with rehearsal
-letters, repeat signs, first and second endings, and \emph{D.S.}, coda and
-\emph{Fine} jumps. These symbols say where to go next. They do not say who plays.
+\textbf{Annotation corpora.} SALAMI \citep{smith2011} holds over 2,400 structure
+annotations of nearly 1,400 recordings, with similarity, function and instrumentation
+in separate layers. JAAH \citep{eremenko2018} annotates meter, structure and chords
+for 113 jazz tracks. JSD \citep{balke2022} segments 340 jazz recordings into over
+3,000 segments, each listing its active instruments and marking the soloist and the
+accompaniment. The Weimar Jazz Database \citep{pfleiderer2017} annotates transcribed
+solos with chorus and form structure and per-solo metadata, including a rhythm feel.
+These corpora show that roles and feel can be annotated systematically, and JSD's
+soloist--accompaniment pairing and the per-solo rhythm feel correspond to two of the
+marks proposed here. But they are \emph{descriptive}: made after the fact,
+time-stamped to a recording, and built for computational analysis. A routine is
+\emph{prescriptive} and must be read during performance.
 
-Digital encodings carry the same information. The ABC standard lets a tune header
-list the play order of lettered parts, with repeat counts and grouping
-\citep{walshaw2011}. MusicXML~4.0 encodes repeats, endings and jumps, and its
-\texttt{time-only} attribute restricts an element to particular passes through a
-repeated section \citep{musicxml2021}. MEI's \texttt{<expansion>} element gives the
-performed order of sections as an ordered list of section and ending identifiers
-\citep{mei}. All three represent
-\emph{order}. None has a concept of a soloist, an instrument sitting out, or a
-change of feel.
+\textbf{Practitioners' form charts.}\label{sec:drumcharts} Drummers have their own,
+informal answer: a one-page chart of the song's whole form with only a few bars of
+drum notation, outlining the sections with their length in bars (``Verse -- 8'') plus
+short cues such as a groove, a hit or an energy level
+\citep[e.g.,][]{ellis2025,bergamini2021,ficalora}. Ficalora's Drum Chart Builder app
+lets the drummer map song form, grooves and hits \citep{ficalorabuilder}, and the
+trade press offers similar guidance \citep{lentz2019}. Beyond drums, the Nashville
+number system gives the whole band a compact, section-by-section chart for players who
+do not read notation \citep{williams2012}. A blog post by \citet{hein2012} draws songs
+as colour-coded blocks along a bar timeline, a visual precedent for the strip's part
+boxes that records only section order, length and type. A web template by
+\citet{scott} is a contrast: a planning aid for the writer that says nothing about who
+plays in performance. Drum charts are personal and count bars; the strip is shared by
+the whole band and leaves bar counts to the tune's known form.
 
-\subsection{Structure-annotation corpora}
-
-Music information retrieval has produced corpora that annotate the structure of
-recordings. SALAMI \citep{smith2011} holds over 2,400 annotations of nearly 1,400
-recordings, with musical similarity, function and instrumentation in separate
-layers. JAAH \citep{eremenko2018} annotates meter, structure and chords for 113 jazz
-tracks. JSD \citep{balke2022} segments 340 jazz recordings into over 3,000 segments;
-each segment lists its active instruments, marking the soloist and the
-accompanying instruments. The Weimar Jazz Database \citep{pfleiderer2017} annotates
-transcribed solos with chorus and form structure and with per-solo metadata,
-including a rhythm feel.
-
-These corpora show that roles and feel can be annotated systematically. JSD's
-pairing of soloist and accompaniment and the database's per-solo rhythm feel
-correspond directly to two of the marks proposed here. But the annotations are
-\emph{descriptive}: made after the fact, time-stamped to a recording, and designed
-for computational analysis. A routine is \emph{prescriptive} and must be read during
-performance.
-
-\subsection{Practitioners' form charts}\label{sec:drumcharts}
-
-Drummers have their own, informal answer to the same problem: a one-page chart of
-the song's whole form with only a few bars of drum notation. It outlines the sections
-with their length in bars (``Verse -- 8'') plus short cues such as a groove, a hit or
-an energy level \citep[e.g.,][]{ellis2025,bergamini2021,ficalora}. Ficalora's Drum Chart Builder
-app likewise lets the drummer map song form, grooves and hits \citep{ficalorabuilder},
-and the trade press offers similar guidance \citep{lentz2019}.
-
-Beyond drums, the Nashville number system gives the whole band a compact,
-section-by-section chart for players who do not read notation \citep{williams2012}.
-A blog post by \citet{hein2012} draws songs as colour-coded blocks along a bar
-timeline, a visual precedent for the strip's part boxes that records only section
-order, length and type. A web template by \citet{scott} is a contrast: a planning aid
-for the writer that says nothing about who plays in performance.
-
-These charts confirm the need this paper starts from: musicians already reduce a song
-to its form plus a few cues. The strip differs in being shared by the whole band, where
-drum charts are personal, and in leaving bar counts to the tune's known form.
-
-\subsection{Reading a display at a glance}
-
-Feature-integration theory holds that simple visual features are registered early
-and in parallel across the visual field, while combinations of features require
-serial, focused attention \citep{treisman1980}. \citet{healey2012} survey how
-visualisation design uses such preattentive features to make a target found without
-search. For a routine, this argues for answers marked by a distinct shape in a fixed
-position rather than embedded in prose, which must be read serially.
-
-The reader is also a performer. Eye-movement research on music reading is much less
-developed than research on reading text \citep{madell2008}, and its methods vary
-widely between studies \citep{puurtinen2018}. I am not aware of any study of how
-musicians read arrangement or routine information during performance.
-Table~\ref{tab:gap} summarises what each representation records.
-
-\begin{table*}[t]
-\centering\small
-\caption{What existing representations record about a routine.}\label{tab:gap}
-\begin{tabularx}{\textwidth}{@{}l Y Y Y Y Y@{}}
-\toprule
-Source & Section order & Who plays & Solo order & Feel & Purpose\\
-\midrule
-Conventional notation & in the music & no & no & style or tempo indication & performance\\
-ABC, MusicXML & yes & no & no & no & engraving, exchange\\
-MEI & yes, with variants & no & no & no & scholarly editions\\
-SALAMI & yes & instrumentation layer & no & no & retrieval research\\
-JSD & yes & soloist and accompaniment & implicit in segment order & no & retrieval research\\
-Weimar Jazz Database & per solo & soloist & per solo & rhythm feel per solo & jazz research\\
-Drummers' form charts & outline with bar counts & short per-section cues & no & groove and energy cues & one drummer's own reading\\
-\midrule
-This paper & one arrow per round & lead, joins, drop-outs & numbered sequence & groove, texture, dynamics & reading during performance\\
-\bottomrule
-\end{tabularx}
-\end{table*}
+\textbf{Reading at a glance.} Feature-integration theory holds that simple visual
+features are registered early and in parallel across the visual field, while
+combinations of features require serial, focused attention \citep{treisman1980}.
+\citet{healey2012} survey how visualisation design uses such preattentive features to
+make a target found without search. For a routine, this argues for answers marked by a
+distinct shape in a fixed position rather than embedded in prose. Eye-movement
+research on music reading is much less developed than research on reading text
+\citep{madell2008}, and its methods vary widely \citep{puurtinen2018}. I am not aware
+of any study of how musicians read routine information during performance.
 
 \section{Design}\label{sec:design}
 
-\subsection{Requirements}
-
 The target task is a player answering \emph{``what do I do this round?''} in one
-glance, between phrases. Five requirements follow.
-\begin{description}[leftmargin=0pt,font=\normalfont\bfseries]
-  \item[R1 Fixed place, distinct mark.] Each kind of answer occupies the same
-        position in every round and has a mark unlike the others, so it can be found
-        without reading \citep{treisman1980,healey2012}.
-  \item[R2 One place per fact.] A fact appears in exactly one position, so the
-        player never has to check two.
-  \item[R3 Familiar marks.] Reuse signs musicians already read (plus and minus,
-        numbered order, repeat counts, the widening hairpin of a crescendo) rather
-        than invented icons.
-  \item[R4 Quiet by default.] A round with nothing unusual adds no marks, so unusual
-        rounds stand out.
-  \item[R5 Greyscale.] Meaning is carried by position, typography and signs, not
-        colour, so a printed copy loses nothing.
-  \item[R6 Role-neutral.] Nothing requires reading pitches, chord symbols or
-        instrument-specific notation, so every player, whatever their instrument or
-        reading habits, can use the same strip.
-\end{description}
+glance. Six requirements follow: \textbf{R1} each kind of answer has a fixed position
+and a mark unlike the others \citep{treisman1980,healey2012}; \textbf{R2} each fact
+appears in one position only; \textbf{R3} marks are ones musicians already read (plus
+and minus, numbered order, repeat counts, the crescendo hairpin); \textbf{R4} a round
+with nothing unusual adds no marks, so unusual rounds stand out; \textbf{R5} meaning
+is carried by position, typography and signs, not colour, so a printed copy loses
+nothing; \textbf{R6} nothing requires reading pitches, chord symbols or
+instrument-specific notation.
 
 \subsection{The strip}
 
@@ -264,49 +175,34 @@ The strip runs left to right under the chord grid, one chevron-shaped arrow per 
 played (A, B, Intro) and a repeat count (``4x''); an ellipsis box marks a round that
 lasts until a cue. Rounds playing the same part share a shade of grey. Under the
 arrow come the \emph{lead} (who carries the round), underlined; one
-``+\,instrument'' line for each instrument that joins; then any other remarks on a
-single line. The marks described next add drop-outs, solo order and feel, and leave
-everything else in the remarks line, the last place the eye reaches.
-
-\subsection{Marks for who and how}
-
-The marks assign three questions to three regions of the arrow
-(Table~\ref{tab:regions}). This separation settles borderline cases. ``No rhythm''
-answers \emph{who}, so it is a drop-out, not a feel. A drum solo over stop-time hits
-answers both questions: the drummer appears in the solo order and \sc{stop time} at
-the foot.
-
-\begin{table}[t]
-\centering\small
-\caption{Three questions, three regions of the arrow.}\label{tab:regions}
-\begin{tabularx}{\columnwidth}{@{}>{\raggedright\arraybackslash}p{2.1cm} >{\raggedright\arraybackslash}p{1.9cm} Y@{}}
-\toprule
-Question & Region & Marks\\
-\midrule
-\textbf{Who} plays, and who does not & under the arrow & lead; + joins; $-$ drop-outs; numbered solo order\\
-\textbf{How} the beat goes & in, above and below the arrow & arrow height for dynamics; groove label above; texture in small capitals at the foot\\
-\textbf{What} else is played & remarks line & free text\\
-\bottomrule
-\end{tabularx}
-\end{table}
+``+\,instrument'' line for each instrument that joins; and any other remarks on a
+single line. Three further questions get their own regions: \textbf{who} plays and who
+does not (lines under the arrow), \textbf{how} the beat goes (in, above and below the
+arrow), and everything else (the remarks line). ``No rhythm'' answers \emph{who}, so it
+is a drop-out, not a feel.
 
 \paragraph{Drop-outs.} A ``$-$\,instrument'' line sits beside the ``+\,instrument''
 lines, a matched pair of signs (R3). Strikethrough was rejected because it reads as a
-correction. Joins and drop-outs apply to their own round only and are not
-cumulative, so any arrow can be read without tracing the rounds before it. This
-mirrors JSD's per-segment pairing of soloist and accompaniment \citep{balke2022},
-expressed as a difference from the full band.
+correction. Joins and drop-outs apply to their own round only, so any arrow can be
+read without tracing the rounds before it. This mirrors JSD's per-segment pairing of
+soloist and accompaniment \citep{balke2022}, expressed as a difference from the full
+band.
 
 \paragraph{Solo order.} A solo round shows a numbered sequence under its lead, for
-example \textsf{1\,sax/tbn $\rightarrow$ 2\,tpt\,$\times$2 $\rightarrow$ 3\,tpt}.
-One solo is one pass through the round's parts: the jazz chorus, which the Weimar
-Jazz Database also annotates within each solo \citep{pfleiderer2017}. A slash marks
-alternates (whichever of the two is present), and ``each $\times$1'' fixes the length
-but not the players. The lengths sum to the repeat count in the arrow, so the plan
-can be checked at a glance.
+example \textsf{1\,sax/tbn $\rightarrow$ 2\,tpt\,$\times$2 $\rightarrow$ 3\,tpt}. One
+solo is one pass through the round's parts, the jazz chorus. A slash marks alternates
+(whichever is present), and ``each $\times$1'' fixes the length but not the players.
+The lengths sum to the repeat count in the arrow, so the plan can be checked at a
+glance.
 
-\paragraph{Feel.} In band usage, ``feel'' covers three independent things. Each gets
-its own region and scope (Table~\ref{tab:feel}).
+\paragraph{Feel.} In band usage ``feel'' covers three independent things, each with
+its own region and scope (Table~\ref{tab:feel}). A groove usually holds for a whole
+tune and changes at most once, so it is drawn only at a change; drawing it on every
+arrow would violate R4. Stop time, breaks and ``softly behind the vocals'' end with
+their round. Half feel and double feel are relative to the groove in force, so they
+count as texture. A texture or dynamic limited to part of a round names that part
+(``\sc{breaks} in the 2nd B''). Labels come from a short fixed list per axis, which
+can be translated on the page; a label outside the list is shown as written.
 
 \begin{table*}[t]
 \centering\small
@@ -322,99 +218,14 @@ Axis & Region and mark & Scope & Labels\\
 \end{tabularx}
 \end{table*}
 
-The scopes differ on purpose. A groove usually holds for a whole tune and changes at
-most at one point. Drawing it on every arrow would violate R4, and the eye can scan
-the line above the strip for changes alone. Stop time, breaks and ``softly behind the
-vocals'' are events that end with their round. Half feel and double feel are
-relative to the groove in force, so they are treated as texture.
-
 \paragraph{Dynamics as height.} Dynamics are drawn as the height of the arrow rather
 than as letters such as \emph{p} and \emph{f}: a soft round is a lower arrow and a
 loud round a taller one; a crescendo widens from left to right, the shape of the
-hairpin players already read (R3); and normal level is the default height and adds
-nothing (R4). Arrows are centred on one line, so the number and part boxes stay in
-the same place whatever the height (R1). More sound maps to more ink, so there is no
-symbol to decode, and length is among the more accurately judged graphical encodings
-\citep{cleveland1984}. Only three levels are used (soft, normal, loud), so each
-differs clearly from its neighbours without a scale (Figure~\ref{fig:scope}).
-
-\begin{figure*}[t]
-\centering
-\begin{tikzpicture}[x=1cm,y=1cm,font=\sffamily\small]
-  % axis labels
-  \node[anchor=west,font=\sffamily\small\bfseries] at (-0.2,0.95) {Groove};
-  \node[anchor=west,font=\sffamily\scriptsize,text=quiet] at (-0.2,0.62) {until changed};
-  \node[anchor=west,font=\sffamily\small\bfseries] at (-0.2,0.12) {Dynamics};
-  \node[anchor=west,font=\sffamily\scriptsize,text=quiet] at (-0.2,-0.2) {height, one round};
-  \node[anchor=west,font=\sffamily\small\bfseries] at (-0.2,-0.95) {Texture};
-  \node[anchor=west,font=\sffamily\scriptsize,text=quiet] at (-0.2,-1.27) {one round};
-  % six rounds, width 2.2, step 2.4, start 2.6
-  \chev{2.6}{2.2}{0.72}{0.72}{tint}\rnum{2.85}{1}\partbox{3.3}{0.4}{A}
-  \chev{5.0}{2.2}{0.52}{0.52}{tint}\rnum{5.25}{2}\partbox{5.7}{0.4}{A}
-  \chev{7.4}{2.2}{0.72}{0.72}{white}\rnum{7.65}{3}\partbox{8.1}{0.4}{B}
-  \chev{9.8}{2.2}{0.72}{0.72}{tint}\rnum{10.05}{4}\partbox{10.5}{0.4}{A}
-  \chev{12.2}{2.2}{0.52}{0.96}{white}\rnum{12.45}{5}\partbox{12.9}{0.4}{B}
-  \chev{14.6}{2.2}{0.96}{0.96}{tint}\rnum{14.85}{6}\partbox{15.3}{0.4}{A}
-  % groove changes
-  \draw[edge,line width=0.6pt] (10.02,0.36) -- (10.02,0.78);
-  \node[anchor=south west,font=\sffamily\small\bfseries,inner sep=1pt] at (9.9,0.78) {\qnote\ four};
-  \draw[quiet,dashed,line width=0.4pt] (11.3,0.95) -- (14.55,0.95);
-  \draw[edge,line width=0.6pt] (14.82,0.48) -- (14.82,0.78);
-  \node[anchor=south west,font=\sffamily\small\bfseries,inner sep=1pt] at (14.7,0.78) {\qnote\ two-beat};
-  % explanatory labels (not part of the notation)
-  \node[font=\sffamily\scriptsize,text=quiet] at (6.1,0.5) {soft};
-  \node[font=\sffamily\scriptsize,text=quiet] at (13.3,0.7) {build};
-  % texture
-  \draw[black!15] (2.6,-0.6) -- (16.8,-0.6);
-  \node[anchor=west] at (7.6,-0.95) {\sc{stop time}};
-  \node[anchor=west] at (12.4,-0.95) {\sc{breaks}};
-  \node[anchor=west,font=\sffamily\scriptsize,text=quiet] at (12.4,-1.3) {in the 2nd B};
-\end{tikzpicture}
-\caption{Scope rules for feel in a six-round routine. The groove is drawn only at
-rounds 4 and 6, where it changes, and holds in between (dashed line, an annotation).
-Dynamics, shown as arrow height, apply to their own round only: soft in round~2, a
-build in round~5, loud in round~6. So does texture (rounds 3 and 5). Round~1 has no
-marks, so it is played in the groove in force, with full texture, at normal
-level.}\label{fig:scope}
-\end{figure*}
-
-A texture or dynamic limited to part of a round names that part (``\sc{breaks} in the
-2nd B''), using the labels of the part boxes. Labels come from a short fixed list per
-axis, which can be translated on the page. A label outside the list is shown as
-written rather than dropped.
-
-\subsection{Layout}
-
-Figure~\ref{fig:extended} shows the strip for four rounds of an invented routine. Its vertical order follows the
-order of a player's questions: part and level, then lead, then who joins, drops out
-or solos, then texture, then remarks.
-
-\subsection{One strip for every role}\label{sec:roles}
-
-The strip is meant to be universal (R6): the same drawing serves every player. Each
-role scans it for different questions, but every answer is in one of the fixed
-regions of Table~\ref{tab:regions}, so no role needs its own chart
-(Table~\ref{tab:roles}).
-
-\begin{table}[t]
-\centering\small
-\caption{What each role asks of the routine, and where it finds the answer.}\label{tab:roles}
-\begin{tabularx}{\columnwidth}{@{}>{\raggedright\arraybackslash}p{1.65cm} Y >{\raggedright\arraybackslash}p{2.35cm}@{}}
-\toprule
-Role & Typical questions & Where on the strip\\
-\midrule
-Drummer & Where are we in the form? Does the beat change? Stop time or breaks? How loud? Who solos next? & part boxes, groove label, texture line, arrow height, solo order\\
-Rhythm section (bass, banjo, piano) & Two-beat or four? Stop time, vamp or pedal? Do I sit out? How loud? & groove label, texture line, $-$ lines, arrow height\\
-Front line (horns) & Do I lead, play or rest? When is my solo? Who joins? How loud? & lead, $+$/$-$ lines, solo order, arrow height\\
-Vocalist & Which rounds are mine? Who plays behind me? & lead, $+$ lines\\
-\bottomrule
-\end{tabularx}
-\end{table}
-
-No region belongs to one role: the drummer and the bass player read the same groove
-label, and the horns and the vocalist read the same lead line. One gap remains for
-the drummer: the strip gives no bar counts, which drummers' own charts do
-(Section~\ref{sec:drumcharts}).
+hairpin players already read (R3); normal level adds nothing (R4). Arrows are centred
+on one line, so the number and part boxes stay in the same place whatever the height
+(R1). More sound maps to more ink, and length is among the more accurately judged
+graphical encodings \citep{cleveland1984}. Only three levels are used, so each differs
+clearly from its neighbours without a scale.
 
 \begin{figure*}[t]
 \centering
@@ -463,104 +274,90 @@ Callouts (annotations, not part of the notation):
 \cb{7}~texture in small capitals, one round only.}\label{fig:extended}
 \end{figure*}
 
+\subsection{One strip for every role}\label{sec:roles}
+
+The strip is universal (R6): every answer is in one of the fixed regions, so no role
+needs its own chart (Table~\ref{tab:roles}). No region belongs to one role; the
+drummer and the bass player read the same groove label, and the horns and the
+vocalist the same lead line. One gap remains for the drummer: the strip gives no bar
+counts, which drummers' own charts do.
+
+\begin{table}[t]
+\centering\small
+\caption{What each role asks of the routine, and where it finds the answer.}\label{tab:roles}
+\begin{tabularx}{\columnwidth}{@{}>{\raggedright\arraybackslash}p{1.65cm} Y >{\raggedright\arraybackslash}p{2.35cm}@{}}
+\toprule
+Role & Typical questions & Where on the strip\\
+\midrule
+Drummer & Where are we in the form? Does the beat change? Stop time or breaks? How loud? Who solos next? & part boxes, groove label, texture line, arrow height, solo order\\
+Rhythm section (bass, banjo, piano) & Two-beat or four? Stop time, vamp or pedal? Do I sit out? How loud? & groove label, texture line, $-$ lines, arrow height\\
+Front line (horns) & Do I lead, play or rest? When is my solo? Who joins? How loud? & lead, $+$/$-$ lines, solo order, arrow height\\
+Vocalist & Which rounds are mine? Who plays behind me? & lead, $+$ lines\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
 \section{Proposed evaluation}\label{sec:eval}
 
 The central claim, that the strip is read faster and more accurately than written
 remarks, needs an experiment. I specify one here; it has not been run.
 
 \paragraph{Hypotheses.}
-\begin{description}[leftmargin=0pt,font=\normalfont\bfseries]
-  \item[H1.] Questions about drop-outs, solo order and feel are answered faster with
-        the strip than with the same information as written remarks.
-  \item[H2.] Accuracy on those questions is higher with the strip.
-  \item[H3.] Questions about part, lead and joins are answered no slower with the
-        strip, so the added marks cost nothing for those tasks.
-  \item[H4.] The gain from H1 and H2 holds for every role (drums, rest of the rhythm
-        section, front line, vocals), and is at least as large for players who do
-        not read the lead sheet as for those who do.
-\end{description}
+\textbf{H1:} questions about drop-outs, solo order and feel are answered faster with
+the strip than with the same information as written remarks. \textbf{H2:} accuracy on
+those questions is higher. \textbf{H3:} questions about part, lead and joins are
+answered no slower. \textbf{H4:} the gain holds for every role, and is at least as
+large for players who do not read the lead sheet as for those who do.
 
-\paragraph{Design.} A within-subjects design with two conditions: (a) remarks as
-plain text below the music; (b) the strip (Figure~\ref{fig:extended}). Participants
-are members and stand-ins of the band, expected $n = 8$--$12$. Each is classed in
-advance by role and by whether they read the lead sheet while playing, to test H4; the
-questions asked are drawn from Table~\ref{tab:roles}. Routines are counterbalanced
-across conditions, so that each routine appears in both conditions across
-participants but only once per participant.
-
-\paragraph{Task.} Each trial shows a routine briefly (about 2\,s, to be set in a
-pilot) and then asks one question. Examples: ``In round 5, do you play?'', ``Who
-solos second?'', ``Is round 3 in stop time?'', ``Where does the beat change?'',
-``Which round is loudest?''
-
-\paragraph{Measures and analysis.} Response time and accuracy are recorded per trial.
-They are analysed with mixed-effects models with crossed random effects for
-participants and routines \citep{baayen2008}: linear for log response time, logistic
-for accuracy.
-
-\paragraph{Field measure.} Over a few rehearsals before and after adoption, count
-interruptions caused by questions about the routine.
-
-\paragraph{Extension.} Eye tracking during performance would show where players look
-for routine information, but methods in music-reading eye tracking vary widely, and
-stimulus, tempo and error handling must be fixed in advance \citep{puurtinen2018}.
-
-With so few participants, only large effects are detectable. The study is
-exploratory.
+\paragraph{Design and task.} A within-subjects design with two conditions: (a) remarks
+as plain text below the music; (b) the strip. Participants are members and stand-ins
+of the band, expected $n = 8$--$12$, classed in advance by role and by whether they
+read the lead sheet while playing. Routines are counterbalanced across conditions.
+Each trial shows a routine briefly (about 2\,s, to be set in a pilot) and asks one
+question drawn from Table~\ref{tab:roles}, for example ``In round 5, do you play?'' or
+``Which round is loudest?'' Response time and accuracy are analysed with mixed-effects
+models with crossed random effects for participants and routines \citep{baayen2008}.
+Over a few rehearsals before and after adoption, interruptions caused by questions
+about the routine can also be counted. Eye tracking during performance would show where
+players look, but its methods vary widely and must be fixed in advance
+\citep{puurtinen2018}. With so few participants, only large effects are detectable.
 
 \section{Discussion}
 
-\paragraph{Prescriptive versus descriptive structure.} The corpora in
-Section~\ref{sec:related} describe what a recording did, at the resolution of
-seconds. A routine states what a band intends, at the resolution of a round. The
-strip therefore shows no times. Timing within a round is a short qualifier (``from
-the 2nd line''), not a position.
+\paragraph{Prescriptive versus descriptive.} The corpora in Section~\ref{sec:related}
+describe what a recording did, at the resolution of seconds. A routine states what a
+band intends, at the resolution of a round, so the strip shows no times; timing within
+a round is a short qualifier (``from the 2nd line'').
 
-\paragraph{Scope of the scope rules.} The distinction between a sticky groove and
-per-round texture and dynamics is the part of the design most likely to transfer to
-other repertoires. The label lists are less likely to. They were chosen for a
-traditional-jazz repertoire and have not been checked against other bands' usage; a
-bebop or Latin band would need different groove labels.
+\paragraph{Scope.} The distinction between a sticky groove and per-round texture and
+dynamics is the part most likely to transfer to other repertoires. The label lists are
+less likely to: they were chosen for a traditional-jazz repertoire and not checked
+against other bands' usage. The strip shows the plan that cues steer, not who gives
+them; it shows one routine per tune, with alternatives left to remarks; and it gives
+no bar counts.
 
-\paragraph{What is left out.} \emph{Cues:} the strip shows the plan that cues steer,
-not who gives them. \emph{Alternative
-routines:} the strip shows one routine per tune, and alternatives remain remarks. \emph{Within-round positions}
-are not represented. \emph{Bar counts:} drummers' own charts give each section's
-length in bars (Section~\ref{sec:drumcharts}); the strip does not, and relies on the
-band knowing the tune's form.
+\paragraph{Further research.} The notation should be applied to real routines. Coding
+a band's existing routines round by round against the marks would show how often each
+is needed, which remarks cannot be classified without the band's input, and whether
+the label lists suffice. I have not done this; a second coder would be needed to report
+agreement.
 
-\paragraph{Further research.} Beyond the reading study, the notation should be
-applied to real routines. Coding a band's existing routines, round by round, against
-the three groups of marks would show how often each is needed, which remarks cannot be
-classified without the band's input, and whether the label lists suffice. I have not
-done this. A second coder would be needed to report agreement.
-
-\paragraph{Limitations.}
-\begin{itemize}
-  \item The design is untested with players. The readability claim is grounded in
-        perception research but unproven for this display and this task
-        (Section~\ref{sec:eval}).
-  \item The related-work review is selective, not systematic; ``I am not aware of'' in
-        Section~\ref{sec:related} means only that I did not find such a study.
-  \item The claim that drummers and some vocalists do not read the lead sheet is an
-        assumption about band practice, not a finding. H4 tests whether it matters for
-        this notation.
-  \item The label lists reflect one band's repertoire.
-  \item Arrow height could be misread as importance or duration rather than level.
-        The study's dynamics questions test whether it is read as intended.
-\end{itemize}
+\paragraph{Limitations.} The design is untested with players; the readability claim
+rests on perception research. The related-work review is selective, not systematic:
+``not aware of'' means only that I did not find such a study. That drummers and some
+vocalists do not read the lead sheet is an assumption, which H4 tests. Arrow height
+could be misread as importance or duration rather than level.
 
 \section{Conclusion}
 
-Routine information that standard encodings do not represent can be drawn in a
-compact strip: who sits out, as minus lines paired with joins; who solos and for how
-long, as a numbered sequence; and how the band plays, split into groove, texture and
-dynamics, each with its own place and scope. Because none of it needs notes or chord
-symbols, the same strip can serve the drummer, the rest of the rhythm section and the
-front line. The next steps are implementing the strip, running the study in
-Section~\ref{sec:eval}, and coding existing routines against it.
+Routine information that standard encodings do not represent can be drawn in a compact
+strip: who sits out, as minus lines paired with joins; who solos and for how long, as a
+numbered sequence; and how the band plays, split into groove, texture and dynamics,
+each with its own place and scope. Because none of it needs notes or chord symbols, the
+same strip can serve every role. The next steps are implementing the strip, running the
+study above, and coding existing routines against it.
 
-\footnotesize
+\scriptsize
 \begin{thebibliography}{99}
 \setlength{\itemsep}{0.3ex}
 
