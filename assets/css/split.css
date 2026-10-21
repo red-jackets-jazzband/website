@@ -781,17 +781,21 @@ body.rj-sheet-active .rj-sheet-empty {
     padding: 0 8px 0 2px;
     color: #000000;
     font-family: "Montserrat", sans-serif;
+    -webkit-clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 50%, calc(100% - 6px) 100%, 0 100%, 6px 50%);
     clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 50%, calc(100% - 6px) 100%, 0 100%, 6px 50%);
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
 }
 .songForm-step:first-child .songForm-arrow {
+    -webkit-clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 50%, calc(100% - 6px) 100%, 0 100%);
     clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 50%, calc(100% - 6px) 100%, 0 100%);
 }
 .songForm-step:last-child .songForm-arrow {
+    -webkit-clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 6px 50%);
     clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 6px 50%);
 }
 .songForm-step:first-child:last-child .songForm-arrow {
+    -webkit-clip-path: none;
     clip-path: none;
 }
 .songForm-num {
@@ -841,9 +845,13 @@ body.rj-sheet-active .rj-sheet-empty {
 /* fitSongForms's fallback for a strip that would shrink past reading: the
    arrows wrap onto more lines at full size. Every arrow gets a notched tail
    and a point, since any of them may now start or end a line. */
+/* Lines spaced by the steps' own margin: flex row-gap is Safari 14.1+. */
 .split-bio ol.songForm--wrap {
     flex-wrap: wrap;
-    row-gap: 6px;
+    margin-bottom: -4px;
+}
+.songForm--wrap .songForm-step {
+    margin-bottom: 6px;
 }
 .songForm--wrap .songForm-step:first-child .songForm-num {
     margin-left: 6px;
@@ -851,6 +859,7 @@ body.rj-sheet-active .rj-sheet-empty {
 .songForm--wrap .songForm-step .songForm-arrow,
 .songForm--wrap .songForm-step:first-child .songForm-arrow,
 .songForm--wrap .songForm-step:last-child .songForm-arrow {
+    -webkit-clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 50%, calc(100% - 6px) 100%, 0 100%, 6px 50%);
     clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 50%, calc(100% - 6px) 100%, 0 100%, 6px 50%);
 }
 @media print {
