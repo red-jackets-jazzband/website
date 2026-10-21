@@ -1383,7 +1383,7 @@ body.rj-sheet-active .rj-sheet-empty {
 }
 .songForm-repeat-value {
     min-width: 22px;
-    color: #9aa0a7;
+    color: var(--sf-muted);
     font-size: 12px;
     font-weight: 700;
     text-align: center;

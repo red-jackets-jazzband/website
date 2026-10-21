@@ -509,3 +509,16 @@ test("a song with no form and no part markers gets one from \"+ Song form\"", as
   assert.ok($(MENU_BTN) && !$(".songForm-add-form"));
   cleanup();
 });
+
+test("text half typed in a round stays with it when rounds are deleted or moved", async () => {
+  const { openSong, cleanup } = await setup();
+  openSong();
+  click(editButton());
+  $$(TYPE)[2].value = "C";
+  click($('[aria-label="Delete round 1"]'));
+  assert.equal($$(CARD).length, 2);
+  click(button("Save"));
+  const rows = JSON.parse(localStorage.getItem(STORE_KEY)).rows;
+  assert.deepEqual(rows.map((cells) => cells[1]), ["A B A B", "A B C"]);
+  cleanup();
+});
