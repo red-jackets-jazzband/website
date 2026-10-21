@@ -486,3 +486,26 @@ test("only the round being worked on shows its tools", async () => {
   assert.ok($$(TYPE)[2].isConnected);
   cleanup();
 });
+
+test("a song with no form and no part markers gets one from \"+ Song form\"", async () => {
+  const { ctx, cleanup } = await setup();
+  ctx.store.set("nav", { currentSongFile: "plain.abc" });
+  renderWordsTables(document.getElementById("chordtable"), []);
+  ctx.store.set("tune", { currentSongText: "X:1\nT:Plain\nK:C\nC4|]", formTables: [], songSerial: ctx.state.songSerial + 1 });
+  const add = $(".songForm-add-form");
+  assert.ok(add, "a labelled button, not the menu");
+  click(add);
+  assert.equal($$(CARD).length, 1);
+  assert.equal(document.activeElement, $(TYPE));
+  // A and B to pick from, though the music names no parts.
+  assert.deepEqual($$(".songForm-add-part").map((node) => node.textContent), ["+ A", "+ B", "+ …"]);
+  const field = $(TYPE);
+  field.value = "aaba";
+  field.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+  click(MORE_TIMES(0));
+  click(button("Save"));
+  assert.deepEqual(JSON.parse(localStorage.getItem("rj.songForm.plain.abc")).rows, [["1", "A A B A 2x", ""]]);
+  // With a version of its own the menu is back (band's form / mine).
+  assert.ok($(MENU_BTN) && !$(".songForm-add-form"));
+  cleanup();
+});
