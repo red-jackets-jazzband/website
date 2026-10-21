@@ -420,3 +420,21 @@ test("the menu square shows on hovering or tapping the strip, and hides again", 
     cleanup();
   }
 });
+
+test("adding a ... keeps the focus in its round, and a click on the strip closes the menu", async () => {
+  const { openSong, cleanup } = await setup();
+  try {
+    openSong();
+    click(editButton());
+    click($('[aria-label="Repeat round 1 as long as it takes"]'));
+    assert.equal(document.activeElement, $(CARD));
+    click(button("Cancel"));
+
+    menuItem("edit");
+    click($(".songForm .songForm-lead"));
+    assert.equal($(MENU), null);
+    assert.ok($(".songForm-tools").classList.contains("is-revealed"));
+  } finally {
+    cleanup();
+  }
+});
