@@ -21,7 +21,7 @@ const click = (node) => node.dispatchEvent(new window.Event("click", { bubbles: 
 const CARD = ".songForm-card";
 const CHIP = ".songForm-chip";
 const TYPE = ".songForm-type";
-const REPEAT = ".songForm-repeat-pick";
+const MORE_TIMES = (round) => $(`[data-focus="more-${round}"]`);
 const leads = () => $$(".songForm .songForm-lead").map((node) => node.textContent);
 const parts = (round) => $$(CARD)[round].querySelectorAll(CHIP).length;
 
@@ -453,10 +453,15 @@ test("parts typed by hand and a repeat count, for a form the music doesn't mark"
   // Backspace in the empty field takes the last part off.
   $$(TYPE)[2].dispatchEvent(new window.KeyboardEvent("keydown", { key: "Backspace", bubbles: true }));
   assert.equal(parts(2), 5);
-  const select = $$(REPEAT)[2];
-  select.value = "3x";
-  select.dispatchEvent(new window.Event("change", { bubbles: true }));
-  assert.ok($$(REPEAT)[2].classList.contains("is-set"));
+  // − 2x +: two steps up from once.
+  click(MORE_TIMES(2));
+  click(MORE_TIMES(2));
+  assert.equal($$(".songForm-repeat-value")[2].textContent, "3x");
+  // A space after a part makes it a part, as in a mail address field.
+  const typing = $$(TYPE)[1];
+  typing.value = "Intro ";
+  typing.dispatchEvent(new window.Event("input", { bubbles: true }));
+  assert.equal(parts(1), 5);
   // Text still typed in a field counts when saving, and survives other edits first.
   $$(TYPE)[0].value = "C 2x";
   click(button(" Add a round"));
@@ -464,6 +469,20 @@ test("parts typed by hand and a repeat count, for a form the music doesn't mark"
   click(button("Save"));
   const rows = JSON.parse(localStorage.getItem(STORE_KEY)).rows;
   assert.deepEqual(rows[0], ["1", "A B C 2x", "Collective; count-off: 3 tempo ticks"]);
+  assert.deepEqual(rows[1], ["2", "A B A B Intro", "Vocals"]);
   assert.deepEqual(rows[2], ["3", "A B A A B 3x", CLARINET]);
+  cleanup();
+});
+
+test("only the round being worked on shows its tools", async () => {
+  const { openSong, cleanup } = await setup();
+  openSong();
+  click(editButton());
+  const active = () => $$(CARD).map((node) => node.classList.contains("is-active"));
+  assert.deepEqual(active(), [true, false, false]);
+  $$(TYPE)[2].dispatchEvent(new window.Event("mousedown", { bubbles: true }));
+  assert.deepEqual(active(), [false, false, true]);
+  // Moving there doesn't redraw: the control pressed is still in the page.
+  assert.ok($$(TYPE)[2].isConnected);
   cleanup();
 });
