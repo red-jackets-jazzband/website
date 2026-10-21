@@ -362,7 +362,8 @@ export function createSongForm(ctx) {
       type: "button",
       class: "songForm-add-part",
       attrs: { "aria-label": label, title: label, "data-focus": `add-${i}-${name}` },
-      on: { click: () => edit(addPart(draft, i, name), `add-${i}-${name}`) },
+      // "+ …" goes once the round has its "…", so the focus goes to the round.
+      on: { click: () => edit(addPart(draft, i, name), name === MORE ? `card-${i}` : `add-${i}-${name}`) },
     }, `+ ${partLabel(name)}`);
   }
 
@@ -596,6 +597,7 @@ export function createSongForm(ctx) {
     // A tap on the form shows the square (a touch screen has no hover).
     if (inRevealArea(e.target)) {
       setRevealed(true);
+      if (menuOpen) setMenuOpen(false);
       return;
     }
     setRevealed(false);
