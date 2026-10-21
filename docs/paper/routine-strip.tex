@@ -68,8 +68,8 @@ sections but not these roles, and corpora of structural annotations record roles
 after the fact. I propose one visual notation of the routine that every member of the
 band can read at a glance while performing, including players who may not read the
 lead sheet, such as drummers and vocalists. It is a strip of arrows, one per round,
-drawn under a tune's chord grid. Drop-outs, solo order and feel (groove, texture and
-dynamics) each get a fixed place and a distinct mark, following research on
+drawn under a tune's chord grid. Drop-outs, solo order and feel (groove and texture)
+each get a fixed place and a distinct mark, following research on
 preattentive visual features. The notation is a proposal: it has not been tested with
 players. I specify a within-subjects study to test it, and outline the coding of
 existing routines as further research.
@@ -162,7 +162,7 @@ The target task is a player answering \emph{``what do I do this round?''} in one
 glance. Six requirements follow: \textbf{R1} each kind of answer has a fixed position
 and a mark unlike the others \citep{treisman1980,healey2012}; \textbf{R2} each fact
 appears in one position only; \textbf{R3} marks are ones musicians already read (plus
-and minus, numbered order, repeat counts, the crescendo hairpin); \textbf{R4} a round
+and minus, numbered order, repeat counts); \textbf{R4} a round
 with nothing unusual adds no marks, so unusual rounds stand out; \textbf{R5} meaning
 is carried by position, typography and signs, not colour, so a printed copy loses
 nothing; \textbf{R6} nothing requires reading pitches, chord symbols or
@@ -177,7 +177,7 @@ lasts until a cue. Rounds playing the same part share a shade of grey. Under the
 arrow come the \emph{lead} (who carries the round), underlined; one
 ``+\,instrument'' line for each instrument that joins; and any other remarks on a
 single line. Three further questions get their own regions: \textbf{who} plays and who
-does not (lines under the arrow), \textbf{how} the beat goes (in, above and below the
+does not (lines under the arrow), \textbf{how} the beat goes (above and below the
 arrow), and everything else (the remarks line). ``No rhythm'' answers \emph{who}, so it
 is a drop-out, not a feel.
 
@@ -195,43 +195,34 @@ solo is one pass through the round's parts, the jazz chorus. A slash marks alter
 The lengths sum to the repeat count in the arrow, so the plan can be checked at a
 glance.
 
-\paragraph{Feel.} In band usage ``feel'' covers three independent things, each with
+\paragraph{Feel.} In band usage ``feel'' covers two things I keep apart, each with
 its own region and scope (Table~\ref{tab:feel}). A groove usually holds for a whole
 tune and changes at most once, so it is drawn only at a change; drawing it on every
-arrow would violate R4. Stop time, breaks and ``softly behind the vocals'' end with
-their round. Half feel and double feel are relative to the groove in force, so they
-count as texture. A texture or dynamic limited to part of a round names that part
-(``\sc{breaks} in the 2nd B''). Labels come from a short fixed list per axis, which
-can be translated on the page; a label outside the list is shown as written.
+arrow would violate R4. Stop time, breaks and similar texture events end with their
+round. Half feel and double feel are relative to the groove in force, so they count as
+texture. A texture limited to part of a round names that part (``\sc{breaks} in the
+2nd B''). Labels come from a short fixed list per axis, which can be translated on the
+page; a label outside the list is shown as written. Dynamics (soft, loud, build) are a
+third axis that I leave for next steps.
 
 \begin{table*}[t]
 \centering\small
-\caption{The three axes of feel.}\label{tab:feel}
+\caption{The two axes of feel.}\label{tab:feel}
 \begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{4.1cm} >{\raggedright\arraybackslash}p{4.3cm} >{\raggedright\arraybackslash}p{3.0cm} Y@{}}
 \toprule
 Axis & Region and mark & Scope & Labels\\
 \midrule
 \textbf{Groove}: the rhythm section's beat pattern & above the arrow: \qnote\ and label & until changed; drawn only at a change & two-beat, four, march, second line, shuffle, straight, latin, dirge, hymn\\
 \textbf{Texture}: how much of the beat is played & foot of the round, small capitals & one round & stop time, breaks, light, vamp, pedal, half feel, double feel\\
-\textbf{Dynamics}: level & arrow height: lower for soft, taller for loud; widening for build & one round & soft, loud, build\\
 \bottomrule
 \end{tabularx}
 \end{table*}
 
-\paragraph{Dynamics as height.} Dynamics are drawn as the height of the arrow rather
-than as letters such as \emph{p} and \emph{f}: a soft round is a lower arrow and a
-loud round a taller one; a crescendo widens from left to right, the shape of the
-hairpin players already read (R3); normal level adds nothing (R4). Arrows are centred
-on one line, so the number and part boxes stay in the same place whatever the height
-(R1). More sound maps to more ink, and length is among the more accurately judged
-graphical encodings \citep{cleveland1984}. Only three levels are used, so each differs
-clearly from its neighbours without a scale.
-
 \begin{figure*}[t]
 \centering
 \begin{tikzpicture}[x=1cm,y=1cm,font=\sffamily\small]
-  % round 4: soft
-  \chev{0}{3.6}{0.58}{0.58}{tint}\rnum{0.3}{4}\partbox{0.75}{0.45}{A}
+  % round 4
+  \chev{0}{3.6}{0.8}{0.8}{tint}\rnum{0.3}{4}\partbox{0.75}{0.45}{A}
   \node[anchor=west,font=\sffamily\footnotesize,text=quiet] at (1.3,0) {no repeat};
   \node[anchor=west] (l4) at (0.3,-0.75) {collective};
   \draw ([xshift=2pt]l4.south west) -- ([xshift=-2pt]l4.south east);
@@ -244,10 +235,10 @@ clearly from its neighbours without a scale.
   \node[anchor=west,font=\sffamily\footnotesize] (s5) at (4.1,-1.2) {1 sax/tbn $\rightarrow$ 2 tpt $\times$2 $\rightarrow$ 3 tpt};
   \node[anchor=west,font=\sffamily\footnotesize] at (4.1,-1.6) {+ banjo};
   \node[anchor=west] (t5) at (4.1,-2.0) {\sc{breaks}};
-  % round 6: loud, groove change
-  \chev{9.6}{3.9}{1.02}{1.02}{tint}\rnum{9.9}{6}\partbox{10.35}{0.45}{A}
-  \draw[edge,line width=0.6pt] (9.86,0.51) -- (9.86,0.75);
-  \node[anchor=south west,font=\sffamily\small\bfseries,inner sep=1pt] (g6) at (9.75,0.75) {\qnote\ four};
+  % round 6: groove change
+  \chev{9.6}{3.9}{0.8}{0.8}{tint}\rnum{9.9}{6}\partbox{10.35}{0.45}{A}
+  \draw[edge,line width=0.6pt] (9.86,0.38) -- (9.86,0.62);
+  \node[anchor=south west,font=\sffamily\small\bfseries,inner sep=1pt] (g6) at (9.75,0.62) {\qnote\ four};
   \node[anchor=west] (l6) at (9.9,-0.75) {collective};
   \draw ([xshift=2pt]l6.south west) -- ([xshift=-2pt]l6.south east);
   % round 7
@@ -255,23 +246,21 @@ clearly from its neighbours without a scale.
   \node[anchor=west,font=\sffamily\footnotesize] at (14.0,-0.75) {+ rhythm};
   \node[anchor=west,font=\sffamily\footnotesize,text=quiet] at (14.0,-1.2) {= outro};
   % callouts
-  \badge{(3.2,0.55)}{1}
-  \badge{(4.85,0.62)}{2}
-  \badge{([xshift=4pt]g6.east)}{3}
-  \badge{([xshift=3pt]l5.east)}{4}
-  \badge{([xshift=3pt]s5.east)}{5}
-  \badge{([xshift=3pt]d4.east)}{6}
-  \badge{([xshift=3pt]t5.east)}{7}
+  \badge{(4.85,0.5)}{1}
+  \badge{([xshift=4pt]g6.east)}{2}
+  \badge{([xshift=3pt]l5.east)}{3}
+  \badge{([xshift=3pt]s5.east)}{4}
+  \badge{([xshift=3pt]d4.east)}{5}
+  \badge{([xshift=3pt]t5.east)}{6}
 \end{tikzpicture}
 \caption{The strip for rounds 4--7 of an invented \emph{Dippermouth Blues} routine.
 Callouts (annotations, not part of the notation):
-\cb{1}~dynamics as arrow height, here soft (round~4) and loud (round~6);
-\cb{2}~parts and repeat count;
-\cb{3}~groove, drawn only where it changes;
-\cb{4}~lead;
-\cb{5}~solo order with each soloist's length;
-\cb{6}~joins (+) and drop-outs ($-$), one round only;
-\cb{7}~texture in small capitals, one round only.}\label{fig:extended}
+\cb{1}~parts and repeat count;
+\cb{2}~groove, drawn only where it changes;
+\cb{3}~lead;
+\cb{4}~solo order with each soloist's length;
+\cb{5}~joins (+) and drop-outs ($-$), one round only;
+\cb{6}~texture in small capitals, one round only.}\label{fig:extended}
 \end{figure*}
 
 \subsection{One strip for every role}\label{sec:roles}
@@ -289,9 +278,9 @@ counts, which drummers' own charts do.
 \toprule
 Role & Typical questions & Where on the strip\\
 \midrule
-Drummer & Where are we in the form? Does the beat change? Stop time or breaks? How loud? Who solos next? & part boxes, groove label, texture line, arrow height, solo order\\
-Rhythm section (bass, banjo, piano) & Two-beat or four? Stop time, vamp or pedal? Do I sit out? How loud? & groove label, texture line, $-$ lines, arrow height\\
-Front line (horns) & Do I lead, play or rest? When is my solo? Who joins? How loud? & lead, $+$/$-$ lines, solo order, arrow height\\
+Drummer & Where are we in the form? Does the beat change? Stop time or breaks? Who solos next? & part boxes, groove label, texture line, solo order\\
+Rhythm section (bass, banjo, piano) & Two-beat or four? Stop time, vamp or pedal? Do I sit out? & groove label, texture line, $-$ lines\\
+Front line (horns) & Do I lead, play or rest? When is my solo? Who joins? & lead, $+$/$-$ lines, solo order\\
 Vocalist & Which rounds are mine? Who plays behind me? & lead, $+$ lines\\
 \bottomrule
 \end{tabularx}
@@ -315,7 +304,7 @@ of the band, expected $n = 8$--$12$, classed in advance by role and by whether t
 read the lead sheet while playing. Routines are counterbalanced across conditions.
 Each trial shows a routine briefly (about 2\,s, to be set in a pilot) and asks one
 question drawn from Table~\ref{tab:roles}, for example ``In round 5, do you play?'' or
-``Which round is loudest?'' Response time and accuracy are analysed with mixed-effects
+``Where does the beat change?'' Response time and accuracy are analysed with mixed-effects
 models with crossed random effects for participants and routines \citep{baayen2008}.
 Over a few rehearsals before and after adoption, interruptions caused by questions
 about the routine can also be counted. Eye tracking during performance would show where
@@ -329,8 +318,8 @@ describe what a recording did, at the resolution of seconds. A routine states wh
 band intends, at the resolution of a round, so the strip shows no times; timing within
 a round is a short qualifier (``from the 2nd line'').
 
-\paragraph{Scope.} The distinction between a sticky groove and per-round texture and
-dynamics is the part most likely to transfer to other repertoires. The label lists are
+\paragraph{Scope.} The distinction between a sticky groove and per-round texture
+is the part most likely to transfer to other repertoires. The label lists are
 less likely to: they were chosen for a traditional-jazz repertoire and not checked
 against other bands' usage. The strip shows the plan that cues steer, not who gives
 them; it shows one routine per tune, with alternatives left to remarks; and it gives
@@ -345,17 +334,17 @@ agreement.
 \paragraph{Limitations.} The design is untested with players; the readability claim
 rests on perception research. The related-work review is selective, not systematic:
 ``not aware of'' means only that I did not find such a study. That drummers and some
-vocalists do not read the lead sheet is an assumption, which H4 tests. Arrow height
-could be misread as importance or duration rather than level.
+vocalists do not read the lead sheet is an assumption, which H4 tests. Dynamics are not
+covered.
 
 \section{Conclusion}
 
 Routine information that standard encodings do not represent can be drawn in a compact
 strip: who sits out, as minus lines paired with joins; who solos and for how long, as a
-numbered sequence; and how the band plays, split into groove, texture and dynamics,
+numbered sequence; and how the band plays, split into groove and texture,
 each with its own place and scope. Because none of it needs notes or chord symbols, the
 same strip can serve every role. The next steps are implementing the strip, running the
-study above, and coding existing routines against it.
+study above, adding dynamics, and coding existing routines against it.
 
 \scriptsize
 \begin{thebibliography}{99}
@@ -378,12 +367,6 @@ Bergamini, J. (2021). \emph{The working drummer's chart book}. Hudson Music.
 \bibitem[Berliner(1994)]{berliner1994}
 Berliner, P.~F. (1994). \emph{Thinking in jazz: The infinite art of improvisation}.
 University of Chicago Press. \url{https://doi.org/10.7208/9780226044521}
-
-\bibitem[Cleveland \& McGill(1984)]{cleveland1984}
-Cleveland, W.~S., \& McGill, R. (1984). Graphical perception: Theory,
-experimentation, and application to the development of graphical methods.
-\emph{Journal of the American Statistical Association, 79}(387), 531--554.
-\url{https://doi.org/10.2307/2288400}
 
 \bibitem[Ellis(2025)]{ellis2025}
 Ellis, P. (2025, August 28). \emph{How to write a drum chart}. Austin Stone.
