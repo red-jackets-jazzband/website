@@ -857,6 +857,325 @@ body.rj-sheet-active .rj-sheet-empty {
   }
 }
 
+/* A visitor's own version of the form (songs/sheet/song-form.js): framed in
+   gold, with a gold dot in the arrow of every round that differs from the
+   band's form. Neither prints: a printed sheet just shows the form. */
+.split-bio ol.songForm--mine {
+    outline: 2px dashed var(--rj-gold);
+    outline-offset: 5px;
+    border-radius: 2px;
+}
+.songForm-changed {
+    flex: none;
+    align-self: center;
+    width: 6px;
+    height: 6px;
+    margin-left: auto;
+    border-radius: 50%;
+    background: var(--rj-gold);
+}
+@media print {
+  .split-bio ol.songForm--mine {
+    outline: none;
+  }
+  /* Not .hideOnprint: its screen rule would force these to display: block. */
+  .songForm-changed,
+  .songForm-tools,
+  .songForm-editor {
+    display: none;
+  }
+}
+
+/* The pencil, and once there's a version of your own the band / mine
+   switch: small and grey in the strip's bottom-right corner, so the sheet
+   reads as before for anyone who never touches them. */
+.songForm-tools {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 2px;
+    width: 90%;
+    margin: 6px auto 0;
+}
+.songForm-switch {
+    display: flex;
+    gap: 2px;
+    padding: 2px;
+    border: 1px solid #c9c9c9;
+    border-radius: 999px;
+}
+.songForm-switch-btn,
+.songForm-icon-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #5f6770;
+    font-size: 14px;
+    cursor: pointer;
+}
+.songForm-switch-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 13px;
+}
+.songForm-switch-btn.is-active {
+    background: #1b1b1b;
+    color: #ffffff;
+}
+.songForm-switch-btn--mine.is-active {
+    background: var(--rj-gold);
+    color: #1b1b1b;
+}
+.songForm-icon-btn:hover:not(:disabled),
+.songForm-switch-btn:hover:not(.is-active) {
+    color: #1b1b1b;
+    background: #efefef;
+}
+.songForm-icon-btn:disabled {
+    opacity: .35;
+    cursor: default;
+}
+.songForm-icon-btn--danger {
+    color: #a8304f;
+}
+@media (max-width: 480px) {
+  .songForm-tools {
+    width: 100%;
+  }
+}
+
+/* The editor, below the strip: one card per round. */
+.songForm-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 90%;
+    box-sizing: border-box;
+    margin: 12px auto 4px;
+    padding: 12px;
+    border: 1px solid #dcdcdc;
+    border-radius: 12px;
+    background: #fafafa;
+    color: #1b1b1b;
+    font: 500 13px "Montserrat", sans-serif;
+}
+.songForm-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid #e3e3e3;
+    border-radius: 10px;
+    background: #ffffff;
+}
+.songForm-card.is-changed {
+    border-color: var(--rj-gold);
+}
+.songForm-card.is-dragging {
+    opacity: .45;
+}
+.songForm-card.is-drop-before {
+    box-shadow: 0 -4px 0 var(--rj-gold);
+}
+.songForm-card.is-drop-after {
+    box-shadow: 0 4px 0 var(--rj-gold);
+}
+.songForm-card.is-drop-into {
+    box-shadow: 0 0 0 2px var(--rj-gold);
+}
+.songForm-card-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+}
+.songForm-card-parts {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+.songForm-card-actions {
+    flex: none;
+    display: flex;
+    align-items: center;
+}
+.songForm-grip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 32px;
+    margin-left: -4px;
+    color: #6b7178;
+    cursor: grab;
+    touch-action: none;
+}
+.songForm-card-num {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #1b1b1b;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 700;
+}
+.songForm-chip,
+.songForm-add-part {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    height: 30px;
+    padding: 0 6px 0 8px;
+    border: 1px solid #1b1b1b;
+    border-radius: 4px;
+    background: #ffffff;
+    color: #1b1b1b;
+    font: 700 13px "Montserrat", sans-serif;
+    cursor: pointer;
+}
+.songForm-chip {
+    cursor: grab;
+    touch-action: none;
+}
+.songForm-chip--more {
+    border-style: dashed;
+    background: #fbf1dc;
+}
+.songForm-chip--repeat {
+    cursor: pointer;
+    font-weight: 600;
+}
+.songForm-chip.is-dragging {
+    opacity: .4;
+}
+.songForm-chip.is-drop-before {
+    box-shadow: -4px 0 0 var(--rj-gold);
+}
+.songForm-chip.is-drop-after {
+    box-shadow: 4px 0 0 var(--rj-gold);
+}
+.songForm-chip-x {
+    color: #5f6770;
+    font-weight: 400;
+    font-size: 12px;
+}
+.songForm-add-part {
+    padding: 0 8px;
+    border: 1px dashed #9aa1a8;
+    background: transparent;
+    color: #3d434a;
+    font-weight: 600;
+    font-size: 12px;
+}
+.songForm-add-part:hover {
+    border-color: #1b1b1b;
+    color: #1b1b1b;
+}
+.songForm-card-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+.songForm-field {
+    min-width: 0;
+    height: 36px;
+    box-sizing: border-box;
+    padding: 0 10px;
+    border: 1px solid #c9c9c9;
+    border-radius: 7px;
+    background: #ffffff;
+    color: #1b1b1b;
+    font: 500 14px "Montserrat", sans-serif;
+}
+.songForm-add-round {
+    height: 40px;
+    border: 1px dashed #9aa1a8;
+    border-radius: 10px;
+    background: transparent;
+    color: #3d434a;
+    font: 600 13px "Montserrat", sans-serif;
+    cursor: pointer;
+}
+.songForm-add-round:hover {
+    border-color: #1b1b1b;
+    color: #1b1b1b;
+}
+.songForm-footer,
+.songForm-text-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.songForm-footer {
+    padding-top: 6px;
+    border-top: 1px solid #e6e6e6;
+}
+.songForm-footer-gap {
+    flex: 1 1 0;
+}
+.songForm-btn {
+    height: 36px;
+    padding: 0 16px;
+    border: 1px solid #c9c9c9;
+    border-radius: 999px;
+    background: #ffffff;
+    color: #1b1b1b;
+    font: 600 13px "Montserrat", sans-serif;
+    cursor: pointer;
+}
+.songForm-btn--primary {
+    border-color: var(--rj-gold);
+    background: var(--rj-gold);
+    font-weight: 700;
+}
+.songForm-text {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.songForm-text-actions {
+    justify-content: flex-end;
+}
+.songForm-text-area {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #c9c9c9;
+    border-radius: 7px;
+    background: #ffffff;
+    color: #1b1b1b;
+    font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace;
+    white-space: pre;
+    overflow-x: auto;
+    resize: vertical;
+}
+/* No text selection or page scroll while a round or a part is dragged. */
+body.songForm-dragging {
+    -webkit-user-select: none;
+    user-select: none;
+    cursor: grabbing;
+}
+@media (max-width: 480px) {
+  .songForm-editor {
+    width: 100%;
+    padding: 8px;
+  }
+  .songForm-card-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .chordtable > .chordGrid {
     display: grid;
     grid-template-columns: repeat(var(--chord-cols, 4), 1fr);

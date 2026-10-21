@@ -22,7 +22,7 @@ const songsPage = read("layouts/shortcodes/songs-app.html");
 const PRACTICE_PANEL = "static/script/songs/sheet/practice-panel.js";
 const RUNTIME_TARGETS = {
   "#tourBtn": ["layouts/partials/intro.html", 'id="tourBtn"'],
-  ".songForm": ["static/script/songs/sheet/sheet.js", 'class: "songForm"'],
+  ".songForm": ["static/script/songs/sheet/form-strip.js", ': "songForm"'],
   "#instrument": ["static/script/songs/sheet/selects.js", 'id: "instrument"'],
   "#iRealPro": ["static/script/songs/sheet/irealpro-link.js", 'id: "iRealPro"'],
   "#inspirationLink": ["static/script/songs/inspiration/inspiration.js", 'btn.id = "inspirationLink"'],
