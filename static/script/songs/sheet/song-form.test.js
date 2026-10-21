@@ -387,3 +387,34 @@ test("↑/↓ walk the menu's items", async () => {
     cleanup();
   }
 });
+
+test("the menu square shows on hovering or tapping the strip, and hides again", async () => {
+  const { openSong, cleanup } = await setup();
+  try {
+    openSong();
+    const shown = () => $(".songForm-tools").classList.contains("is-revealed");
+    const mouse = (type, target, related) => target.dispatchEvent(new window.MouseEvent(type, { bubbles: true, relatedTarget: related }));
+    assert.equal(shown(), false);
+
+    const strip = $(".songForm .songForm-lead");
+    mouse("mouseover", strip);
+    assert.equal(shown(), true);
+    mouse("mouseout", strip, document.getElementById("chordtable"));
+    await new Promise((resolve) => setTimeout(resolve, 450));
+    assert.equal(shown(), false);
+
+    click(strip);
+    assert.equal(shown(), true);
+    click(document.getElementById("chordtable"));
+    assert.equal(shown(), false);
+
+    $(MENU_BTN).focus();
+    assert.equal(shown(), true);
+    click($(MENU_BTN));
+    click(document.getElementById("chordtable"));
+    assert.equal($(MENU), null);
+    assert.equal(shown(), false);
+  } finally {
+    cleanup();
+  }
+});
