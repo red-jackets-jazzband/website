@@ -20,6 +20,8 @@ const $$ = (selector) => [...document.querySelectorAll(selector)];
 const click = (node) => node.dispatchEvent(new window.Event("click", { bubbles: true }));
 const CARD = ".songForm-card";
 const CHIP = ".songForm-chip";
+const TYPE = ".songForm-type";
+const REPEAT = ".songForm-repeat-pick";
 const leads = () => $$(".songForm .songForm-lead").map((node) => node.textContent);
 const parts = (round) => $$(CARD)[round].querySelectorAll(CHIP).length;
 
@@ -437,4 +439,31 @@ test("adding a ... keeps the focus in its round, and a click on the strip closes
   } finally {
     cleanup();
   }
+});
+
+test("parts typed by hand and a repeat count, for a form the music doesn't mark", async () => {
+  const { openSong, cleanup } = await setup();
+  openSong();
+  click(editButton());
+  const field = $$(TYPE)[2];
+  field.value = "aaba";
+  field.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+  assert.equal(parts(2), 6);
+  assert.equal(document.activeElement, $$(TYPE)[2]);
+  // Backspace in the empty field takes the last part off.
+  $$(TYPE)[2].dispatchEvent(new window.KeyboardEvent("keydown", { key: "Backspace", bubbles: true }));
+  assert.equal(parts(2), 5);
+  const select = $$(REPEAT)[2];
+  select.value = "3x";
+  select.dispatchEvent(new window.Event("change", { bubbles: true }));
+  assert.ok($$(REPEAT)[2].classList.contains("is-set"));
+  // Text still typed in a field counts when saving, and survives other edits first.
+  $$(TYPE)[0].value = "C 2x";
+  click(button(" Add a round"));
+  assert.equal($$(TYPE)[0].value, "C 2x");
+  click(button("Save"));
+  const rows = JSON.parse(localStorage.getItem(STORE_KEY)).rows;
+  assert.deepEqual(rows[0], ["1", "A B C 2x", "Collective; count-off: 3 tempo ticks"]);
+  assert.deepEqual(rows[2], ["3", "A B A A B 3x", CLARINET]);
+  cleanup();
 });
