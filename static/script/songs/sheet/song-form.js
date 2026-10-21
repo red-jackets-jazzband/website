@@ -9,6 +9,7 @@ import {
 import { buildFormStrip, renderWordsTables } from "./form-strip.js";
 import { fitSongForms } from "./chord-table.js";
 import { createFormDrag } from "./form-drag.js";
+import { afterPageLoad } from "../core/after-load.js";
 
 /*
   A visitor's own version of a song's form, next to the band's.
@@ -29,7 +30,9 @@ import { createFormDrag } from "./form-drag.js";
   Its state is per song and lives here, not in a store slice: which version
   shows is stored with the version itself, and the editor closes whenever
   another song opens. It redraws after every live render (a `tune` publish),
-  since the render draws the band's strip afresh.
+  since the render draws the band's strip afresh, but draws nothing at all
+  until the page has loaded and gone idle (init): on a deep link the sheet
+  and the band's form come first, the pencil and a version of your own after.
 */
 
 // Who usually plays a round, offered as the "Who plays" field's suggestions
@@ -85,6 +88,8 @@ export function createSongForm(ctx) {
   let show = "band"; // which one the strip shows when not editing
   let draft = null; // the rounds being edited, or null
   let textOpen = false;
+  // Nothing is drawn until the page has loaded (init): the sheet comes first.
+  let ready = false;
 
   const drag = createFormDrag({ onDrop: dropped });
 
@@ -189,9 +194,9 @@ export function createSongForm(ctx) {
           if (!drag.clickWasDrag()) edit(removePart(draft, i, j), `card-${i}`);
         },
         keydown: (e) => chipKey(e, i, j),
-        pointerdown: (e) => drag.begin(e, node, { kind: "part", round: i, part: j }),
       },
     }, [partLabel(name), el("span", { class: "songForm-chip-x", attrs: { "aria-hidden": "true" }, text: "×" })]);
+    drag.bind(node, () => node, { kind: "part", round: i, part: j });
     return node;
   }
 
@@ -251,15 +256,13 @@ export function createSongForm(ctx) {
   }
 
   function card(round, i) {
-    const grip = el("span", {
+    // Drag it, or ↑ / ↓ while it has the focus.
+    const gripLabel = tl("form_drag_round", "Drag to move round {n}", { n: i + 1 });
+    const grip = el("button", {
+      type: "button",
       class: "songForm-grip",
-      attrs: { "aria-hidden": "true", title: tl("form_drag_round", "Drag to move round {n}", { n: i + 1 }) },
-      on: {
-        pointerdown: (e) => {
-          e.preventDefault();
-          drag.begin(e, cardNode, { kind: "round", round: i });
-        },
-      },
+      attrs: { "aria-label": gripLabel, title: gripLabel, "data-focus": `grip-${i}` },
+      on: { keydown: (e) => gripKey(e, i) },
     }, [icon("fa-grip-vertical")]);
     const adds = choices.map((name) => addButton(i, name));
     if (!round.parts.includes(MORE)) adds.push(addButton(i, MORE));
@@ -269,11 +272,6 @@ export function createSongForm(ctx) {
       attrs: { "aria-label": tl("form_remove_repeat", "Remove {repeat} from round {n}", { repeat: round.repeat, n: i + 1 }) },
       on: { click: () => edit(removeRepeat(draft, i), `card-${i}`) },
     }, [round.repeat, el("span", { class: "songForm-chip-x", attrs: { "aria-hidden": "true" }, text: "×" })]) : null;
-    const last = draft.length - 1;
-    const up = iconButton(ICON_BTN, "fa-chevron-up", tl("form_up", "Move round {n} up", { n: i + 1 }), () => edit(moveRound(draft, i, i - 1), `up-${i - 1}`), `up-${i}`);
-    const down = iconButton(ICON_BTN, "fa-chevron-down", tl("form_down", "Move round {n} down", { n: i + 1 }), () => edit(moveRound(draft, i, i + 1), `down-${i + 1}`), `down-${i}`);
-    up.disabled = i === 0;
-    down.disabled = i === last;
     const cardNode = el("div", {
       class: sameRound(round, band[i]) ? "songForm-card" : "songForm-card is-changed",
       dataset: { round: String(i) },
@@ -288,15 +286,23 @@ export function createSongForm(ctx) {
           ...adds,
         ]),
         el("div", { class: "songForm-card-actions" }, [
-          up,
-          down,
           iconButton(ICON_BTN, "fa-copy", tl("form_duplicate", "Duplicate round {n}", { n: i + 1 }), () => edit(duplicateRound(draft, i), `card-${i + 1}`), `dup-${i}`),
           iconButton(`${ICON_BTN} songForm-icon-btn--danger`, "fa-trash-can", tl("form_delete", "Delete round {n}", { n: i + 1 }), () => edit(deleteRound(draft, i), "addRound"), `del-${i}`),
         ]),
       ]),
       el("div", { class: "songForm-card-fields" }, [textField(round, i, "lead"), textField(round, i, "note")]),
     ]);
+    drag.bind(grip, () => cardNode, { kind: "round", round: i }, { grab: true });
     return cardNode;
+  }
+
+  function gripKey(e, i) {
+    let to = null;
+    if (e.key === "ArrowUp") to = i - 1;
+    else if (e.key === "ArrowDown") to = i + 1;
+    if (to === null) return;
+    e.preventDefault();
+    if (to >= 0 && to < draft.length) edit(moveRound(draft, i, to), `grip-${to}`);
   }
 
   function leadSuggestions() {
@@ -426,10 +432,18 @@ export function createSongForm(ctx) {
     if (songFile !== file) load(songFile);
     band = roundsFromTables(tune.formTables);
     choices = partChoices(tune.currentSongText, band);
-    draw();
+    if (ready) draw();
   });
 
   return {
+    // The pencil, and a version of your own, only once the page has loaded and
+    // the browser is idle: the sheet and its band's form come first.
+    init() {
+      return afterPageLoad().then(() => {
+        ready = true;
+        draw();
+      });
+    },
     // For the tour and tests: open or close the editor.
     setEditing(open) {
       if (open && !editing()) startEdit();

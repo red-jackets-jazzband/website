@@ -23,11 +23,13 @@ const CARD = ".songForm-card";
 const leads = () => $$(".songForm .songForm-lead").map((node) => node.textContent);
 const parts = (round) => $$(CARD)[round].querySelectorAll(".songForm-chip").length;
 
-function setup({ stored } = {}) {
+async function setup({ stored } = {}) {
   const page = mountPage();
   if (stored) localStorage.setItem(STORE_KEY, stored);
   const ctx = makeCtx();
   ctx.songForm = createSongForm(ctx);
+  // Nothing is drawn before the page has loaded.
+  await ctx.songForm.init();
   // What a live render does: draw the band's strip, then publish the tune.
   const openSong = (file = FILE, tables = TABLES) => {
     ctx.store.set("nav", { currentSongFile: file });
@@ -44,8 +46,8 @@ function setup({ stored } = {}) {
 const editButton = () => $(".songForm-tools .songForm-icon-btn");
 const button = (text) => $$(".songForm-editor button").find((node) => node.textContent === text);
 
-test("a song shows the band's strip with only a pencil under it", () => {
-  const { openSong, leads, cleanup } = setup();
+test("a song shows the band's strip with only a pencil under it", async () => {
+  const { openSong, leads, cleanup } = await setup();
   try {
     openSong();
     assert.deepEqual(leads(), ["Collective", "Vocals", CLARINET]);
@@ -57,8 +59,8 @@ test("a song shows the band's strip with only a pencil under it", () => {
   }
 });
 
-test("the pencil opens one card per round, and the strip follows every edit", () => {
-  const { openSong, leads, parts, cleanup } = setup();
+test("the pencil opens one card per round, and the strip follows every edit", async () => {
+  const { openSong, leads, parts, cleanup } = await setup();
   try {
     openSong();
     click(editButton());
@@ -83,14 +85,17 @@ test("the pencil opens one card per round, and the strip follows every edit", ()
   }
 });
 
-test("rounds move, duplicate and delete from their buttons", () => {
-  const { openSong, leads, cleanup } = setup();
+test("rounds move by the grip's arrow keys, and duplicate and delete from their buttons", async () => {
+  const { openSong, leads, cleanup } = await setup();
   try {
     openSong();
     click(editButton());
-    click($('[aria-label="Move round 1 down"]'));
+    const key = (node, name) => node.dispatchEvent(new window.KeyboardEvent("keydown", { key: name, bubbles: true }));
+    key($('[aria-label="Drag to move round 1"]'), "ArrowDown");
     assert.deepEqual(leads(), ["Vocals", "Collective", CLARINET]);
-    assert.equal($('[aria-label="Move round 1 up"]').disabled, true);
+    assert.equal(document.activeElement, $('[aria-label="Drag to move round 2"]'));
+    key($('[aria-label="Drag to move round 1"]'), "ArrowUp");
+    assert.deepEqual(leads(), ["Vocals", "Collective", CLARINET]);
     click($('[aria-label="Duplicate round 3"]'));
     click($('[aria-label="Delete round 1"]'));
     assert.deepEqual(leads(), ["Collective", CLARINET, CLARINET]);
@@ -101,8 +106,8 @@ test("rounds move, duplicate and delete from their buttons", () => {
   }
 });
 
-test("save keeps your version, and the switch flips between it and the band's", () => {
-  const { openSong, leads, cleanup } = setup();
+test("save keeps your version, and the switch flips between it and the band's", async () => {
+  const { openSong, leads, cleanup } = await setup();
   try {
     openSong();
     click(editButton());
@@ -130,8 +135,8 @@ test("save keeps your version, and the switch flips between it and the band's", 
   }
 });
 
-test("a version that matches the band's isn't kept", () => {
-  const { openSong, cleanup } = setup();
+test("a version that matches the band's isn't kept", async () => {
+  const { openSong, cleanup } = await setup();
   try {
     openSong();
     click(editButton());
@@ -145,8 +150,8 @@ test("a version that matches the band's isn't kept", () => {
   }
 });
 
-test("cancel leaves everything as it was", () => {
-  const { openSong, leads, cleanup } = setup();
+test("cancel leaves everything as it was", async () => {
+  const { openSong, leads, cleanup } = await setup();
   try {
     openSong();
     click(editButton());
@@ -159,8 +164,8 @@ test("cancel leaves everything as it was", () => {
   }
 });
 
-test("the form copies as the W: lines a song's file carries", () => {
-  const { openSong, cleanup } = setup();
+test("the form copies as the W: lines a song's file carries", async () => {
+  const { openSong, cleanup } = await setup();
   try {
     openSong();
     click(editButton());
@@ -175,9 +180,9 @@ test("the form copies as the W: lines a song's file carries", () => {
   }
 });
 
-test("each song has its own version, read back when it opens again", () => {
+test("each song has its own version, read back when it opens again", async () => {
   const stored = JSON.stringify({ show: "mine", rows: [["1", "A B ...", "Collective"]] });
-  const { openSong, leads, cleanup } = setup({ stored });
+  const { openSong, leads, cleanup } = await setup({ stored });
   try {
     openSong();
     assert.deepEqual(leads(), ["Collective"]);
@@ -190,8 +195,8 @@ test("each song has its own version, read back when it opens again", () => {
   }
 });
 
-test("opening another song closes the editor", () => {
-  const { openSong, cleanup } = setup();
+test("opening another song closes the editor", async () => {
+  const { openSong, cleanup } = await setup();
   try {
     openSong();
     click(editButton());
@@ -202,8 +207,8 @@ test("opening another song closes the editor", () => {
   }
 });
 
-test("a chip's arrow keys move it within its round", () => {
-  const { openSong, cleanup } = setup();
+test("a chip's arrow keys move it within its round", async () => {
+  const { openSong, cleanup } = await setup();
   try {
     openSong();
     click(editButton());
@@ -217,20 +222,37 @@ test("a chip's arrow keys move it within its round", () => {
   }
 });
 
-test("dragging a round by its grip moves it", () => {
-  const { openSong, leads, cleanup } = setup();
+test("dragging a round by its grip moves it", async () => {
+  const { openSong, leads, cleanup } = await setup();
   try {
     openSong();
     click(editButton());
     const cards = $$(CARD);
     document.elementFromPoint = () => cards[2];
     const pointer = (type, target, x) => target.dispatchEvent(new window.MouseEvent(type, { bubbles: true, clientX: x, clientY: 0, button: 0 }));
-    pointer("pointerdown", cards[0].querySelector(".songForm-grip"), 0);
-    pointer("pointermove", window, 50);
+    // Pointer events, or mouse events where there are none (jsdom, Safari 12).
+    const [down, move, up] = window.PointerEvent ? ["pointerdown", "pointermove", "pointerup"] : ["mousedown", "mousemove", "mouseup"];
+    pointer(down, cards[0].querySelector(".songForm-grip"), 0);
+    pointer(move, window, 50);
     assert.ok(cards[2].classList.contains("is-drop-after"));
-    pointer("pointerup", window, 50);
+    pointer(up, window, 50);
     assert.deepEqual(leads(), ["Vocals", CLARINET, "Collective"]);
   } finally {
     cleanup();
+  }
+});
+
+test("nothing is drawn until the page has loaded, and then the pencil comes", async () => {
+  const page = mountPage();
+  try {
+    const ctx = makeCtx();
+    const songForm = createSongForm(ctx);
+    ctx.store.set("nav", { currentSongFile: FILE });
+    ctx.store.set("tune", { currentSongText: SONG, formTables: TABLES, songSerial: 1 });
+    assert.equal($(".songForm-tools"), null);
+    await songForm.init();
+    assert.ok($(".songForm-tools"));
+  } finally {
+    page.cleanup();
   }
 });
