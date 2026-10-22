@@ -72,12 +72,13 @@ export function withLeadSuggestions(input, getNames, onPick) {
     highlight(-1);
   }
 
+  // ↓ goes to the next suggestion, ↑ the one before; with none highlighted
+  // yet (or the list closed: it opens) ↓ starts at the first, ↑ at the last.
   function step(by) {
-    if (list.hidden) {
-      open();
-      return;
-    }
-    if (shown.length > 0) highlight((at + by + shown.length) % shown.length);
+    if (list.hidden) open();
+    if (shown.length === 0) return;
+    if (at < 0) highlight(by > 0 ? 0 : shown.length - 1);
+    else highlight((at + by + shown.length) % shown.length);
   }
 
   // True when the key was the list's; the field's own keys go on otherwise.

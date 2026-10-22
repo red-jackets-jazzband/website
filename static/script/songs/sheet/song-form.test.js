@@ -119,6 +119,27 @@ test("a duplicated round's Who plays offers every suggestion, and a pick sets it
   }
 });
 
+test("Who plays: an arrow key opens the suggestions on the first or last, and Enter picks it", async () => {
+  const { openSong, leads, cleanup } = await setup();
+  try {
+    openSong();
+    click(editButton());
+    const field = $$(".songForm-field--lead")[2];
+    const key = (name) => field.dispatchEvent(new window.KeyboardEvent("keydown", { key: name, bubbles: true }));
+    const options = () => [...$$(".songForm-card")[2].querySelectorAll(".songForm-who-option")];
+    key("ArrowUp");
+    assert.ok(options()[options().length - 1].classList.contains("is-active"));
+    key("Escape");
+    assert.equal(field.getAttribute("aria-expanded"), "false");
+    key("ArrowDown");
+    assert.ok(options()[0].classList.contains("is-active"));
+    key("Enter");
+    assert.deepEqual(leads(), ["Collective", "Vocals", options()[0].textContent]);
+  } finally {
+    cleanup();
+  }
+});
+
 test("rounds move by the grip's arrow keys, and duplicate and delete from their buttons", async () => {
   const { openSong, leads, cleanup } = await setup();
   try {
