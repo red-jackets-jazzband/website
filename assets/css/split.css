@@ -1287,8 +1287,37 @@ body.rj-sheet-active .rj-sheet-empty {
 .songForm-field::placeholder {
     color: #9aa0a7;
 }
-.songForm-field--lead {
+/* "Who plays" and its suggestions (form-who.js), the list in the card's flow:
+   the editor clips anything that would hang out of it. */
+.songForm-who {
     grid-area: lead;
+    min-width: 0;
+}
+.songForm-field--lead {
+    width: 100%;
+}
+.songForm-who-list {
+    margin: 2px 0 4px;
+    padding: 4px;
+    list-style: none;
+    border: 1px solid var(--sf-line);
+    border-radius: var(--sf-radius);
+    background: #ffffff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, .08);
+    font: 500 13px "Montserrat", sans-serif;
+}
+.songForm-who-list[hidden] {
+    display: none;
+}
+.songForm-who-option {
+    padding: 7px 8px;
+    border-radius: 5px;
+    color: var(--sf-ink);
+    cursor: pointer;
+}
+.songForm-who-option:hover,
+.songForm-who-option.is-active {
+    background: var(--sf-hover);
 }
 .songForm-card-actions {
     grid-area: actions;
