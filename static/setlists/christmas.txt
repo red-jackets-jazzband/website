@@ -19,3 +19,4 @@
 - [O Holy Night](/songs/o_holy_night.abc)
 - [Silver Bells](/songs/silver_bells.abc)
 - [Deck the Halls](/songs/deck_the_halls.abc)
+- [We Wish You a Merry Christmas](/songs/we_wish_you_a_merry_christmas.abc)
