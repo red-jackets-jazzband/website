@@ -5,6 +5,7 @@ import { findStyleFindings, findStyleIssues } from "../scripts/lint-abc-style.js
 
 const HEADER = "X:1\nT:Test\nM:4/4\nL:1/4\n";
 const REPEATED = "repeated-chord";
+const DOWNBEAT = "missing-downbeat-chord";
 
 function findings(body, key = "K:C") {
   const [tune] = ABCJS.parseOnly(`${HEADER}${key}\n${body}\n`);
@@ -57,7 +58,7 @@ test("a split bar may restate the chord held on its downbeat", () => {
   const held = '"C"CDEF | ';
   assert.deepEqual(findings(`${held}"C"G2 "F"G2 | c4 |`), []);
   // ...but only on the downbeat, and only when the bar really changes chord.
-  assert.deepEqual(findings(`${held}G"C"G "F"G2 | c4 |`), [REPEATED]);
+  assert.deepEqual(findings(`${held}G"C"G "F"G2 | c4 |`), [DOWNBEAT, REPEATED]);
   assert.deepEqual(findings(`${held}"C"G4 | c4 |`), [REPEATED]);
 });
 
@@ -88,6 +89,42 @@ test("a real short pickup, an all-rest bar, or a plain first bar is fine", () =>
 
 test("a chordless full first bar that starts with rests and closes on a plain bar is also a pickup", () => {
   assert.deepEqual(findings('z2 GA |\n"C"c4 |'), ["pickup-rests"]);
+});
+
+test("a pickup is closed by a double bar, not a plain one", () => {
+  assert.deepEqual(findings('GA |"C"c4 | G4 |'), ["pickup-plain-bar"]);
+  assert.deepEqual(findings('GA ||"C"c4 | G4 |'), []);
+  assert.deepEqual(findings('GA |:"C"c4 | G4 :|'), []);
+  // A pickup that opens a repeat is played again on every pass.
+  assert.deepEqual(findings('|: GA |"C"c4 | G4 :|'), []);
+  // A full first bar is no pickup.
+  assert.deepEqual(findings('"C"GABc | G4 |'), []);
+});
+
+test("the pickup finding points at the bar line to double", () => {
+  const text = `${HEADER}K:C\nGA |"C"c4 |\n`;
+  const [finding] = findStyleFindings(ABCJS.parseOnly(text)[0]);
+  assert.equal(text[finding.at], "|");
+  assert.equal(text.slice(finding.at - 3, finding.at), "GA ");
+});
+
+test("a bar that changes chord partway through restates the held chord on its downbeat", () => {
+  assert.deepEqual(findings('"C"CDEF | G2 "F"G2 | c4 |'), [DOWNBEAT]);
+  assert.deepEqual(findings('"C"CDEF | z2 "F"G2 | c4 |'), [DOWNBEAT]);
+  assert.deepEqual(findings('"C"CDEF- | F2 "F"G2 | c4 |'), [DOWNBEAT]);
+  assert.deepEqual(findings('"C"CDEF | "C"G2 "F"G2 | c4 |'), []);
+});
+
+test("the missing-downbeat-chord finding carries the chord to restate", () => {
+  const [tune] = ABCJS.parseOnly(`${HEADER}K:C\n"Am7"CD"D7"EF | G2 "G7"G2 |\n`);
+  const [finding] = findStyleFindings(tune);
+  assert.equal(finding.type, DOWNBEAT);
+  assert.equal(finding.inEffect.name, "D7");
+});
+
+test("a mid-bar chord with nothing in effect before it needs no downbeat chord", () => {
+  assert.deepEqual(findings('z2 "C"G2 | c4 |'), []);
+  assert.deepEqual(findings('GA ||z2 "C"G2 | c4 |'), []);
 });
 
 test("messages carry the location and the rule", () => {
