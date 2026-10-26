@@ -3,13 +3,15 @@ T:Last Christmas
 C:George Michael (1984)
 M:4/4
 L:1/8
-Q:"Medium"
-K:C
+W:| 1 | Intro | banjo; +bass |
+W:| 2 | Chorus 2x Verse 2x ... | vocals |
+K:B
+P:Intro
+"B"c2 cc "B6"B2 BB |"B"cccB- "B6"Bc B2 |"G#sus4"c2 cc "G#m"B2 BB |"G#sus4"cccB- "G#m"Bc B2 |
+"C#sus4"d2 d(d "C#m"c2) cc |"C#sus4"dddc- "C#m"cd c2 |"F#7sus4"B2 BB "F#7"A2 AA |"F#7sus4"BBBA- "F#7"AB A2 |:
 P:Chorus
-|:"Cmaj9"d3 d- "C6"d c2 G |"Cmaj9"ddec- "C6"c2 Ac |"Em7/A"dd e2 "Am7"c3 A |
-"Em7/A"BcBA- "Am7"A2 z2 |"Am7/D"e3 d- "Dm7"d3 A |"Am7/D"efed- "Dm7"d2 z c |
-"Fmaj7/G"BccB- "G9"B c2 "^To ⊕"B- |[1 "Fmaj7/G"B "G9"G3 z4 :|[2 "Fmaj7/G"B "G9"G3 z4 ||
+"B"c3 c- "B6"c B2 F |"B"ccdB- "B6"B2 GB |"G#sus4"cc d2 "G#m"B3 G |"G#sus4"ABAG- "G#m"G2 z2 |
+"C#sus4"d3 c- "C#m"c3 G |"C#sus4"dedc- "C#m"c2 z B |"F#7sus4"ABBA- "F#7"A B2 A- |"F#7sus4"A "F#7"F3 z4 :|
 P:Verse
-"Cmaj9"z2 d2 "C6"dc z c |"Cmaj9"g3 e- "C6"e/d/c- c2 |"Em7/A"z d dd "Am7"dc z c |"Em7/A"aa z e- "Am7"e d2 c- |
-"Am7/D"c2 eA/c/- "Dm7"cd z2 |"Am7/D"ee eA/c/- "Dm7"cd z2 |"Fmaj7/G"z c2 c "G9"B/B/B- BB |"Fmaj7/G"cBBA- "G9"AG z2 |
-"Cmaj9"z2 !style=x!E/!style=x!E!style=x!E/ "C6"!style=x!E2 z c |"Cmaj9"BcBc "C6"B c2 z |
+"B"z2 c2 cB z B | f3 d- d/c/B- B2 |"G#sus4"z c cc "G#m"cB z B |"G#sus4"gg z d- "G#m"d c2 B- |
+"C#sus4"B2 dG/B/- "C#m"Bc z2 |"C#sus4"dd dG/B/- "C#m"Bc z2 |"F#sus4"z B2 B "F#7"A/A/A- AA |"F#sus4"BAAG- "F#7"GF z2 |]

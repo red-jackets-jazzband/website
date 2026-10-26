@@ -17,6 +17,7 @@
 - [White Christmas](/songs/white_christmas.abc)
   > of in Bes
 - [Jingle Bell Rock](/songs/jingle_bell_rock.abc)
+- [Last Christmas](/songs/last_christmas.abc?key=Bb)
 - [God Rest Ye Merry, Gentlemen](/songs/god_rest_ye_merry_gentlemen.abc)
 - [Hallelujah](/songs/hallelujah.abc)
 - [O Holy Night](/songs/o_holy_night.abc?key=C)
