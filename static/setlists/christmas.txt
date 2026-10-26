@@ -8,3 +8,4 @@
 - [Feliz Navidad](/songs/feliz_navidad.abc)
 - [Let It Snow](/songs/let_it_snow.abc)
 - [Winter Wonderland](/songs/winter_wonderland.abc)
+- [Mary's Boy Child](/songs/marys_boy_child.abc)
