@@ -10,3 +10,4 @@
 - [Winter Wonderland](/songs/winter_wonderland.abc)
 - [Mary's Boy Child](/songs/marys_boy_child.abc)
 - [Kling klokje klingelingeling](/songs/kling_klokje.abc)
+- [Rudolph the Red-Nosed Reindeer](/songs/rudolph.abc)
