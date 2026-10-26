@@ -1,7 +1,9 @@
 X:1
 T:God Rest Ye Merry, Gentlemen
 C:Traditional
-M:4/4
+W:| 1 | Intro | 4 bars |
+W:| 2 | Song ... | swing |
+M:C|
 L:1/8
 K:Dm
 D2 |"Dm"D2 A2 A2 G2 | F2 E2 D2 C2 |"Bb"D2 E2 F2 G2 |"A7"A6 D2 |

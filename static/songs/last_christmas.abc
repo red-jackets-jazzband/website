@@ -3,8 +3,10 @@ T:Last Christmas
 C:George Michael (1984)
 M:4/4
 L:1/8
-W:| 1 | Intro | banjo; +bass |
-W:| 2 | Chorus 2x Verse 2x ... | vocals |
+W:| 1 | Intro | 2-bar bass lead-in; banjo; +bass |
+W:| 2 | Chorus | vocals |
+W:| 3 | Verse 2x | |
+W:| 4 | Chorus | end |
 K:B
 P:Intro
 "B"c2 cc "B6"B2 BB |"B"cccB- "B6"Bc B2 |"G#sus4"c2 cc "G#m"B2 BB |"G#sus4"cccB- "G#m"Bc B2 |
