@@ -7,3 +7,4 @@
 - [Een heel gelukkig kerstfeest](/songs/een_heel_gelukkig_kerstfeest.abc)
 - [Feliz Navidad](/songs/feliz_navidad.abc)
 - [Let It Snow](/songs/let_it_snow.abc)
+- [Winter Wonderland](/songs/winter_wonderland.abc)
