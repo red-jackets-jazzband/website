@@ -3,3 +3,4 @@
 - [O Christmas Tree](/songs/o_christmas_tree.abc)
 - [De herdertjes lagen bij nachte](/songs/de_herdertjes.abc)
 - [Jingle Bells](/songs/jingle_bells.abc)
+- [Gloria in Excelsis Deo](/songs/gloria_in_excelsis_deo.abc)
