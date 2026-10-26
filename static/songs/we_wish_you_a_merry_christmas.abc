@@ -1,6 +1,10 @@
 X:1
 T:We Wish You a Merry Christmas
 C:Traditional (English)
+W:| 1 | Intro | 4 bars, ♩=168 |
+W:| 2 | Verse Refrain Verse Verse | |
+W:| 3 | Break | 4 bars, fermata |
+W:| 4 | Verse | slower, ♩=120; ff tag |
 M:3/4
 L:1/8
 K:C
