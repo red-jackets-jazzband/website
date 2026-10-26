@@ -15,3 +15,4 @@
 - [Santa Claus Is Comin' to Town](/songs/santa_claus_is_comin_to_town.abc)
 - [White Christmas](/songs/white_christmas.abc)
 - [Jingle Bell Rock](/songs/jingle_bell_rock.abc)
+- [God Rest Ye Merry, Gentlemen](/songs/god_rest_ye_merry_gentlemen.abc)
