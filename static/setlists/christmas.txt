@@ -18,3 +18,4 @@
 - [God Rest Ye Merry, Gentlemen](/songs/god_rest_ye_merry_gentlemen.abc)
 - [O Holy Night](/songs/o_holy_night.abc)
 - [Silver Bells](/songs/silver_bells.abc)
+- [Deck the Halls](/songs/deck_the_halls.abc)
