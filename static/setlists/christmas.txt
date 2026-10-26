@@ -9,3 +9,4 @@
 - [Let It Snow](/songs/let_it_snow.abc)
 - [Winter Wonderland](/songs/winter_wonderland.abc)
 - [Mary's Boy Child](/songs/marys_boy_child.abc)
+- [Kling klokje klingelingeling](/songs/kling_klokje.abc)
