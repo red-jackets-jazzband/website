@@ -46,7 +46,7 @@ and reading the image back — most of the review-only rules can only be seen th
 |---|---|
 | **(new)** A pickup (anacrusis) is written as the notes only. **No rests in front of it.** The first bar is allowed to be short. | lint |
 | A short first bar, or a short bar right before/after a `P:` change, is exempt from the bar-length check. A tune's closing bar is exempt too. | lint |
-| A pickup is followed by `\|\|` when it is a real anacrusis (`F G A \|\|`). | review |
+| **(new)** A pickup is followed by `\|\|` (or the `\|:` of a repeat), never a plain `\|` (`F G A \|\|`). A pickup that is itself the first bar of a repeat (`\|: dB \|`) is left alone. | lint |
 
 ## 4. Chord symbols
 
@@ -57,6 +57,7 @@ Chords go in quotes right before the note: `"Bb"`, `"F7"`, `"Cm7"`, `"C7#5"`, `"
 | **(new)** The **first bar of every part** carries a chord, even if it repeats the previous part's last chord. | lint |
 | **(new)** The **first bar of every printed line of music** carries a chord. That bar is also the first cell of its line in the chord table, so each line of the table starts with a chord. | lint |
 | **(new)** Everywhere else, if a bar has exactly the same chord as the bar before it, **leave the chord out.** Write chords at each change only. | lint |
+| **(new)** A bar that **changes chord partway through** restates the chord held on its downbeat: `"F"d2 c2 "G7"B2 A2`, not `d2 c2 "G7"B2 A2`. The chord table splits that bar's cell in two; with only the later chord written, the cell reads as that chord for the whole bar. | lint |
 | Aim for a chord on beat 1 or on the exact midpoint (beat 3 in 4/4) when the source's harmonic rhythm is that simple. Beat 2/4 chords are fine when the source really has them (cadential approach chords, syncopated punches, three chords in one bar). Don't tie-split or overlay-hack a chord onto the beat 1/3 grid just because it's there. | review |
 | A chord must not sit on the **first half of a tie whose continuation lands on beat 1 or the midpoint**. Move it to the continuation. If one long note spans the beat, split it into two tied notes of the same pitch and put the chord on the second. | lint |
 | A chord change under one long note (a dotted half spanning beats 1–3) that has no note starting there: use an overlay with an invisible rest, `C6 & x4 "Bb7"x2`. | review |
@@ -163,7 +164,7 @@ questions about a transcription belong in the PR description, not in the tune.
 3. Header order, `K:`, `M:`, `F:` links, and the index entry are correct.
 4. `P:` marks on every part, double bar lines between parts, `|]` at the end.
 5. Chord at the first bar of every part and every printed line; no repeated identical chords in between.
-6. Pickup has no rests before it.
+6. Pickup has no rests before it and is followed by a double bar.
 7. Beaming reads like the source; no tie-split or overlay tricks that aren't needed.
 8. Lyrics (if any) read back correctly off the render.
 9. Anything guessed or unreadable on the source is called out in the PR description (not in the tune).
@@ -178,8 +179,11 @@ on the voice that carries the chords. Deliberate gaps:
   by someone with the original chart.)
 - A **melody-only** tune (no chord symbols at all) isn't checked.
 - A **short pickup** first bar may hand the part's/line's chord to the bar after it.
-- A bar that **changes chord partway through** may restate the chord held on its downbeat
-  (`"D7" D4 "Eb" E3E` after a D7 bar), so its chord-table cell shows both halves.
+- A bar that **changes chord partway through** must restate the chord held on its downbeat
+  (`"D7" D4 "Eb" E3E` after a D7 bar), so its chord-table cell shows both halves — unless
+  nothing is in effect yet (a mid-bar first chord after a chordless lead-in). The restated
+  chord is the last one written before the bar, so after a 2nd ending check it is the one
+  you mean.
 - A **repeat sign or 1st/2nd ending** resets the chord in effect, so a chord restated right
   after one isn't flagged.
 - The no-rests-before-a-pickup check only looks at a **single-voice** tune's first bar, and

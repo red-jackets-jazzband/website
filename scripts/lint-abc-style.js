@@ -15,6 +15,13 @@
 //    rests and let the first bar be short.
 // 6. Augmented and diminished chords are spelled out: `Gaug`, `Faug7`, `Bdim`,
 //    never `G+`, `F+7` or `B°` (a raised fifth on a seventh chord is `C7#5`).
+// 7. A pickup (a short first bar) is closed by a double bar (`||`, `|:`, ...),
+//    never a plain `|` - unless it is itself the first bar of a repeat
+//    (`|: dB |`), which plays it again on every pass.
+// 8. A bar whose chord changes partway through restates the chord held on its
+//    downbeat (`"F"d2 c2 "G7"B2 A2`, not `d2 c2 "G7"B2 A2`): the chord table
+//    splits the bar's cell in two, and with only the later chord written the
+//    cell reads as that chord for the whole bar.
 //
 // Nothing is required before a tune's very first chord (a chordless intro or
 // lead-in has no chord to restate, and inventing one is not the linter's job).
@@ -193,6 +200,24 @@ function checkPickup(bars, barLength, findings) {
   findings.push({ type: "pickup-rests", at: leading[0].startChar, rests: leading });
 }
 
+function checkPickupBar(bars, barLength, findings) {
+  const bar = bars[0];
+  if (!bar?.closedBy || bar.closedBy.type !== PLAIN_BAR) return;
+  if (bar.acc >= barLength - DURATION_EPSILON) return;
+  if (breaksContext(bar.precededBy)) return;
+  findings.push({ type: "pickup-plain-bar", at: bar.closedBy.startChar, bar: bar.closedBy });
+}
+
+function checkDownbeatChords(bars, findings) {
+  bars.forEach((bar, index) => {
+    const [first] = bar.notes;
+    if (realChords(first).length > 0 || !hasChord(bar)) return;
+    const inEffect = chordInEffect(bars, index);
+    if (!inEffect) return; // before the tune's first chord: nothing to restate
+    findings.push({ type: "missing-downbeat-chord", at: first.startChar, el: first, inEffect });
+  });
+}
+
 // Mirrors chord-table.js: a long scheme wraps into 8 columns, a short one into
 // 4. A bar that opens a table row restates its chord even when it is the one
 // already in effect, so a bare "%" never starts a row. Counted from the first
@@ -267,6 +292,9 @@ const MESSAGES = {
   "pickup-rests": () => "Pickup is written with leading rests - drop them and let the first bar be short",
   "chord-symbol-spelling": (f) => `Chord "${f.name}" uses "${f.symbol}" - write "${f.word}" instead`,
   "repeated-chord": (f) => `Chord "${f.name}" repeats the chord already in effect - leave it out`,
+  "pickup-plain-bar": () => "Pickup is closed by a plain bar line - write || after it",
+  "missing-downbeat-chord": (f) =>
+    `Bar changes chord partway through but has no chord on its downbeat - restate "${f.inEffect.name}" there`,
 };
 
 // Structured findings (with the abcjs elements involved), for tooling that
@@ -280,7 +308,9 @@ export function findStyleFindings(tune) {
   const bars = splitBars(strand, findings);
   // A multi-voice chart's first bar is a riff for every voice, not a pickup.
   if (strands.size === 1) checkPickup(bars, tune.getBarLength(), findings);
+  checkPickupBar(bars, tune.getBarLength(), findings);
   checkRequiredChords(bars, tune.getBarLength(), findings);
+  checkDownbeatChords(bars, findings);
   checkRepeatedChords(bars, findings);
   checkChordSpelling(strand, findings);
   return findings;
