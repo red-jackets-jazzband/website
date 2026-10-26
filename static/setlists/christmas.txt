@@ -14,3 +14,4 @@
 - [Frosty the Snowman](/songs/frosty_the_snowman.abc)
 - [Santa Claus Is Comin' to Town](/songs/santa_claus_is_comin_to_town.abc)
 - [White Christmas](/songs/white_christmas.abc)
+- [Jingle Bell Rock](/songs/jingle_bell_rock.abc)
