@@ -18,6 +18,7 @@
   > of in Bes
 - [Jingle Bell Rock](/songs/jingle_bell_rock.abc)
 - [God Rest Ye Merry, Gentlemen](/songs/god_rest_ye_merry_gentlemen.abc)
+- [Hallelujah](/songs/hallelujah.abc)
 - [O Holy Night](/songs/o_holy_night.abc?key=C)
 - [Silver Bells](/songs/silver_bells.abc?key=G)
 - [Deck the Halls](/songs/deck_the_halls.abc?key=G)
