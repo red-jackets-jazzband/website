@@ -5,3 +5,4 @@
 - [Jingle Bells](/songs/jingle_bells.abc)
 - [Gloria in Excelsis Deo](/songs/gloria_in_excelsis_deo.abc)
 - [Een heel gelukkig kerstfeest](/songs/een_heel_gelukkig_kerstfeest.abc)
+- [Feliz Navidad](/songs/feliz_navidad.abc)
