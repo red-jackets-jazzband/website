@@ -3,13 +3,13 @@ T:Mood Indigo
 C:Duke Ellington and Barney Bigard, words by Irving Mills (1930)
 F:https://secondhandsongs.com/work/9665
 R:Traditional
-W:| 1 | A | |
+W:| 1 | A | collective |
 W:| 2 | B | clarinet solo |
 W:| 3 | B | trombone solo |
 W:| 4 | A | collective |
 M:6/8
 L:1/8
-Q:1/4=150
+Q:1/4=100
 K:C
 P:A
 "C"e6 | "B7"_e3 "C"=e3 | "D7"e6- | e6 | "G7"g6 | "Gaug"_e6 | "C"=e6- | "G7"e6 ||
