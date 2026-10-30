@@ -42,6 +42,7 @@ Doctor Jazz,doctor_jazz.abc
 Down by the Riverside,down_by_the_riverside.abc
 Down in Honky Tonk Town,honky_tonk_town.abc
 Drop me off in New Orleans,drop_me_off_in_new_orleans.abc
+Eh la bas,eh_la_bas.abc
 Exactly like you,exactly_like_you.abc
 Feel like Funkin' it up,feel_like_funkin_it_up.abc
 Five Foot Two,five_foot_two.abc
