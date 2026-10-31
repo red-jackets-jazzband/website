@@ -64,6 +64,19 @@ test("renderChordTable gives each chord cell its longest chord's length for the 
   });
 });
 
+test("renderChordTable counts its rows for the print, and marks a grid of more than 8 rows dense", () => {
+  inDom((container) => {
+    renderChordTable(Array.from({ length: 20 }, (_, i) => bar([`C${i}`])), container);
+    const grid = container.querySelector(CHORD_GRID_SELECTOR);
+    assert.equal(grid.style.getPropertyValue("--chord-rows"), "5");
+    assert.equal(grid.classList.contains("chordGrid--dense"), false);
+    renderChordTable(Array.from({ length: 80 }, (_, i) => bar([`C${i}`])), container);
+    const dense = container.querySelector(CHORD_GRID_SELECTOR);
+    assert.equal(dense.style.getPropertyValue("--chord-rows"), "10");
+    assert.ok(dense.classList.contains("chordGrid--dense"));
+  });
+});
+
 test("renderChordTable boxes a part's first chord with its letter, top-left corner", () => {
   inDom((container) => {
     renderChordTable([bar(["C"], { part: "A" }), bar(["F"]), bar(["G"], { part: "B" })], container);
