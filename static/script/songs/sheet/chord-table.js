@@ -44,12 +44,22 @@ function multiChordDiv(names) {
     else if (index === names.length - 1) cls += " chordName--last";
     parts.push(el("span", { class: cls, text: name }));
   });
-  return el("div", { class: "chordDiv chordDiv--multi" }, parts);
+  const cls = names.length > 2 ? "chordDiv chordDiv--multi chordDiv--multi3" : "chordDiv chordDiv--multi";
+  return el("div", { class: cls, style: chordCharsStyle(names) }, parts);
+}
+
+// The longest chord's length, for the printed chordbook to shrink a chord
+// that wouldn't fit its cell's width (split.css, --chord-chars).
+function chordCharsStyle(names) {
+  return { "--chord-chars": String(Math.max(...names.map((name) => name.length))) };
 }
 
 function chordDivFor(measure) {
   if (Array.isArray(measure.text) && measure.text.length > 1) return multiChordDiv(measure.text);
-  if (!isContinuationBar(measure)) return el("div", { class: "chordDiv", text: String(measure.text) });
+  if (!isContinuationBar(measure)) {
+    const text = String(measure.text);
+    return el("div", { class: "chordDiv", text, style: chordCharsStyle([text]) });
+  }
   return el("div", { class: "chordDiv" }, [
     el("span", { attrs: { "aria-hidden": "true" }, text: " % " }),
     el("span", { class: "rj-sr-only", text: tl("chords_same", "same chord") }),
