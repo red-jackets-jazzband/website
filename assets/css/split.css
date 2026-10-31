@@ -3468,6 +3468,19 @@ body.songForm-dragging {
     font-size: x-large;
     font-size: min(1.5rem, calc(58mm / var(--chord-rows, 1) * 0.75)); /* 1.5rem = x-large, which min() doesn't take */
   }
+  /* A chart of more than 12 rows (South Rampart Street Parade) is split over
+     two tiles, "(1/2)" and "(2/2)" (print.js's splitLongChart): the song's
+     block shows the rows before the split, a continuation block the rest. */
+  body.export-mode-chordbook #setlistPrintBooklet .chordCell.chordCell--part1,
+  body.export-mode-chordbook #setlistPrintBooklet .chordCell.chordCell--part2 {
+    display: none;
+  }
+  body.export-mode-chordbook #setlistPrintBooklet .setlist-booklet-song--split .songtitle::after {
+    content: " (1/2)";
+  }
+  body.export-mode-chordbook #setlistPrintBooklet .setlist-booklet-song--cont .songtitle::after {
+    content: " (2/2)";
+  }
   /* A chord too long for its cell (an 8-column grid's "B♭maj7") shrinks to
      the cell's width instead of being clipped: chord-table.js sets
      --chord-chars to the longest chord's length, and this font averages
@@ -5707,6 +5720,13 @@ body:not(.rj-sheet-active) .rj-sheet-pager .rj-sheet-step {
     max-width: none;
     padding: 40px;
   }
+}
+
+/* A long chart's second chordbook tile (print.js's splitLongChart): only
+   the printed chordbook shows it, and only for a chart that was split. */
+#setlistPrintBooklet .setlist-booklet-song--cont[hidden],
+body:not(.export-mode-chordbook) #setlistPrintBooklet .setlist-booklet-song--cont {
+  display: none !important;
 }
 
 .chordCell {
