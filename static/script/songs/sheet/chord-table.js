@@ -1,4 +1,4 @@
-import { el, clear } from "../../lib/core/dom.js";
+import { el, clear, qsa } from "../../lib/core/dom.js";
 import { simplifyBlues, simplifySong } from "../../lib/music/chords.js";
 import { tl } from "../../lib/core/i18n.js";
 
@@ -207,15 +207,63 @@ export function renderChordTable(chords, container) {
 
     grid.append(cell);
     if (column === 0) rows += 1;
+    cell.dataset.row = String(rows - 1);
     column = (column + 1) % cols;
     if (column === 0) inGapRow = false;
   });
 
   // The printed chordbook scales a long chart's type to its row count, and
   // stops stacking a bar's chords once rows get too short for two lines.
-  grid.style.setProperty("--chord-rows", String(rows));
-  if (rows > DENSE_ROWS) grid.classList.add("chordGrid--dense");
+  setGridRows(grid, rows);
   clear(container).append(grid);
+}
+
+function setGridRows(grid, rows) {
+  grid.style.setProperty("--chord-rows", String(rows));
+  grid.classList.toggle("chordGrid--dense", rows > DENSE_ROWS);
+}
+
+const cellRow = (cell) => Number(cell.dataset.row);
+
+// The row to split a long grid at: the middle, or a part's first row within
+// two rows of it (the closest one), so a section isn't cut in two.
+function splitRow(cells, rows) {
+  const middle = Math.ceil(rows / 2);
+  let best = middle;
+  let bestDistance = Infinity;
+  cells.forEach((cell, index) => {
+    const row = cellRow(cell);
+    const startsRow = index === 0 || cellRow(cells[index - 1]) !== row;
+    if (!startsRow || row === 0 || !cell.querySelector(".chordPartMarker")) return;
+    const distance = Math.abs(row - middle);
+    if (distance <= 2 && distance < bestDistance) {
+      best = row;
+      bestDistance = distance;
+    }
+  });
+  return best;
+}
+
+/*
+  Split a rendered grid of more than `maxRows` rows in two for the printed
+  chordbook, where a long chart (South Rampart Street Parade's 20 rows) would
+  otherwise shrink to a few points to fit one tile. Marks the grid's cells
+  from the split row on `chordCell--part2`, and returns a copy of the grid
+  whose cells before it are marked `chordCell--part1` (split.css hides each
+  half's other cells in the chordbook), each half's row count set for its own
+  type size. Returns null for a grid that fits.
+*/
+export function splitChordGrid(grid, maxRows) {
+  const cells = qsa(".chordCell", grid);
+  const rows = cells.length === 0 ? 0 : cellRow(cells[cells.length - 1]) + 1;
+  if (rows <= maxRows) return null;
+  const split = splitRow(cells, rows);
+  const second = grid.cloneNode(true);
+  cells.forEach((cell) => cell.classList.toggle("chordCell--part2", cellRow(cell) >= split));
+  qsa(".chordCell", second).forEach((cell) => cell.classList.toggle("chordCell--part1", cellRow(cell) < split));
+  setGridRows(grid, split);
+  setGridRows(second, rows - split);
+  return second;
 }
 
 /*
