@@ -30,8 +30,26 @@ function isContinuationBar(measure) {
   return Array.isArray(measure.text) && measure.text.length === 1 && measure.text[0] === " % ";
 }
 
+// A bar with several chords ("C,C#dim7") gets one span per chord, the commas
+// in spans of their own: the text reads as before, while the printed
+// chordbook, whose large type doesn't fit two chords side by side in a cell,
+// can stack them (first chord top left, last bottom right — split.css's
+// .chordDiv--multi).
+function multiChordDiv(names) {
+  const parts = [];
+  names.forEach((name, index) => {
+    if (index > 0) parts.push(el("span", { class: "chordSep", text: "," }));
+    let cls = "chordName";
+    if (index === 0) cls += " chordName--first";
+    else if (index === names.length - 1) cls += " chordName--last";
+    parts.push(el("span", { class: cls, text: name }));
+  });
+  return el("div", { class: "chordDiv chordDiv--multi" }, parts);
+}
+
 function chordDivFor(measure) {
-  if (!isContinuationBar(measure)) return el("div", { class: "chordDiv", html: String(measure.text) });
+  if (Array.isArray(measure.text) && measure.text.length > 1) return multiChordDiv(measure.text);
+  if (!isContinuationBar(measure)) return el("div", { class: "chordDiv", text: String(measure.text) });
   return el("div", { class: "chordDiv" }, [
     el("span", { attrs: { "aria-hidden": "true" }, text: " % " }),
     el("span", { class: "rj-sr-only", text: tl("chords_same", "same chord") }),

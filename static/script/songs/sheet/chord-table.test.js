@@ -40,6 +40,21 @@ test("renderChordTable shows a break (\"N.C.\") marker as plain text, alone or a
   });
 });
 
+test("renderChordTable puts each chord of a multi-chord bar in its own span, first and last marked", () => {
+  inDom((container) => {
+    renderChordTable([bar(["C"]), bar(["C", "C♯dim7"]), bar(["Dm7", "C", "G7"])], container);
+    const divs = [...container.querySelectorAll(".chordDiv")];
+    assert.equal(divs[0].classList.contains("chordDiv--multi"), false);
+    assert.ok(divs[1].classList.contains("chordDiv--multi"));
+    assert.equal(divs[1].querySelector(".chordName--first").textContent, "C");
+    assert.equal(divs[1].querySelector(".chordName--last").textContent, "C♯dim7");
+    assert.deepEqual(
+      [...divs[2].querySelectorAll(".chordName")].map((s) => s.className),
+      ["chordName chordName--first", "chordName", "chordName chordName--last"],
+    );
+  });
+});
+
 test("renderChordTable boxes a part's first chord with its letter, top-left corner", () => {
   inDom((container) => {
     renderChordTable([bar(["C"], { part: "A" }), bar(["F"]), bar(["G"], { part: "B" })], container);
