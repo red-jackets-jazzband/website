@@ -3466,6 +3466,28 @@ body.songForm-dragging {
     height: auto;
     line-height: 1.2;
   }
+  /* At this size two chords side by side ("C,C#dim7", "Am7,D7") overflow a
+     cell and get clipped. Stack them instead: the first on the top line,
+     left-aligned, the last on the bottom line, right-aligned (one in between
+     centred), a little smaller so two lines fit the row's 50px. */
+  body.export-mode-chordbook #setlistPrintBooklet .chordDiv--multi {
+    font-size: 0.8em;
+    line-height: 1.05;
+    padding: 0 0.15em;
+  }
+  body.export-mode-chordbook #setlistPrintBooklet .chordDiv--multi .chordSep {
+    display: none;
+  }
+  body.export-mode-chordbook #setlistPrintBooklet .chordDiv--multi .chordName {
+    display: block;
+    white-space: nowrap;
+  }
+  body.export-mode-chordbook #setlistPrintBooklet .chordDiv--multi .chordName--first {
+    text-align: left;
+  }
+  body.export-mode-chordbook #setlistPrintBooklet .chordDiv--multi .chordName--last {
+    text-align: right;
+  }
   /* A chart with more rows than fit (Isle of Capri, ...) must still show its
      whole grid AND the song-form strip inside the A5 tile, which otherwise
      clips the overflow. The tile is a grid whose middle track (the chord
