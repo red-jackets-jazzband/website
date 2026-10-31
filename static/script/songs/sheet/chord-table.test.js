@@ -55,6 +55,15 @@ test("renderChordTable puts each chord of a multi-chord bar in its own span, fir
   });
 });
 
+test("renderChordTable gives each chord cell its longest chord's length for the print to fit, three chords their own class", () => {
+  inDom((container) => {
+    renderChordTable([bar(["B♭maj7"]), bar(["C", "C♯dim7"]), bar(["Dm7", "C", "G7"])], container);
+    const divs = [...container.querySelectorAll(".chordDiv")];
+    assert.deepEqual(divs.map((d) => d.style.getPropertyValue("--chord-chars")), ["6", "6", "3"]);
+    assert.deepEqual(divs.map((d) => d.classList.contains("chordDiv--multi3")), [false, false, true]);
+  });
+});
+
 test("renderChordTable boxes a part's first chord with its letter, top-left corner", () => {
   inDom((container) => {
     renderChordTable([bar(["C"], { part: "A" }), bar(["F"]), bar(["G"], { part: "B" })], container);
