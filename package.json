@@ -28,7 +28,7 @@
     "@fortawesome/fontawesome-free": "7.3.1",
     "@playwright/test": "1.64.1",
     "@stylistic/eslint-plugin": "^5.10.0",
-    "@types/node": "^26.6.5",
+    "@types/node": "^26.6.6",
     "abcjs": "^6.7.1",
     "eslint": "^10.13.0",
     "eslint-plugin-promise": "^7.3.0",
