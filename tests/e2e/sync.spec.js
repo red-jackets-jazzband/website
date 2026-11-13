@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 // Device sync against a fake server (docs/device-sync-plan.md, WBS 10.1, 10.2):
 // the sync host is answered from this file by route, so what's checked is the
 // real page on both sides. Two browser contexts are two devices (own storage).
-const SYNC_HOST = "sync.redjackets.nl";
+const SYNC_HOST = "rj-sync.redjackets.workers.dev";
 const CORS = { "access-control-allow-origin": "*", "access-control-expose-headers": "ETag" };
 const WS_PATTERN = new RegExp(`${SYNC_HOST.replaceAll(".", "\\.")}/v1/vault/[0-9a-f]{64}/live`);
 
