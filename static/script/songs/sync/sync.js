@@ -1,9 +1,11 @@
 import { byId, on } from "../../lib/core/dom.js";
+import { hashWithoutSync, syncCodeFromHash } from "../../lib/core/song-hash.js";
 import { tl } from "../../lib/core/i18n.js";
 import { createSyncEngine, CODE_KEY } from "../../lib/sync/engine.js";
 import { formatCode } from "../../lib/sync/crypto.js";
 import { onLocalChange } from "../../lib/sync/changes.js";
 import { holdLease, releaseLease } from "../../lib/sync/lease.js";
+import { createLiveChannel } from "../../lib/sync/live.js";
 import { afterPageLoad } from "../core/after-load.js";
 
 /*
@@ -53,6 +55,9 @@ export function createSync(ctx) {
   let uploadTimer = null;
   let lastPull = 0;
   let lastResult = { status: "off" };
+  let live = null;
+  // Read at creation, before navigation's own hash rewriting can drop it.
+  const pairingCode = syncCodeFromHash(window.location.hash);
 
   const storage = () => { return ctx.storage(); };
   const getEngine = () => {
@@ -78,10 +83,32 @@ export function createSync(ctx) {
     if (ctx.songForm) ctx.songForm.refresh();
   }
 
+  // A pushed version newer than ours: pull now.
+  function onPushed(version) {
+    if (version > getEngine().knownVersion()) { lastPull = 0; settle(run()); }
+  }
+
+  function openSocket() {
+    return getEngine().liveUrl().then((url) => { return url ? new window.WebSocket(url) : null; });
+  }
+
+  // Open only in the visible tab that holds the lease; closed otherwise.
+  function syncLive() {
+    const wanted = connected() && !document.hidden && typeof window.WebSocket === "function"
+      && holdLease(storage(), tabId, Date.now());
+    if (wanted && !live) {
+      live = createLiveChannel({ connect: openSocket, onVersion: onPushed });
+      settle(live.start());
+    } else if (!wanted && live) {
+      live.stop();
+      live = null;
+    }
+  }
+
   // The lease is renewed only while connected; a never-connected page has no timer at all.
   function syncLeaseTimer(isOn) {
     if (isOn && !flags.leaseTimer) {
-      flags.leaseTimer = setInterval(() => { if (!flags.busy) holdLease(storage(), tabId, Date.now()); }, LEASE_RENEW_MS);
+      flags.leaseTimer = setInterval(() => { if (!flags.busy) { holdLease(storage(), tabId, Date.now()); syncLive(); } }, LEASE_RENEW_MS);
     } else if (!isOn && flags.leaseTimer) {
       clearInterval(flags.leaseTimer);
       flags.leaseTimer = null;
@@ -91,6 +118,7 @@ export function createSync(ctx) {
   function render() {
     const code = connected() ? getEngine().code() : null;
     syncLeaseTimer(Boolean(code));
+    syncLive();
     const shown = lastResult;
     const line = byId("syncStatus");
     if (line) line.textContent = statusText(shown, clockTime());
@@ -177,6 +205,19 @@ export function createSync(ctx) {
     });
   }
 
+  // A pairing link (#sync=<code>): take the code out of the address bar at once,
+  // then join after a confirmation (WBS 7.2). Already connected: just strip it.
+  function takePairingLink() {
+    const code = pairingCode;
+    if (code === null) return;
+    const rest = hashWithoutSync(window.location.hash);
+    window.history.replaceState(null, "", window.location.pathname + window.location.search + (rest ? `#${rest}` : ""));
+    if (connected() || !storage()) return;
+    if (window.confirm(tl("sync_pair_confirm", "Connect this device to the sync from the link you opened? Your setlists and song forms will be merged with the ones already synced."))) {
+      settle(action(() => { return getEngine().join(code); }));
+    }
+  }
+
   return {
     open() {
       const overlay = byId("syncModal");
@@ -196,15 +237,20 @@ export function createSync(ctx) {
 
     init() {
       initDialog();
+      takePairingLink();
       onLocalChange(scheduleUpload);
       // Another tab (or a sync in it) wrote storage: redraw from it.
       window.addEventListener("storage", (e) => {
         if (e.key === null || WATCHED_KEYS.includes(e.key) || (e.key || "").startsWith("rj.songForm.")) redraw();
         if (e.key === CODE_KEY) render();
       });
-      document.addEventListener("visibilitychange", () => { if (!document.hidden) pullIfStale(); });
+      document.addEventListener("visibilitychange", () => { syncLive(); if (!document.hidden) pullIfStale(); });
       window.addEventListener("online", () => { lastPull = 0; settle(run()); });
-      window.addEventListener("pagehide", () => { releaseLease(storage(), tabId); });
+      window.addEventListener("pagehide", () => {
+        if (live) live.stop();
+        live = null;
+        releaseLease(storage(), tabId);
+      });
       ctx.store.subscribe("nav", () => { if (ctx.state.activeTab === "setlists") pullIfStale(); });
       if (!connected()) return Promise.resolve();
       syncLeaseTimer(true);
