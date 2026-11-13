@@ -164,6 +164,10 @@ export function createSync(ctx) {
     if (line) line.textContent = statusText(shown, clockTime());
     const codeBox = byId("syncCodeBox");
     if (codeBox) codeBox.hidden = !code;
+    ["syncNow", "syncLinks"].forEach((id) => {
+      const node = byId(id);
+      if (node) node.hidden = !code;
+    });
     const intro = byId("syncIntro");
     if (intro) intro.hidden = Boolean(code);
     const setup = byId("syncSetup");
@@ -173,7 +177,11 @@ export function createSync(ctx) {
     if (!code) qrFor = null;
     if (code && code !== qrFor) {
       qrFor = code;
-      settle(showQr(code));
+      // A failed draw (generator not loaded) must not be remembered as drawn.
+      settle(showQr(code).catch((error) => {
+        if (qrFor === code) qrFor = null;
+        throw error;
+      }));
     }
   }
 

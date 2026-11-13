@@ -31,6 +31,7 @@ function bandStatusText(result) {
   if (result.status === "pairHint") return tl("band_pair_hint", "Type your name, then press Join to enter this shared space");
   if (result.status === "off") return tl("band_off", "Not in a shared space");
   if (result.status === "already") return tl("band_already", "You are already in this shared space");
+  if (result.status === "keepFailed") return tl("band_keep_failed", "Couldn't keep this space's setlists on this device (storage is full?). Nothing was removed.");
   return statusText(result, clockTime());
 }
 
@@ -59,6 +60,7 @@ export function createBand(ctx) {
   const engines = new Map(); // band id → its sync engine
   const results = new Map(); // band id → the last result, for the status line
   const busy = new Set(); // ids with a sync or an action in flight
+  const rerun = new Set(); // ids that were asked to sync while busy: once more when done
   let current = null; // the band id shown, or null while starting / joining another
   let draftResult = { status: "off" };
   let timer = null;
@@ -246,12 +248,23 @@ export function createBand(ctx) {
     else if (ctx.state.currentPersonalId) ctx.setlistView.refreshOpenPersonal();
   }
 
+  // Takes a space off this device, keeping its setlists as personal ones. False
+  // (and nothing removed) when they couldn't be copied. A shared setlist open
+  // from it is closed, since its storage is gone.
+  function dropSpace(id) {
+    if (!forgetBand(storage(), id)) return false;
+    engines.delete(id);
+    if (ctx.state.currentBandId === id) ctx.nav.leaveSetlist();
+    return true;
+  }
+
   function finish(id, result) {
     setResult(id, result);
     // The engine clears the code itself when the vault is gone; tidy what came from it.
     if ((result.status === "gone" || result.status === "notFound") && id !== null) {
-      forgetBand(storage(), id);
-      if (current === id) {
+      if (!dropSpace(id)) {
+        setResult(id, { status: "keepFailed" });
+      } else if (current === id) {
         showFirstLeft();
         draftResult = result;
       }
@@ -263,7 +276,11 @@ export function createBand(ctx) {
   }
 
   async function run(id) {
-    if (!joined().some((band) => { return band.id === id; }) || busy.has(id)) return;
+    if (!joined().some((band) => { return band.id === id; })) return;
+    if (busy.has(id)) {
+      rerun.add(id); // an edit landed while a sync is in flight: sync again after it
+      return;
+    }
     busy.add(id);
     lastPull = Date.now();
     setResult(id, { status: "working" });
@@ -271,6 +288,7 @@ export function createBand(ctx) {
     const result = await engineFor(id).sync().catch(() => { return { status: "error" }; });
     busy.delete(id);
     finish(id, result);
+    if (rerun.delete(id)) await run(id);
   }
 
   const runAll = () => { return Promise.all(joined().map((band) => { return run(band.id); })); };
@@ -328,7 +346,7 @@ export function createBand(ctx) {
         current = id;
         draftResult = { status: "off" };
       } else {
-        forgetBand(storage(), id);
+        forgetBand(storage(), id, { keepSetlists: false }); // a failed join: drop what it downloaded
         engines.delete(id);
       }
       return result;
@@ -382,9 +400,14 @@ export function createBand(ctx) {
     on("bandNow", "click", () => { if (current !== null) settle(run(current)); });
     on("bandLeave", "click", () => {
       if (current === null) return;
-      engineFor(current).disconnect();
-      forgetBand(storage(), current);
-      engines.delete(current);
+      const id = current;
+      if (!dropSpace(id)) {
+        setResult(id, { status: "keepFailed" });
+        render();
+        return;
+      }
+      engineFor(id).disconnect();
+      engines.delete(id);
       showFirstLeft();
       draftResult = { status: "off" };
       if (ctx.songForm) ctx.songForm.refresh();
@@ -397,8 +420,7 @@ export function createBand(ctx) {
       settle(action(id, async () => {
         const result = await engineFor(id).deleteServerCopy();
         if (result.status === "ok") {
-          forgetBand(storage(), id);
-          engines.delete(id);
+          if (!dropSpace(id)) return { status: "keepFailed" };
           showFirstLeft();
           refreshSetlists();
         }

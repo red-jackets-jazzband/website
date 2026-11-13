@@ -324,9 +324,10 @@ export function createSongForm(ctx) {
   function tools(hasStrip) {
     let cls = hasStrip ? "songForm-tools" : "songForm-tools songForm-tools--alone";
     if (revealed || menuOpen) cls += " is-revealed";
-    // A song with no form at all: one labelled button straight into the
-    // editor, since a menu would hold nothing else worth picking.
-    if (!hasStrip && !mine) return el("div", { class: cls }, [addFormButton()]);
+    // A song with no form at all (none of its own, none a bandmate shared):
+    // one labelled button straight into the editor, since a menu would hold
+    // nothing else worth picking.
+    if (!hasStrip && !mine && others().length === 0) return el("div", { class: cls }, [addFormButton()]);
     return el("div", { class: cls }, [
       menuButton(),
       menuOpen ? menu() : null,

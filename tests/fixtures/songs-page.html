@@ -246,8 +246,10 @@
       <div class="rj-sync-qr"><svg id="syncQr" role="img" aria-label="songs_syncQr_aria" focusable="false"></svg></div>
       <div id="syncCode" class="rj-sync-code"></div>
       <p class="rj-install-note">songs_syncCodeHint</p>
-      <p id="syncStatus" class="rj-sync-status" role="status" aria-live="polite"></p>
-      <button type="button" id="syncNow" class="rj-modal-btn rj-modal-btn-primary">songs_syncNow</button>
+    </div>
+    <p id="syncStatus" class="rj-sync-status" role="status" aria-live="polite"></p>
+    <button type="button" id="syncNow" class="rj-modal-btn rj-modal-btn-primary" hidden>songs_syncNow</button>
+    <div id="syncLinks" hidden>
       <button type="button" id="syncNewCode" class="rj-sync-link">songs_syncNewCode</button>
       <button type="button" id="syncDisconnect" class="rj-sync-link">songs_syncDisconnect</button>
       <button type="button" id="syncDelete" class="rj-sync-link">songs_syncDelete</button>

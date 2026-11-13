@@ -1,7 +1,7 @@
 import { byId, qsa, clear, on } from "../../lib/core/dom.js";
 import { parseSetlistFile } from "../../lib/setlists/setlist-format.js";
 import {
-  listPersonalSetlists, getPersonalSetlist, createPersonalSetlist, copyBandSetlistToPersonal,
+  listPersonalSetlists, getPersonalSetlist, copyBandSetlistToPersonal,
 } from "../../lib/setlists/setlists-store.js";
 import { bandSetlistStorage, connectedBands, listSharedSetlists } from "../../lib/sync/band-vault.js";
 import { tl } from "../../lib/core/i18n.js";
@@ -78,9 +78,16 @@ export function createSetlistModal(ctx) {
     }
   }
 
-  // Where a new setlist is stored: the target band space's, or the page's.
-  function targetStorage() {
-    return targetBand ? bandSetlistStorage(ctx.storage(), targetBand) : ctx.storage();
+  // Each creation is a job that remembers where it was started (the band space
+  // or personal) and which opening of the modal it belongs to: a file read or a
+  // band-file fetch that finishes after the modal was closed, or reopened on
+  // another shelf, is dropped instead of landing in the wrong place.
+  let generation = 0;
+  const startJob = () => { return { band: targetBand, ticket: generation }; };
+
+  function dismiss() {
+    generation += 1;
+    closeModal();
   }
 
   function showTarget() {
@@ -95,6 +102,7 @@ export function createSetlistModal(ctx) {
   function open(bandId = null) {
     const overlay = byId("setlistModal");
     if (!overlay) return;
+    generation += 1;
     targetBand = bandId && connectedBands(ctx.storage()).some((b) => { return b.id === bandId; }) ? bandId : null;
     showTarget();
     const nameInput = byId("setlistModalName");
@@ -107,13 +115,17 @@ export function createSetlistModal(ctx) {
     if (nameInput) nameInput.focus();
   }
 
-  function openCreated(entry) {
+  // Stores `data` as a new setlist where the job was started and opens it.
+  function place(job, data) {
+    if (job.ticket !== generation) return;
+    const storage = job.band ? bandSetlistStorage(ctx.storage(), job.band) : ctx.storage();
+    const entry = copyBandSetlistToPersonal(storage, data);
     closeModal();
-    if (targetBand) ctx.setlistView.openShared(targetBand, entry.id);
+    if (job.band) ctx.setlistView.openShared(job.band, entry.id);
     else ctx.setlistView.openPersonal(entry.id);
   }
 
-  function createFromUpload(name) {
+  function createFromUpload(name, job) {
     const fileInput = byId("setlistModalFile");
     const file = fileInput && fileInput.files[0];
     if (!file) {
@@ -124,11 +136,11 @@ export function createSetlistModal(ctx) {
     reader.onload = () => {
       // readAsText() below always yields a string; anything else reads as empty.
       const parsed = parseSetlistFile(typeof reader.result === "string" ? reader.result : "");
-      openCreated(copyBandSetlistToPersonal(targetStorage(), {
+      place(job, {
         name: name || parsed.name || file.name.replace(/\.txt$/i, ""),
         desc: parsed.desc,
         songs: parsed.songs,
-      }));
+      });
     };
     reader.readAsText(file); // NOSONAR: Blob#text() is Safari 14+, FileReader is the Safari 12 spelling
   }
@@ -142,34 +154,35 @@ export function createSetlistModal(ctx) {
     return getPersonalSetlist(bandSetlistStorage(ctx.storage(), rest.slice(0, colon)), rest.slice(colon + 1));
   }
 
-  function createFromRemix(name) {
+  function createFromRemix(name, job) {
     const source = byId("setlistModalSource").value;
     if (!source) return;
     if (source.startsWith("mine:") || source.startsWith("shared:")) {
       const src = findSource(source);
       if (!src) return;
-      openCreated(copyBandSetlistToPersonal(targetStorage(), {
+      place(job, {
         name: name || `${src.name} copy`,
         desc: src.desc,
         songs: src.songs,
-      }));
+      });
       return;
     }
     const bandFile = source.slice(5); // "band:"
     ctx.setlistData.loadBand(bandFile, (parsed) => {
-      openCreated(copyBandSetlistToPersonal(targetStorage(), {
+      place(job, {
         name: name || parsed.name || bandFile.replace(/\.txt$/i, ""),
         desc: parsed.desc,
         songs: parsed.songs,
-      }));
+      });
     });
   }
 
   function create() {
     const name = (byId("setlistModalName").value || "").trim();
-    if (choice === "upload") createFromUpload(name);
-    else if (choice === "remix") createFromRemix(name);
-    else openCreated(createPersonalSetlist(targetStorage(), name || tl("setlist_new_default", "New setlist")));
+    const job = startJob();
+    if (choice === "upload") createFromUpload(name, job);
+    else if (choice === "remix") createFromRemix(name, job);
+    else place(job, { name: name || tl("setlist_new_default", "New setlist"), desc: "", songs: [] });
   }
 
   function init() {
@@ -177,13 +190,13 @@ export function createSetlistModal(ctx) {
     if (!overlay) return;
 
     overlay.addEventListener("click", (e) => {
-      if (e.target === overlay) closeModal();
+      if (e.target === overlay) dismiss();
     });
     document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && !overlay.hidden) closeModal();
+      if (e.key === "Escape" && !overlay.hidden) dismiss();
     });
-    on("setlistModalClose", "click", closeModal);
-    on("setlistModalCancel", "click", closeModal);
+    on("setlistModalClose", "click", dismiss);
+    on("setlistModalCancel", "click", dismiss);
     on("setlistModalCreate", "click", create);
 
     qsa(".rj-modal-choice", byId("setlistModalChoices")).forEach((btn) => {

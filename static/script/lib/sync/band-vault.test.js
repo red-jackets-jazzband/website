@@ -264,3 +264,27 @@ test("a downloaded document's setlists are validated like the personal vault's",
   // A format-1 document (before shared setlists) still reads.
   assert.deepEqual(validateBandDoc({ format: 1, members: [], versions: [] }).doc.setlists, []);
 });
+
+test("a personal vault's document isn't accepted as a band's", () => {
+  assert.equal(validateBandDoc({ format: 1, setlists: [], forms: {} }).ok, false);
+  assert.equal(validateBandDoc({ format: 1, members: [], versions: [] }).ok, true);
+});
+
+test("leaving keeps everything when a setlist can't be copied, and a failed join drops its data", () => {
+  const storage = makeStorage();
+  registerBand(storage, "b1", "Band");
+  const shared = bandSetlistStorage(storage, "b1");
+  createPersonalSetlist(shared, "Gig");
+  const realSet = storage.setItem;
+  storage.setItem = (key, value) => {
+    if (key === "rj.setlists.v1") throw new Error("full");
+    realSet.call(storage, key, value);
+  };
+  assert.equal(forgetBand(storage, "b1"), false);
+  assert.equal(listBands(storage).length, 1);
+  assert.equal(listSharedSetlists(storage, "b1").length, 1);
+  storage.setItem = realSet;
+  assert.equal(forgetBand(storage, "b1", { keepSetlists: false }), true);
+  assert.equal(listPersonalSetlists(storage).length, 0);
+  assert.equal(listBands(storage).length, 0);
+});

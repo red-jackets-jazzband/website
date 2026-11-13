@@ -159,3 +159,23 @@ test("remix can start from a shared setlist, into a shared one or a personal one
     cleanup();
   }
 });
+
+test("a remix that finishes after the modal was reopened elsewhere is dropped, not written to the new target", () => {
+  const { ctx, modal, storage, opened, cleanup } = setup();
+  try {
+    joinSpace(storage, "b1", "My Band");
+    let finish = null;
+    ctx.setlistData.loadBand = (file, cb) => { finish = cb; };
+    modal.open(null);
+    document.querySelector('.rj-modal-choice[data-choice="remix"]').dispatchEvent(new window.Event("click"));
+    document.getElementById("setlistModalSource").value = "band:spring.txt";
+    document.getElementById("setlistModalCreate").dispatchEvent(new window.Event("click"));
+    modal.open("b1"); // reopened for a shared shelf before the fetch returned
+    finish({ name: "Spring Tour", desc: "", songs: [] });
+    assert.equal(listPersonalSetlists(storage).length, 0);
+    assert.equal(listSharedSetlists(storage, "b1").length, 0);
+    assert.deepEqual(opened, []);
+  } finally {
+    cleanup();
+  }
+});

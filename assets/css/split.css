@@ -4187,10 +4187,10 @@ dialog.rj-sync-modal {
   color: var(--rj-gold, #e29d0f);
   border-color: var(--rj-gold, #e29d0f);
 }
-.rj-sync-band .rj-sync-band-status {
+.rj-sync-band-status {
   margin-top: 12px;
 }
-.rj-sync-band .rj-sync-band-status:has(.rj-sync-status:empty):not(:has(.rj-modal-btn:not([hidden]))) {
+.rj-sync-band-status:has(.rj-sync-status:empty):not(:has(.rj-modal-btn:not([hidden]))) {
   display: none;
 }
 .rj-sync-foot {

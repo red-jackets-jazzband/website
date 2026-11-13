@@ -527,6 +527,7 @@ js_band_share_text = "Doe mee met onze gedeelde ruimte voor songvormen en setlis
 js_band_share_subject = "Gedeelde ruimte Red Jackets"
 js_band_pair_hint = "Typ je naam en druk op Deelnemen om in deze gedeelde ruimte te komen"
 js_band_need_name = "Typ eerst je naam — je bandleden zien die"
+js_band_keep_failed = "De setlists van deze ruimte konden niet op dit apparaat worden bewaard (opslag vol?). Er is niets verwijderd."
 js_band_off = "Niet in een gedeelde ruimte"
 js_band_delete_confirm = "De serverkopie van de gedeelde ruimte verwijderen? Iedereen wordt losgekoppeld; de songvormen en setlists op elk apparaat blijven."
 js_form_version_of = "Versie van {name}"

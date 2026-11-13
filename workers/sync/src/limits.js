@@ -9,6 +9,7 @@ export const PER_IP_PER_HOUR = 30;
 export const PER_DAY = 500;
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
+const EXPIRY_SLACK_MS = 60 * 1000;
 
 export class SqlLimitStore {
   constructor(sql) {
@@ -36,6 +37,7 @@ export class Limits {
   // `deps` is for tests: { store, now }.
   constructor(ctx, env, deps) {
     const extra = deps || {};
+    this.ctx = ctx;
     this.store = extra.store || new SqlLimitStore(ctx.storage.sql);
     this.now = extra.now || (() => { return Date.now(); });
   }
@@ -54,6 +56,13 @@ export class Limits {
       });
     }
     this.store.add(hash, now);
+    // Whatever happens next, the rows are gone a day after the last one: an
+    // alarm prunes them even if no later request ever arrives.
+    if (this.ctx && this.ctx.storage && this.ctx.storage.setAlarm) await this.ctx.storage.setAlarm(now + DAY_MS + EXPIRY_SLACK_MS);
     return new Response(null, { status: 200 });
+  }
+
+  async alarm() {
+    this.store.prune(this.now() - DAY_MS);
   }
 }
