@@ -70,6 +70,31 @@ function parseJson(text) {
   }
 }
 
+// The request body as text, or null once it passes `max` bytes — read in
+// chunks, so an oversized upload is cut off instead of buffered whole.
+async function readLimited(request, max) {
+  const declared = Number(request.headers.get("Content-Length"));
+  if (declared > max) return null;
+  if (!request.body) return "";
+  const reader = request.body.getReader();
+  const chunks = [];
+  let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read(); // NOSONAR
+    if (done) break;
+    size += value.length;
+    if (size > max) {
+      await reader.cancel();
+      return null;
+    }
+    chunks.push(value);
+  }
+  const all = new Uint8Array(size);
+  let at = 0;
+  chunks.forEach((chunk) => { all.set(chunk, at); at += chunk.length; });
+  return new TextDecoder().decode(all);
+}
+
 async function checkCreate(request, env, body) {
   const parsed = parseJson(body);
   if (!parsed || parsed.expected !== 0) return null; // anything unreadable: the vault answers 400
@@ -86,8 +111,8 @@ async function toVault(request, env, route, origin) {
     const init = { method: request.method, headers: request.headers };
     return withCors(await stub.fetch(url, init), origin);
   }
-  const body = await request.text();
-  if (new TextEncoder().encode(body).length > MAX_BODY_BYTES) return fail(413, "Too much to sync", origin);
+  const body = await readLimited(request, MAX_BODY_BYTES);
+  if (body === null) return fail(413, "Too much to sync", origin);
   const refused = await checkCreate(request, env, body);
   if (refused) return withCors(refused, origin);
   return withCors(await stub.fetch(url, { method: "PUT", body }), origin);

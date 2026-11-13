@@ -124,7 +124,41 @@ test("an unchanged vault answers 304 and still pushes local edits", async () => 
   await phone.engine.sync();
   createPersonalSetlist(phone.storage, "New");
   assert.equal((await phone.engine.sync()).status, "ok");
-  assert.equal(Object.values(server.vaults)[0].version, 3);
+  assert.equal(Object.values(server.vaults)[0].version, 2);
+});
+
+test("a cycle with nothing to send does not save, so devices cannot answer each other forever", async () => {
+  const server = fakeServer();
+  const phone = device(server);
+  const laptop = device(server);
+  createPersonalSetlist(phone.storage, "Gig");
+  const connected = await phone.engine.connect();
+  await laptop.engine.join(connected.code);
+  const version = () => { return Object.values(server.vaults)[0].version; };
+  const settled = version();
+  for (let i = 0; i < 3; i++) {
+    await phone.engine.sync();
+    await laptop.engine.sync();
+  }
+  assert.equal(version(), settled);
+  assert.equal(laptop.engine.knownVersion(), settled);
+});
+
+test("an upload that failed is retried even though nothing changed since", async () => {
+  const server = fakeServer();
+  const phone = device(server);
+  await phone.engine.connect();
+  createPersonalSetlist(phone.storage, "Offline edit");
+  let down = true;
+  const flaky = createSyncEngine({
+    storage: phone.storage,
+    fetchFn: async (url, init) => { return init.method === "PUT" && down ? new Response("{}", { status: 500 }) : server.fetchFn(url, init); },
+    baseUrl: "https://s.test",
+  });
+  assert.equal((await flaky.sync()).status, "error");
+  down = false;
+  assert.equal((await flaky.sync()).status, "ok");
+  assert.equal(Object.values(server.vaults)[0].version, 2);
 });
 
 test("a deleted vault disconnects the device; delete server copy and new code", async () => {

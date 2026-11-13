@@ -37,10 +37,40 @@ function writeCode(storage, code) {
   }
 }
 
+// `pending` marks a merged copy the server may not have yet (a PUT is in
+// flight or failed); a later cycle must not take "nothing changed" for "sent".
 function setVersion(storage, version) {
   const meta = readMeta(storage);
   meta.syncVersion = version;
+  meta.syncPending = false;
   writeMeta(storage, meta);
+}
+
+function markPending(storage) {
+  const meta = readMeta(storage);
+  meta.syncPending = true;
+  writeMeta(storage, meta);
+}
+
+// JSON with sorted keys, so two documents compare by content, not key order.
+function canonical(value) {
+  if (Array.isArray(value)) return `[${value.map(canonical).join()}]`;
+  if (value && typeof value === "object") {
+    return `{${Object.keys(value).sort((a, b) => { return a.localeCompare(b); }).map((key) => {
+      return `${JSON.stringify(key)}:${canonical(value[key])}`;
+    }).join()}}`;
+  }
+  return JSON.stringify(value);
+}
+
+function contentOf(doc) {
+  return canonical({ setlists: doc.setlists, forms: doc.forms, tomb: doc.tomb });
+}
+
+// Same setlists, forms and tombstones (the `device` that merged last is no content).
+function sameContent(a, b) {
+  if (!a || !b || !Array.isArray(a.setlists) || !Array.isArray(b.setlists)) return false;
+  return contentOf(a) === contentOf(b);
 }
 
 const STATUS_BY_HTTP = { 404: "notFound", 410: "gone", 413: "tooLarge", 429: "limited" };
@@ -108,11 +138,20 @@ export function createSyncEngine({ storage, fetchFn, baseUrl = SYNC_URL, now = D
   };
 
   // Merge `remote` into local storage and push; on a conflict, merge the
-  // newer copy the server returned and try again (up to MAX_ATTEMPTS).
+  // newer copy the server returned and try again (up to MAX_ATTEMPTS). A
+  // result identical to what the server has is not pushed: every save is
+  // broadcast, so a needless one would make devices answer each other forever.
   const merge = async (vault, remote, attempt) => {
+    const before = readMeta(storage);
     const local = buildLocalDoc(storage, now());
     const merged = remote.doc ? mergeDocs(local, remote.doc, now()) : local;
     applyDoc(storage, merged);
+    const serverHas = remote.doc ? sameContent(merged, remote.doc) : !before.syncPending && sameContent(merged, before.snapshot);
+    if (serverHas) {
+      setVersion(storage, remote.version);
+      return { status: "ok", version: remote.version };
+    }
+    markPending(storage);
     const pushed = await push(vault, merged, remote.version);
     if (pushed.version) {
       setVersion(storage, pushed.version);
