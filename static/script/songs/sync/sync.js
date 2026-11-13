@@ -28,7 +28,7 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 const DIRTY_KEY = "rj.sync.dirty";
 const WATCHED_KEYS = new Set(["rj.setlists.v1", "rj.sync.meta"]);
 
-function statusText(result, time) {
+export function statusText(result, time) {
   switch (result.status) {
     case "ok": return tl("sync_ok", "Synced {time}", { time });
     case "working": return tl("sync_working", "Syncing…");
@@ -45,7 +45,7 @@ function statusText(result, time) {
   }
 }
 
-function clockTime() {
+export function clockTime() {
   const now = new Date();
   return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 }
@@ -62,6 +62,12 @@ function drawQr(svg, url) {
   path.setAttribute("d", d);
   path.setAttribute("fill", "#1b1b1b");
   svg.append(path);
+}
+
+// Draws `url` as a QR code into `svg`; the generator loads on first use (and is precached for offline).
+export function renderQr(svg, url) {
+  const ready = typeof qrcode === "undefined" ? loadScriptOnce(QR_SRC) : Promise.resolve();
+  return ready.then(() => { drawQr(svg, url); });
 }
 
 function closeDialog() {
@@ -146,8 +152,7 @@ export function createSync(ctx) {
 
   // Draw the pairing QR; the generator loads on first use (and is precached for offline).
   function showQr(code) {
-    const ready = typeof qrcode === "undefined" ? loadScriptOnce(QR_SRC) : Promise.resolve();
-    return ready.then(() => { drawQr(byId("syncQr"), pairingUrl(window.location.href, formatCode(code))); });
+    return renderQr(byId("syncQr"), pairingUrl(window.location.href, formatCode(code)));
   }
 
   function render() {

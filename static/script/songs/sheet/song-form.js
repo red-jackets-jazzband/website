@@ -2,6 +2,7 @@ import { byId, el, qsa } from "../../lib/core/dom.js";
 import { readPref, removePref, safeStorage, songFormPrefKey, writePref } from "../../lib/core/preferences.js";
 import { addTombstone, nextStamp, setFormStamp } from "../../lib/sync/clock.js";
 import { notifyLocalChange } from "../../lib/sync/changes.js";
+import { bandConnected, isShared, setShared, versionsOf } from "../../lib/sync/band-vault.js";
 import { tl } from "../../lib/core/i18n.js";
 import {
   MORE, REPEAT_CHOICES, addPart, addRound, addTypedParts, cloneRounds, deleteRound,
@@ -145,6 +146,7 @@ export function createSongForm(ctx) {
   let choices = [];
   let mine = null; // the visitor's rounds, or null
   let show = "band"; // which one the strip shows when not editing
+  let viewing = null; // a bandmate's version being looked at: { author, name, rounds }, or null
   let draft = null; // the rounds being edited, or null
   let staleStore = false; // a sync changed this song's stored version during an edit
   let active = 0; // the round whose tools show while editing
@@ -163,10 +165,25 @@ export function createSongForm(ctx) {
 
   function shownRounds() {
     if (editing()) return draft;
+    if (viewing) return viewing.rounds;
     return showingMine() ? mine : band;
   }
 
+  // Bandmates' versions of this song (none unless the band space is joined).
+  function others() {
+    const storage = safeStorage();
+    return file && bandConnected(storage) ? versionsOf(storage, file) : [];
+  }
+
+  // After a sync: keep looking at the same member's version, as it now is.
+  function refreshViewing() {
+    if (!viewing) return;
+    const now = others().find((v) => { return v.author === viewing.author; });
+    viewing = now ? { author: now.author, name: now.name, rounds: now.rounds } : null;
+  }
+
   function load(songFile) {
+    if (songFile !== file) viewing = null;
     file = songFile;
     const stored = songFile ? readStoredForm(readPref(songFormPrefKey(songFile))) : null;
     mine = stored ? stored.rounds : null;
@@ -185,6 +202,7 @@ export function createSongForm(ctx) {
     const at = nextStamp(storage);
     if (mine === null) {
       removePref(songFormPrefKey(file));
+      setShared(storage, file, false);
       addTombstone(storage, "forms", file, at);
     } else {
       writePref(songFormPrefKey(file), writeStoredForm(mine, show));
@@ -198,7 +216,7 @@ export function createSongForm(ctx) {
   function mineStrip(rounds) {
     return buildFormStrip(roundsToRows(rounds), {
       changed: rounds.map((round, i) => !sameRound(round, band[i])),
-      mine: true,
+      mine: !viewing || editing(),
     });
   }
 
@@ -206,7 +224,7 @@ export function createSongForm(ctx) {
   // their place; returns the last one (or the chord table when there's none).
   function drawStrip(chordEl) {
     const parent = chordEl.parentNode;
-    if (!editing() && !showingMine()) {
+    if (!editing() && !showingMine() && !viewing) {
       renderWordsTables(chordEl, ctx.state.formTables);
     } else {
       qsa(".songForm", parent).forEach((old) => old.remove());
@@ -249,21 +267,37 @@ export function createSongForm(ctx) {
     }, [el("span", { class: "songForm-menu-box", attrs: { "aria-hidden": "true" } }, [icon("fa-bars")])]);
   }
 
-  function menu() {
+  function versionItems(bandmates) {
+    const items = [menuItem("band", "fa-users", tl("form_band", "The band's form"), () => setShow("band"), !showingMine() && !viewing)];
+    if (mine) items.push(menuItem("mine", "fa-user", tl("form_mine", "My version"), () => setShow("mine"), showingMine() && !viewing));
+    bandmates.forEach((v) => {
+      const label = v.name ? tl("form_version_of", "{name}'s version", { name: v.name }) : tl("form_version_unnamed", "A bandmate's version");
+      items.push(menuItem(`by-${v.author}`, "fa-user", label, () => { return setViewing(v.author); }, Boolean(viewing) && viewing.author === v.author));
+    });
+    items.push(el("div", { class: "songForm-menu-sep", attrs: { role: "separator" } }));
+    return items;
+  }
+
+  function bandItems() {
     const items = [];
-    if (mine) {
-      items.push(
-        menuItem("band", "fa-users", tl("form_band", "The band's form"), () => setShow("band"), !showingMine()),
-        menuItem("mine", "fa-user", tl("form_mine", "My version"), () => setShow("mine"), showingMine()),
-        el("div", { class: "songForm-menu-sep", attrs: { role: "separator" } }),
-      );
+    if (viewing) items.push(menuItem("adopt", "fa-copy", tl("form_copy_to_mine", "Copy to my version"), adopt));
+    if (mine && bandConnected(safeStorage())) {
+      const on = isShared(safeStorage(), file);
+      items.push(menuItem("share", "fa-share-nodes", tl("form_share", "Share with the band"), () => { return toggleShare(!on); }, on));
     }
+    return items;
+  }
+
+  function menu() {
+    const bandmates = others();
+    const items = mine || bandmates.length > 0 ? versionItems(bandmates) : [];
     items.push(
       menuItem("edit", "fa-pen", mine ? tl("form_edit_mine", "Edit my version") : tl("form_edit_new", "Make my own version"), () => {
         menuOpen = false;
         startEdit();
       }),
       menuItem("copy", "fa-file-lines", tl("form_copy_text", "Copy as text"), copyFromMenu),
+      ...bandItems(),
     );
     return el("div", {
       class: "songForm-menu",
@@ -801,8 +835,34 @@ export function createSongForm(ctx) {
 
   function setShow(which) {
     show = which;
+    viewing = null;
     menuOpen = false;
     persist();
+    draw("menu");
+  }
+
+  function setViewing(author) {
+    const v = others().find((other) => { return other.author === author; });
+    viewing = v ? { author: v.author, name: v.name, rounds: v.rounds } : null;
+    menuOpen = false;
+    draw("menu");
+  }
+
+  // "Copy to my version": start from a bandmate's form (saved like any own version).
+  function adopt() {
+    if (!viewing) return;
+    mine = cloneRounds(viewing.rounds);
+    show = "mine";
+    viewing = null;
+    menuOpen = false;
+    persist();
+    draw("menu");
+  }
+
+  function toggleShare(on) {
+    setShared(safeStorage(), file, on);
+    menuOpen = false;
+    notifyLocalChange();
     draw("menu");
   }
 
@@ -834,6 +894,7 @@ export function createSongForm(ctx) {
       mine = cloneRounds(draft);
       show = "mine";
     }
+    viewing = null;
     persist();
     staleStore = false; // what was just saved is the newest
     cancel();
@@ -887,6 +948,7 @@ export function createSongForm(ctx) {
         return;
       }
       load(file);
+      refreshViewing();
       if (ready) draw();
     },
     // For the tour and tests: open or close the editor.
