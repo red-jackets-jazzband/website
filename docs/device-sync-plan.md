@@ -2,7 +2,7 @@
 
 As of 2026-11-13. Status: proposal, not started.
 
-Not complex: the server is about 100 lines and one database table. The real work is merging edits from several devices and the UI around the sync code. Phase 1 (your own devices) is about 7¾ days, an MVP about 6½; phase 2 (sharing in a band) about 6 more. Sync is opt-in: by default everything stays in this browser only, exactly as today.
+Not complex: the server is about 150 lines, with one small Cloudflare Durable Object per vault. The real work is merging edits from several devices and the UI around the sync code. Phase 1 (your own devices) is about 8½ days, an MVP about 6½; phase 2 (sharing in a band) about 6 more. Sync is opt-in: by default everything stays in this browser only, exactly as today.
 
 ## How it works
 
@@ -10,8 +10,8 @@ Not complex: the server is about 100 lines and one database table. The real work
 flowchart LR
     A["Device A · browser<br/>keeps setlists, song forms<br/>code → vault id + AES key"]
     B["Device B · browser<br/>same code, same key<br/>merges, then uploads"]
-    W["Cloudflare Worker<br/>GET · PUT · DELETE<br/>checks id, size, version<br/>sees vault id + ciphertext"]
-    D[("Cloudflare D1<br/>one row per vault<br/>id, version, blob")]
+    W["Cloudflare Worker<br/>GET · PUT · DELETE · live<br/>checks id and size<br/>sees vault id + ciphertext"]
+    D[("Vault object<br/>one per vault<br/>SQLite: version, blob<br/>pushes new version")]
     A <-- "hash + ciphertext" --> W
     B <-- "same vault" --> W
     W <--> D
@@ -20,7 +20,7 @@ flowchart LR
 
 The server only ever sees a hashed id and encrypted data; the two browsers are the only places the data is readable.
 
-Each device turns the sync code into a vault id and an encryption key; the Worker stores whatever encrypted blob it is given under that id, refusing a write when another device has written since.
+Each device turns the sync code into a vault id and an encryption key. The vault's object stores whatever encrypted blob it is given, refuses a write when another device has written since, and tells the other connected devices the new version number so they fetch it straight away.
 
 ## Design decisions
 
@@ -46,33 +46,36 @@ Only the server copy is encrypted. Local storage on the device stays readable, a
 | Change tracking | Every setlist, setlist row and song form gets an id and an `updatedAt`; a delete leaves a tombstone, pruned after 180 days | Without tombstones a deleted setlist comes back from the other device; row ids prepare row-level merging for phase 2 |
 | Format version | The synced data carries a format number; every app version keeps fields it doesn't know, and an app that sees a newer format only downloads, never uploads | The service worker keeps serving the previous app for a while after a deploy; an old copy must never strip newer data |
 | Merge rule | Newest edit wins per setlist / per form, tie broken by device id | Simple and predictable; two people editing the same setlist at the same minute is rare |
-| Database | Cloudflare D1, one table `vaults(id, version, blob, updated_at)` | Unlike Workers KV it can do "write only if version is still N", so two devices never overwrite each other blindly |
-| Server API | `GET /v1/vault/:id`, `PUT /v1/vault/:id` with expected version (409 + current copy on conflict), `DELETE /v1/vault/:id`; 410 for a deleted vault | Three routes, no accounts, no sessions, no cookies |
+| Server storage | One Cloudflare Durable Object per vault, with its own SQLite holding `version` and `blob` | One object owns each vault, so "write only if version is still N" is guaranteed; on the free plan, going over a limit fails instead of costing money |
+| Push | While the page is visible a device keeps a WebSocket to its vault's object (Hibernation API); after a save the object sends the other devices the new version, and a device that is behind fetches it | Changes appear within about a second with no polling; idle hibernating connections are not billed, server messages are free, device messages count 1/20 of a request |
+| When to pull | Page load, page shown again, `online`, Setlists tab or a setlist opened, before editing a song form; local edits upload once, 3 s after a burst of edits ends | Covers networks that block WebSockets (some venue or hotel Wi-Fi) without a timer |
+| Server API | `GET /v1/vault/:id`, `PUT /v1/vault/:id` with expected version (409 + current copy on conflict), `DELETE /v1/vault/:id`, `GET /v1/vault/:id/live` (WebSocket); 410 for a deleted vault | Four routes, no accounts, no sessions, no cookies |
 | Deleted vaults | "Delete server copy" and "New code" leave a marker row; writes to that id get 410, and devices disconnect with "This sync was stopped or replaced" | Otherwise any device still holding the code uploads again and the vault comes back |
 | Guards | CORS only for redjackets.nl and localhost:1313, id must be 64 hex, body ≤ 64 KB | A real library is a few KB; 64 KB is useless as file storage |
-| Abuse limits | About 10 new vaults per IP per day, about 500 new vaults per day in total, vaults unused for 18 months deleted by a daily scheduled job (a device still connected just uploads again), admin delete by id; stay on the free plan | Encrypted data can't be checked, so the service is kept small, short-lived and worthless to abuse; on the free plan abuse means downtime, never a bill |
+| Abuse limits | About 10 new vaults per IP per day, about 500 new vaults per day in total (one small counter object), each vault deleting itself with its own alarm after 18 months unused (a device still connected just uploads again), admin delete by id; stay on the free plan | Encrypted data can't be checked, so the service is kept small, short-lived and worthless to abuse; on the free plan abuse means downtime, never a bill |
 | Rate limit | Generous per IP: a band on one venue Wi-Fi shares one address | Must never block real members syncing at a gig |
 | Pairing | Link `…/songs/#sync=<code>` shown as a QR code on screen; the phone camera opens it, and the code is removed from the address bar at once | Text after `#` never reaches a server; showing the QR rather than sending the link keeps the code out of chat histories |
 | Offline | A dirty flag persists; sync retries on `online` and on page show | The site keeps working with no connection exactly as today |
 
-This supersedes the earlier "Workers KV" idea: KV is eventually consistent and has no compare-and-swap, which would lose edits when two devices sync within a minute.
+This supersedes the earlier Workers KV and D1 ideas: KV has no compare-and-swap, which would lose edits when two devices sync within a minute, and D1 would need polling to bring other devices' edits to an open page.
 
 ## Work breakdown
 
-Phase 1 totals about 7¾ days, including the review fixes (deleted-vault marker, format version, row ids, abuse limits: WBS 2.3, 2.6, 4.4, 5.5; mid-cycle edits, polling and song-form refresh: WBS 6.2–6.4). Packages marked MVP are the 6½-day core.
+Phase 1 totals about 8½ days, including the review fixes (deleted-vault marker, format version, row ids, abuse limits: WBS 2.3, 2.6, 4.4, 5.5; mid-cycle edits and song-form refresh: WBS 6.2, 6.4) and live push (WBS 2.7, 6.6). Packages marked MVP are the 6½-day core: it syncs at the moments that matter (WBS 6.3), and push follows in the full release.
 
 | WBS | Work package | Deliverable | Est. (days) | MVP |
 | --- | --- | --- | --- | --- |
 | 1 | **Setup** | | **0.25** | |
-| 1.1 | Cloudflare account, D1 database, API token as GitHub secret (you) | `CLOUDFLARE_API_TOKEN`, account id | 0.1 | yes |
+| 1.1 | Cloudflare account (Durable Objects are on the free plan), API token as GitHub secret (you) | `CLOUDFLARE_API_TOKEN`, account id | 0.1 | yes |
 | 1.2 | Hostname: `sync.redjackets.nl` if DNS can move to Cloudflare, else `*.workers.dev` | Reachable URL | 0.15 | yes |
-| 2 | **Sync server** (`workers/sync/`) | | **1.5** | |
-| 2.1 | Table schema and migration | `schema.sql` | 0.1 | yes |
-| 2.2 | GET / PUT / DELETE handler with version check | `src/index.js` (~100 lines) | 0.3 | yes |
-| 2.3 | Guards and abuse limits: CORS, id and 64 KB size checks, per-IP and global caps on new vaults, generous per-IP rate limit, daily job deleting vaults unused for 18 months | Guards + scheduled job | 0.45 | yes |
-| 2.4 | Tests on Node's test runner with a fake D1 | `index.test.js` | 0.25 | yes |
+| 2 | **Sync server** (`workers/sync/`) | | **1.95** | |
+| 2.1 | Vault Durable Object: SQLite table (`version`, `blob`), migration in `wrangler.toml` | `src/vault.js` | 0.15 | yes |
+| 2.2 | Front Worker routes GET / PUT / DELETE to the vault's object; the version check runs inside the object | `src/index.js` + `src/vault.js` (~150 lines) | 0.3 | yes |
+| 2.3 | Guards and abuse limits: CORS, id and 64 KB size checks, per-IP caps and a global cap (one counter object) on new vaults, generous per-IP rate limit, per-vault alarm deleting it after 18 months unused | Guards + alarm | 0.5 | yes |
+| 2.4 | Tests on Node's test runner with a fake Durable Object | `index.test.js`, `vault.test.js` | 0.25 | yes |
 | 2.5 | `wrangler.toml`, ESLint and jscpd cover `workers/**` | Config | 0.15 | yes |
 | 2.6 | Deleted-vault marker: writes get 410; client disconnects with "This sync was stopped or replaced" | Server + client + tests | 0.25 | yes |
+| 2.7 | Live endpoint: WebSocket with the Hibernation API; after a save, send `{version}` to the other connected devices | `src/vault.js` + tests | 0.35 | |
 | 3 | **Code and crypto** (`lib/sync/crypto.js`) | | **0.5** | |
 | 3.1 | Generate, format, parse and checksum the sync code | Functions + tests | 0.15 | yes |
 | 3.2 | Vault id and key derivation | Functions + tests | 0.1 | yes |
@@ -88,12 +91,13 @@ Phase 1 totals about 7¾ days, including the review fixes (deleted-vault marker,
 | 5.3 | Write merged result back to local storage | Functions | 0.1 | yes |
 | 5.4 | Tests: merge is order-independent and repeatable; delete vs edit races | Tests | 0.2 | yes |
 | 5.5 | Format version: keep unknown fields; download-only when the format is newer | Functions + tests | 0.25 | yes |
-| 6 | **Sync engine** (`songs/sync/`) | | **1.3** | |
+| 6 | **Sync engine** (`songs/sync/`) | | **1.65** | |
 | 6.1 | `sync` slice in `core/state.js` (status, last synced, revision) and stored code | Slice + prefs | 0.15 | yes |
 | 6.2 | Cycle: pull → merge → push with expected version; on 409 retry up to 3 times. Before writing back, re-read local storage and keep any item edited after the cycle's snapshot (its `updatedAt` is newer); clear the dirty flag only for the revision that was pushed, so an edit made mid-cycle triggers another cycle | Engine | 0.4 | yes |
-| 6.3 | Triggers: after page load, 3 s after a local change, `online`, page shown again, and a pull every 60 s while the page is visible (paused when hidden, backing off to 5 min after an hour idle), so an open page picks up other devices' edits. The pull sends the known version and gets a body-less 304 when nothing changed | Engine | 0.25 | yes |
+| 6.3 | Sync when it matters: pull on page load, page shown again, `online`, Setlists tab or a setlist opened, and before editing a song form; upload once, 3 s after a burst of local edits ends. A pull sends the known version and gets a body-less 304 when nothing changed. No timer polling | Engine | 0.2 | yes |
 | 6.4 | Setlist views and the open song form redraw when a sync brings changes: the song form re-reads its stored version instead of keeping its in-memory copy; with the editor open, the edits stay and Save re-merges against the stored version (newest wins per form) rather than writing the stale copy back | Subscriptions | 0.25 | yes |
 | 6.5 | Backoff, error states; jsdom tests with a stubbed `fetch` | Tests | 0.25 | yes |
+| 6.6 | Push channel: WebSocket open while the page is visible, closed when hidden; reconnect with backoff and catch up on reconnect; pull when a pushed version is newer; WBS 6.3 remains the fallback where sockets are blocked | Engine + tests | 0.4 | |
 | 7 | **UI** | | **1.0** | |
 | 7.1 | "Connect devices" dialog, off by default: connect, join with a code, show code, disconnect this device, delete server copy, new code | Dialog | 0.4 | yes (plain) |
 | 7.2 | Pairing link `#sync=` in `song-hash.js`: confirm, join, strip from URL | Deep link | 0.15 | |
@@ -108,22 +112,22 @@ Phase 1 totals about 7¾ days, including the review fixes (deleted-vault marker,
 | 9.1 | `deploy-sync` job (`wrangler deploy`) on master when `workers/sync/**` changes | Workflow | 0.15 | yes |
 | 9.2 | Post-deploy smoke check (GET of an unknown id returns 404) | Workflow step | 0.1 | |
 | 10 | **Verification** | | **0.5** | |
-| 10.1 | Playwright: two browser contexts, Worker mocked by route; an edit in one appears in the other; no sync request while sync is off | e2e test | 0.25 | |
+| 10.1 | Playwright: two browser contexts, Worker mocked by route; an edit in one appears in the other; a mocked push message triggers a pull; no sync request while sync is off | e2e test | 0.25 | |
 | 10.2 | Real devices: old iPad (Safari 12) and a current phone | Checklist | 0.15 | yes |
 | 10.3 | SonarCloud gate on the PR | Clean scan | 0.1 | yes |
-| | **Total** | | **7.8** | **≈ 6½** |
+| | **Total** | | **8.6** | **≈ 6½** |
 
 ## Milestones
 
 Five steps, each mergeable on its own, so nothing half-built reaches visitors.
 
-1. **Server live** (WBS 1, 2, 9.1) — Worker deployed and tested, abuse limits on; no site change yet.
+1. **Server live** (WBS 1, 2.1–2.6, 9.1) — Worker and vault objects deployed and tested, abuse limits on; no site change yet.
 2. **Engine done, hidden** (WBS 3–6) — sync works end to end in tests; no button on the page.
-3. **MVP on the site** (WBS 7.1, 7.4, 10.2, 10.3) — type a code on each device; plain dialog, English only.
-4. **Full release** (WBS 7.2, 7.3, 7.5, 8, 9.2, 10.1) — QR pairing link, four languages, tour step, e2e test.
+3. **MVP on the site** (WBS 7.1, 7.4, 10.2, 10.3) — type a code on each device; syncs at the moments that matter; plain dialog, English only.
+4. **Full release** (WBS 2.7, 6.6, 7.2, 7.3, 7.5, 8, 9.2, 10.1) — live push, QR pairing link, four languages, tour step, e2e test.
 5. **Band sharing** (phase 2, WBS 11) — band space, named versions, shared setlists; once personal sync has been used for a while, if wanted.
 
-The MVP leaves out the QR code and pairing link (codes are typed), translations and the tour step.
+The MVP leaves out live push (other devices' edits arrive on the next page view, tab switch or setlist open), the QR code and pairing link (codes are typed), translations and the tour step.
 
 ## Risks
 
@@ -141,14 +145,15 @@ The biggest risk is a lost or leaked code; everything else degrades to "works li
 | Two devices edit the same setlist at once | One device's edit to that setlist is lost | Rare for one person; phase 2 merges per row for shared setlists |
 | Device offline for more than 180 days | Deleted setlists can come back from it | Accepted: tombstones are pruned after 180 days |
 | Cloudflare down or blocked | No sync for a while | The page never waits on sync; retries later |
-| Free-tier limits (Workers: 100k requests/day; D1: 100k writes/day) | Requests refused until the daily reset | Polling only while a page is visible, once a minute, 5 min when idle: 20 devices open 3 h a day is about 3,600 requests; writes are debounced to one per 3 s per device |
+| Free-tier limits (Workers and Durable Objects: 100k requests/day each) | Requests refused until the daily reset | No polling; pushes from the server are free, device messages count 1/20; one upload per burst of edits; idle sockets hibernate unbilled |
+| WebSockets blocked on some networks | No live updates there | Sync when it matters (WBS 6.3) still pulls on every page view, tab switch and setlist open |
 | Edit made while a sync is in flight | That edit is overwritten by the merged result | Write-back re-reads local storage and keeps newer items; the dirty flag stays set until that edit is pushed (WBS 6.2) |
 | Safari 12 gaps | Sync silently fails on the old iPad | Only `digest`, AES-GCM, `getRandomValues`, `fetch`; checked on the real device (WBS 10.2) |
 | SonarCloud findings in new code | PR gate fails | Same lint layer covers `workers/**`; crypto randomness from `getRandomValues`, never `Math.random` |
 
 ## Phase 2: sharing in a band
 
-A band joins one shared **band space** (its own code and vault); each member shares chosen song-form versions and setlists into it under a name they pick. About 6 days on top of phase 1; the Worker and table do not change.
+A band joins one shared **band space** (its own code and vault); each member shares chosen song-form versions and setlists into it under a name they pick. About 6 days on top of phase 1; the Worker and vault objects do not change.
 
 **Two vaults per device, both optional.** The personal vault (phase 1) keeps private data in sync across your own devices. The band space holds only what you chose to share. A device can be in either, both or neither.
 
@@ -162,7 +167,7 @@ A band joins one shared **band space** (its own code and vault); each member sha
 
 A "Share with the band" switch per version decides whether it goes to the band space. A good version still reaches the official score the way it does today: copy its `W:` lines into the song file.
 
-**Shared setlists.** "Share with the band" on a personal setlist moves it to the band space, listed under **Shared**, apart from the official **Band** setlists from the website. Every member can edit it, marked "edited by Anna". Merging happens per song row, using the row ids added in phase 1, so two people adding or moving different songs both keep their changes.
+**Shared setlists.** "Share with the band" on a personal setlist moves it to the band space, listed under **Shared**, apart from the official **Band** setlists from the website. Every member can edit it, marked "edited by Anna". Merging happens per song row, using the row ids added in phase 1, so two people adding or moving different songs both keep their changes. With push, a bandmate's edit appears on everyone's open screen within about a second.
 
 | WBS | Work package | Est. (days) |
 | --- | --- | --- |
@@ -187,3 +192,8 @@ Three answers unblock phase 1 (hostname, account, preferences); the rest can wai
 - [ ] **Phase 2 order:** build band sharing right after phase 1, or first see how personal sync is used?
 - [ ] **One band space or several?** One per device is simplest; several (e.g. a second band) adds a picker.
 - [ ] **Names:** "Band" for the official setlists and "Shared" for band-space ones (proposed), or other words?
+
+## Sources
+
+- [Durable Objects pricing](https://developers.cloudflare.com/durable-objects/platform/pricing/) — free plan: SQLite-backed objects, 100,000 requests/day, WebSocket messages from devices billed 20:1, hibernating connections not billed for duration.
+- [Durable Objects limits](https://developers.cloudflare.com/durable-objects/platform/limits/)
