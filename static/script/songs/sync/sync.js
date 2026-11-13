@@ -20,6 +20,9 @@ import { afterPageLoad } from "../core/after-load.js";
 const UPLOAD_DELAY_MS = 3000;
 const PULL_GAP_MS = 30000;
 const LEASE_RENEW_MS = 5000;
+// A hidden tab keeps its push socket this long: switching away and back (or a
+// quick look at another tab) must not cost a new connection to the server each time.
+const HIDDEN_GRACE_MS = 120000;
 const QR_SRC = "/script/qrcode-generator-2.0.4-min.js";
 const SVG_NS = "http://www.w3.org/2000/svg";
 const DIRTY_KEY = "rj.sync.dirty";
@@ -76,6 +79,7 @@ export function createSync(ctx) {
   let qrFor = null; // the code the drawn QR belongs to
   let lastResult = { status: "off" };
   let live = null;
+  let hiddenSince = 0;
   // Read at creation, before navigation's own hash rewriting can drop it.
   const pairingCode = syncCodeFromHash(window.location.hash);
 
@@ -113,9 +117,13 @@ export function createSync(ctx) {
     return getEngine().liveUrl().then((url) => { return url ? new window.WebSocket(url) : null; });
   }
 
-  // Open only in the visible tab that holds the lease; closed otherwise.
+  // Open in the visible tab that holds the lease, and for HIDDEN_GRACE_MS after it
+  // was hidden (the lease timer re-checks); closed otherwise.
   function syncLive() {
-    const wanted = connected() && !document.hidden && typeof window.WebSocket === "function"
+    if (!document.hidden) hiddenSince = 0;
+    else if (!hiddenSince) hiddenSince = Date.now();
+    const shown = !document.hidden || Date.now() - hiddenSince < HIDDEN_GRACE_MS;
+    const wanted = connected() && shown && typeof window.WebSocket === "function"
       && holdLease(storage(), tabId, Date.now());
     if (wanted && !live) {
       live = createLiveChannel({ connect: openSocket, onVersion: onPushed });
