@@ -71,8 +71,8 @@ function parseJson(text) {
 
 function readBody(text) {
   const body = parseJson(text);
-  const valid = body && Number.isInteger(body.expected) && body.expected >= 0 &&
-    body.blob && typeof body.blob === "object" && !Array.isArray(body.blob);
+  const valid = Number.isInteger(body?.expected) && body.expected >= 0 &&
+    typeof body.blob === "object" && body.blob !== null && !Array.isArray(body.blob);
   return valid ? body : null;
 }
 
@@ -98,7 +98,7 @@ export class Vault {
 
   current() {
     const row = this.store.read();
-    if (row && row.deleted) return { gone: true };
+    if (row?.deleted) return { gone: true };
     return row ? { row } : { missing: true };
   }
 
@@ -117,7 +117,7 @@ export class Vault {
     const state = this.current();
     if (state.gone) return json({ error: "This sync was stopped or replaced" }, 410);
     if (state.missing && body.expected !== 0) return json({ error: "No sync found for this code" }, 404);
-    if (state.row && state.row.version !== body.expected) {
+    if (state.row !== undefined && state.row.version !== body.expected) {
       return json({ version: state.row.version, blob: JSON.parse(state.row.blob) }, 409);
     }
     const version = (state.row ? state.row.version : 0) + 1;

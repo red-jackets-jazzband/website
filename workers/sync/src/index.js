@@ -8,10 +8,8 @@
      DELETE /v1/vault/:id        delete, leaving a marker (later 410)
      GET    /v1/vault/:id/live   WebSocket pushing {version} after each save
 */
-import { Vault } from "./vault.js";
-import { Limits } from "./limits.js";
-
-export { Vault, Limits };
+export { Vault } from "./vault.js";
+export { Limits } from "./limits.js";
 
 export const MAX_BODY_BYTES = 64 * 1024;
 const DEFAULT_ORIGINS = "https://www.redjackets.nl,http://localhost:1313";
@@ -97,7 +95,7 @@ async function readLimited(request, max) {
 
 async function checkCreate(request, env, body) {
   const parsed = parseJson(body);
-  if (!parsed || parsed.expected !== 0) return null; // anything unreadable: the vault answers 400
+  if (parsed?.expected !== 0) return null; // anything unreadable: the vault answers 400
   const ip = request.headers.get("CF-Connecting-IP") || "unknown";
   const limits = env.LIMITS.get(env.LIMITS.idFromName("global"));
   const answer = await limits.fetch(`https://limits/?ip=${await hashIp(env, ip)}`, { method: "POST" });
@@ -123,7 +121,7 @@ export default {
     const origin = request.headers.get("Origin");
     const allowed = allowedOrigins(env);
     if (request.method === "OPTIONS") {
-      return origin && allowed.includes(origin)
+      return allowed.includes(origin)
         ? new Response(null, { status: 204, headers: corsHeaders(origin) })
         : fail(403, "Origin not allowed");
     }
