@@ -474,6 +474,7 @@ js_form_add_form = "Song form"
 
 songs_syncModalTitle = "Connect devices"
 songs_syncIntro = "Same setlists and song versions on all your devices. Encrypted before they leave this one."
+songs_syncPrivacy = "Privacy: your setlists and song versions are end-to-end encrypted on your device. We can't read them and do nothing else with the data."
 songs_syncConnect = "Connect this device"
 songs_syncJoinLabel = "or enter a code"
 songs_syncCodeInput_placeholder = "XXXX-XXXX-XXXX-…"
