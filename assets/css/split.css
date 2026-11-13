@@ -4059,9 +4059,11 @@ output.rj-library-print-status:not([hidden]) {
 
 /* Connect devices (#syncModal, songs/sync/sync.js). One column, one font
    (Montserrat, like the rest of the dialog), one primary action per step. */
-.rj-sync-modal {
+.rj-sync-modal,
+dialog.rj-sync-modal {
   width: 380px;
-  max-height: 90vh;
+  max-width: 100%;
+  max-height: calc(100vh - 40px);
   overflow-y: auto;
   font-family: "Montserrat", sans-serif;
 }
@@ -4088,25 +4090,82 @@ output.rj-library-print-status:not([hidden]) {
   color: var(--rj-gold, #e29d0f);
   border-bottom-color: var(--rj-gold, #e29d0f);
 }
-.rj-sync-share {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-.rj-sync-share .rj-modal-btn {
-  margin: 0 4px 8px;
-}
+/* Shared tab, top to bottom: who you are, invite, status, leave/delete. */
 .rj-sync-band[hidden],
 #syncPanelDevices[hidden] {
   display: none;
 }
-.rj-sync-band .rj-modal-input {
-  margin-top: 6px;
+.rj-sync-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+.rj-sync-field[hidden] {
+  display: none;
+}
+.rj-sync-label {
+  display: block;
+  margin: 0 0 5px;
+  color: rgba(230,228,224,.55);
+  font: 700 10px "Montserrat", sans-serif;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+}
+.rj-sync-heading {
+  margin: 4px 0 -4px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,.1);
+  color: rgba(230,228,224,.55);
+  font: 700 10px "Montserrat", sans-serif;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+}
+/* Equal tiles on one row, whether three or four are shown. */
+.rj-sync-share {
+  display: flex;
+  gap: 8px;
+}
+.rj-sync-share .rj-modal-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  height: auto;
+  padding: 7px 4px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  font-size: 10.5px;
+  white-space: nowrap;
+}
+.rj-sync-share .rj-modal-btn[hidden] {
+  display: none;
+}
+.rj-sync-share .rj-modal-btn [class^="fa-"] {
+  font-size: 15px;
+}
+.rj-sync-band .rj-sync-section {
+  gap: 10px;
+  margin-top: 12px;
+}
+.rj-sync-band .rj-sync-pair {
+  width: 160px;
+}
+.rj-sync-band .rj-sync-qr {
+  padding: 10px;
+}
+.rj-sync-band .rj-sync-code {
+  padding: 7px 8px 8px;
+  font-size: 12.5px;
+}
+.rj-sync-band .rj-sync-hint {
+  font-size: 11px;
+  line-height: 1.4;
 }
 .rj-band-chips {
   display: flex;
   flex-wrap: wrap;
-  margin: 0 -3px 6px;
+  margin: 10px -3px 0;
 }
 .rj-band-chips[hidden] {
   display: none;
@@ -4128,10 +4187,23 @@ output.rj-library-print-status:not([hidden]) {
   color: var(--rj-gold, #e29d0f);
   border-color: var(--rj-gold, #e29d0f);
 }
-.rj-sync-band .rj-sync-status {
-  margin: 12px 0 0;
+.rj-sync-band .rj-sync-band-status {
+  margin-top: 12px;
 }
-.rj-sync-band .rj-sync-status:empty {
+.rj-sync-band .rj-sync-band-status:has(.rj-sync-status:empty):not(:has(.rj-modal-btn:not([hidden]))) {
+  display: none;
+}
+.rj-sync-foot {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255,255,255,.1);
+}
+.rj-sync-foot[hidden] {
+  display: none;
+}
+.rj-sync-modal .rj-install-note[hidden] {
   display: none;
 }
 .rj-sync-modal .rj-install-note {

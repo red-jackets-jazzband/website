@@ -326,9 +326,18 @@
     </div>
     </div>
     <div id="syncPanelBand" class="rj-sync-band" hidden>
-      <p class="rj-install-note">{{ i18n "songs_bandIntro" }}</p>
+      <p id="bandIntro" class="rj-install-note">{{ i18n "songs_bandIntro" }}</p>
       <div id="bandTabs" class="rj-band-chips" role="group" aria-label="{{ i18n "songs_bandTabs_aria" }}" hidden></div>
-      <input type="text" id="bandName" class="rj-modal-input" maxlength="40" autocomplete="off" aria-label="{{ i18n "songs_bandName_aria" }}" placeholder="{{ i18n "songs_bandName_placeholder" }}">
+      <div class="rj-sync-fields">
+        <div class="rj-sync-field">
+          <label class="rj-sync-label" for="bandName">{{ i18n "songs_bandName_label" }}</label>
+          <input type="text" id="bandName" class="rj-modal-input" maxlength="40" autocomplete="off" placeholder="{{ i18n "songs_bandName_placeholder" }}">
+        </div>
+        <div id="bandLabelField" class="rj-sync-field" hidden>
+          <label class="rj-sync-label" for="bandLabel">{{ i18n "songs_bandLabel_label" }}</label>
+          <input type="text" id="bandLabel" class="rj-modal-input" maxlength="40" autocomplete="off" placeholder="{{ i18n "songs_bandLabel_placeholder" }}">
+        </div>
+      </div>
       <div id="bandSetup" class="rj-sync-section">
         <button type="button" id="bandConnect" class="rj-modal-btn rj-modal-btn-primary rj-sync-wide">{{ i18n "songs_bandConnect" }}</button>
         <div class="rj-sync-or"><label for="bandCodeInput">{{ i18n "songs_syncJoinLabel" }}</label></div>
@@ -338,26 +347,26 @@
         </div>
       </div>
       <div id="bandBox" class="rj-sync-section" hidden>
-        <input type="text" id="bandLabel" class="rj-modal-input" maxlength="40" autocomplete="off" aria-label="{{ i18n "songs_bandLabel_aria" }}" placeholder="{{ i18n "songs_bandLabel_placeholder" }}">
+        <h3 class="rj-sync-heading">{{ i18n "songs_bandInviteTitle" }}</h3>
         <div class="rj-sync-pair">
           <div class="rj-sync-qr"><svg id="bandQr" role="img" aria-label="{{ i18n "songs_bandQr_aria" }}" focusable="false"></svg></div>
           <div id="bandCode" class="rj-sync-code"></div>
         </div>
-        <p class="rj-install-note rj-sync-hint">{{ i18n "songs_bandCodeHint" }}</p>
         <div class="rj-sync-share">
-          <button type="button" id="bandShare" class="rj-modal-btn" hidden><span class="fa-solid fa-share-nodes" aria-hidden="true"></span> {{ i18n "songs_bandShare" }}</button>
-          <button type="button" id="bandWhatsapp" class="rj-modal-btn"><span class="fa-brands fa-whatsapp" aria-hidden="true"></span> {{ i18n "songs_bandWhatsapp" }}</button>
-          <button type="button" id="bandMail" class="rj-modal-btn"><span class="fa-solid fa-envelope" aria-hidden="true"></span> {{ i18n "songs_bandMail" }}</button>
-          <button type="button" id="bandCopyLink" class="rj-modal-btn"><span class="fa-solid fa-link" aria-hidden="true"></span> {{ i18n "songs_bandCopyLink" }}</button>
+          <button type="button" id="bandShare" class="rj-modal-btn" hidden><span class="fa-solid fa-share-nodes" aria-hidden="true"></span>{{ i18n "songs_bandShare" }}</button>
+          <button type="button" id="bandWhatsapp" class="rj-modal-btn"><span class="fa-brands fa-whatsapp" aria-hidden="true"></span>{{ i18n "songs_bandWhatsapp" }}</button>
+          <button type="button" id="bandMail" class="rj-modal-btn"><span class="fa-solid fa-envelope" aria-hidden="true"></span>{{ i18n "songs_bandMail" }}</button>
+          <button type="button" id="bandCopyLink" class="rj-modal-btn"><span class="fa-solid fa-link" aria-hidden="true"></span>{{ i18n "songs_bandCopyLink" }}</button>
         </div>
-        <div class="rj-sync-links">
-          <button type="button" id="bandLeave" class="rj-sync-link">{{ i18n "songs_bandLeave" }}</button>
-          <button type="button" id="bandDelete" class="rj-sync-link rj-sync-danger">{{ i18n "songs_syncDelete" }}</button>
-        </div>
+        <p class="rj-install-note rj-sync-hint">{{ i18n "songs_bandCodeHint" }}</p>
       </div>
-      <div class="rj-sync-statusrow">
+      <div class="rj-sync-statusrow rj-sync-band-status">
         <p id="bandStatus" class="rj-sync-status" role="status" aria-live="polite"></p>
         <button type="button" id="bandNow" class="rj-modal-btn rj-modal-btn-primary" hidden>{{ i18n "songs_syncNow" }}</button>
+      </div>
+      <div id="bandFoot" class="rj-sync-foot" hidden>
+        <button type="button" id="bandLeave" class="rj-sync-link">{{ i18n "songs_bandLeave" }}</button>
+        <button type="button" id="bandDelete" class="rj-sync-link rj-sync-danger">{{ i18n "songs_syncDelete" }}</button>
       </div>
     </div>
     <p class="rj-sync-privacy">{{ i18n "songs_syncPrivacy" }}</p>
