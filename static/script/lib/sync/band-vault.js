@@ -38,7 +38,7 @@
 import { tl } from "../core/i18n.js";
 import { songFormPrefKey } from "../core/preferences.js";
 import { readStoredForm } from "../music/song-form.js";
-import { copyBandSetlistToPersonal, listPersonalSetlists, replacePersonalSetlists } from "../setlists/setlists-store.js";
+import { deletePersonalSetlist, listPersonalSetlists, replacePersonalSetlists, tryCopyBandSetlistToPersonal } from "../setlists/setlists-store.js";
 import { canonical } from "./engine.js";
 import { META_KEY, nextStamp, observeStamp, pruneTombstones, readMeta, stampAfter, writeMeta } from "./clock.js";
 import { maxTomb, mergeSetlists } from "./merge.js";
@@ -328,6 +328,10 @@ function uniqueVersions(versions) {
 export function validateBandDoc(raw) {
   if (!isObject(raw) || !Number.isInteger(raw.format) || raw.format < 1) return { ok: false, newer: false };
   if (raw.format > BAND_FORMAT) return { ok: false, newer: true };
+  // A band document always has members and versions; a personal vault's
+  // document (a Devices code typed into the Shared tab) has neither, and must
+  // not be upgraded and written back as a band's.
+  if (!Array.isArray(raw.members) || !Array.isArray(raw.versions)) return { ok: false, newer: false };
   return {
     ok: true,
     doc: {
@@ -441,11 +445,12 @@ export function buildBandDoc(storage, id, now) {
   writeMeta(storage, meta);
   const versions = cached.versions.filter((v) => { return v.author !== profile.author; }).concat(mine);
   const shared = bandSetlistStorage(storage, id);
+  const device = readMeta(shared).deviceId; // this space's own, so spaces can't be linked by it
   const setlists = JSON.parse(JSON.stringify(listPersonalSetlists(shared))); // NOSONAR: structuredClone is Safari 15.4+
   const sharedTomb = readMeta(shared).tomb;
   tomb.setlists = { ...sharedTomb.setlists };
   tomb.rows = { ...sharedTomb.rows };
-  return { format: BAND_FORMAT, device: meta.deviceId, members, versions, setlists, tomb };
+  return { format: BAND_FORMAT, device, members, versions, setlists, tomb };
 }
 
 // Writes the merged setlists, their tombstones and the newest stamp seen back
@@ -510,12 +515,30 @@ export function bandCodec(id) {
   };
 }
 
+// Copies a space's setlists into personal ones; if one can't be saved, the
+// copies already made are removed again (a retry must not duplicate them).
+function copySetlistsToPersonal(storage, id) {
+  const made = [];
+  for (const entry of listSharedSetlists(storage, id)) {
+    const copy = tryCopyBandSetlistToPersonal(storage, entry);
+    if (copy === null) {
+      made.forEach((done) => { deletePersonalSetlist(storage, done.id); });
+      return false;
+    }
+    made.push(copy);
+  }
+  return true;
+}
+
 // Leaving a band space: forget its code and what came from it, and drop it
 // from the list. Own song forms stay (they were only ever copied), and so do
-// the space's setlists, as personal ones — leaving never loses a setlist.
-export function forgetBand(storage, id) {
+// the space's setlists, as personal ones — leaving never loses a setlist. If a
+// copy can't be saved (storage full) nothing is removed and this returns
+// false, so the setlists are still in the space. `keepSetlists: false` is for
+// a join that failed halfway: what it downloaded is dropped, not promoted.
+export function forgetBand(storage, id, { keepSetlists = true } = {}) {
   const keys = bandKeys(id);
-  listSharedSetlists(storage, id).forEach((entry) => { copyBandSetlistToPersonal(storage, entry); });
+  if (keepSetlists && !copySetlistsToPersonal(storage, id)) return false;
   [keys.code, keys.state, keys.doc, keys.shared, keys.profile, keys.setlists, keys.meta].forEach((key) => {
     try {
       storage.removeItem(key);
@@ -525,4 +548,5 @@ export function forgetBand(storage, id) {
   });
   const list = readList(storage);
   if (list) writeList(storage, list.filter((band) => { return band.id !== id; }));
+  return true;
 }

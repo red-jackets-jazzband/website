@@ -527,6 +527,7 @@ js_band_share_text = "Rejoignez notre espace partagé pour les formes de morceau
 js_band_share_subject = "Espace partagé Red Jackets"
 js_band_pair_hint = "Saisissez votre nom puis appuyez sur Rejoindre pour entrer dans cet espace partagé"
 js_band_need_name = "Saisissez d'abord votre nom — vos camarades le verront"
+js_band_keep_failed = "Impossible de garder les setlists de cet espace sur cet appareil (stockage plein ?). Rien n'a été supprimé."
 js_band_off = "Pas dans un espace partagé"
 js_band_delete_confirm = "Supprimer la copie serveur de l'espace partagé ? Tout le monde est déconnecté ; les formes de morceau et les setlists restent sur chaque appareil."
 js_form_version_of = "Version de {name}"

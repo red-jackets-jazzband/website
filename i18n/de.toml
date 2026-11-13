@@ -527,6 +527,7 @@ js_band_share_text = "Komm in unseren geteilten Raum für Songformen und Setlist
 js_band_share_subject = "Geteilter Raum der Red Jackets"
 js_band_pair_hint = "Gib deinen Namen ein und drücke Beitreten, um diesen geteilten Raum zu betreten"
 js_band_need_name = "Gib zuerst deinen Namen ein — deine Bandkollegen sehen ihn"
+js_band_keep_failed = "Die Setlists dieses Raums konnten nicht auf diesem Gerät behalten werden (Speicher voll?). Es wurde nichts entfernt."
 js_band_off = "Nicht in einem geteilten Raum"
 js_band_delete_confirm = "Die Serverkopie des geteilten Raums löschen? Alle werden getrennt; die Songformen und Setlists auf jedem Gerät bleiben."
 js_form_version_of = "Version von {name}"
