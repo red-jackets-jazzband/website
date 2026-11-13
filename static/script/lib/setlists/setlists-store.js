@@ -1,4 +1,5 @@
 import { parseSetlistFile, serializeSetlistFile, isSetlistDivider } from "./setlist-format.js";
+import { notifyLocalChange } from "../sync/changes.js";
 import { addTombstone, nextStamp, rowTombstoneKey } from "../sync/clock.js";
 
 const STORAGE_KEY = "rj.setlists.v1";
@@ -62,17 +63,18 @@ function readStorage(storage) {
   if (!raw) return [];
   const parsed = parseStoredList(raw);
   if (!Array.isArray(parsed)) return [];
-  if (parsed.filter(isEntryObject).map(migrateEntry).some(Boolean)) writeStorage(storage, parsed);
+  if (parsed.filter(isEntryObject).map(migrateEntry).some(Boolean)) writeStorage(storage, parsed, true);
   return parsed;
 }
 
-function writeStorage(storage, list) {
+function writeStorage(storage, list, silent) {
   if (!storage) return;
   try {
     storage.setItem(STORAGE_KEY, JSON.stringify(list));
   } catch (_e) {
     // storage unavailable/full — the change just won't persist.
   }
+  if (!silent) notifyLocalChange();
 }
 
 function generateId() {
@@ -333,5 +335,5 @@ export function importPersonalSetlistText(storage, text, fallbackName) {
 // (lib/sync/doc.js). Not for ordinary edits: those go through the mutators
 // above, which stamp.
 export function replacePersonalSetlists(storage, list) {
-  writeStorage(storage, list);
+  writeStorage(storage, list, true);
 }
