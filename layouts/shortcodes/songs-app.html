@@ -288,6 +288,41 @@
   </dialog>
 </div>
 
+<div id="syncModal" class="rj-modal-overlay" hidden>
+  <dialog class="rj-modal" open aria-modal="true" aria-labelledby="syncModalTitle">
+    <div class="rj-modal-head">
+      <h2 class="rj-modal-title" id="syncModalTitle">{{ i18n "songs_syncModalTitle" }}</h2>
+      <button type="button" id="syncClose" class="rj-modal-close" aria-label="{{ i18n "songs_setlistModalClose_aria" }}">&times;</button>
+    </div>
+    <p class="rj-install-note">{{ i18n "songs_syncIntro" }}</p>
+    <div id="syncSetup">
+      <div class="rj-modal-actions rj-sync-actions">
+        <button type="button" id="syncConnect" class="rj-modal-btn rj-modal-btn-primary">{{ i18n "songs_syncConnect" }}</button>
+      </div>
+      <label class="rj-modal-label" for="syncCodeInput">{{ i18n "songs_syncJoinLabel" }}</label>
+      <input type="text" id="syncCodeInput" class="rj-modal-input" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="{{ i18n "songs_syncCodeInput_placeholder" }}">
+      <div class="rj-modal-actions rj-sync-actions">
+        <button type="button" id="syncJoin" class="rj-modal-btn">{{ i18n "songs_syncJoin" }}</button>
+      </div>
+    </div>
+    <div id="syncCodeBox" hidden>
+      <div class="rj-modal-label">{{ i18n "songs_syncCodeLabel" }}</div>
+      <div id="syncCode" class="rj-sync-code"></div>
+      <p class="rj-install-note">{{ i18n "songs_syncCodeHint" }}</p>
+      <div class="rj-modal-actions rj-sync-actions">
+        <button type="button" id="syncNow" class="rj-modal-btn rj-modal-btn-primary">{{ i18n "songs_syncNow" }}</button>
+        <button type="button" id="syncNewCode" class="rj-modal-btn">{{ i18n "songs_syncNewCode" }}</button>
+        <button type="button" id="syncDisconnect" class="rj-modal-btn">{{ i18n "songs_syncDisconnect" }}</button>
+        <button type="button" id="syncDelete" class="rj-modal-btn">{{ i18n "songs_syncDelete" }}</button>
+      </div>
+    </div>
+    <p id="syncStatus" class="rj-sync-status" role="status" aria-live="polite"></p>
+    <div class="rj-modal-actions">
+      <button type="button" id="syncDone" class="rj-modal-btn">{{ i18n "songs_syncDone" }}</button>
+    </div>
+  </dialog>
+</div>
+
 <div id="installHint" class="rj-modal-overlay" hidden>
   <dialog class="rj-modal" open aria-modal="true" aria-labelledby="installHintTitle">
     <div class="rj-modal-head">
