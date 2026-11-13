@@ -295,7 +295,7 @@
       <h2 class="rj-modal-title" id="syncModalTitle">{{ i18n "songs_syncModalTitle" }}</h2>
       <button type="button" id="syncClose" class="rj-modal-close" aria-label="{{ i18n "songs_setlistModalClose_aria" }}">&times;</button>
     </div>
-    <div class="rj-sync-tabs" role="group" aria-label="{{ i18n "songs_syncTabs_aria" }}">
+    <div class="rj-sync-tabs" role="group" aria-label="{{ i18n "songs_syncTabs_aria" }}"> {{/* NOSONAR: a <fieldset> would change the layout */}}
       <button type="button" id="syncTabDevices" class="rj-sync-tab" aria-pressed="true">{{ i18n "songs_syncTabDevices" }}</button>
       <button type="button" id="syncTabBand" class="rj-sync-tab" aria-pressed="false">{{ i18n "songs_syncTabBand" }}</button>
     </div>
@@ -328,7 +328,7 @@
     </div>
     <div id="syncPanelBand" class="rj-sync-band" hidden>
       <p id="bandIntro" class="rj-install-note">{{ i18n "songs_bandIntro" }}</p>
-      <div id="bandTabs" class="rj-band-chips" role="group" aria-label="{{ i18n "songs_bandTabs_aria" }}" hidden></div>
+      <div id="bandTabs" class="rj-band-chips" role="group" aria-label="{{ i18n "songs_bandTabs_aria" }}" hidden></div> {{/* NOSONAR: a <fieldset> would change the layout */}}
       <div class="rj-sync-fields">
         <div class="rj-sync-field">
           <label class="rj-sync-label" for="bandName">{{ i18n "songs_bandName_label" }}</label>
@@ -362,7 +362,7 @@
         <p class="rj-install-note rj-sync-hint">{{ i18n "songs_bandCodeHint" }}</p>
       </div>
       <div class="rj-sync-statusrow rj-sync-band-status">
-        <p id="bandStatus" class="rj-sync-status" role="status" aria-live="polite"></p>
+        <p id="bandStatus" class="rj-sync-status" role="status" aria-live="polite"></p> {{/* NOSONAR: <output> is styled inline by default */}}
         <button type="button" id="bandNow" class="rj-modal-btn rj-modal-btn-primary" hidden>{{ i18n "songs_syncNow" }}</button>
       </div>
       <div id="bandFoot" class="rj-sync-foot" hidden>

@@ -21,7 +21,7 @@ export function fakeServer() {
     if (init.method === "GET") {
       const v = vaults[id];
       if (!v) return json({}, 404);
-      if (init.headers && init.headers["If-None-Match"] === `"${v.version}"`) return new Response(null, { status: 304 });
+      if (init.headers?.["If-None-Match"] === `"${v.version}"`) return new Response(null, { status: 304 });
       return json(v, 200);
     }
     if (init.method === "DELETE") {
