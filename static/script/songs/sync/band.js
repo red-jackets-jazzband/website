@@ -351,7 +351,8 @@ export function createBand(ctx) {
       draftResult = result;
     }
     if (result.changed && ctx.songForm) ctx.songForm.refresh();
-    if (result.changed) refreshSetlists();
+    // A new space gets its (maybe empty) shelf at once, changed or not.
+    if (result.changed || result.status === "ok") refreshSetlists();
     render();
   }
 

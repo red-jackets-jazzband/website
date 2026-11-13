@@ -5,6 +5,8 @@ import { test, expect } from "@playwright/test";
 // real page on both sides. Two browser contexts are two devices (own storage).
 const SYNC_HOST = "rj-sync.redjackets.workers.dev";
 const CORS = { "access-control-allow-origin": "*", "access-control-expose-headers": "ETag" };
+const WEBKIT_SKIP = "WebKit can't mock a CORS preflight";
+const SETLISTS_TAB = '.rj-library-tab[data-tab="setlists"]';
 const WS_PATTERN = new RegExp(`${SYNC_HOST.replaceAll(".", "\\.")}/v1/vault/[0-9a-f]{64}/live`);
 
 // One vault in memory, speaking the worker's protocol (GET/PUT with versions).
@@ -42,7 +44,7 @@ async function newDevice(browser, server, requests) {
   await page.routeWebSocket(WS_PATTERN, (ws) => { sockets.push(ws); });
   await page.goto("/songs/");
   await expect(page.locator(".song-list-item").first()).toBeVisible();
-  await page.locator('.rj-library-tab[data-tab="setlists"]').click();
+  await page.locator(SETLISTS_TAB).click();
   return { context, page, sockets };
 }
 
@@ -57,7 +59,7 @@ test("sync is off by default: no request goes to the sync host", async ({ browse
 test("a setlist made on one device appears on the other, and a push triggers a pull", async ({ browser, browserName }) => {
   // Playwright's WebKit doesn't route CORS preflights through context.route, so the
   // PUT's preflight reaches the real host and is refused; a real Safari is checked by hand (plan 10.3).
-  test.skip(browserName === "webkit", "WebKit can't mock a CORS preflight");
+  test.skip(browserName === "webkit", WEBKIT_SKIP);
   const server = fakeServer();
   const first = await newDevice(browser, server);
   await first.page.locator("#syncBtn").click();
@@ -100,4 +102,58 @@ test("a setlist made on one device appears on the other, and a push triggers a p
 
   await first.context.close();
   await second.context.close();
+});
+
+// Shared space with two members (plan 11.6): one starts a space and makes a
+// setlist in it, the other joins by code and sees it, edits it, and the first
+// gets the edit back. Two contexts are two members.
+async function openSharedTab(page) {
+  await page.locator("#syncBtn").click();
+  await page.locator("#syncTabBand").click();
+}
+
+test("two members of a shared space see and edit the same setlist", async ({ browser, browserName }) => {
+  test.skip(browserName === "webkit", WEBKIT_SKIP);
+  const server = fakeServer();
+
+  const anna = await newDevice(browser, server);
+  await openSharedTab(anna.page);
+  await anna.page.locator("#bandName").fill("Anna");
+  await anna.page.locator("#bandConnect").click();
+  await expect(anna.page.locator("#bandCode")).not.toBeEmpty();
+  const code = await anna.page.locator("#bandCode").innerText();
+  await anna.page.keyboard.press("Escape");
+
+  // The space has a shelf of its own on the Setlists tab, with its own New setlist button.
+  const shelfButton = anna.page.locator(".rj-library-new-setlist-btn").last();
+  await shelfButton.click();
+  await anna.page.locator("#setlistModalName").fill("Shared gig");
+  await anna.page.locator("#setlistModalCreate").click();
+  await expect.poll(() => server.puts, { timeout: 15_000 }).toBeGreaterThanOrEqual(2); // start + the upload after the edit
+
+  const ben = await newDevice(browser, server);
+  await openSharedTab(ben.page);
+  await ben.page.locator("#bandName").fill("Ben");
+  await ben.page.locator("#bandCodeInput").fill(code);
+  await ben.page.locator("#bandJoin").click();
+  await expect(ben.page.locator("#bandStatus")).toContainText(/\d\d:\d\d/);
+  await ben.page.keyboard.press("Escape");
+  await expect(ben.page.locator(".rj-library-list")).toContainText("Shared gig");
+
+  // A member edits the shared setlist; the other gets it back on the next sync.
+  await ben.page.locator(".rj-library-list").getByText("Shared gig").click();
+  await ben.page.locator("#setlistAddSongSearch").fill("bill");
+  await ben.page.locator(".rj-library-add-song-result").first().click();
+  const putsBefore = server.puts;
+  await expect.poll(() => server.puts, { timeout: 15_000 }).toBeGreaterThan(putsBefore);
+
+  await anna.page.locator("#syncBtn").click();
+  await anna.page.locator("#syncTabBand").click();
+  await anna.page.locator("#bandNow").click();
+  await anna.page.keyboard.press("Escape");
+  await anna.page.locator(SETLISTS_TAB).click();
+  await expect(anna.page.locator(".rj-library-list")).toContainText(/1 song/i);
+
+  await anna.context.close();
+  await ben.context.close();
 });
