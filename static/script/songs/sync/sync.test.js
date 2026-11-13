@@ -127,7 +127,7 @@ test("a pairing link is taken out of the address bar and joins after confirmatio
   }
 });
 
-test("the QR button draws the pairing link as an SVG, and hides it again", async () => {
+test("connecting draws the pairing link as a QR straight away", async () => {
   const page = mountPage();
   const realFetch = window.fetch;
   const drawn = [];
@@ -140,15 +140,9 @@ test("the QR button draws the pairing link as an SVG, and hides it again", async
     await ctx.sync.init();
     document.getElementById("syncConnect").click();
     await new Promise((resolve) => { setTimeout(resolve, 50); });
-    const toggle = document.getElementById("syncQrToggle");
-    toggle.click();
-    await new Promise((resolve) => { setTimeout(resolve, 20); });
-    assert.equal(document.getElementById("syncQrBox").hidden, false);
-    assert.equal(toggle.getAttribute("aria-expanded"), "true");
     assert.match(drawn[0], /#sync=[A-Z0-9-]+$/);
     assert.equal(document.querySelector("#syncQr path").getAttribute("d"), "M4 4h1v1h-1zM5 5h1v1h-1z");
-    toggle.click();
-    assert.equal(document.getElementById("syncQrBox").hidden, true);
+    assert.equal(document.getElementById("syncIntro").hidden, true);
     document.getElementById("syncDisconnect").click();
   } finally {
     delete globalThis.qrcode;

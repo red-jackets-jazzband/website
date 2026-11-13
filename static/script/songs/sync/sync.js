@@ -61,16 +61,6 @@ function drawQr(svg, url) {
   svg.append(path);
 }
 
-function hideQr() {
-  const box = byId("syncQrBox");
-  const toggle = byId("syncQrToggle");
-  if (box) box.hidden = true;
-  if (toggle) {
-    toggle.setAttribute("aria-expanded", "false");
-    toggle.textContent = tl("sync_qr_show", "Show QR code");
-  }
-}
-
 function closeDialog() {
   const overlay = byId("syncModal");
   if (overlay) overlay.hidden = true;
@@ -83,6 +73,7 @@ export function createSync(ctx) {
   let uploadTimer = null;
   let changeGen = 0; // counts local edits; a cycle that began before one can't clear "dirty"
   let lastPull = 0;
+  let qrFor = null; // the code the drawn QR belongs to
   let lastResult = { status: "off" };
   let live = null;
   // Read at creation, before navigation's own hash rewriting can drop it.
@@ -145,21 +136,10 @@ export function createSync(ctx) {
     }
   }
 
-  // Show the pairing QR; the generator loads on first use (and is precached for offline).
-  function toggleQr() {
-    const box = byId("syncQrBox");
-    if (!box) return Promise.resolve();
-    if (!box.hidden) { hideQr(); return Promise.resolve(); }
-    const code = getEngine().code();
-    if (!code) return Promise.resolve();
+  // Draw the pairing QR; the generator loads on first use (and is precached for offline).
+  function showQr(code) {
     const ready = typeof qrcode === "undefined" ? loadScriptOnce(QR_SRC) : Promise.resolve();
-    return ready.then(() => {
-      drawQr(byId("syncQr"), pairingUrl(window.location.href, formatCode(code)));
-      box.hidden = false;
-      const toggle = byId("syncQrToggle");
-      toggle.setAttribute("aria-expanded", "true");
-      toggle.textContent = tl("sync_qr_hide", "Hide QR code");
-    });
+    return ready.then(() => { drawQr(byId("syncQr"), pairingUrl(window.location.href, formatCode(code))); });
   }
 
   function render() {
@@ -171,11 +151,17 @@ export function createSync(ctx) {
     if (line) line.textContent = statusText(shown, clockTime());
     const codeBox = byId("syncCodeBox");
     if (codeBox) codeBox.hidden = !code;
-    if (!code) hideQr();
+    const intro = byId("syncIntro");
+    if (intro) intro.hidden = Boolean(code);
     const setup = byId("syncSetup");
     if (setup) setup.hidden = Boolean(code);
     const codeEl = byId("syncCode");
     if (codeEl) codeEl.textContent = code ? formatCode(code) : "";
+    if (!code) qrFor = null;
+    if (code && code !== qrFor) {
+      qrFor = code;
+      settle(showQr(code));
+    }
   }
 
   function finish(result, gen) {
@@ -260,12 +246,10 @@ export function createSync(ctx) {
     overlay.addEventListener("click", (e) => { if (e.target === overlay) closeDialog(); });
     document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !overlay.hidden) closeDialog(); });
     on("syncClose", "click", closeDialog);
-    on("syncDone", "click", closeDialog);
     on("syncConnect", "click", () => { settle(action(() => getEngine().connect())); });
     const join = () => { settle(action(() => getEngine().join(byId("syncCodeInput").value))); };
     on("syncJoin", "click", join);
     on("syncCodeInput", "keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); join(); } });
-    on("syncQrToggle", "click", () => { settle(toggleQr()); });
     on("syncNow", "click", () => { lastPull = 0; settle(run()); });
     on("syncDisconnect", "click", () => {
       if (flags.acting) return;
