@@ -2,7 +2,7 @@ import { byId, el, qsa } from "../../lib/core/dom.js";
 import { readPref, removePref, safeStorage, songFormPrefKey, writePref } from "../../lib/core/preferences.js";
 import { addTombstone, nextStamp, setFormStamp } from "../../lib/sync/clock.js";
 import { notifyLocalChange } from "../../lib/sync/changes.js";
-import { bandConnected, isShared, setShared, versionsOf } from "../../lib/sync/band-vault.js";
+import { connectedBands, isShared, setShared, unshareEverywhere, versionsOf } from "../../lib/sync/band-vault.js";
 import { tl } from "../../lib/core/i18n.js";
 import {
   MORE, REPEAT_CHOICES, addPart, addRound, addTypedParts, cloneRounds, deleteRound,
@@ -139,6 +139,13 @@ function inRevealArea(target) {
   return Boolean(target.closest("#chordtable")) && Boolean(document.querySelector(".songForm-tools--alone"));
 }
 
+// "Anna's version", with the band space's label after it when there are several.
+function versionLabel(v, several) {
+  const params = { name: v.name, band: v.bandLabel };
+  if (several) return v.name ? tl("form_version_of_in", "{name}'s version ({band})", params) : tl("form_version_unnamed_in", "A bandmate's version ({band})", params);
+  return v.name ? tl("form_version_of", "{name}'s version", params) : tl("form_version_unnamed", "A bandmate's version");
+}
+
 export function createSongForm(ctx) {
   let file = null;
   let band = [];
@@ -169,10 +176,10 @@ export function createSongForm(ctx) {
     return showingMine() ? mine : band;
   }
 
-  // Bandmates' versions of this song (none unless the band space is joined).
+  // Bandmates' versions of this song, from every band space joined (none when
+  // there is none).
   function others() {
-    const storage = safeStorage();
-    return file && bandConnected(storage) ? versionsOf(storage, file) : [];
+    return file ? versionsOf(safeStorage(), file) : [];
   }
 
   // After a sync: keep looking at the same member's version, as it now is.
@@ -202,7 +209,7 @@ export function createSongForm(ctx) {
     const at = nextStamp(storage);
     if (mine === null) {
       removePref(songFormPrefKey(file));
-      setShared(storage, file, false);
+      unshareEverywhere(storage, file);
       addTombstone(storage, "forms", file, at);
     } else {
       writePref(songFormPrefKey(file), writeStoredForm(mine, show));
@@ -270,8 +277,9 @@ export function createSongForm(ctx) {
   function versionItems(bandmates) {
     const items = [menuItem("band", "fa-users", tl("form_band", "The band's form"), () => setShow("band"), !showingMine() && !viewing)];
     if (mine) items.push(menuItem("mine", "fa-user", tl("form_mine", "My version"), () => setShow("mine"), showingMine() && !viewing));
+    const several = connectedBands(safeStorage()).length > 1;
     bandmates.forEach((v) => {
-      const label = v.name ? tl("form_version_of", "{name}'s version", { name: v.name }) : tl("form_version_unnamed", "A bandmate's version");
+      const label = versionLabel(v, several);
       items.push(menuItem(`by-${v.author}`, "fa-user", label, () => { return setViewing(v.author); }, Boolean(viewing) && viewing.author === v.author));
     });
     items.push(el("div", { class: "songForm-menu-sep", attrs: { role: "separator" } }));
@@ -281,9 +289,13 @@ export function createSongForm(ctx) {
   function bandItems() {
     const items = [];
     if (viewing) items.push(menuItem("adopt", "fa-copy", tl("form_copy_to_mine", "Copy to my version"), adopt));
-    if (mine && bandConnected(safeStorage())) {
-      const on = isShared(safeStorage(), file);
-      items.push(menuItem("share", "fa-share-nodes", tl("form_share", "Share with the band"), () => { return toggleShare(!on); }, on));
+    if (mine) {
+      const bands = connectedBands(safeStorage());
+      bands.forEach((space) => {
+        const on = isShared(safeStorage(), space.id, file);
+        const label = bands.length > 1 ? tl("form_share_with", "Share with {band}", { band: space.label }) : tl("form_share", "Share with the band");
+        items.push(menuItem(bands.length > 1 ? `share-${space.id}` : "share", "fa-share-nodes", label, () => { return toggleShare(space.id, !on); }, on));
+      });
     }
     return items;
   }
@@ -859,8 +871,8 @@ export function createSongForm(ctx) {
     draw("menu");
   }
 
-  function toggleShare(on) {
-    setShared(safeStorage(), file, on);
+  function toggleShare(bandId, on) {
+    setShared(safeStorage(), bandId, file, on);
     menuOpen = false;
     notifyLocalChange();
     draw("menu");

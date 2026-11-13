@@ -4,7 +4,7 @@ import { mountPage } from "../../../../tests/helpers/dom.js";
 import { makeCtx, memoryStorage } from "../../../../tests/helpers/ctx.js";
 import { fakeServer } from "../../../../tests/helpers/sync-server.js";
 import { createBand } from "./band.js";
-import { isShared, setShared, versionsOf } from "../../lib/sync/band-vault.js";
+import { isShared, listBands, setShared, versionsOf } from "../../lib/sync/band-vault.js";
 import { songFormPrefKey } from "../../lib/core/preferences.js";
 
 const FILE = "a.abc";
@@ -60,14 +60,17 @@ test("starting needs a name; then the dialog starts a band space and a second de
     assert.match(document.getElementById("bandStatus").textContent, /name/i);
 
     document.getElementById("bandName").value = "Anna";
-    anna.setItem(songFormPrefKey(FILE), FORM);
-    setShared(anna, FILE, true);
     click("bandConnect");
     await tick();
     assert.equal(ctxA.band.isConnected(), true);
     assert.equal(document.getElementById("bandBox").hidden, false);
     const code = document.getElementById("bandCode").textContent;
     assert.ok(code.length > 10);
+    // Anna shares a form with the band, and the next sync sends it.
+    anna.setItem(songFormPrefKey(FILE), FORM);
+    setShared(anna, listBands(anna)[0].id, FILE, true);
+    click("bandNow");
+    await tick();
 
     const pieter = memoryStorage();
     mountPage();
@@ -80,7 +83,7 @@ test("starting needs a name; then the dialog starts a band space and a second de
     await tick();
     assert.equal(ctxP.band.isConnected(), true, document.getElementById("bandStatus").textContent);
     assert.equal(versionsOf(pieter, FILE)[0].name, "Anna");
-    assert.equal(isShared(pieter, FILE), false);
+    assert.equal(isShared(pieter, listBands(pieter)[0].id, FILE), false);
 
     click("bandLeave");
     assert.equal(ctxP.band.isConnected(), false);
@@ -146,4 +149,83 @@ test("opening a #band= link takes the code out of the address bar and fills the 
   assert.equal(opened, 1);
   assert.equal(document.getElementById("syncPanelBand").hidden, false);
   assert.match(document.getElementById("bandStatus").textContent, /name/i);
+});
+
+// Starts a band space on `server` through the dialog of `ctx`; returns its code.
+async function startBand(name) {
+  document.getElementById("bandName").value = name;
+  click("bandConnect");
+  await tick();
+  return document.getElementById("bandCode").textContent;
+}
+
+test("a second band space: chips switch between them, each keeps its own name and label, and leaving one keeps the other", async () => {
+  mountPage();
+  const server = fakeServer();
+  const realFetch = window.fetch;
+  setFetch(server.fetchFn);
+  try {
+    const storage = memoryStorage();
+    const ctx = build(storage);
+    await ctx.band.init();
+    const first = await startBand("Ben");
+    const chips = () => { return [...document.querySelectorAll("#bandTabs .rj-band-chip[data-band]")]; };
+    assert.deepEqual(chips().map((c) => { return c.textContent; }), ["My Band"]);
+    document.getElementById("bandLabel").value = "Jazz band";
+    document.getElementById("bandLabel").dispatchEvent(new window.Event("change"));
+    assert.deepEqual(chips().map((c) => { return c.textContent; }), ["Jazz band"]);
+
+    // "+" shows the start / join form again, with nothing of the first band in it.
+    click("bandAdd");
+    assert.equal(document.getElementById("bandSetup").hidden, false);
+    assert.equal(document.getElementById("bandBox").hidden, true);
+    assert.equal(document.getElementById("bandName").value, "");
+    // Joining a band space already joined just shows it.
+    document.getElementById("bandCodeInput").value = first;
+    click("bandJoin");
+    await tick();
+    assert.equal(listBands(storage).length, 1);
+    assert.equal(document.getElementById("bandBox").hidden, false);
+
+    click("bandAdd");
+    const second = await startBand("Ben B.");
+    assert.notEqual(second, first);
+    assert.equal(listBands(storage).length, 2);
+    assert.deepEqual(chips().map((c) => { return c.textContent; }), ["Jazz band", "My Band 2"]);
+    assert.equal(document.getElementById("bandCode").textContent, second);
+    assert.equal(document.getElementById("bandName").value, "Ben B.");
+
+    chips()[0].click();
+    assert.equal(document.getElementById("bandCode").textContent, first);
+    assert.equal(document.getElementById("bandName").value, "Ben");
+
+    click("bandLeave");
+    assert.equal(listBands(storage).length, 1);
+    assert.equal(document.getElementById("bandCode").textContent, second);
+    assert.equal(ctx.band.isConnected(), true);
+  } finally {
+    setFetch(realFetch);
+  }
+});
+
+test("a failed join leaves nothing behind", async () => {
+  mountPage();
+  const server = fakeServer();
+  const realFetch = window.fetch;
+  setFetch(server.fetchFn);
+  try {
+    const storage = memoryStorage();
+    const ctx = build(storage);
+    await ctx.band.init();
+    document.getElementById("bandName").value = "Ben";
+    document.getElementById("bandCodeInput").value = "AAAA-AAAA-AAAA-AAAA";
+    click("bandJoin");
+    await tick();
+    assert.equal(ctx.band.isConnected(), false);
+    assert.deepEqual(listBands(storage), []);
+    assert.equal(document.getElementById("bandSetup").hidden, false);
+    assert.notEqual(document.getElementById("bandStatus").textContent, "");
+  } finally {
+    setFetch(realFetch);
+  }
 });

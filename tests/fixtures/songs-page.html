@@ -253,9 +253,10 @@
     </div>
     <button type="button" id="syncTabDevices" aria-pressed="true">d</button><button type="button" id="syncTabBand" aria-pressed="false">b</button><div id="syncPanelDevices"></div>
   <div id="syncPanelBand" hidden>
+      <div id="bandTabs" hidden></div>
       <input type="text" id="bandName">
       <div id="bandSetup"><button type="button" id="bandConnect">start</button><input type="text" id="bandCodeInput"><button type="button" id="bandJoin">join</button></div>
-      <div id="bandBox" hidden><div id="bandCode"></div><svg id="bandQr"></svg><button type="button" id="bandShare" hidden>s</button><button type="button" id="bandWhatsapp">w</button><button type="button" id="bandMail">m</button><button type="button" id="bandCopyLink"><span></span></button><button type="button" id="bandLeave">leave</button><button type="button" id="bandDelete">delete</button></div>
+      <div id="bandBox" hidden><input type="text" id="bandLabel"><div id="bandCode"></div><svg id="bandQr"></svg><button type="button" id="bandShare" hidden>s</button><button type="button" id="bandWhatsapp">w</button><button type="button" id="bandMail">m</button><button type="button" id="bandCopyLink"><span></span></button><button type="button" id="bandLeave">leave</button><button type="button" id="bandDelete">delete</button></div>
       <p id="bandStatus" role="status"></p><button type="button" id="bandNow" hidden>now</button>
     </div>
   </dialog>
