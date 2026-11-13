@@ -4057,31 +4057,114 @@ output.rj-library-print-status:not([hidden]) {
   color: var(--rj-gold);
 }
 
-/* Connect devices (#syncModal, songs/sync/sync.js): the dialog's code box. */
+/* Connect devices (#syncModal, songs/sync/sync.js). One column, one font
+   (Montserrat, like the rest of the dialog), one primary action per step. */
+.rj-sync-modal {
+  width: 380px;
+  font-family: "Montserrat", sans-serif;
+}
+.rj-sync-modal .rj-install-note {
+  font-family: "Montserrat", sans-serif;
+  font-size: 12.5px;
+}
+.rj-sync-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+.rj-sync-section[hidden] {
+  display: none;
+}
+.rj-sync-section .rj-modal-label {
+  margin: 0;
+}
+.rj-sync-wide {
+  width: 100%;
+  height: 40px;
+}
+.rj-sync-or {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+  color: rgba(230,228,224,.45);
+  font: 700 10px "Montserrat", sans-serif;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+}
+.rj-sync-or::before,
+.rj-sync-or::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: rgba(255,255,255,.1);
+}
+.rj-sync-or label {
+  flex: none;
+}
+.rj-sync-join {
+  display: flex;
+  gap: 8px;
+}
+.rj-sync-join .rj-modal-input {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+}
 .rj-sync-code {
-  margin: 4px 0 8px;
-  font: 600 18px "Montserrat", sans-serif;
-  letter-spacing: .06em;
+  padding: 12px 14px;
+  background: #262626;
+  border: 1px solid rgba(226,157,15,.45);
+  border-radius: 7px;
+  color: var(--rj-gold);
+  font: 600 16px "Montserrat", sans-serif;
+  letter-spacing: .08em;
+  text-align: center;
   word-break: break-all;
   user-select: all;
 }
-.rj-sync-qr {
-  margin-top: 10px;
+.rj-sync-link {
+  align-self: flex-start;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--rj-body);
+  font: 600 11.5px "Montserrat", sans-serif;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.rj-sync-link:hover {
+  color: var(--rj-gold);
+}
+.rj-sync-danger:hover {
+  color: var(--rj-magenta, #CA486d);
+}
+.rj-sync-secondary {
+  display: flex;
+  gap: 8px;
+}
+.rj-sync-secondary .rj-modal-btn {
+  flex: 1;
+  padding: 0 8px;
 }
 .rj-sync-qr svg {
   display: block;
-  width: 200px;
-  height: 200px;
-  margin-bottom: 8px;
+  width: 180px;
+  height: 180px;
+  margin: 0 auto 8px;
+  padding: 8px;
+  box-sizing: content-box;
   background: #fff;
 }
-.rj-sync-actions .rj-modal-btn {
-  margin-bottom: 6px;
+.rj-sync-qr .rj-install-note {
+  text-align: center;
 }
 .rj-sync-status {
   min-height: 1.4em;
   margin: 10px 0 0;
   color: var(--rj-body);
+  font: 500 12px "Montserrat", sans-serif;
 }
 
 /*
