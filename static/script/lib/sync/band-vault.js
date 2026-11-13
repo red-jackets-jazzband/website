@@ -415,7 +415,7 @@ function ownVersions(storage, id, cached, author, stampNew) {
     const raw = ownFormRaw(storage, file);
     if (raw === null) return;
     const old = before[file];
-    now.push({ file, author, raw, at: old && old.raw === raw ? old.at : stampNew() });
+    now.push({ file, author, raw, at: old && old.raw === raw ? old.at : stampNew() }); // NOSONAR: no ?. on Safari 12
   });
   return now;
 }
@@ -441,7 +441,7 @@ export function buildBandDoc(storage, id, now) {
   writeMeta(storage, meta);
   const versions = cached.versions.filter((v) => { return v.author !== profile.author; }).concat(mine);
   const shared = bandSetlistStorage(storage, id);
-  const setlists = JSON.parse(JSON.stringify(listPersonalSetlists(shared)));
+  const setlists = JSON.parse(JSON.stringify(listPersonalSetlists(shared))); // NOSONAR: structuredClone is Safari 15.4+
   const sharedTomb = readMeta(shared).tomb;
   tomb.setlists = { ...sharedTomb.setlists };
   tomb.rows = { ...sharedTomb.rows };
@@ -474,7 +474,7 @@ export function applyBandDoc(storage, id, doc) {
   applySharedSetlists(storage, id, doc);
   const keys = bandKeys(id);
   writeJson(storage, keys.doc, doc);
-  writeJson(storage, keys.state, { ...(readJson(storage, keys.state) || {}), snapshot: doc });
+  writeJson(storage, keys.state, { ...readJson(storage, keys.state), snapshot: doc });
 }
 
 function bandContent(doc) {

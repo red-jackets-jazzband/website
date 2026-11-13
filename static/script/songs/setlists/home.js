@@ -126,7 +126,7 @@ export function createSetlistHome(ctx) {
   function show() {
     ctx.nav.leaveSetlist();
     // Pick up what the others changed since this device last looked.
-    if (ctx.band && ctx.band.pullIfStale) ctx.band.pullIfStale();
+    if (ctx.band && ctx.band.pullIfStale) ctx.band.pullIfStale(); // NOSONAR: no ?. on Safari 12
     const tools = byId("setlistTools");
     if (tools) tools.hidden = true;
     render();
