@@ -77,7 +77,7 @@ test("a setlist made on one device appears on the other, and a push triggers a p
     throw new Error(`Connect gave no code: ${JSON.stringify(state)}; console: ${consoleLines.join(" | ")}; puts: ${server.puts}`, { cause: error });
   }
   const code = await first.page.locator("#syncCode").innerText();
-  await first.page.locator("#syncDone").click();
+  await first.page.locator("#syncClose").click();
 
   await first.page.locator(".rj-library-new-setlist-btn").click();
   await first.page.locator("#setlistModalName").fill("Gig night");
@@ -89,7 +89,7 @@ test("a setlist made on one device appears on the other, and a push triggers a p
   await second.page.locator("#syncCodeInput").fill(code);
   await second.page.locator("#syncJoin").click();
   await expect(second.page.locator("#syncStatus")).toContainText(/\d\d:\d\d/);
-  await second.page.locator("#syncDone").click();
+  await second.page.locator("#syncClose").click();
   await expect(second.page.locator(".rj-library-list")).toContainText("Gig night");
 
   // A pushed version newer than the one this device has is pulled at once.

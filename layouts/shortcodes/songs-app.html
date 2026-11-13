@@ -294,7 +294,7 @@
       <h2 class="rj-modal-title" id="syncModalTitle">{{ i18n "songs_syncModalTitle" }}</h2>
       <button type="button" id="syncClose" class="rj-modal-close" aria-label="{{ i18n "songs_setlistModalClose_aria" }}">&times;</button>
     </div>
-    <p class="rj-install-note">{{ i18n "songs_syncIntro" }}</p>
+    <p id="syncIntro" class="rj-install-note">{{ i18n "songs_syncIntro" }}</p>
     <div id="syncSetup" class="rj-sync-section">
       <button type="button" id="syncConnect" class="rj-modal-btn rj-modal-btn-primary rj-sync-wide">{{ i18n "songs_syncConnect" }}</button>
       <div class="rj-sync-or"><label for="syncCodeInput">{{ i18n "songs_syncJoinLabel" }}</label></div>
@@ -304,24 +304,20 @@
       </div>
     </div>
     <div id="syncCodeBox" class="rj-sync-section" hidden>
-      <div class="rj-modal-label">{{ i18n "songs_syncCodeLabel" }}</div>
-      <div id="syncCode" class="rj-sync-code"></div>
-      <p class="rj-install-note">{{ i18n "songs_syncCodeHint" }}</p>
-      <button type="button" id="syncQrToggle" class="rj-sync-link" aria-expanded="false" aria-controls="syncQrBox">{{ i18n "songs_syncQrToggle" }}</button>
-      <div id="syncQrBox" class="rj-sync-qr" hidden>
-        <svg id="syncQr" role="img" aria-label="{{ i18n "songs_syncQr_aria" }}" focusable="false"></svg>
-        <p class="rj-install-note">{{ i18n "songs_syncQrHint" }}</p>
+      <div class="rj-sync-pair">
+        <div class="rj-sync-qr"><svg id="syncQr" role="img" aria-label="{{ i18n "songs_syncQr_aria" }}" focusable="false"></svg></div>
+        <div id="syncCode" class="rj-sync-code"></div>
       </div>
-      <button type="button" id="syncNow" class="rj-modal-btn rj-modal-btn-primary rj-sync-wide">{{ i18n "songs_syncNow" }}</button>
-      <div class="rj-sync-secondary">
-        <button type="button" id="syncNewCode" class="rj-modal-btn">{{ i18n "songs_syncNewCode" }}</button>
-        <button type="button" id="syncDisconnect" class="rj-modal-btn">{{ i18n "songs_syncDisconnect" }}</button>
+      <p class="rj-install-note rj-sync-hint">{{ i18n "songs_syncCodeHint" }}</p>
+      <div class="rj-sync-statusrow">
+        <p id="syncStatus" class="rj-sync-status" role="status" aria-live="polite"></p>
+        <button type="button" id="syncNow" class="rj-modal-btn rj-modal-btn-primary">{{ i18n "songs_syncNow" }}</button>
       </div>
-      <button type="button" id="syncDelete" class="rj-sync-link rj-sync-danger">{{ i18n "songs_syncDelete" }}</button>
-    </div>
-    <p id="syncStatus" class="rj-sync-status" role="status" aria-live="polite"></p>
-    <div class="rj-modal-actions">
-      <button type="button" id="syncDone" class="rj-modal-btn">{{ i18n "songs_syncDone" }}</button>
+      <div class="rj-sync-links">
+        <button type="button" id="syncNewCode" class="rj-sync-link">{{ i18n "songs_syncNewCode" }}</button>
+        <button type="button" id="syncDisconnect" class="rj-sync-link">{{ i18n "songs_syncDisconnect" }}</button>
+        <button type="button" id="syncDelete" class="rj-sync-link rj-sync-danger">{{ i18n "songs_syncDelete" }}</button>
+      </div>
     </div>
   </dialog>
 </div>
