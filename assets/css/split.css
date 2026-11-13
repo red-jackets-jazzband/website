@@ -4061,7 +4061,53 @@ output.rj-library-print-status:not([hidden]) {
    (Montserrat, like the rest of the dialog), one primary action per step. */
 .rj-sync-modal {
   width: 380px;
+  max-height: 90vh;
+  overflow-y: auto;
   font-family: "Montserrat", sans-serif;
+}
+.rj-sync-tabs {
+  display: flex;
+  margin-bottom: 14px;
+  border-bottom: 1px solid rgba(255,255,255,.14);
+}
+.rj-sync-tab {
+  flex: 1;
+  padding: 8px 4px;
+  font: 600 13px "Montserrat", sans-serif;
+  color: var(--rj-body);
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  cursor: pointer;
+}
+.rj-sync-tab:hover {
+  color: #fff;
+}
+.rj-sync-tab[aria-pressed="true"] {
+  color: var(--rj-gold, #e29d0f);
+  border-bottom-color: var(--rj-gold, #e29d0f);
+}
+.rj-sync-share {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.rj-sync-share .rj-modal-btn {
+  margin: 0 4px 8px;
+}
+.rj-sync-band[hidden],
+#syncPanelDevices[hidden] {
+  display: none;
+}
+.rj-sync-band .rj-modal-input {
+  margin-top: 6px;
+}
+.rj-sync-band .rj-sync-status {
+  margin: 12px 0 0;
+}
+.rj-sync-band .rj-sync-status:empty {
+  display: none;
 }
 .rj-sync-modal .rj-install-note {
   font-family: "Montserrat", sans-serif;

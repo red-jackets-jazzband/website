@@ -294,6 +294,11 @@
       <h2 class="rj-modal-title" id="syncModalTitle">{{ i18n "songs_syncModalTitle" }}</h2>
       <button type="button" id="syncClose" class="rj-modal-close" aria-label="{{ i18n "songs_setlistModalClose_aria" }}">&times;</button>
     </div>
+    <div class="rj-sync-tabs" role="group" aria-label="{{ i18n "songs_syncTabs_aria" }}">
+      <button type="button" id="syncTabDevices" class="rj-sync-tab" aria-pressed="true">{{ i18n "songs_syncTabDevices" }}</button>
+      <button type="button" id="syncTabBand" class="rj-sync-tab" aria-pressed="false">{{ i18n "songs_syncTabBand" }}</button>
+    </div>
+    <div id="syncPanelDevices">
     <p id="syncIntro" class="rj-install-note">{{ i18n "songs_syncIntro" }}</p>
     <div id="syncSetup" class="rj-sync-section">
       <button type="button" id="syncConnect" class="rj-modal-btn rj-modal-btn-primary rj-sync-wide">{{ i18n "songs_syncConnect" }}</button>
@@ -317,6 +322,40 @@
         <button type="button" id="syncNewCode" class="rj-sync-link">{{ i18n "songs_syncNewCode" }}</button>
         <button type="button" id="syncDisconnect" class="rj-sync-link">{{ i18n "songs_syncDisconnect" }}</button>
         <button type="button" id="syncDelete" class="rj-sync-link rj-sync-danger">{{ i18n "songs_syncDelete" }}</button>
+      </div>
+    </div>
+    </div>
+    <div id="syncPanelBand" class="rj-sync-band" hidden>
+      <p class="rj-install-note">{{ i18n "songs_bandIntro" }}</p>
+      <input type="text" id="bandName" class="rj-modal-input" maxlength="40" autocomplete="off" aria-label="{{ i18n "songs_bandName_aria" }}" placeholder="{{ i18n "songs_bandName_placeholder" }}">
+      <div id="bandSetup" class="rj-sync-section">
+        <button type="button" id="bandConnect" class="rj-modal-btn rj-modal-btn-primary rj-sync-wide">{{ i18n "songs_bandConnect" }}</button>
+        <div class="rj-sync-or"><label for="bandCodeInput">{{ i18n "songs_syncJoinLabel" }}</label></div>
+        <div class="rj-sync-join">
+          <input type="text" id="bandCodeInput" class="rj-modal-input" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="{{ i18n "songs_syncCodeInput_placeholder" }}">
+          <button type="button" id="bandJoin" class="rj-modal-btn">{{ i18n "songs_bandJoin" }}</button>
+        </div>
+      </div>
+      <div id="bandBox" class="rj-sync-section" hidden>
+        <div class="rj-sync-pair">
+          <div class="rj-sync-qr"><svg id="bandQr" role="img" aria-label="{{ i18n "songs_bandQr_aria" }}" focusable="false"></svg></div>
+          <div id="bandCode" class="rj-sync-code"></div>
+        </div>
+        <p class="rj-install-note rj-sync-hint">{{ i18n "songs_bandCodeHint" }}</p>
+        <div class="rj-sync-share">
+          <button type="button" id="bandShare" class="rj-modal-btn" hidden><span class="fa-solid fa-share-nodes" aria-hidden="true"></span> {{ i18n "songs_bandShare" }}</button>
+          <button type="button" id="bandWhatsapp" class="rj-modal-btn"><span class="fa-brands fa-whatsapp" aria-hidden="true"></span> {{ i18n "songs_bandWhatsapp" }}</button>
+          <button type="button" id="bandMail" class="rj-modal-btn"><span class="fa-solid fa-envelope" aria-hidden="true"></span> {{ i18n "songs_bandMail" }}</button>
+          <button type="button" id="bandCopyLink" class="rj-modal-btn"><span class="fa-solid fa-link" aria-hidden="true"></span> {{ i18n "songs_bandCopyLink" }}</button>
+        </div>
+        <div class="rj-sync-links">
+          <button type="button" id="bandLeave" class="rj-sync-link">{{ i18n "songs_bandLeave" }}</button>
+          <button type="button" id="bandDelete" class="rj-sync-link rj-sync-danger">{{ i18n "songs_syncDelete" }}</button>
+        </div>
+      </div>
+      <div class="rj-sync-statusrow">
+        <p id="bandStatus" class="rj-sync-status" role="status" aria-live="polite"></p>
+        <button type="button" id="bandNow" class="rj-modal-btn rj-modal-btn-primary" hidden>{{ i18n "songs_syncNow" }}</button>
       </div>
     </div>
     <p class="rj-sync-privacy">{{ i18n "songs_syncPrivacy" }}</p>
