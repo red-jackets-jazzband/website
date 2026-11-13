@@ -221,7 +221,7 @@ The first five unblock phase 1; the rest can wait until phase 2.
 
 - [x] **Hostname:** `rj-sync.redjackets.workers.dev`
 - [ ] **Cloudflare account:** who owns it, so the band keeps access if one person leaves?
-- [ ] **Privacy notice:** who is named as responsible, and who approves the wording of the privacy page?
+- [x] **Privacy notice:** Red Jackets Jazzband is named as responsible, contact info@redjackets.nl (decided 2026-11-13); pages in `content/privacy.*.md`, wording still to be approved by the band.
 - [ ] **Abuse and admin:** who handles abuse reports and admin deletes, and how are they reached?
 - [ ] **Origins:** should `red-jackets-jazzband.github.io` be allowed besides `www.redjackets.nl`?
 - [ ] **Preferences:** keep them per device (proposed), or also sync instrument and comping choices?
