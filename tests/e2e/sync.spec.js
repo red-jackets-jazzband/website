@@ -13,7 +13,7 @@ function fakeServer() {
   server.handle = async (route) => {
     const request = route.request();
     if (request.method() === "OPTIONS") {
-      return route.fulfill({ status: 204, headers: { ...CORS, "access-control-allow-headers": "*", "access-control-allow-methods": "GET,PUT,DELETE" } });
+      return route.fulfill({ status: 204, headers: { ...CORS, "access-control-allow-headers": "Content-Type, If-None-Match", "access-control-allow-methods": "GET, PUT, DELETE, OPTIONS", "access-control-max-age": "600" } });
     }
     const json = (body, status) => route.fulfill({ status, headers: { ...CORS, "content-type": "application/json" }, body: JSON.stringify(body) });
     if (request.method() === "GET") {
