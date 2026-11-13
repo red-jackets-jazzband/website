@@ -54,7 +54,10 @@ test("sync is off by default: no request goes to the sync host", async ({ browse
   await device.context.close();
 });
 
-test("a setlist made on one device appears on the other, and a push triggers a pull", async ({ browser }) => {
+test("a setlist made on one device appears on the other, and a push triggers a pull", async ({ browser, browserName }) => {
+  // Playwright's WebKit doesn't route CORS preflights through context.route, so the
+  // PUT's preflight reaches the real host and is refused; a real Safari is checked by hand (plan 10.3).
+  test.skip(browserName === "webkit", "WebKit can't mock a CORS preflight");
   const server = fakeServer();
   const first = await newDevice(browser, server);
   await first.page.locator(".rj-library-sync-btn").click();
