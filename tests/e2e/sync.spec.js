@@ -58,8 +58,21 @@ test("a setlist made on one device appears on the other, and a push triggers a p
   const server = fakeServer();
   const first = await newDevice(browser, server);
   await first.page.locator(".rj-library-sync-btn").click();
+  const consoleLines = [];
+  first.page.on("console", (message) => consoleLines.push(message.text()));
+  first.page.on("pageerror", (error) => consoleLines.push(String(error)));
   await first.page.locator("#syncConnect").click();
-  await expect(first.page.locator("#syncCode")).not.toBeEmpty();
+  try {
+    await expect(first.page.locator("#syncCode")).not.toBeEmpty();
+  } catch (error) {
+    // Say why, not just that it stayed empty (the cause differs per engine).
+    const state = await first.page.evaluate(() => ({
+      status: document.getElementById("syncStatus").textContent,
+      secure: window.isSecureContext,
+      subtle: typeof (window.crypto && window.crypto.subtle),
+    }));
+    throw new Error(`Connect gave no code: ${JSON.stringify(state)}; console: ${consoleLines.join(" | ")}; puts: ${server.puts}`, { cause: error });
+  }
   const code = await first.page.locator("#syncCode").innerText();
   await first.page.locator("#syncDone").click();
 
