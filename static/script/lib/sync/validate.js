@@ -96,7 +96,7 @@ function cleanTombs(tomb) {
 }
 
 function cleanList(list, max, clean) {
-  return (Array.isArray(list) ? list : []).slice(0, max).map(clean).filter(Boolean);
+  return (Array.isArray(list) ? list : []).slice(0, max).map((item) => { return clean(item); }).filter(Boolean);
 }
 
 function uniqueBy(items, field) {
