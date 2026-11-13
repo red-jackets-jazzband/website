@@ -288,3 +288,24 @@ test("leaving keeps everything when a setlist can't be copied, and a failed join
   assert.equal(listPersonalSetlists(storage).length, 0);
   assert.equal(listBands(storage).length, 0);
 });
+
+test("a leave that fails after one copy succeeded doesn't duplicate it on retry", () => {
+  const storage = makeStorage();
+  registerBand(storage, "b1", "Band");
+  const shared = bandSetlistStorage(storage, "b1");
+  createPersonalSetlist(shared, "One");
+  createPersonalSetlist(shared, "Two");
+  const realSet = storage.setItem;
+  let personalWrites = 0;
+  storage.setItem = (key, value) => {
+    if (key === "rj.setlists.v1") {
+      personalWrites += 1;
+      if (personalWrites === 2) throw new Error("full"); // the second copy fails
+    }
+    realSet.call(storage, key, value);
+  };
+  assert.equal(forgetBand(storage, "b1"), false);
+  storage.setItem = realSet;
+  assert.equal(forgetBand(storage, "b1"), true);
+  assert.deepEqual(listPersonalSetlists(storage).map((e) => { return e.name; }).sort(), ["One", "Two"]);
+});

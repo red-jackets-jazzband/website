@@ -83,6 +83,7 @@ export function createSync(ctx) {
   let changeGen = 0; // counts local edits; a cycle that began before one can't clear "dirty"
   let lastPull = 0;
   let qrFor = null; // the code the drawn QR belongs to
+  let qrFailedFor = null; // the code whose QR failed to draw (not retried until the dialog opens)
   let lastResult = { status: "off" };
   let live = null;
   let hiddenSince = 0;
@@ -175,13 +176,14 @@ export function createSync(ctx) {
     const codeEl = byId("syncCode");
     if (codeEl) codeEl.textContent = code ? formatCode(code) : "";
     if (!code) qrFor = null;
-    if (code && code !== qrFor) {
+    if (code && code !== qrFor && code !== qrFailedFor) {
       qrFor = code;
-      // A failed draw (generator not loaded) must not be remembered as drawn.
-      settle(showQr(code).catch((error) => {
+      // A failed draw (generator not loaded) isn't remembered as drawn, and isn't
+      // retried by the render it triggers: the next try is when the dialog opens.
+      showQr(code).catch(() => {
         if (qrFor === code) qrFor = null;
-        throw error;
-      }));
+        qrFailedFor = code;
+      });
     }
   }
 
@@ -304,6 +306,7 @@ export function createSync(ctx) {
   function openDialog() {
     const overlay = byId("syncModal");
     if (!overlay) return;
+    qrFailedFor = null;
     render();
     overlay.hidden = false;
     const first = byId(connected() ? "syncNow" : "syncConnect");

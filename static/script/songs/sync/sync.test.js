@@ -150,3 +150,26 @@ test("connecting draws the pairing link as a QR straight away", async () => {
     page.cleanup();
   }
 });
+
+test("a QR that fails to draw is tried again when the dialog opens, not in a loop", async () => {
+  const page = mountPage();
+  const realFetch = window.fetch;
+  let attempts = 0;
+  globalThis.qrcode = () => { attempts += 1; throw new Error("generator broke"); };
+  try {
+    setFetch(fakeVault([]));
+    const ctx = build(memoryStorage());
+    await ctx.sync.init();
+    document.getElementById("syncConnect").click();
+    await new Promise((resolve) => { setTimeout(resolve, 80); });
+    assert.equal(attempts, 1);
+    ctx.sync.open();
+    await new Promise((resolve) => { setTimeout(resolve, 80); });
+    assert.equal(attempts, 2);
+    document.getElementById("syncDisconnect").click();
+  } finally {
+    delete globalThis.qrcode;
+    setFetch(realFetch);
+    page.cleanup();
+  }
+});

@@ -3,7 +3,7 @@ import { hashWithoutSync, syncCodeFromHash } from "../../lib/core/song-hash.js";
 import { tl } from "../../lib/core/i18n.js";
 import { createVaultEngine } from "../../lib/sync/engine.js";
 import {
-  MAX_BANDS, bandCodec, cleanName, connectedBands, defaultBandLabel, forgetBand, newBandId, readProfile, registerBand, renameBand, setDisplayName,
+  MAX_BANDS, bandCodec, cleanName, connectedBands, defaultBandLabel, forgetBand, listBands, newBandId, readProfile, registerBand, renameBand, setDisplayName,
 } from "../../lib/sync/band-vault.js";
 import { formatCode, parseCode } from "../../lib/sync/crypto.js";
 import { onLocalChange } from "../../lib/sync/changes.js";
@@ -263,7 +263,9 @@ export function createBand(ctx) {
     // The engine clears the code itself when the vault is gone; tidy what came from it.
     if ((result.status === "gone" || result.status === "notFound") && id !== null) {
       if (!dropSpace(id)) {
-        setResult(id, { status: "keepFailed" });
+        // The space stays listed (its shelf too) for a retry; say why, where it will still show.
+        if (current === id) showFirstLeft();
+        draftResult = { status: "keepFailed" };
       } else if (current === id) {
         showFirstLeft();
         draftResult = result;
@@ -314,6 +316,7 @@ export function createBand(ctx) {
     busy.delete(id);
     if (result.status === "ok") lastPull = Date.now();
     finish(id, result);
+    if (rerun.delete(id)) await run(id); // an edit came in while this action was on the wire
   }
 
   // `id` is a joined band, or a fresh one being started (not listed yet).
@@ -429,6 +432,14 @@ export function createBand(ctx) {
     });
   }
 
+  // A space whose code is gone (the server copy was deleted) but whose setlists
+  // couldn't be copied out is still listed: try again.
+  function retryOrphans() {
+    if (!storage()) return;
+    const live = new Set(joined().map((band) => { return band.id; }));
+    listBands(storage()).filter((band) => { return !live.has(band.id); }).forEach((band) => { dropSpace(band.id); });
+  }
+
   function pullIfStale() {
     if (connected() && Date.now() - lastPull > PULL_GAP_MS) settle(runAll());
   }
@@ -438,6 +449,7 @@ export function createBand(ctx) {
     pullIfStale,
 
     init() {
+      retryOrphans();
       showFirstLeft();
       initDialog();
       initShare();

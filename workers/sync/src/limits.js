@@ -28,6 +28,11 @@ export class SqlLimitStore {
     return rows[0].n;
   }
 
+  oldest() {
+    const rows = this.sql.exec("SELECT MIN(at) AS at FROM creations").toArray();
+    return rows[0].at === null ? null : rows[0].at;
+  }
+
   add(hash, at) {
     this.sql.exec("INSERT INTO creations (hash, at) VALUES (?, ?)", hash, at);
   }
@@ -56,13 +61,18 @@ export class Limits {
       });
     }
     this.store.add(hash, now);
-    // Whatever happens next, the rows are gone a day after the last one: an
-    // alarm prunes them even if no later request ever arrives.
-    if (this.ctx && this.ctx.storage && this.ctx.storage.setAlarm) await this.ctx.storage.setAlarm(now + DAY_MS + EXPIRY_SLACK_MS);
+    // An alarm prunes the rows a day after they were counted, even if no later
+    // request ever arrives: set for the first row, then (in alarm()) for
+    // whatever is left, so a row is never kept past its day.
+    const storage = this.ctx && this.ctx.storage;
+    if (storage && storage.setAlarm && await storage.getAlarm() === null) await storage.setAlarm(now + DAY_MS + EXPIRY_SLACK_MS);
     return new Response(null, { status: 200 });
   }
 
   async alarm() {
     this.store.prune(this.now() - DAY_MS);
+    const oldest = this.store.oldest();
+    const storage = this.ctx && this.ctx.storage;
+    if (oldest !== null && storage && storage.setAlarm) await storage.setAlarm(oldest + DAY_MS + EXPIRY_SLACK_MS);
   }
 }

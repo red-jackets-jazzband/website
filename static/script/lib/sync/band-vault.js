@@ -91,7 +91,7 @@ export function bandKeys(id) {
   const key = (field) => { return `rj.band.${id}.${field}`; };
   return {
     code: key("code"), oldCode: key("oldcode"), state: key("state"), profile: key("profile"), shared: key("shared"), doc: key("doc"),
-    setlists: key("setlists"), meta: key("meta"),
+    setlists: key("setlists"), meta: key("meta"), copied: key("copied"),
   };
 }
 
@@ -515,19 +515,45 @@ export function bandCodec(id) {
   };
 }
 
-// Copies a space's setlists into personal ones; if one can't be saved, the
-// copies already made are removed again (a retry must not duplicate them).
+// Copies a space's setlists into personal ones. Each copy made is noted in the
+// space's own `copied` key, so a retry after a failure skips it instead of
+// duplicating it (that note can fail to save too when storage is full, so the
+// copies made in this attempt are also removed again, best effort).
 function copySetlistsToPersonal(storage, id) {
+  const key = bandKeys(id).copied;
+  const done = new Set(readJsonArray(storage, key));
   const made = [];
   for (const entry of listSharedSetlists(storage, id)) {
-    const copy = tryCopyBandSetlistToPersonal(storage, entry);
-    if (copy === null) {
-      made.forEach((done) => { deletePersonalSetlist(storage, done.id); });
-      return false;
+    if (!done.has(entry.id)) {
+      const copy = tryCopyBandSetlistToPersonal(storage, entry);
+      if (copy === null) {
+        made.forEach((item) => { deletePersonalSetlist(storage, item.id); done.delete(item.from); });
+        writeJsonArray(storage, key, [...done]);
+        return false;
+      }
+      made.push({ id: copy.id, from: entry.id });
+      done.add(entry.id);
+      writeJsonArray(storage, key, [...done]);
     }
-    made.push(copy);
   }
   return true;
+}
+
+function readJsonArray(storage, key) {
+  try {
+    const value = JSON.parse(storage.getItem(key));
+    return Array.isArray(value) ? value : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeJsonArray(storage, key, list) {
+  try {
+    storage.setItem(key, JSON.stringify(list));
+  } catch (_e) {
+    // storage full — a retry may duplicate a copy rather than lose one.
+  }
 }
 
 // Leaving a band space: forget its code and what came from it, and drop it
@@ -539,7 +565,7 @@ function copySetlistsToPersonal(storage, id) {
 export function forgetBand(storage, id, { keepSetlists = true } = {}) {
   const keys = bandKeys(id);
   if (keepSetlists && !copySetlistsToPersonal(storage, id)) return false;
-  [keys.code, keys.state, keys.doc, keys.shared, keys.profile, keys.setlists, keys.meta].forEach((key) => {
+  [keys.code, keys.state, keys.doc, keys.shared, keys.profile, keys.setlists, keys.meta, keys.copied].forEach((key) => {
     try {
       storage.removeItem(key);
     } catch (_e) {

@@ -1,7 +1,7 @@
 import { byId, el, clear } from "../../lib/core/dom.js";
 import { listPersonalSetlists, deletePersonalSetlist } from "../../lib/setlists/setlists-store.js";
 import { songCountLabel, countSetlistSongs } from "./data.js";
-import { connectedBands, listSharedSetlists, bandSetlistStorage } from "../../lib/sync/band-vault.js";
+import { listBands, listSharedSetlists, bandSetlistStorage } from "../../lib/sync/band-vault.js";
 import { tl } from "../../lib/core/i18n.js";
 
 const emptyRow = (text) => el("div", { class: "song-list-empty", text });
@@ -119,7 +119,7 @@ export function createSetlistHome(ctx) {
     }
     listEl.append(newSetlistButton());
 
-    const bands = connectedBands(ctx.storage());
+    const bands = listBands(ctx.storage());
     bands.forEach((band) => sharedShelf(listEl, band));
   }
 

@@ -225,19 +225,32 @@ test("an upload is cut off at the limit while it is read, not after", async () =
   assert.ok(pulled < 50, `read ${pulled} chunks`);
 });
 
-test("the limiter prunes its hashes by alarm, a day after the last count, even if no request follows", async () => {
-  const day = 24 * 60 * 60 * 1000;
-  let now = 1_000_000;
+test("the limiter's alarm prunes by the earliest row and reschedules for what is left", async () => {
+  const hour = 60 * 60 * 1000;
+  const day = 24 * hour;
+  let now = 0;
   const rows = [];
   let alarmAt = null;
   const store = {
     prune: (before) => { for (let i = rows.length - 1; i >= 0; i -= 1) if (rows[i] < before) rows.splice(i, 1); },
     count: () => { return rows.length; },
+    oldest: () => { return rows.length ? Math.min(...rows) : null; },
     add: (_hash, at) => { rows.push(at); },
   };
-  const limits = new Limits({ storage: { setAlarm: async (t) => { alarmAt = t; } } }, {}, { store, now: () => { return now; } });
-  await limits.fetch(new Request("https://limits/?ip=abc", { method: "POST" }));
-  assert.ok(alarmAt >= now + day);
+  const storage = { getAlarm: async () => { return alarmAt; }, setAlarm: async (t) => { alarmAt = t; } };
+  const limits = new Limits({ storage }, {}, { store, now: () => { return now; } });
+  const count = () => { return limits.fetch(new Request("https://limits/?ip=abc", { method: "POST" })); };
+  await count(); // hour 0
+  const first = alarmAt;
+  assert.ok(first >= day);
+  now = 23 * hour;
+  await count(); // hour 23 must not push the first row's deadline out
+  assert.equal(alarmAt, first);
+  now = alarmAt;
+  alarmAt = null;
+  await limits.alarm();
+  assert.deepEqual(rows, [23 * hour]); // the first row is gone, the second stays
+  assert.ok(alarmAt >= 23 * hour + day && alarmAt < 23 * hour + day + hour);
   now = alarmAt;
   await limits.alarm();
   assert.equal(rows.length, 0);
