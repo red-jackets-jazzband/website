@@ -153,3 +153,13 @@ test("too much data is reported before any upload", async () => {
   assert.equal((await counting.engine.connect()).status, "tooLarge");
   assert.equal(calls, 0);
 });
+
+test("liveUrl points at the vault's socket, and is null when not connected", async () => {
+  const server = fakeServer();
+  const phone = device(server);
+  assert.equal(await phone.engine.liveUrl(), null);
+  await phone.engine.connect();
+  const url = await phone.engine.liveUrl();
+  assert.match(url, /^wss:\/\/s\.test\/v1\/vault\/[0-9a-f]{64}\/live$/);
+  assert.equal(phone.engine.knownVersion(), 1);
+});

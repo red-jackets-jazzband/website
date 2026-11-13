@@ -137,6 +137,13 @@ export function createSyncEngine({ storage, fetchFn, baseUrl = SYNC_URL, now = D
 
   return {
     code: () => { return readCode(storage); },
+    knownVersion: () => { return readMeta(storage).syncVersion || 0; },
+
+    // The push channel's address (WBS 6.7), or null when not connected.
+    async liveUrl() {
+      const vault = await activeVault();
+      return vault ? `${baseUrl.replace(/^http/, "ws")}/v1/vault/${vault.id}/live` : null;
+    },
 
     // First device: make a code, create the vault from what's stored here.
     async connect() {
