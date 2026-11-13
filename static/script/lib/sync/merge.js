@@ -48,7 +48,8 @@ function isDeleted(tombs, key, at) {
 
 function pickRow(rowA, rowB, devA, devB) {
   if (!rowA || !rowB) return rowA || rowB;
-  return firstWins(rowA.updatedAt, devA, rowB.updatedAt, devB) ? rowA : rowB;
+  const [win, lose] = firstWins(rowA.updatedAt, devA, rowB.updatedAt, devB) ? [rowA, rowB] : [rowB, rowA];
+  return { ...lose, ...win }; // fields only the losing copy knows (a newer app's) stay
 }
 
 function mergeRows(a, b, ctx) {
@@ -82,7 +83,13 @@ function mergeRows(a, b, ctx) {
 }
 
 function mergeSetlist(a, b, ctx) {
-  if (!a || !b) return a || b;
+  if (!a || !b) {
+    const only = a || b;
+    const songs = only.songs.filter((row) => {
+      return !isDeleted(ctx.tomb.rows, rowTombstoneKey(only.id, row.id), row.updatedAt);
+    });
+    return { ...only, songs };
+  }
   const metaFromA = firstWins(a.metaAt, ctx.devA, b.metaAt, ctx.devB);
   const orderFromA = firstWins(a.orderAt, ctx.devA, b.orderAt, ctx.devB);
   const meta = metaFromA ? a : b;

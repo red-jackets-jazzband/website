@@ -111,3 +111,43 @@ test("validation drops bad items, keeps unknown fields, flags a newer format", (
   assert.deepEqual(validateDoc({ format: 2 }), { ok: false, newer: true });
   assert.deepEqual(validateDoc("junk"), { ok: false, newer: false });
 });
+
+test("an id that isn't a string is dropped, so a merge can't throw on it", () => {
+  const row = { updatedAt: 1, file: "a.abc" };
+  const result = validateDoc({
+    format: 1,
+    setlists: [
+      { id: 5, name: "number", desc: "", songs: [] },
+      { id: ["x"], name: "array", desc: "", songs: [] },
+      { id: "ok", name: "fine", desc: "", songs: [{ ...row, id: 7 }, { ...row, id: "r1" }] },
+    ],
+  });
+  assert.deepEqual(result.doc.setlists.map((s) => { return s.id; }), ["ok"]);
+  assert.deepEqual(result.doc.setlists[0].songs.map((r) => { return r.id; }), ["r1"]);
+});
+
+test("deleting again after a newer edit restored an item records a new tombstone", () => {
+  const storage = makeStorage();
+  const made = createPersonalSetlist(storage, "Gig");
+  applyDoc(storage, buildLocalDoc(storage, 100));
+  const meta = readMeta(storage);
+  meta.tomb.setlists[made.id] = 10; // an old deletion a later edit has outlived
+  meta.snapshot.setlists[0].updatedAt = 50;
+  storage.setItem("rj.sync.meta", JSON.stringify(meta));
+  deletePersonalSetlist(storage, made.id);
+  const doc = buildLocalDoc(storage, 200);
+  assert.ok(doc.tomb.setlists[made.id] > 50);
+});
+
+test("a form recreated after its deletion synced gets a newer stamp than the tombstone", () => {
+  const storage = makeStorage();
+  const key = "rj.songForm.a.abc";
+  storage.setItem(key, FORM);
+  applyDoc(storage, buildLocalDoc(storage, 100));
+  storage.removeItem(key);
+  applyDoc(storage, buildLocalDoc(storage, 200));
+  storage.setItem(key, FORM);
+  const doc = buildLocalDoc(storage, 300);
+  assert.equal(doc.forms.length, 1);
+  assert.ok(doc.forms[0].at > doc.tomb.forms["a.abc"]);
+});
