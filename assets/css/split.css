@@ -4057,35 +4057,7 @@ output.rj-library-print-status:not([hidden]) {
   color: var(--rj-gold);
 }
 
-/*
-  Connect devices (#syncModal, songs/sync/sync.js): a quiet text button under
-  "New setlist" with the sync status beside it, and the dialog's code box.
-  Margins, not flex gap (Safari 14.1+).
-*/
-.rj-library-list .rj-library-sync {
-  margin-top: 10px;
-  text-align: center;
-}
-.rj-library-list .rj-library-sync-btn {
-  background: none;
-  border: 0;
-  padding: 6px 8px;
-  color: var(--rj-body);
-  font: 600 12px "Montserrat", sans-serif;
-  cursor: pointer;
-}
-.rj-library-list .rj-library-sync-btn > .fa-arrows-rotate {
-  margin-right: 6px;
-  font-size: 11px;
-}
-.rj-library-list .rj-library-sync-btn:hover {
-  color: var(--rj-gold);
-}
-.rj-library-list .rj-library-sync-status {
-  display: block;
-  color: var(--rj-body);
-  font: 12px "Lora", serif;
-}
+/* Connect devices (#syncModal, songs/sync/sync.js): the dialog's code box. */
 .rj-sync-code {
   margin: 4px 0 8px;
   font: 600 18px "Montserrat", sans-serif;

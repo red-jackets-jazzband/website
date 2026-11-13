@@ -60,7 +60,7 @@ test("a setlist made on one device appears on the other, and a push triggers a p
   test.skip(browserName === "webkit", "WebKit can't mock a CORS preflight");
   const server = fakeServer();
   const first = await newDevice(browser, server);
-  await first.page.locator(".rj-library-sync-btn").click();
+  await first.page.locator("#syncBtn").click();
   const consoleLines = [];
   first.page.on("console", (message) => consoleLines.push(message.text()));
   first.page.on("pageerror", (error) => consoleLines.push(String(error)));
@@ -85,7 +85,7 @@ test("a setlist made on one device appears on the other, and a push triggers a p
   await expect.poll(() => server.puts, { timeout: 15_000 }).toBeGreaterThanOrEqual(2); // connect + the upload 3 s after the edit
 
   const second = await newDevice(browser, server);
-  await second.page.locator(".rj-library-sync-btn").click();
+  await second.page.locator("#syncBtn").click();
   await second.page.locator("#syncCodeInput").fill(code);
   await second.page.locator("#syncJoin").click();
   await expect(second.page.locator("#syncStatus")).toContainText(/\d\d:\d\d/);

@@ -176,7 +176,6 @@ export function createSync(ctx) {
     if (setup) setup.hidden = Boolean(code);
     const codeEl = byId("syncCode");
     if (codeEl) codeEl.textContent = code ? formatCode(code) : "";
-    if (ctx.setlistHome) ctx.setlistHome.renderSyncStatus();
   }
 
   function finish(result, gen) {
@@ -297,25 +296,23 @@ export function createSync(ctx) {
     }
   }
 
-  return {
-    open() {
-      const overlay = byId("syncModal");
-      if (!overlay) return;
-      render();
-      overlay.hidden = false;
-      const first = byId(connected() ? "syncNow" : "syncConnect");
-      if (first) first.focus();
-    },
+  function openDialog() {
+    const overlay = byId("syncModal");
+    if (!overlay) return;
+    render();
+    overlay.hidden = false;
+    const first = byId(connected() ? "syncNow" : "syncConnect");
+    if (first) first.focus();
+  }
 
-    // What the Setlists tab shows next to the button: a status line when connected.
-    statusLine() {
-      return connected() ? statusText(lastResult, clockTime()) : "";
-    },
+  return {
+    open: openDialog,
 
     isConnected: connected,
 
     init() {
       initDialog();
+      on("syncBtn", "click", () => { openDialog(); });
       takePairingLink();
       onLocalChange(scheduleUpload);
       // Another tab (or a sync in it) wrote storage: redraw from it.
