@@ -27,24 +27,36 @@ function etag(version) {
   return `"${version}"`;
 }
 
-// Production storage: the object's own SQLite. One row, id 1.
+// Production storage: the object's own SQLite. One row, id 1. The table is
+// created on the first write, never on a read: an unknown id asked about by
+// anyone must not leave persistent storage (or an expiry alarm) behind.
 export class SqlVaultStore {
   constructor(sql) {
     this.sql = sql;
-    sql.exec("CREATE TABLE IF NOT EXISTS vault (id INTEGER PRIMARY KEY CHECK (id = 1), version INTEGER NOT NULL, blob TEXT, deleted INTEGER NOT NULL DEFAULT 0)");
+  }
+
+  ensureTable() {
+    this.sql.exec("CREATE TABLE IF NOT EXISTS vault (id INTEGER PRIMARY KEY CHECK (id = 1), version INTEGER NOT NULL, blob TEXT, deleted INTEGER NOT NULL DEFAULT 0)");
+  }
+
+  hasTable() {
+    return this.sql.exec("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'vault'").toArray().length > 0;
   }
 
   read() {
+    if (!this.hasTable()) return null;
     const rows = this.sql.exec("SELECT version, blob, deleted FROM vault WHERE id = 1").toArray();
     if (rows.length === 0) return null;
     return { version: rows[0].version, blob: rows[0].blob, deleted: rows[0].deleted === 1 };
   }
 
   write(version, blob) {
+    this.ensureTable();
     this.sql.exec("INSERT OR REPLACE INTO vault (id, version, blob, deleted) VALUES (1, ?, ?, 0)", version, blob);
   }
 
   markDeleted() {
+    this.ensureTable();
     this.sql.exec("INSERT OR REPLACE INTO vault (id, version, blob, deleted) VALUES (1, 0, NULL, 1)");
   }
 }

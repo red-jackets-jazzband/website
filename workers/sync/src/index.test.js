@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import worker, { MAX_BODY_BYTES } from "./index.js";
-import { Vault, EXPIRY_MS } from "./vault.js";
+import { Vault, EXPIRY_MS, SqlVaultStore } from "./vault.js";
 import { Limits, PER_IP_PER_HOUR } from "./limits.js";
 
 const ORIGIN = "https://www.redjackets.nl";
@@ -178,4 +178,49 @@ test("live endpoint needs an upgrade, an existing vault and an allowed origin", 
   assert.equal((await call(env, "GET", `/v1/vault/${ID}/live`)).status, 426);
   assert.equal((await call(env, "GET", `/v1/vault/${ID}/live`, { origin: null, headers: { Upgrade: "websocket" } })).status, 403);
   assert.equal((await call(env, "PUT", `/v1/vault/${ID}/live`, { body: "{}" })).status, 405);
+});
+
+// A minimal stand-in for Durable Object SQLite: records every statement.
+function fakeSql() {
+  const log = [];
+  let table = false;
+  let row = null;
+  return {
+    log,
+    exec(statement, ...args) {
+      log.push(statement.split(" ").slice(0, 3).join(" "));
+      if (statement.startsWith("CREATE TABLE")) table = true;
+      if (statement.includes("sqlite_master")) return { toArray: () => { return table ? [{}] : []; } };
+      if (statement.startsWith("SELECT")) return { toArray: () => { return row ? [row] : []; } };
+      row = { version: args[0], blob: args[1], deleted: statement.includes("(1, 0, NULL, 1)") ? 1 : 0 };
+      return { toArray: () => { return []; } };
+    },
+  };
+}
+
+test("reading an unknown vault creates no table, so nothing persists", () => {
+  const sql = fakeSql();
+  const store = new SqlVaultStore(sql);
+  assert.equal(store.read(), null);
+  assert.ok(!sql.log.some((line) => { return line.startsWith("CREATE"); }));
+  store.write(1, "{}");
+  assert.equal(store.read().version, 1);
+});
+
+test("an upload is cut off at the limit while it is read, not after", async () => {
+  const { env } = makeEnv();
+  let pulled = 0;
+  const chunk = new Uint8Array(16 * 1024).fill(97);
+  const body = new ReadableStream({
+    pull(controller) {
+      pulled++;
+      if (pulled > 50) controller.close();
+      else controller.enqueue(chunk);
+    },
+  });
+  const response = await worker.fetch(new Request(`https://x.test/v1/vault/${ID}`, {
+    method: "PUT", headers: { Origin: ORIGIN }, body, duplex: "half",
+  }), env);
+  assert.equal(response.status, 413);
+  assert.ok(pulled < 50, `read ${pulled} chunks`);
 });
