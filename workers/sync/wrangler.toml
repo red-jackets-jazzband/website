@@ -1,0 +1,22 @@
+# Device sync server — docs/device-sync-plan.md. Deployed by the deploy-sync
+# job in .github/workflows/publish.yaml (needs CLOUDFLARE_API_TOKEN and
+# CLOUDFLARE_ACCOUNT_ID). Set the day-salt secret once with:
+#   npx wrangler secret put SALT_SECRET --config workers/sync/wrangler.toml
+name = "rj-sync"
+main = "src/index.js"
+compatibility_date = "2026-11-01"
+
+[vars]
+ALLOWED_ORIGINS = "https://www.redjackets.nl,http://localhost:1313"
+
+[[durable_objects.bindings]]
+name = "VAULT"
+class_name = "Vault"
+
+[[durable_objects.bindings]]
+name = "LIMITS"
+class_name = "Limits"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Vault", "Limits"]

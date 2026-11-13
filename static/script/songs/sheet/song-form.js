@@ -1,5 +1,6 @@
 import { byId, el, qsa } from "../../lib/core/dom.js";
-import { readPref, removePref, songFormPrefKey, writePref } from "../../lib/core/preferences.js";
+import { readPref, removePref, safeStorage, songFormPrefKey, writePref } from "../../lib/core/preferences.js";
+import { addTombstone, nextStamp, setFormStamp } from "../../lib/sync/clock.js";
 import { tl } from "../../lib/core/i18n.js";
 import {
   MORE, REPEAT_CHOICES, addPart, addRound, addTypedParts, cloneRounds, deleteRound,
@@ -175,8 +176,18 @@ export function createSongForm(ctx) {
 
   function persist() {
     if (!file) return;
-    if (mine === null) removePref(songFormPrefKey(file));
-    else writePref(songFormPrefKey(file), writeStoredForm(mine, show));
+    // Stamp for device sync (docs/device-sync-plan.md, WBS 4.2): the form's own
+    // key stays what older app copies expect; its stamp / tombstone live in
+    // rj.sync.meta.
+    const storage = safeStorage();
+    const at = nextStamp(storage);
+    if (mine === null) {
+      removePref(songFormPrefKey(file));
+      addTombstone(storage, "forms", file, at);
+    } else {
+      writePref(songFormPrefKey(file), writeStoredForm(mine, show));
+      setFormStamp(storage, file, at);
+    }
   }
 
   // ---- the strip -----------------------------------------------------------

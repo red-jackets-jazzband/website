@@ -353,11 +353,13 @@ export default [
   {
     // CI/dev-tooling scripts (e.g. the ABC notation linter) run in Node,
     // not the browser.
-    files: ["scripts/**/*.js"],
+    // workers/** is the Cloudflare sync server: Workers runtime globals
+    // (Request, Response, crypto, WebSocketPair), same Node-style rules.
+    files: ["scripts/**/*.js", "workers/**/*.js"],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: "module",
-      globals: { ...globals.node },
+      globals: { ...globals.node, ...globals.serviceworker },
     },
     plugins: {
       "@stylistic": stylistic,
