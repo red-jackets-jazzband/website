@@ -15,7 +15,7 @@ import { mergeDocs } from "./merge.js";
 import { readMeta, writeMeta } from "./clock.js";
 import { validateDoc } from "./validate.js";
 
-export const SYNC_URL = "https://sync.redjackets.nl";
+export const SYNC_URL = "https://rj-sync.redjackets.workers.dev";
 export const CODE_KEY = "rj.sync.code";
 export const MAX_BODY_BYTES = 64 * 1024;
 const MAX_ATTEMPTS = 3;

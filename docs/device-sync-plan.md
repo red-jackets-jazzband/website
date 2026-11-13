@@ -1,6 +1,6 @@
 # Device sync — plan & WBS
 
-As of 2026-11-13. Status: everything except the account/DNS, the privacy page and the real-device checks is built (milestones 1–4; the Playwright test is written but has not been run, since Hugo isn't available where this was built). Hostname proposal: `sync.redjackets.nl` (`SYNC_URL` in `lib/sync/engine.js`, `ALLOWED_ORIGINS` in `workers/sync/wrangler.toml`).
+As of 2026-11-13. Status: everything except the account/DNS, the privacy page and the real-device checks is built (milestones 1–4; the Playwright test is written but has not been run, since Hugo isn't available where this was built). Hostname: `rj-sync.redjackets.workers.dev` (decided; a custom domain can come later) (`SYNC_URL` in `lib/sync/engine.js`, `ALLOWED_ORIGINS` in `workers/sync/wrangler.toml`).
 
 **Also built since:** 6.7 (`lib/sync/live.js`, wired in `songs/sync/sync.js`), 7.2 (`#sync=` link), 7.3 (QR, vendored `qrcode-generator`), 7.5 (focus, `aria-expanded`, live status), 8.3 (tour step `setlists/sync`), 8.4 (CLAUDE.md), 9.2 (curl smoke step in `deploy-sync`), 10.1 (`tests/e2e/sync.spec.js`, unrun).
 
@@ -82,7 +82,7 @@ Phase 1 totals about 11 days. Packages marked MVP are the 9¼-day core: it syncs
 | --- | --- | --- | --- | --- |
 | 1 | **Setup** | | **0.25** | |
 | 1.1 | Cloudflare account (Durable Objects are on the free plan), API token as GitHub secret (you) | `CLOUDFLARE_API_TOKEN`, account id | 0.1 | yes |
-| 1.2 | Hostname: `sync.redjackets.nl` if DNS can move to Cloudflare, else `*.workers.dev` | Reachable URL | 0.15 | yes |
+| 1.2 | Hostname: `rj-sync.redjackets.workers.dev` (chosen over a custom domain, which needs DNS on Cloudflare) | Reachable URL | 0.15 | yes |
 | 2 | **Sync server** (`workers/sync/`) | | **2.1** | |
 | 2.1 | Vault Durable Object: SQLite table (`version`, `blob`), migration in `wrangler.toml` | `src/vault.js` | 0.15 | yes |
 | 2.2 | Front Worker routes GET / PUT / DELETE to the vault's object; the version check runs inside the object; ETag / 304; exact-origin CORS with preflight caching and exposed `ETag` | `src/index.js` + `src/vault.js` | 0.4 | yes |
@@ -219,7 +219,7 @@ Not covered: per-person rights (read-only members, removing one member without a
 
 The first five unblock phase 1; the rest can wait until phase 2.
 
-- [ ] **Hostname:** is the redjackets.nl DNS on Cloudflare (then `sync.redjackets.nl`), or is a `workers.dev` address fine?
+- [x] **Hostname:** `rj-sync.redjackets.workers.dev`
 - [ ] **Cloudflare account:** who owns it, so the band keeps access if one person leaves?
 - [ ] **Privacy notice:** who is named as responsible, and who approves the wording of the privacy page?
 - [ ] **Abuse and admin:** who handles abuse reports and admin deletes, and how are they reached?
