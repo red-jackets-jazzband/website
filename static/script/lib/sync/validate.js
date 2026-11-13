@@ -19,7 +19,7 @@ export function isSongFile(value) {
 
 const FORM_KEY = /^[\w.-]{1,120}$/;
 const MAX_ROWS = 500;
-const MAX_SETLISTS = 100;
+export const MAX_SETLISTS = 100;
 const MAX_FORMS = 200;
 const LIMITS = { name: 200, desc: 5000, note: 2000, divider: 200, key: 20, form: 20000 };
 
@@ -62,7 +62,7 @@ function cleanRow(row) {
   return out;
 }
 
-function cleanSetlist(entry) {
+export function cleanSetlist(entry) {
   if (!isObject(entry) || !isId(entry.id) || !text(entry.name, LIMITS.name)) return null;
   if (!Array.isArray(entry.songs) || entry.songs.length > MAX_ROWS) return null;
   const desc = text(entry.desc, LIMITS.desc) && !hasInternalMarker(entry.desc) ? entry.desc : "";
@@ -88,7 +88,7 @@ function cleanForm(form) {
   return { ...form, at: stamp(form.at) };
 }
 
-function cleanTombs(tomb) {
+export function cleanTombs(tomb) {
   const out = { setlists: {}, rows: {}, forms: {} };
   if (!isObject(tomb)) return out;
   Object.keys(out).forEach((kind) => {

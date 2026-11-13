@@ -15,7 +15,7 @@ import { clockTime, renderQr, statusText } from "./sync.js";
 /*
   Band spaces (docs/device-sync-plan.md, phase 2): optional vaults, each with
   its own code, holding the song-form versions a member shares under their
-  name. A device can be in several (up to MAX_BANDS), each with its own name
+  name and the setlists made in it (the Setlists tab's Shared shelf). A device can be in several (up to MAX_BANDS), each with its own name
   and a label only this device sees; the dialog's band tab shows one at a time,
   chosen from a row of chips, with "+" to start or join another. Like the
   personal sync it makes no request until a code exists, and it syncs every
@@ -88,7 +88,7 @@ export function createBand(ctx) {
     return {
       link,
       subject: tl("band_share_subject", "Red Jackets shared space"),
-      text: tl("band_share_text", "Join our shared space for song forms: {link}", { link }),
+      text: tl("band_share_text", "Join our shared space for song forms and setlists: {link}", { link }),
     };
   }
 
@@ -238,6 +238,14 @@ export function createBand(ctx) {
     current = first ? first.id : null;
   }
 
+  // The Setlists tab's Shared shelves (or an open shared setlist) after the
+  // space's setlists changed — a sync brought others' edits, or a space went.
+  function refreshSetlists() {
+    if (ctx.state.activeTab !== "setlists") return;
+    if (ctx.state.setlistsView === "home") ctx.setlistHome.render();
+    else if (ctx.state.currentPersonalId) ctx.setlistView.refreshOpenPersonal();
+  }
+
   function finish(id, result) {
     setResult(id, result);
     // The engine clears the code itself when the vault is gone; tidy what came from it.
@@ -249,6 +257,7 @@ export function createBand(ctx) {
       }
     }
     if (result.changed && ctx.songForm) ctx.songForm.refresh();
+    if (result.changed || result.status === "gone" || result.status === "notFound") refreshSetlists();
     render();
     return result;
   }
@@ -342,6 +351,7 @@ export function createBand(ctx) {
       draftResult = result;
     }
     if (result.changed && ctx.songForm) ctx.songForm.refresh();
+    if (result.changed) refreshSetlists();
     render();
   }
 
@@ -377,6 +387,7 @@ export function createBand(ctx) {
       showFirstLeft();
       draftResult = { status: "off" };
       if (ctx.songForm) ctx.songForm.refresh();
+      refreshSetlists();
       render();
     });
     on("bandDelete", "click", () => {
@@ -388,9 +399,10 @@ export function createBand(ctx) {
           forgetBand(storage(), id);
           engines.delete(id);
           showFirstLeft();
+          refreshSetlists();
         }
         return result;
-      }, tl("band_delete_confirm", "Delete the shared space's server copy? Everyone is disconnected; the song forms on each device stay.")), id);
+      }, tl("band_delete_confirm", "Delete the shared space's server copy? Everyone is disconnected; the song forms and setlists on each device stay.")), id);
     });
   }
 
@@ -400,6 +412,7 @@ export function createBand(ctx) {
 
   return {
     isConnected: connected,
+    pullIfStale,
 
     init() {
       showFirstLeft();
