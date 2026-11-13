@@ -55,7 +55,7 @@ jobs:
       - name: Build the icon subset
         run: npm run build:icons
 
-      - uses: lowply/build-hugo@v0.164.0
+      - uses: lowply/build-hugo@v0.166.0
 
       - name: Check for broken links
         run: |
