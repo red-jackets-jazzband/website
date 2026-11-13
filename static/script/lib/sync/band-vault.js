@@ -13,13 +13,18 @@
    labels among bandmates, not a login. Everything downloaded is validated like
    any decrypted data.
 
-   Local storage: rj.band.code / rj.band.oldcode (the vault), rj.band.state
-   ({ version, pending, snapshot }, the engine's bookkeeping), rj.band.profile
-   ({ author, name, at }), rj.band.shared ({ <file>: true }: own song forms
-   shared with the band) and rj.band.doc (the last merged document — where
-   other members' versions are read from). An own version's `raw` is always
-   the song form's own stored value (rj.songForm.<file>).
+   A device can be in several band spaces. Each has a local id (random, never
+   sent anywhere) and a label only this device sees; rj.band.list holds
+   [{ id, label }], and every other key is scoped by that id:
+   rj.band.<id>.code / .oldcode (the vault), .state ({ version, pending,
+   snapshot }, the engine's bookkeeping), .profile ({ author, name, at } — the
+   name and author id are per band, so one band can't tell it is the same
+   person as in another), .shared ({ <file>: true }: own song forms shared
+   with that band) and .doc (the last merged document — where other members'
+   versions are read from). An own version's `raw` is always the song form's
+   own stored value (rj.songForm.<file>).
 */
+import { tl } from "../core/i18n.js";
 import { songFormPrefKey } from "../core/preferences.js";
 import { readStoredForm } from "../music/song-form.js";
 import { canonical } from "./engine.js";
@@ -27,12 +32,9 @@ import { nextStamp, observeStamp, pruneTombstones, readMeta, stampAfter, writeMe
 import { cleanList, isId, isObject, isSongFile, stamp, text, uniqueBy } from "./validate.js";
 
 export const BAND_FORMAT = 1;
-export const BAND_CODE_KEY = "rj.band.code";
-export const BAND_OLD_CODE_KEY = "rj.band.oldcode";
-const STATE_KEY = "rj.band.state";
-const PROFILE_KEY = "rj.band.profile";
-const SHARED_KEY = "rj.band.shared";
-const DOC_KEY = "rj.band.doc";
+const LIST_KEY = "rj.band.list";
+export const MAX_BANDS = 8;
+const FIELDS = ["code", "oldcode", "state", "profile", "shared", "doc"];
 const MAX_MEMBERS = 60;
 const MAX_VERSIONS = 400;
 const NAME_MAX = 40;
@@ -69,73 +71,178 @@ export function cleanName(name) {
   return String(name === undefined || name === null ? "" : name).replace(CONTROL_ALL, "").replace(/\s+/g, " ").trim().slice(0, NAME_MAX);
 }
 
-// ---- local profile, shares, cached document ------------------------------
+// ---- the list of band spaces ---------------------------------------------
 
-function randomAuthor() {
-  const bytes = new Uint8Array(8);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes, (b) => { return b.toString(16).padStart(2, "0"); }).join("");
+export function bandKeys(id) {
+  const key = (field) => { return `rj.band.${id}.${field}`; };
+  return { code: key("code"), oldCode: key("oldcode"), state: key("state"), profile: key("profile"), shared: key("shared"), doc: key("doc") };
 }
 
-// { author, name, at }; the author id is made on first use.
-export function readProfile(storage) {
-  const stored = readJson(storage, PROFILE_KEY) || {};
-  const profile = {
-    author: isId(stored.author) ? stored.author : randomAuthor(),
-    name: cleanName(stored.name),
-    at: stamp(stored.at),
-  };
-  if (stored.author !== profile.author) writeJson(storage, PROFILE_KEY, profile);
-  return profile;
+// The label a new band space starts with: "My Band", then "My Band 2", ...
+export function defaultBandLabel(n) {
+  return n === 1 ? tl("band_default_first", "My Band") : tl("band_default_label", "My Band {n}", { n });
 }
 
-export function setDisplayName(storage, name, now) {
-  const profile = readProfile(storage);
-  profile.name = cleanName(name);
-  profile.at = nextStamp(storage, now);
-  writeJson(storage, PROFILE_KEY, profile);
-  return profile;
+function randomHex(bytes) {
+  const buffer = new Uint8Array(bytes);
+  crypto.getRandomValues(buffer);
+  return Array.from(buffer, (b) => { return b.toString(16).padStart(2, "0"); }).join("");
 }
 
-export function bandConnected(storage) {
+// A fresh local id for a band space about to be started or joined.
+export function newBandId() {
+  return randomHex(4);
+}
+
+function readList(storage) {
   try {
-    return Boolean(storage) && Boolean(storage.getItem(BAND_CODE_KEY));
+    const list = JSON.parse(storage.getItem(LIST_KEY));
+    if (!Array.isArray(list)) return null;
+    return list.filter((band) => { return isObject(band) && isId(band.id); }).map((band) => {
+      return { id: band.id, label: cleanName(band.label) };
+    }).slice(0, MAX_BANDS);
+  } catch {
+    return null;
+  }
+}
+
+function writeList(storage, list) {
+  try {
+    storage.setItem(LIST_KEY, JSON.stringify(list));
+  } catch (_e) {
+    // storage unavailable or full — the list just won't survive a reload.
+  }
+}
+
+const legacyKey = (field) => { return `rj.band.${field}`; };
+
+function hasLegacy(storage) {
+  try {
+    return FIELDS.some((field) => { return storage.getItem(legacyKey(field)) !== null; });
   } catch {
     return false;
   }
 }
 
-export function sharedFiles(storage) {
-  const stored = readJson(storage, SHARED_KEY) || {};
+function moveLegacyField(storage, field, to) {
+  try {
+    const value = storage.getItem(legacyKey(field));
+    if (value !== null) storage.setItem(to, value);
+    storage.removeItem(legacyKey(field));
+  } catch (_e) {
+    // storage unavailable — nothing to move.
+  }
+}
+
+// An earlier build held one band space under rj.band.<field>: move it under an id.
+function migrateLegacy(storage) {
+  if (!hasLegacy(storage)) return [];
+  const id = newBandId();
+  const keys = bandKeys(id);
+  const target = { code: keys.code, oldcode: keys.oldCode, state: keys.state, profile: keys.profile, shared: keys.shared, doc: keys.doc };
+  FIELDS.forEach((field) => { moveLegacyField(storage, field, target[field]); });
+  const list = [{ id, label: defaultBandLabel(1) }];
+  writeList(storage, list);
+  return list;
+}
+
+// [{ id, label }] in joining order.
+export function listBands(storage) {
+  if (!storage) return [];
+  return readList(storage) || migrateLegacy(storage);
+}
+
+export function registerBand(storage, id, label) {
+  const list = listBands(storage).filter((band) => { return band.id !== id; });
+  list.push({ id, label: cleanName(label) || defaultBandLabel(list.length + 1) });
+  writeList(storage, list);
+}
+
+export function renameBand(storage, id, label) {
+  const name = cleanName(label);
+  if (!name) return;
+  writeList(storage, listBands(storage).map((band) => { return band.id === id ? { id, label: name } : band; }));
+}
+
+export function bandConnected(storage, id) {
+  try {
+    return Boolean(storage) && Boolean(storage.getItem(bandKeys(id).code));
+  } catch {
+    return false;
+  }
+}
+
+// The band spaces this device is currently in.
+export function connectedBands(storage) {
+  return listBands(storage).filter((band) => { return bandConnected(storage, band.id); });
+}
+
+// ---- local profile, shares, cached document ------------------------------
+
+// { author, name, at }; the author id is made on first use.
+export function readProfile(storage, id) {
+  const stored = readJson(storage, bandKeys(id).profile) || {};
+  const profile = {
+    author: isId(stored.author) ? stored.author : randomHex(8),
+    name: cleanName(stored.name),
+    at: stamp(stored.at),
+  };
+  if (stored.author !== profile.author) writeJson(storage, bandKeys(id).profile, profile);
+  return profile;
+}
+
+export function setDisplayName(storage, id, name, now) {
+  const profile = readProfile(storage, id);
+  profile.name = cleanName(name);
+  profile.at = nextStamp(storage, now);
+  writeJson(storage, bandKeys(id).profile, profile);
+  return profile;
+}
+
+export function sharedFiles(storage, id) {
+  const stored = readJson(storage, bandKeys(id).shared) || {};
   return Object.keys(stored).filter((file) => { return stored[file] === true && isSongFile(file); });
 }
 
-export function isShared(storage, file) {
-  return sharedFiles(storage).includes(file);
+export function isShared(storage, id, file) {
+  return sharedFiles(storage, id).includes(file);
 }
 
-export function setShared(storage, file, on) {
-  const stored = readJson(storage, SHARED_KEY) || {};
+export function setShared(storage, id, file, on) {
+  const stored = readJson(storage, bandKeys(id).shared) || {};
   if (on) stored[file] = true;
   else delete stored[file];
-  writeJson(storage, SHARED_KEY, stored);
+  writeJson(storage, bandKeys(id).shared, stored);
 }
 
-export function readBandDoc(storage) {
-  const checked = validateBandDoc(readJson(storage, DOC_KEY));
+// A song form that no longer exists can't stay shared with any band.
+export function unshareEverywhere(storage, file) {
+  listBands(storage).forEach((band) => { if (isShared(storage, band.id, file)) setShared(storage, band.id, file, false); });
+}
+
+export function readBandDoc(storage, id) {
+  const checked = validateBandDoc(readJson(storage, bandKeys(id).doc));
   return checked.ok ? checked.doc : emptyBandDoc();
 }
 
-// Other members' versions of a song, newest first: [{ author, name, rounds, at }].
-export function versionsOf(storage, file) {
-  const doc = readBandDoc(storage);
-  const me = readProfile(storage).author;
+function versionsIn(storage, band, file) {
+  const doc = readBandDoc(storage, band.id);
+  const me = readProfile(storage, band.id).author;
   const names = {};
   doc.members.forEach((member) => { names[member.author] = member.name; });
   return doc.versions
     .filter((v) => { return v.file === file && v.author !== me; })
-    .map((v) => { return { author: v.author, name: names[v.author] || "", rounds: readStoredForm(v.raw).rounds, raw: v.raw, at: v.at }; })
-    .sort((a, b) => { return b.at - a.at; });
+    .map((v) => {
+      return { band: band.id, bandLabel: band.label, author: v.author, name: names[v.author] || "", rounds: readStoredForm(v.raw).rounds, raw: v.raw, at: v.at };
+    });
+}
+
+// Other members' versions of a song across every band space joined, newest
+// first: [{ band, bandLabel, author, name, rounds, raw, at }].
+export function versionsOf(storage, file) {
+  const out = [];
+  connectedBands(storage).forEach((band) => { out.push(...versionsIn(storage, band, file)); });
+  return out.sort((a, b) => { return b.at - a.at; });
 }
 
 // ---- validation ----------------------------------------------------------
@@ -248,15 +355,15 @@ function ownFormRaw(storage, file) {
   }
 }
 
-function ownVersions(storage, cached, author, meta, clock) {
+function ownVersions(storage, id, cached, author, stampNew) {
   const before = {};
   cached.versions.forEach((v) => { if (v.author === author) before[v.file] = v; });
   const now = [];
-  sharedFiles(storage).forEach((file) => {
+  sharedFiles(storage, id).forEach((file) => {
     const raw = ownFormRaw(storage, file);
     if (raw === null) return;
     const old = before[file];
-    now.push({ file, author, raw, at: old && old.raw === raw ? old.at : stampAfter(meta, clock) });
+    now.push({ file, author, raw, at: old && old.raw === raw ? old.at : stampNew() });
   });
   return now;
 }
@@ -264,12 +371,12 @@ function ownVersions(storage, cached, author, meta, clock) {
 // The document for this device: the cached band doc with this member's own
 // shared versions brought up to date (an edited one is stamped, an unshared or
 // deleted one gets a tombstone) and their name.
-export function buildBandDoc(storage, now) {
+export function buildBandDoc(storage, id, now) {
   const clock = now === undefined ? Date.now() : now;
-  const cached = readBandDoc(storage);
-  const profile = readProfile(storage);
+  const cached = readBandDoc(storage, id);
+  const profile = readProfile(storage, id);
   const meta = readMeta(storage);
-  const mine = ownVersions(storage, cached, profile.author, meta, clock);
+  const mine = ownVersions(storage, id, cached, profile.author, () => { return stampAfter(meta, clock); });
   const tomb = { versions: { ...cached.tomb.versions } };
   const keep = new Set(mine.map((v) => { return v.file; }));
   cached.versions.forEach((v) => {
@@ -285,13 +392,14 @@ export function buildBandDoc(storage, now) {
 }
 
 // Saves the merged document as the cache and as the new snapshot.
-export function applyBandDoc(storage, doc) {
+export function applyBandDoc(storage, id, doc) {
   const meta = readMeta(storage);
   doc.members.forEach((m) => { observeStamp(meta, m.at); });
   doc.versions.forEach((v) => { observeStamp(meta, v.at); });
   writeMeta(storage, meta);
-  writeJson(storage, DOC_KEY, doc);
-  writeJson(storage, STATE_KEY, { ...(readJson(storage, STATE_KEY) || {}), snapshot: doc });
+  const keys = bandKeys(id);
+  writeJson(storage, keys.doc, doc);
+  writeJson(storage, keys.state, { ...(readJson(storage, keys.state) || {}), snapshot: doc });
 }
 
 function sameBandContent(a, b) {
@@ -299,34 +407,41 @@ function sameBandContent(a, b) {
   return canonical({ members: a.members, versions: a.versions, tomb: a.tomb }) === canonical({ members: b.members, versions: b.versions, tomb: b.tomb });
 }
 
-export const BAND_CODEC = {
-  codeKey: BAND_CODE_KEY,
-  oldCodeKey: BAND_OLD_CODE_KEY,
-  build: buildBandDoc,
-  apply: applyBandDoc,
-  merge: mergeBandDocs,
-  validate: validateBandDoc,
-  same: sameBandContent,
-  readState(storage) {
-    const state = readJson(storage, STATE_KEY) || {};
-    return { version: Number.isInteger(state.version) ? state.version : 0, pending: state.pending === true, snapshot: state.snapshot };
-  },
-  writeState(storage, patch) {
-    const state = readJson(storage, STATE_KEY) || {};
-    if (patch.version !== undefined) state.version = patch.version;
-    if (patch.pending !== undefined) state.pending = patch.pending;
-    writeJson(storage, STATE_KEY, state);
-  },
-};
+// The codec for one band space (see PERSONAL_CODEC in engine.js).
+export function bandCodec(id) {
+  const keys = bandKeys(id);
+  return {
+    codeKey: keys.code,
+    oldCodeKey: keys.oldCode,
+    build: (storage, now) => { return buildBandDoc(storage, id, now); },
+    apply: (storage, doc) => { applyBandDoc(storage, id, doc); },
+    merge: mergeBandDocs,
+    validate: validateBandDoc,
+    same: sameBandContent,
+    readState(storage) {
+      const state = readJson(storage, keys.state) || {};
+      return { version: Number.isInteger(state.version) ? state.version : 0, pending: state.pending === true, snapshot: state.snapshot };
+    },
+    writeState(storage, patch) {
+      const state = readJson(storage, keys.state) || {};
+      if (patch.version !== undefined) state.version = patch.version;
+      if (patch.pending !== undefined) state.pending = patch.pending;
+      writeJson(storage, keys.state, state);
+    },
+  };
+}
 
-// Leaving the band space: forget the code and what came from it; own song
-// forms stay (they were only ever copied).
-export function forgetBand(storage) {
-  [BAND_CODE_KEY, STATE_KEY, DOC_KEY, SHARED_KEY].forEach((key) => {
+// Leaving a band space: forget its code and what came from it, and drop it
+// from the list; own song forms stay (they were only ever copied).
+export function forgetBand(storage, id) {
+  const keys = bandKeys(id);
+  [keys.code, keys.state, keys.doc, keys.shared, keys.profile].forEach((key) => {
     try {
       storage.removeItem(key);
     } catch (_e) {
       // storage unavailable — nothing to forget.
     }
   });
+  const list = readList(storage);
+  if (list) writeList(storage, list.filter((band) => { return band.id !== id; }));
 }

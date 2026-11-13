@@ -327,6 +327,7 @@
     </div>
     <div id="syncPanelBand" class="rj-sync-band" hidden>
       <p class="rj-install-note">{{ i18n "songs_bandIntro" }}</p>
+      <div id="bandTabs" class="rj-band-chips" role="group" aria-label="{{ i18n "songs_bandTabs_aria" }}" hidden></div>
       <input type="text" id="bandName" class="rj-modal-input" maxlength="40" autocomplete="off" aria-label="{{ i18n "songs_bandName_aria" }}" placeholder="{{ i18n "songs_bandName_placeholder" }}">
       <div id="bandSetup" class="rj-sync-section">
         <button type="button" id="bandConnect" class="rj-modal-btn rj-modal-btn-primary rj-sync-wide">{{ i18n "songs_bandConnect" }}</button>
@@ -337,6 +338,7 @@
         </div>
       </div>
       <div id="bandBox" class="rj-sync-section" hidden>
+        <input type="text" id="bandLabel" class="rj-modal-input" maxlength="40" autocomplete="off" aria-label="{{ i18n "songs_bandLabel_aria" }}" placeholder="{{ i18n "songs_bandLabel_placeholder" }}">
         <div class="rj-sync-pair">
           <div class="rj-sync-qr"><svg id="bandQr" role="img" aria-label="{{ i18n "songs_bandQr_aria" }}" focusable="false"></svg></div>
           <div id="bandCode" class="rj-sync-code"></div>

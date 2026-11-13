@@ -587,8 +587,9 @@ test("a joined band space lists a bandmate's version, shows it plain, and copies
   const { openSong, leads, cleanup } = await setup();
   try {
     const raw = JSON.stringify({ show: "mine", rows: [["1", "A B", "Anna's solo"]] });
-    localStorage.setItem("rj.band.code", "x");
-    localStorage.setItem("rj.band.doc", JSON.stringify({
+    localStorage.setItem("rj.band.list", JSON.stringify([{ id: "b1", label: "Jazz" }]));
+    localStorage.setItem("rj.band.b1.code", "x");
+    localStorage.setItem("rj.band.b1.doc", JSON.stringify({
       format: 1, device: "d", tomb: { versions: {} },
       members: [{ author: "anna1", name: "Anna", at: 1 }],
       versions: [{ file: FILE, author: "anna1", raw, at: 2 }],
@@ -609,6 +610,32 @@ test("a joined band space lists a bandmate's version, shows it plain, and copies
     assert.equal(menuItem("share").getAttribute(CHECKED), "false");
     click(menuItem("share"));
     assert.equal(menuItem("share").getAttribute(CHECKED), "true");
+  } finally {
+    cleanup();
+  }
+});
+
+test("with two band spaces each version names its band, and sharing is chosen per band", async () => {
+  const { openSong, cleanup } = await setup({ stored: JSON.stringify({ show: "mine", rows: [["1", "A", ""]] }) });
+  try {
+    const raw = JSON.stringify({ show: "mine", rows: [["1", "A B", ""]] });
+    localStorage.setItem("rj.band.list", JSON.stringify([{ id: "b1", label: "Jazz" }, { id: "b2", label: "Swing" }]));
+    ["b1", "b2"].forEach((id, i) => {
+      localStorage.setItem(`rj.band.${id}.code`, "x");
+      localStorage.setItem(`rj.band.${id}.doc`, JSON.stringify({
+        format: 1, device: "d", tomb: { versions: {} },
+        members: [{ author: `anna${i}`, name: "Anna", at: 1 }],
+        versions: [{ file: FILE, author: `anna${i}`, raw, at: 2 + i }],
+      }));
+    });
+    openSong();
+    assert.equal(menuItem("by-anna0").textContent.includes("Anna's version (Jazz)"), true);
+    assert.equal(menuItem("by-anna1").textContent.includes("Anna's version (Swing)"), true);
+    assert.equal(menuItem("share"), null);
+    assert.equal(menuItem("share-b1").textContent.includes("Share with Jazz"), true);
+    click(menuItem("share-b2"));
+    assert.equal(menuItem("share-b2").getAttribute(CHECKED), "true");
+    assert.equal(menuItem("share-b1").getAttribute(CHECKED), "false");
   } finally {
     cleanup();
   }

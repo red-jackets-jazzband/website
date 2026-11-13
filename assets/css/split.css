@@ -4103,6 +4103,31 @@ output.rj-library-print-status:not([hidden]) {
 .rj-sync-band .rj-modal-input {
   margin-top: 6px;
 }
+.rj-band-chips {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0 -3px 6px;
+}
+.rj-band-chips[hidden] {
+  display: none;
+}
+.rj-band-chip {
+  margin: 3px;
+  padding: 5px 12px;
+  font: 600 12.5px "Montserrat", sans-serif;
+  color: var(--rj-body);
+  background: none;
+  border: 1px solid rgba(255,255,255,.2);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.rj-band-chip:hover {
+  color: #fff;
+}
+.rj-band-chip[aria-pressed="true"] {
+  color: var(--rj-gold, #e29d0f);
+  border-color: var(--rj-gold, #e29d0f);
+}
 .rj-sync-band .rj-sync-status {
   margin: 12px 0 0;
 }
