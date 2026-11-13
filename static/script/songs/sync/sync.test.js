@@ -24,7 +24,7 @@ function fakeVault(gets) {
 
 function build(storage) {
   const ctx = makeCtx({ storage: () => storage });
-  ctx.setlistHome = { render: () => {}, renderSyncStatus: () => {} };
+  ctx.setlistHome = { render: () => {} };
   ctx.setlistView = { refreshOpenPersonal: () => {} };
   ctx.songForm = { refresh: () => {} };
   ctx.sync = createSync(ctx);
@@ -46,7 +46,6 @@ test("while sync is off nothing is requested, however much is edited or shown", 
     await new Promise((resolve) => { setTimeout(resolve, 20); });
     assert.deepEqual(calls, []);
     assert.equal(ctx.sync.isConnected(), false);
-    assert.equal(ctx.sync.statusLine(), "");
   } finally {
     setFetch(realFetch);
     page.cleanup();

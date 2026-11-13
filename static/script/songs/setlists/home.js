@@ -73,28 +73,6 @@ export function createSetlistHome(ctx) {
     ]);
   }
 
-  // Connect devices (opt-in device sync): a quiet button, with the sync status
-  // under it once connected.
-  function syncButton() {
-    return el("div", { class: "rj-library-sync" }, [
-      el("button", {
-        type: "button",
-        class: "rj-library-sync-btn",
-        on: { click: () => ctx.sync.open() },
-      }, [
-        el("span", { class: "fa-solid fa-arrows-rotate", attrs: { "aria-hidden": "true" } }),
-        el("span", { text: tl("sync_open", "Connect devices") }),
-      ]),
-      el("span", { class: "rj-library-sync-status", attrs: { id: "syncShelfStatus" }, text: ctx.sync.statusLine() }),
-    ]);
-  }
-
-  // Keeps the shelf's status line current when a sync finishes.
-  function renderSyncStatus() {
-    const line = byId("syncShelfStatus");
-    if (line) line.textContent = ctx.sync.statusLine();
-  }
-
   function render() {
     const listEl = byId("songList");
     if (!listEl) return;
@@ -115,7 +93,6 @@ export function createSetlistHome(ctx) {
       mine.forEach((entry) => listEl.append(personalRow(entry)));
     }
     listEl.append(newSetlistButton());
-    if (ctx.sync) listEl.append(syncButton());
   }
 
   function show() {
@@ -125,5 +102,5 @@ export function createSetlistHome(ctx) {
     render();
   }
 
-  return { render, show, renderSyncStatus };
+  return { render, show };
 }
