@@ -1,6 +1,8 @@
 # Device sync — plan & WBS
 
-As of 2026-11-13. Status: proposal, not started.
+As of 2026-11-13. Status: milestone 1 (server) and the pure-logic half of milestone 2 are built; the sync engine (WBS 6), UI, translations, privacy page and tour step are not.
+
+**Built:** WBS 2.1–2.7 (`workers/sync/`, tested with fake Durable Objects; the live endpoint's upgrade path and `wrangler deploy` itself are untested here), 2.5, 3 (`lib/sync/crypto.js`), 4.1–4.6 (`lib/sync/clock.js`, stamping in `setlists-store.js` and `songs/sheet/song-form.js`, change detection in `lib/sync/doc.js`), 5 (`lib/sync/merge.js`, `validate.js`, `doc.js`), 9.1 (`deploy-sync` job; needs the `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` secrets and `wrangler secret put SALT_SECRET`). **Not built:** 1 (account, hostname: yours to decide), 6, 7, 8, 9.2, 10. **Left out of 2.3:** the generous per-IP rate limit on syncing itself, since a counter object call per request would double Durable Object requests on the free plan; Cloudflare's own rate-limiting rules can do it without code.
 
 The server is small: one Cloudflare Worker and one Durable Object per vault, roughly 300–400 lines with the guards, abuse limits, deleted-vault markers and live endpoint. Most of the work is in the browser: tracking changes so edits from several devices, tabs and app versions merge without loss, and the UI around it. Phase 1 (your own devices) is about 11 days, an MVP about 9¼; phase 2 (sharing in a band) about 5½ more. Every Safari-12 feature in this project so far has turned up a surprise on the real device, so the estimates include room for that rather than a separate buffer. Sync is opt-in: by default everything stays in this browser only, exactly as today.
 
