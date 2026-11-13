@@ -2,7 +2,7 @@
 
 As of 2026-11-13. Status: proposal, not started.
 
-Not complex: the server is about 100 lines and one database table. The real work is merging edits from several devices and the UI around the sync code. Phase 1 (your own devices) is about 7½ days, an MVP about 6; phase 2 (sharing in a band) about 6 more. Sync is opt-in: by default everything stays in this browser only, exactly as today.
+Not complex: the server is about 100 lines and one database table. The real work is merging edits from several devices and the UI around the sync code. Phase 1 (your own devices) is about 7¾ days, an MVP about 6½; phase 2 (sharing in a band) about 6 more. Sync is opt-in: by default everything stays in this browser only, exactly as today.
 
 ## How it works
 
@@ -59,7 +59,7 @@ This supersedes the earlier "Workers KV" idea: KV is eventually consistent and h
 
 ## Work breakdown
 
-Phase 1 totals 7½ days, including the review fixes (deleted-vault marker, format version, row ids, abuse limits: WBS 2.3, 2.6, 4.4, 5.5). Packages marked MVP are the 6-day core.
+Phase 1 totals about 7¾ days, including the review fixes (deleted-vault marker, format version, row ids, abuse limits: WBS 2.3, 2.6, 4.4, 5.5; mid-cycle edits, polling and song-form refresh: WBS 6.2–6.4). Packages marked MVP are the 6½-day core.
 
 | WBS | Work package | Deliverable | Est. (days) | MVP |
 | --- | --- | --- | --- | --- |
@@ -88,11 +88,11 @@ Phase 1 totals 7½ days, including the review fixes (deleted-vault marker, forma
 | 5.3 | Write merged result back to local storage | Functions | 0.1 | yes |
 | 5.4 | Tests: merge is order-independent and repeatable; delete vs edit races | Tests | 0.2 | yes |
 | 5.5 | Format version: keep unknown fields; download-only when the format is newer | Functions + tests | 0.25 | yes |
-| 6 | **Sync engine** (`songs/sync/`) | | **1.0** | |
+| 6 | **Sync engine** (`songs/sync/`) | | **1.3** | |
 | 6.1 | `sync` slice in `core/state.js` (status, last synced, revision) and stored code | Slice + prefs | 0.15 | yes |
-| 6.2 | Cycle: pull → merge → push with expected version; on 409 retry up to 3 times | Engine | 0.3 | yes |
-| 6.3 | Triggers: after page load, 3 s after a local change, `online`, page shown again | Engine | 0.15 | yes |
-| 6.4 | Setlist views redraw when a sync brings changes | Subscriptions | 0.15 | yes |
+| 6.2 | Cycle: pull → merge → push with expected version; on 409 retry up to 3 times. Before writing back, re-read local storage and keep any item edited after the cycle's snapshot (its `updatedAt` is newer); clear the dirty flag only for the revision that was pushed, so an edit made mid-cycle triggers another cycle | Engine | 0.4 | yes |
+| 6.3 | Triggers: after page load, 3 s after a local change, `online`, page shown again, and a pull every 60 s while the page is visible (paused when hidden, backing off to 5 min after an hour idle), so an open page picks up other devices' edits. The pull sends the known version and gets a body-less 304 when nothing changed | Engine | 0.25 | yes |
+| 6.4 | Setlist views and the open song form redraw when a sync brings changes: the song form re-reads its stored version instead of keeping its in-memory copy; with the editor open, the edits stay and Save re-merges against the stored version (newest wins per form) rather than writing the stale copy back | Subscriptions | 0.25 | yes |
 | 6.5 | Backoff, error states; jsdom tests with a stubbed `fetch` | Tests | 0.25 | yes |
 | 7 | **UI** | | **1.0** | |
 | 7.1 | "Connect devices" dialog, off by default: connect, join with a code, show code, disconnect this device, delete server copy, new code | Dialog | 0.4 | yes (plain) |
@@ -111,7 +111,7 @@ Phase 1 totals 7½ days, including the review fixes (deleted-vault marker, forma
 | 10.1 | Playwright: two browser contexts, Worker mocked by route; an edit in one appears in the other; no sync request while sync is off | e2e test | 0.25 | |
 | 10.2 | Real devices: old iPad (Safari 12) and a current phone | Checklist | 0.15 | yes |
 | 10.3 | SonarCloud gate on the PR | Clean scan | 0.1 | yes |
-| | **Total** | | **7.5** | **≈ 6** |
+| | **Total** | | **7.8** | **≈ 6½** |
 
 ## Milestones
 
@@ -141,7 +141,8 @@ The biggest risk is a lost or leaked code; everything else degrades to "works li
 | Two devices edit the same setlist at once | One device's edit to that setlist is lost | Rare for one person; phase 2 merges per row for shared setlists |
 | Device offline for more than 180 days | Deleted setlists can come back from it | Accepted: tombstones are pruned after 180 days |
 | Cloudflare down or blocked | No sync for a while | The page never waits on sync; retries later |
-| Free-tier limits (D1: 100k writes/day) | Writes refused | Far above band use; writes are debounced to one per 3 s per device |
+| Free-tier limits (Workers: 100k requests/day; D1: 100k writes/day) | Requests refused until the daily reset | Polling only while a page is visible, once a minute, 5 min when idle: 20 devices open 3 h a day is about 3,600 requests; writes are debounced to one per 3 s per device |
+| Edit made while a sync is in flight | That edit is overwritten by the merged result | Write-back re-reads local storage and keeps newer items; the dirty flag stays set until that edit is pushed (WBS 6.2) |
 | Safari 12 gaps | Sync silently fails on the old iPad | Only `digest`, AES-GCM, `getRandomValues`, `fetch`; checked on the real device (WBS 10.2) |
 | SonarCloud findings in new code | PR gate fails | Same lint layer covers `workers/**`; crypto randomness from `getRandomValues`, never `Math.random` |
 
