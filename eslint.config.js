@@ -132,6 +132,7 @@ export default [
         Tonal: "readonly",
         YT: "readonly",
         lamejs: "readonly",
+        qrcode: "readonly",
       },
     },
     plugins: {

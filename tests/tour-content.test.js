@@ -28,6 +28,7 @@ const RUNTIME_TARGETS = {
   "#inspirationLink": ["static/script/songs/inspiration/inspiration.js", 'btn.id = "inspirationLink"'],
   "#compingSplitBtn": ["static/script/songs/sheet/selects.js", 'id: "compingSplitBtn"'],
   "#compingParts": ["static/script/songs/sheet/selects.js", 'id: "compingParts"'],
+  ".rj-library-sync-btn": ["static/script/songs/setlists/home.js", 'class: "rj-library-sync-btn"'],
   ".rj-library-new-setlist-btn": ["static/script/songs/setlists/home.js", 'class: "rj-library-new-setlist-btn"'],
   ".rj-library-add-song-field": ["static/script/songs/setlists/add-song.js", 'class: "rj-library-add-song-field"'],
   ".rj-library-add-break": ["static/script/songs/setlists/add-song.js", 'class: "rj-library-add-break"'],

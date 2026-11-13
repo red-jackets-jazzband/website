@@ -1,4 +1,4 @@
-import { byId, on } from "../../lib/core/dom.js";
+import { byId, clear, loadScriptOnce, on } from "../../lib/core/dom.js";
 import { hashWithoutSync, syncCodeFromHash } from "../../lib/core/song-hash.js";
 import { tl } from "../../lib/core/i18n.js";
 import { createSyncEngine, CODE_KEY } from "../../lib/sync/engine.js";
@@ -6,6 +6,7 @@ import { formatCode } from "../../lib/sync/crypto.js";
 import { onLocalChange } from "../../lib/sync/changes.js";
 import { holdLease, releaseLease } from "../../lib/sync/lease.js";
 import { createLiveChannel } from "../../lib/sync/live.js";
+import { pairingUrl, qrPath } from "../../lib/sync/qr.js";
 import { afterPageLoad } from "../core/after-load.js";
 
 /*
@@ -19,6 +20,8 @@ import { afterPageLoad } from "../core/after-load.js";
 const UPLOAD_DELAY_MS = 3000;
 const PULL_GAP_MS = 30000;
 const LEASE_RENEW_MS = 5000;
+const QR_SRC = "/script/qrcode-generator-2.0.4-min.js";
+const SVG_NS = "http://www.w3.org/2000/svg";
 const DIRTY_KEY = "rj.sync.dirty";
 const WATCHED_KEYS = ["rj.setlists.v1", "rj.sync.meta"];
 
@@ -41,6 +44,30 @@ function statusText(result, time) {
 function clockTime() {
   const now = new Date();
   return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+}
+
+// The pairing QR as SVG children: a white plate (the quiet zone) and one path.
+function drawQr(svg, url) {
+  const qr = qrcode(0, "M");
+  qr.addData(url);
+  qr.make();
+  const { d, size } = qrPath((row, col) => { return qr.isDark(row, col); }, qr.getModuleCount());
+  svg.setAttribute("viewBox", `0 0 ${size} ${size}`);
+  clear(svg);
+  const path = document.createElementNS(SVG_NS, "path");
+  path.setAttribute("d", d);
+  path.setAttribute("fill", "#1b1b1b");
+  svg.append(path);
+}
+
+function hideQr() {
+  const box = byId("syncQrBox");
+  const toggle = byId("syncQrToggle");
+  if (box) box.hidden = true;
+  if (toggle) {
+    toggle.setAttribute("aria-expanded", "false");
+    toggle.textContent = tl("sync_qr_show", "Show QR code");
+  }
 }
 
 function closeDialog() {
@@ -115,6 +142,23 @@ export function createSync(ctx) {
     }
   }
 
+  // Show the pairing QR; the generator loads on first use (and is precached for offline).
+  function toggleQr() {
+    const box = byId("syncQrBox");
+    if (!box) return Promise.resolve();
+    if (!box.hidden) { hideQr(); return Promise.resolve(); }
+    const code = getEngine().code();
+    if (!code) return Promise.resolve();
+    const ready = typeof qrcode === "undefined" ? loadScriptOnce(QR_SRC) : Promise.resolve();
+    return ready.then(() => {
+      drawQr(byId("syncQr"), pairingUrl(window.location.href, formatCode(code)));
+      box.hidden = false;
+      const toggle = byId("syncQrToggle");
+      toggle.setAttribute("aria-expanded", "true");
+      toggle.textContent = tl("sync_qr_hide", "Hide QR code");
+    });
+  }
+
   function render() {
     const code = connected() ? getEngine().code() : null;
     syncLeaseTimer(Boolean(code));
@@ -124,6 +168,7 @@ export function createSync(ctx) {
     if (line) line.textContent = statusText(shown, clockTime());
     const codeBox = byId("syncCodeBox");
     if (codeBox) codeBox.hidden = !code;
+    if (!code) hideQr();
     const setup = byId("syncSetup");
     if (setup) setup.hidden = Boolean(code);
     const codeEl = byId("syncCode");
@@ -193,6 +238,7 @@ export function createSync(ctx) {
     const join = () => { settle(action(() => getEngine().join(byId("syncCodeInput").value))); };
     on("syncJoin", "click", join);
     on("syncCodeInput", "keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); join(); } });
+    on("syncQrToggle", "click", () => { settle(toggleQr()); });
     on("syncNow", "click", () => { lastPull = 0; settle(run()); });
     on("syncDisconnect", "click", () => { getEngine().disconnect(); lastResult = { status: "off" }; render(); });
     on("syncDelete", "click", () => {
