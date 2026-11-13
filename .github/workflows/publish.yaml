@@ -132,3 +132,10 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Smoke check (an unknown vault answers 404)
+        if: steps.changed.outputs.changed == 'true'
+        run: |
+          status=$(curl -sS -o /dev/null -w '%{http_code}' --retry 5 --retry-delay 5 --retry-all-errors \
+            "https://sync.redjackets.nl/v1/vault/$(printf '0%.0s' $(seq 64))")
+          echo "GET of an unknown vault: HTTP $status"
+          test "$status" = "404"

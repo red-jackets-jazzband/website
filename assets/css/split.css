@@ -4093,6 +4093,16 @@ output.rj-library-print-status:not([hidden]) {
   word-break: break-all;
   user-select: all;
 }
+.rj-sync-qr {
+  margin-top: 10px;
+}
+.rj-sync-qr svg {
+  display: block;
+  width: 200px;
+  height: 200px;
+  margin-bottom: 8px;
+  background: #fff;
+}
 .rj-sync-actions .rj-modal-btn {
   margin-bottom: 6px;
 }

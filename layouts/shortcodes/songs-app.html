@@ -309,6 +309,11 @@
       <div class="rj-modal-label">{{ i18n "songs_syncCodeLabel" }}</div>
       <div id="syncCode" class="rj-sync-code"></div>
       <p class="rj-install-note">{{ i18n "songs_syncCodeHint" }}</p>
+      <button type="button" id="syncQrToggle" class="rj-modal-btn" aria-expanded="false" aria-controls="syncQrBox">{{ i18n "songs_syncQrToggle" }}</button>
+      <div id="syncQrBox" class="rj-sync-qr" hidden>
+        <svg id="syncQr" role="img" aria-label="{{ i18n "songs_syncQr_aria" }}" focusable="false"></svg>
+        <p class="rj-install-note">{{ i18n "songs_syncQrHint" }}</p>
+      </div>
       <div class="rj-modal-actions rj-sync-actions">
         <button type="button" id="syncNow" class="rj-modal-btn rj-modal-btn-primary">{{ i18n "songs_syncNow" }}</button>
         <button type="button" id="syncNewCode" class="rj-modal-btn">{{ i18n "songs_syncNewCode" }}</button>

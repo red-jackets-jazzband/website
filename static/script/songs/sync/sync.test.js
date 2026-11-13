@@ -9,6 +9,19 @@ function setFetch(fn) {
   window.fetch = fn;
 }
 
+// A one-vault server speaking the worker's protocol; `gets` records each GET's id.
+function fakeVault(gets) {
+  const vaults = {};
+  return async (url, init) => {
+    const id = url.split("/").pop();
+    const json = (body, status) => { return new Response(JSON.stringify(body), { status }); };
+    if (init.method === "GET") { gets.push(id); return vaults[id] ? json(vaults[id], 200) : json({}, 404); }
+    const { blob } = JSON.parse(init.body);
+    vaults[id] = { version: (vaults[id] ? vaults[id].version : 0) + 1, blob };
+    return json({ version: vaults[id].version }, 200);
+  };
+}
+
 function build(storage) {
   const ctx = makeCtx({ storage: () => storage });
   ctx.setlistHome = { render: () => {}, renderSyncStatus: () => {} };
@@ -69,15 +82,7 @@ test("a connected, visible tab opens the push channel and a newer pushed version
   window.WebSocket = class { constructor(url) { this.url = url; sockets.push(this); } close() { this.closed = true; } };
   try {
     const storage = memoryStorage();
-    const vaults = {};
-    setFetch(async (url, init) => {
-      const id = url.split("/").pop();
-      const json = (body, status) => { return new Response(JSON.stringify(body), { status }); };
-      if (init.method === "GET") { gets.push(id); return vaults[id] ? json(vaults[id], 200) : json({}, 404); }
-      const { blob } = JSON.parse(init.body);
-      vaults[id] = { version: (vaults[id] ? vaults[id].version : 0) + 1, blob };
-      return json({ version: vaults[id].version }, 200);
-    });
+    setFetch(fakeVault(gets));
     const ctx = build(storage);
     await ctx.sync.init();
     document.getElementById("syncConnect").click();
@@ -119,6 +124,36 @@ test("a pairing link is taken out of the address bar and joins after confirmatio
     window.confirm = realConfirm; // eslint-disable-line require-atomic-updates -- restoring a global
     setFetch(realFetch);
     window.history.replaceState(null, "", "#");
+    page.cleanup();
+  }
+});
+
+test("the QR button draws the pairing link as an SVG, and hides it again", async () => {
+  const page = mountPage();
+  const realFetch = window.fetch;
+  const drawn = [];
+  globalThis.qrcode = () => {
+    return { addData: (text) => { drawn.push(text); }, make: () => {}, getModuleCount: () => { return 2; }, isDark: (r, c) => { return r === c; } };
+  };
+  try {
+    setFetch(fakeVault([]));
+    const ctx = build(memoryStorage());
+    await ctx.sync.init();
+    document.getElementById("syncConnect").click();
+    await new Promise((resolve) => { setTimeout(resolve, 50); });
+    const toggle = document.getElementById("syncQrToggle");
+    toggle.click();
+    await new Promise((resolve) => { setTimeout(resolve, 20); });
+    assert.equal(document.getElementById("syncQrBox").hidden, false);
+    assert.equal(toggle.getAttribute("aria-expanded"), "true");
+    assert.match(drawn[0], /#sync=[A-Z0-9-]+$/);
+    assert.equal(document.querySelector("#syncQr path").getAttribute("d"), "M4 4h1v1h-1zM5 5h1v1h-1z");
+    toggle.click();
+    assert.equal(document.getElementById("syncQrBox").hidden, true);
+    document.getElementById("syncDisconnect").click();
+  } finally {
+    delete globalThis.qrcode;
+    setFetch(realFetch);
     page.cleanup();
   }
 });
