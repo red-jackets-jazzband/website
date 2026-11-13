@@ -146,6 +146,7 @@ export function createSongForm(ctx) {
   let mine = null; // the visitor's rounds, or null
   let show = "band"; // which one the strip shows when not editing
   let draft = null; // the rounds being edited, or null
+  let staleStore = false; // a sync changed this song's stored version during an edit
   let active = 0; // the round whose tools show while editing
   let textOpen = false;
   let menuOpen = false;
@@ -818,6 +819,9 @@ export function createSongForm(ctx) {
   function cancel() {
     draft = null;
     textOpen = false;
+    // Not saved: show what a sync wrote meanwhile, not the copy read before.
+    if (staleStore && file) load(file);
+    staleStore = false;
     draw("menu");
   }
 
@@ -831,6 +835,7 @@ export function createSongForm(ctx) {
       show = "mine";
     }
     persist();
+    staleStore = false; // what was just saved is the newest
     cancel();
   }
 
@@ -876,7 +881,11 @@ export function createSongForm(ctx) {
     // A device sync brought changes: re-read this song's stored version. With
     // the editor open the edit stays; Save writes it (device-sync-plan WBS 6.4).
     refresh() {
-      if (!file || editing()) return;
+      if (!file) return;
+      if (editing()) {
+        staleStore = true;
+        return;
+      }
       load(file);
       if (ready) draw();
     },

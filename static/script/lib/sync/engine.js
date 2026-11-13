@@ -17,6 +17,8 @@ import { validateDoc } from "./validate.js";
 
 export const SYNC_URL = "https://rj-sync.redjackets.workers.dev";
 export const CODE_KEY = "rj.sync.code";
+// The code of a replaced vault whose server copy couldn't be deleted yet.
+export const OLD_CODE_KEY = "rj.sync.oldcode";
 export const MAX_BODY_BYTES = 64 * 1024;
 const MAX_ATTEMPTS = 3;
 
@@ -39,6 +41,23 @@ function writeCode(storage, code) {
 
 // `pending` marks a merged copy the server may not have yet (a PUT is in
 // flight or failed); a later cycle must not take "nothing changed" for "sent".
+function readOldCode(storage) {
+  try {
+    return parseCode(storage.getItem(OLD_CODE_KEY));
+  } catch {
+    return null;
+  }
+}
+
+function writeOldCode(storage, code) {
+  try {
+    if (code) storage.setItem(OLD_CODE_KEY, code);
+    else storage.removeItem(OLD_CODE_KEY);
+  } catch (_e) {
+    // storage unavailable — the old copy just expires with the server's own clock.
+  }
+}
+
 function setVersion(storage, version) {
   const meta = readMeta(storage);
   meta.syncVersion = version;
@@ -141,32 +160,44 @@ export function createSyncEngine({ storage, fetchFn, baseUrl = SYNC_URL, now = D
   // newer copy the server returned and try again (up to MAX_ATTEMPTS). A
   // result identical to what the server has is not pushed: every save is
   // broadcast, so a needless one would make devices answer each other forever.
-  const merge = async (vault, remote, attempt) => {
+  const merge = async (vault, remote, attempt, changedBefore = false) => {
     const before = readMeta(storage);
     const local = buildLocalDoc(storage, now());
     const merged = remote.doc ? mergeDocs(local, remote.doc, now()) : local;
     applyDoc(storage, merged);
+    // `changed`: this cycle wrote something into storage (so the page redraws, upload or not).
+    const changed = changedBefore || !sameContent(local, merged);
     const serverHas = remote.doc ? sameContent(merged, remote.doc) : !before.syncPending && sameContent(merged, before.snapshot);
     if (serverHas) {
       setVersion(storage, remote.version);
-      return { status: "ok", version: remote.version };
+      return { status: "ok", version: remote.version, changed };
     }
     markPending(storage);
     const pushed = await push(vault, merged, remote.version);
     if (pushed.version) {
       setVersion(storage, pushed.version);
-      return { status: "ok", version: pushed.version };
+      return { status: "ok", version: pushed.version, changed };
     }
-    if (!pushed.conflict) return pushed;
-    if (attempt >= MAX_ATTEMPTS) return { status: "error", reason: "conflict" };
+    if (!pushed.conflict) return { ...pushed, changed };
+    if (attempt >= MAX_ATTEMPTS) return { status: "error", reason: "conflict", changed };
     const newer = await open(vault, pushed.conflict);
-    if (!newer.doc) return newer;
-    return merge(vault, { doc: newer.doc, version: pushed.conflict.version }, attempt + 1);
+    if (!newer.doc) return { ...newer, changed };
+    return merge(vault, { doc: newer.doc, version: pushed.conflict.version }, attempt + 1, changed);
   };
 
   const exchange = async (vault, known) => {
     const remote = await pull(vault, known);
     return remote.status ? remote : merge(vault, remote, 1);
+  };
+
+  // DELETE the replaced vault; true once it is gone (or never was).
+  const dropOldVault = async () => {
+    const code = readOldCode(storage);
+    if (!code) return true;
+    const response = await request((await deriveVault(code)).id, { method: "DELETE" });
+    const gone = Boolean(response) && (response.ok || response.status === 404 || response.status === 410);
+    if (gone) writeOldCode(storage, null);
+    return gone;
   };
 
   const activeVault = async () => {
@@ -209,6 +240,7 @@ export function createSyncEngine({ storage, fetchFn, baseUrl = SYNC_URL, now = D
     async sync() {
       const vault = await activeVault();
       if (!vault) return { status: "disconnected" };
+      await dropOldVault();
       const result = await exchange(vault, readMeta(storage).syncVersion || 0);
       if (result.status === "gone" || result.status === "notFound") writeCode(storage, null);
       return result;
@@ -228,13 +260,19 @@ export function createSyncEngine({ storage, fetchFn, baseUrl = SYNC_URL, now = D
       return { status: "ok" };
     },
 
-    // Moves the data to a fresh vault and marks the old one deleted.
+    // Moves the data to a fresh vault and marks the old one deleted. The old
+    // vault is merged first (another device may have saved since this one
+    // last looked), and a failed delete is reported and retried later.
     async newCode() {
       const old = await activeVault();
       if (!old) return { status: "disconnected" };
+      const synced = await exchange(old, readMeta(storage).syncVersion || 0);
+      if (synced.status !== "ok") return synced;
       const result = await this.connect();
-      if (result.status === "ok") await request(old.id, { method: "DELETE" });
-      return result;
+      if (result.status !== "ok") return result;
+      writeOldCode(storage, old.code);
+      const cleaned = await dropOldVault();
+      return cleaned ? result : { ...result, status: "oldKept" };
     },
   };
 }

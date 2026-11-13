@@ -197,3 +197,25 @@ test("liveUrl points at the vault's socket, and is null when not connected", asy
   assert.match(url, /^wss:\/\/s\.test\/v1\/vault\/[0-9a-f]{64}\/live$/);
   assert.equal(phone.engine.knownVersion(), 1);
 });
+
+test("a new code keeps an edit another device made last, and retries a failed delete", async () => {
+  const server = fakeServer();
+  let failDelete = true;
+  const phone = device(server, async (url, init) => {
+    return init.method === "DELETE" && failDelete ? new Response("{}", { status: 500 }) : server.fetchFn(url, init);
+  });
+  const laptop = device(server);
+  const connected = await phone.engine.connect();
+  await laptop.engine.join(connected.code);
+  createPersonalSetlist(laptop.storage, "Laptop edit");
+  await laptop.engine.sync(); // the phone hasn't seen this yet
+  const result = await phone.engine.newCode();
+  assert.equal(result.status, "oldKept");
+  assert.ok(names(phone).includes("Laptop edit"));
+  const newCode = phone.engine.code();
+  assert.notEqual(newCode, connected.code.replace(/-/g, ""));
+  assert.equal(Object.keys(server.vaults).length, 2); // the old one is still there
+  failDelete = false;
+  assert.equal((await phone.engine.sync()).status, "ok");
+  assert.equal(Object.keys(server.vaults).length, 1);
+});
