@@ -4,7 +4,8 @@ import { mountPage } from "../../../../tests/helpers/dom.js";
 import { makeCtx, memoryStorage } from "../../../../tests/helpers/ctx.js";
 import { fakeServer } from "../../../../tests/helpers/sync-server.js";
 import { createBand } from "./band.js";
-import { isShared, listBands, setShared, versionsOf } from "../../lib/sync/band-vault.js";
+import { bandSetlistStorage, isShared, listBands, registerBand, setShared, versionsOf } from "../../lib/sync/band-vault.js";
+import { createPersonalSetlist, listPersonalSetlists } from "../../lib/setlists/setlists-store.js";
 import { songFormPrefKey } from "../../lib/core/preferences.js";
 
 const FILE = "a.abc";
@@ -228,4 +229,15 @@ test("a failed join leaves nothing behind", async () => {
   } finally {
     setFetch(realFetch);
   }
+});
+
+test("a space left listed without its code (a failed keep) is dropped again on the next start, keeping its setlists", async () => {
+  mountPage();
+  const storage = memoryStorage();
+  registerBand(storage, "b1", "Band"); // no code: the server copy was deleted
+  createPersonalSetlist(bandSetlistStorage(storage, "b1"), "Gig");
+  const ctx = build(storage);
+  await ctx.band.init();
+  assert.equal(listBands(storage).length, 0);
+  assert.deepEqual(listPersonalSetlists(storage).map((e) => { return e.name; }), ["Gig"]);
 });

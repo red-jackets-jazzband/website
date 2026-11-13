@@ -120,7 +120,7 @@ export function createSetlistModal(ctx) {
     if (job.ticket !== generation) return;
     const storage = job.band ? bandSetlistStorage(ctx.storage(), job.band) : ctx.storage();
     const entry = copyBandSetlistToPersonal(storage, data);
-    closeModal();
+    dismiss(); // also ends any other creation still pending from this opening
     if (job.band) ctx.setlistView.openShared(job.band, entry.id);
     else ctx.setlistView.openPersonal(entry.id);
   }
