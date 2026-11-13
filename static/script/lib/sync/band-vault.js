@@ -6,7 +6,17 @@
 
    Document: { format, device, members: [{ author, name, at }],
                versions: [{ file, author, raw, at }],
-               tomb: { versions: { "<file>/<author>": at } } }
+               setlists: [setlist as in the personal vault],
+               tomb: { versions: { "<file>/<author>": at },
+                       setlists: { id: at }, rows: { "<setlist>/<row>": at } } }
+
+   Shared setlists belong to the space, not to a member: anyone in it can
+   create, edit and delete one, and they merge exactly like the personal
+   vault's (rows by id, newest edit wins; lib/sync/merge.js's mergeSetlists).
+   Each space's setlists are kept locally in the same shape as personal ones,
+   under their own keys (rj.band.<id>.setlists, with the deletion tombstones
+   and stamp clock in rj.band.<id>.meta), so the setlists store's own
+   functions edit them through bandSetlistStorage().
 
    Only an author changes their own versions — enforced by the app (the UI
    offers no edit of anyone else's), not the server: names and authorship are
@@ -20,18 +30,22 @@
    snapshot }, the engine's bookkeeping), .profile ({ author, name, at } — the
    name and author id are per band, so one band can't tell it is the same
    person as in another), .shared ({ <file>: true }: own song forms shared
-   with that band) and .doc (the last merged document — where other members'
+   with that band), .setlists/.meta (its shared setlists and their tombstones)
+   and .doc (the last merged document — where other members'
    versions are read from). An own version's `raw` is always the song form's
    own stored value (rj.songForm.<file>).
 */
 import { tl } from "../core/i18n.js";
 import { songFormPrefKey } from "../core/preferences.js";
 import { readStoredForm } from "../music/song-form.js";
+import { copyBandSetlistToPersonal, listPersonalSetlists, replacePersonalSetlists } from "../setlists/setlists-store.js";
 import { canonical } from "./engine.js";
-import { nextStamp, observeStamp, pruneTombstones, readMeta, stampAfter, writeMeta } from "./clock.js";
-import { cleanList, isId, isObject, isSongFile, stamp, text, uniqueBy } from "./validate.js";
+import { META_KEY, nextStamp, observeStamp, pruneTombstones, readMeta, stampAfter, writeMeta } from "./clock.js";
+import { maxTomb, mergeSetlists } from "./merge.js";
+import { MAX_SETLISTS, cleanList, cleanSetlist, cleanTombs, isId, isObject, isSongFile, stamp, text, uniqueBy } from "./validate.js";
 
-export const BAND_FORMAT = 1;
+export const BAND_FORMAT = 2;
+const SETLISTS_KEY = "rj.setlists.v1"; // the personal store's key, which a scoped storage redirects
 const LIST_KEY = "rj.band.list";
 export const MAX_BANDS = 8;
 const FIELDS = ["code", "oldcode", "state", "profile", "shared", "doc"];
@@ -64,7 +78,7 @@ export function versionKey(file, author) {
 }
 
 export function emptyBandDoc() {
-  return { format: BAND_FORMAT, device: "", members: [], versions: [], tomb: { versions: {} } };
+  return { format: BAND_FORMAT, device: "", members: [], versions: [], setlists: [], tomb: { versions: {}, setlists: {}, rows: {} } };
 }
 
 export function cleanName(name) {
@@ -75,7 +89,10 @@ export function cleanName(name) {
 
 export function bandKeys(id) {
   const key = (field) => { return `rj.band.${id}.${field}`; };
-  return { code: key("code"), oldCode: key("oldcode"), state: key("state"), profile: key("profile"), shared: key("shared"), doc: key("doc") };
+  return {
+    code: key("code"), oldCode: key("oldcode"), state: key("state"), profile: key("profile"), shared: key("shared"), doc: key("doc"),
+    setlists: key("setlists"), meta: key("meta"),
+  };
 }
 
 // The label a new band space starts with: "My Band", then "My Band 2", ...
@@ -245,6 +262,37 @@ export function versionsOf(storage, file) {
   return out.sort((a, b) => { return b.at - a.at; });
 }
 
+// ---- shared setlists -----------------------------------------------------
+
+// A view of `storage` in which the setlists store (and the stamp clock and
+// tombstones next to it) live under this band space's own keys, so every
+// function of setlists-store.js works on the space's setlists unchanged.
+// null when there is no storage.
+export function bandSetlistStorage(storage, id) {
+  if (!storage) return null;
+  const keys = bandKeys(id);
+  const redirects = { [SETLISTS_KEY]: keys.setlists, [META_KEY]: keys.meta };
+  const redirect = (key) => { return redirects[key] || key; };
+  return {
+    getItem: (key) => { return storage.getItem(redirect(key)); },
+    setItem: (key, value) => { storage.setItem(redirect(key), value); },
+    removeItem: (key) => { storage.removeItem(redirect(key)); },
+  };
+}
+
+// The setlists shared in band space `id`, as setlist entries.
+export function listSharedSetlists(storage, id) {
+  return storage ? listPersonalSetlists(bandSetlistStorage(storage, id)) : [];
+}
+
+// The band space (of those joined) that holds setlist `setlistId`, or null.
+export function findSharedSetlistBand(storage, setlistId) {
+  const band = connectedBands(storage).find((b) => {
+    return listSharedSetlists(storage, b.id).some((entry) => { return entry.id === setlistId; });
+  });
+  return band ? band.id : null;
+}
+
 // ---- validation ----------------------------------------------------------
 
 function cleanMember(member) {
@@ -258,8 +306,9 @@ function cleanVersion(version) {
   return { ...version, at: stamp(version.at) };
 }
 
-function cleanTombs(tomb) {
-  const out = { versions: {} };
+function cleanBandTombs(tomb) {
+  const out = { versions: {}, ...cleanTombs(tomb) };
+  delete out.forms;
   const source = isObject(tomb) && isObject(tomb.versions) ? tomb.versions : {};
   Object.keys(source).forEach((key) => {
     const slash = key.lastIndexOf("/");
@@ -287,7 +336,8 @@ export function validateBandDoc(raw) {
       device: typeof raw.device === "string" ? raw.device.slice(0, 64) : "",
       members: uniqueBy(cleanList(raw.members, MAX_MEMBERS, cleanMember), "author"),
       versions: uniqueVersions(cleanList(raw.versions, MAX_VERSIONS, cleanVersion)),
-      tomb: cleanTombs(raw.tomb),
+      setlists: uniqueBy(cleanList(raw.setlists, MAX_SETLISTS, cleanSetlist), "id"),
+      tomb: cleanBandTombs(raw.tomb),
     },
   };
 }
@@ -309,12 +359,6 @@ function mergeMembers(a, b) {
   return Object.keys(byAuthor).sort((x, y) => { return x.localeCompare(y); }).map((k) => { return byAuthor[k].member; });
 }
 
-function maxTombs(a, b) {
-  const out = { ...a };
-  Object.keys(b).forEach((key) => { out[key] = Math.max(out[key] === undefined ? -Infinity : out[key], b[key]); });
-  return out;
-}
-
 function mergeVersions(a, b, tomb) {
   const best = {};
   const take = (version, device) => {
@@ -330,9 +374,16 @@ function mergeVersions(a, b, tomb) {
   }).sort((x, y) => { return x.localeCompare(y); }).map((key) => { return best[key].version; });
 }
 
+function mergedTombs(a, b, now) {
+  const tombs = {};
+  ["versions", "setlists", "rows"].forEach((kind) => { tombs[kind] = maxTomb(a.tomb[kind] || {}, b.tomb[kind] || {}); });
+  return pruneTombstones(tombs, now === undefined ? Date.now() : now);
+}
+
 // Pure and symmetric. `now` only decides which old tombstones are dropped.
 export function mergeBandDocs(a, b, now) {
-  const tomb = pruneTombstones({ versions: maxTombs(a.tomb.versions, b.tomb.versions) }, now === undefined ? Date.now() : now);
+  const tomb = mergedTombs(a, b, now);
+  const ctx = { tomb, devA: a.device || "", devB: b.device || "" };
   return {
     ...b,
     ...a,
@@ -340,6 +391,7 @@ export function mergeBandDocs(a, b, now) {
     device: a.device,
     members: mergeMembers(a, b),
     versions: mergeVersions(a, b, tomb),
+    setlists: mergeSetlists({ setlists: a.setlists || [] }, { setlists: b.setlists || [] }, ctx),
     tomb,
   };
 }
@@ -377,7 +429,7 @@ export function buildBandDoc(storage, id, now) {
   const profile = readProfile(storage, id);
   const meta = readMeta(storage);
   const mine = ownVersions(storage, id, cached, profile.author, () => { return stampAfter(meta, clock); });
-  const tomb = { versions: { ...cached.tomb.versions } };
+  const tomb = { versions: { ...cached.tomb.versions }, setlists: {}, rows: {} };
   const keep = new Set(mine.map((v) => { return v.file; }));
   cached.versions.forEach((v) => {
     if (v.author !== profile.author || keep.has(v.file)) return;
@@ -388,7 +440,29 @@ export function buildBandDoc(storage, id, now) {
   if (profile.name) members.push({ author: profile.author, name: profile.name, at: profile.at });
   writeMeta(storage, meta);
   const versions = cached.versions.filter((v) => { return v.author !== profile.author; }).concat(mine);
-  return { format: BAND_FORMAT, device: meta.deviceId, members, versions, tomb };
+  const shared = bandSetlistStorage(storage, id);
+  const setlists = JSON.parse(JSON.stringify(listPersonalSetlists(shared)));
+  const sharedTomb = readMeta(shared).tomb;
+  tomb.setlists = { ...sharedTomb.setlists };
+  tomb.rows = { ...sharedTomb.rows };
+  return { format: BAND_FORMAT, device: meta.deviceId, members, versions, setlists, tomb };
+}
+
+// Writes the merged setlists, their tombstones and the newest stamp seen back
+// into the space's own setlist storage.
+function applySharedSetlists(storage, id, doc) {
+  const shared = bandSetlistStorage(storage, id);
+  const meta = readMeta(shared);
+  replacePersonalSetlists(shared, doc.setlists);
+  doc.setlists.forEach((entry) => {
+    [entry.metaAt, entry.orderAt, entry.updatedAt].forEach((at) => { observeStamp(meta, at); });
+    entry.songs.forEach((row) => { observeStamp(meta, row.updatedAt); });
+  });
+  meta.tomb = { setlists: doc.tomb.setlists, rows: doc.tomb.rows, forms: {} };
+  Object.keys(meta.tomb).forEach((kind) => {
+    Object.keys(meta.tomb[kind]).forEach((key) => { observeStamp(meta, meta.tomb[kind][key]); });
+  });
+  writeMeta(shared, meta);
 }
 
 // Saves the merged document as the cache and as the new snapshot.
@@ -397,14 +471,19 @@ export function applyBandDoc(storage, id, doc) {
   doc.members.forEach((m) => { observeStamp(meta, m.at); });
   doc.versions.forEach((v) => { observeStamp(meta, v.at); });
   writeMeta(storage, meta);
+  applySharedSetlists(storage, id, doc);
   const keys = bandKeys(id);
   writeJson(storage, keys.doc, doc);
   writeJson(storage, keys.state, { ...(readJson(storage, keys.state) || {}), snapshot: doc });
 }
 
+function bandContent(doc) {
+  return canonical({ members: doc.members, versions: doc.versions, setlists: doc.setlists || [], tomb: doc.tomb });
+}
+
 function sameBandContent(a, b) {
   if (!a || !b || !Array.isArray(a.members) || !Array.isArray(b.members)) return false;
-  return canonical({ members: a.members, versions: a.versions, tomb: a.tomb }) === canonical({ members: b.members, versions: b.versions, tomb: b.tomb });
+  return bandContent(a) === bandContent(b);
 }
 
 // The codec for one band space (see PERSONAL_CODEC in engine.js).
@@ -432,10 +511,12 @@ export function bandCodec(id) {
 }
 
 // Leaving a band space: forget its code and what came from it, and drop it
-// from the list; own song forms stay (they were only ever copied).
+// from the list. Own song forms stay (they were only ever copied), and so do
+// the space's setlists, as personal ones — leaving never loses a setlist.
 export function forgetBand(storage, id) {
   const keys = bandKeys(id);
-  [keys.code, keys.state, keys.doc, keys.shared, keys.profile].forEach((key) => {
+  listSharedSetlists(storage, id).forEach((entry) => { copyBandSetlistToPersonal(storage, entry); });
+  [keys.code, keys.state, keys.doc, keys.shared, keys.profile, keys.setlists, keys.meta].forEach((key) => {
     try {
       storage.removeItem(key);
     } catch (_e) {

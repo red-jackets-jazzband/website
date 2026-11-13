@@ -4,8 +4,12 @@ import { createVaultEngine } from "./engine.js";
 import { fakeServer, makeStorage } from "../../../../tests/helpers/sync-server.js";
 import {
   bandCodec, connectedBands, forgetBand, isShared, listBands, mergeBandDocs, readProfile, registerBand, renameBand, setDisplayName, setShared,
-  unshareEverywhere, validateBandDoc, versionsOf, emptyBandDoc, cleanName,
+  unshareEverywhere, validateBandDoc, versionsOf, emptyBandDoc, cleanName, bandSetlistStorage, listSharedSetlists, findSharedSetlistBand,
 } from "./band-vault.js";
+import {
+  addSongToPersonalSetlist, createPersonalSetlist, deletePersonalSetlist, listPersonalSetlists, removeSongFromPersonalSetlist,
+  renamePersonalSetlist,
+} from "../setlists/setlists-store.js";
 import { songFormPrefKey } from "../core/preferences.js";
 
 const FILE = "a.abc";
@@ -175,7 +179,88 @@ test("a downloaded document is validated: bad versions, files and names are drop
   assert.equal(checked.doc.versions.length, 1);
   assert.deepEqual(Object.keys(checked.doc.tomb.versions), ["b.abc/ok"]);
   assert.equal(checked.doc.future, "kept");
-  assert.deepEqual(validateBandDoc({ format: 2 }), { ok: false, newer: true });
+  assert.deepEqual(validateBandDoc({ format: 3 }), { ok: false, newer: true });
   assert.deepEqual(validateBandDoc("x"), { ok: false, newer: false });
   assert.equal(cleanName(" a ".repeat(40)).length <= 40, true);
+});
+
+// ---- shared setlists -------------------------------------------------------
+
+const shared = (who) => { return bandSetlistStorage(who.storage, who.id); };
+const names = (who) => { return listSharedSetlists(who.storage, who.id).map((e) => { return e.name; }); };
+
+test("a shared setlist is created in the space, reaches a bandmate and stays out of the personal list", async () => {
+  const server = fakeServer();
+  const anna = member(server, "Anna");
+  const pieter = member(server, "Pieter");
+  const list = createPersonalSetlist(shared(anna), "Gig");
+  addSongToPersonalSetlist(shared(anna), list.id, { file: "a.abc" });
+  const { code } = await anna.engine.connect();
+  assert.equal((await pieter.engine.join(code)).status, "ok");
+  assert.deepEqual(names(pieter), ["Gig"]);
+  assert.equal(listSharedSetlists(pieter.storage, pieter.id)[0].songs[0].file, "a.abc");
+  assert.equal(listPersonalSetlists(pieter.storage).length, 0);
+  assert.equal(findSharedSetlistBand(pieter.storage, list.id), pieter.id);
+  assert.equal(findSharedSetlistBand(pieter.storage, "nope"), null);
+});
+
+test("two members edit a shared setlist: rows added on both sides, a rename and a delete all merge", async () => {
+  const server = fakeServer();
+  const anna = member(server, "Anna");
+  const pieter = member(server, "Pieter");
+  const list = createPersonalSetlist(shared(anna), "Gig");
+  const { code } = await anna.engine.connect();
+  await pieter.engine.join(code);
+  addSongToPersonalSetlist(shared(anna), list.id, { file: "a.abc" });
+  addSongToPersonalSetlist(shared(pieter), list.id, { file: "b.abc" });
+  await anna.engine.sync();
+  await pieter.engine.sync();
+  await anna.engine.sync();
+  const files = (who) => { return listSharedSetlists(who.storage, who.id)[0].songs.map((r) => { return r.file; }).sort(); };
+  assert.deepEqual(files(anna), ["a.abc", "b.abc"]);
+  assert.deepEqual(files(pieter), ["a.abc", "b.abc"]);
+  renamePersonalSetlist(shared(pieter), list.id, "Saturday");
+  removeSongFromPersonalSetlist(shared(anna), list.id, 0);
+  await pieter.engine.sync();
+  await anna.engine.sync();
+  await pieter.engine.sync();
+  assert.deepEqual(names(anna), ["Saturday"]);
+  assert.equal(listSharedSetlists(pieter.storage, pieter.id)[0].songs.length, 1);
+  deletePersonalSetlist(shared(anna), list.id);
+  await anna.engine.sync();
+  await pieter.engine.sync();
+  assert.deepEqual(names(pieter), []);
+});
+
+test("shared setlists are kept per space", async () => {
+  const server = fakeServer();
+  const anna = member(server, "Anna", makeStorage(), "b1");
+  createPersonalSetlist(shared(anna), "One");
+  const second = member(server, "Anna", anna.storage, "b2");
+  createPersonalSetlist(shared(second), "Two");
+  assert.deepEqual(names(anna), ["One"]);
+  assert.deepEqual(names(second), ["Two"]);
+});
+
+test("leaving a space keeps its setlists as personal ones", () => {
+  const server = fakeServer();
+  const anna = member(server, "Anna");
+  createPersonalSetlist(shared(anna), "Gig");
+  forgetBand(anna.storage, anna.id);
+  assert.deepEqual(listSharedSetlists(anna.storage, anna.id), []);
+  assert.deepEqual(listPersonalSetlists(anna.storage).map((e) => { return e.name; }), ["Gig"]);
+});
+
+test("a downloaded document's setlists are validated like the personal vault's", () => {
+  const good = { id: "s1", name: "Gig", desc: "", songs: [{ id: "r1", file: "a.abc", updatedAt: 1 }], metaAt: 1, orderAt: 1, updatedAt: 1 };
+  const bad = { id: "s2", name: "Bad", desc: "", songs: [{ id: "r1", file: "../x.abc", updatedAt: 1 }] };
+  const checked = validateBandDoc({
+    format: 2, device: "d", members: [], versions: [], setlists: [good, bad, "x"], tomb: { setlists: { s9: 5 }, rows: { "s1/r9": 6 } },
+  });
+  assert.equal(checked.ok, true);
+  assert.deepEqual(checked.doc.setlists.map((e) => { return [e.id, e.songs.length]; }), [["s1", 1], ["s2", 0]]);
+  assert.deepEqual(checked.doc.tomb.setlists, { s9: 5 });
+  assert.deepEqual(checked.doc.tomb.rows, { "s1/r9": 6 });
+  // A format-1 document (before shared setlists) still reads.
+  assert.deepEqual(validateBandDoc({ format: 1, members: [], versions: [] }).doc.setlists, []);
 });
