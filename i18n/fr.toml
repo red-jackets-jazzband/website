@@ -474,6 +474,7 @@ js_form_add_form = "Forme du morceau"
 
 songs_syncModalTitle = "Connecter des appareils"
 songs_syncIntro = "Les mêmes setlists et versions de morceaux sur tous vos appareils. Chiffrées avant de quitter celui-ci."
+songs_syncPrivacy = "Confidentialité : vos setlists et versions de morceaux sont chiffrées de bout en bout sur votre appareil. Nous ne pouvons pas les lire et ne faisons rien d'autre de ces données."
 songs_syncConnect = "Connecter cet appareil"
 songs_syncJoinLabel = "ou saisissez un code"
 songs_syncCodeInput_placeholder = "XXXX-XXXX-XXXX-…"

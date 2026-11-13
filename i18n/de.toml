@@ -474,6 +474,7 @@ js_form_add_form = "Songform"
 
 songs_syncModalTitle = "Geräte verbinden"
 songs_syncIntro = "Dieselben Setlists und Songversionen auf all deinen Geräten. Verschlüsselt, bevor sie dieses Gerät verlassen."
+songs_syncPrivacy = "Datenschutz: Deine Setlists und Songversionen werden auf deinem Gerät Ende-zu-Ende-verschlüsselt. Wir können sie nicht lesen und machen sonst nichts mit den Daten."
 songs_syncConnect = "Dieses Gerät verbinden"
 songs_syncJoinLabel = "oder Code eingeben"
 songs_syncCodeInput_placeholder = "XXXX-XXXX-XXXX-…"

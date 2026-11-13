@@ -4158,6 +4158,13 @@ output.rj-library-print-status:not([hidden]) {
   margin: 0;
   text-align: center;
 }
+.rj-sync-modal .rj-sync-privacy {
+  margin: 14px 0 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--rj-body);
+  text-align: center;
+}
 .rj-sync-statusrow {
   display: flex;
   align-items: center;

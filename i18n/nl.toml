@@ -474,6 +474,7 @@ js_form_add_form = "Songvorm"
 
 songs_syncModalTitle = "Apparaten koppelen"
 songs_syncIntro = "Dezelfde setlists en songversies op al je apparaten. Versleuteld voordat ze dit apparaat verlaten."
+songs_syncPrivacy = "Privacy: je setlists en songversies worden op je apparaat end-to-end versleuteld. Wij kunnen ze niet lezen en doen verder niets met de gegevens."
 songs_syncConnect = "Dit apparaat koppelen"
 songs_syncJoinLabel = "of voer een code in"
 songs_syncCodeInput_placeholder = "XXXX-XXXX-XXXX-…"
