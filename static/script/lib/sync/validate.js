@@ -31,6 +31,10 @@ function isObject(value) {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
+function isId(value) {
+  return typeof value === "string" && ID.test(value);
+}
+
 function stamp(value) {
   return Number.isFinite(value) && value >= 0 ? value : 0;
 }
@@ -40,7 +44,7 @@ function text(value, max) {
 }
 
 function cleanRow(row) {
-  if (!isObject(row) || !ID.test(String(row.id))) return null;
+  if (!isObject(row) || !isId(row.id)) return null;
   const hasFile = typeof row.file === "string";
   const hasDivider = typeof row.divider === "string";
   if (hasFile === hasDivider) return null;
@@ -54,7 +58,7 @@ function cleanRow(row) {
 }
 
 function cleanSetlist(entry) {
-  if (!isObject(entry) || !ID.test(String(entry.id)) || !text(entry.name, LIMITS.name)) return null;
+  if (!isObject(entry) || !isId(entry.id) || !text(entry.name, LIMITS.name)) return null;
   if (!Array.isArray(entry.songs) || entry.songs.length > MAX_ROWS) return null;
   const desc = text(entry.desc, LIMITS.desc) && !hasInternalMarker(entry.desc) ? entry.desc : "";
   const seen = {};

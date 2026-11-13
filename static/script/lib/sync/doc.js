@@ -48,6 +48,12 @@ function byId(items) {
   return map;
 }
 
+// A tombstone older than the item it now deletes is stale (a newer edit
+// restored the item); a new deletion needs a stamp beyond the item's own.
+function recordDeletion(tombs, key, itemAt, bump) {
+  if (tombs[key] === undefined || tombs[key] < itemAt) tombs[key] = Math.max(bump(), itemAt + 1);
+}
+
 // Stamps `entry` where it differs from `old` (its snapshot) without a newer stamp.
 function detectSetlist(entry, old, meta, now, tomb) {
   const bump = () => { return stampAfter(meta, now); };
@@ -62,8 +68,7 @@ function detectSetlist(entry, old, meta, now, tomb) {
     if (was && rowContent(row) !== rowContent(was) && row.updatedAt <= was.updatedAt) row.updatedAt = bump();
   });
   gone.forEach((row) => {
-    const key = rowTombstoneKey(entry.id, row.id);
-    if (tomb.rows[key] === undefined) tomb.rows[key] = bump();
+    recordDeletion(tomb.rows, rowTombstoneKey(entry.id, row.id), row.updatedAt, bump);
   });
   entry.updatedAt = Math.max(entry.updatedAt, entry.metaAt, entry.orderAt, ...entry.songs.map((r) => { return r.updatedAt; }));
 }
@@ -75,7 +80,7 @@ function detectSetlists(setlists, snap, meta, now) {
   });
   const here = byId(setlists);
   snap.setlists.forEach((entry) => {
-    if (!here[entry.id] && meta.tomb.setlists[entry.id] === undefined) meta.tomb.setlists[entry.id] = stampAfter(meta, now);
+    if (!here[entry.id]) recordDeletion(meta.tomb.setlists, entry.id, entry.updatedAt, () => { return stampAfter(meta, now); });
   });
 }
 
@@ -85,10 +90,13 @@ function detectForms(forms, snap, meta, now) {
   forms.forEach((form) => {
     const was = old[form.file];
     if (was && was.raw !== form.raw && form.at <= was.at) form.at = stampAfter(meta, now);
+    // Recreated by an app copy that doesn't stamp, after its deletion synced.
+    const deletedAt = meta.tomb.forms[form.file];
+    if (!was && deletedAt !== undefined && form.at <= deletedAt) form.at = stampAfter(meta, now);
   });
   snap.forms.forEach((form) => {
     const still = forms.some((f) => { return f.file === form.file; });
-    if (!still && meta.tomb.forms[form.file] === undefined) meta.tomb.forms[form.file] = stampAfter(meta, now);
+    if (!still) recordDeletion(meta.tomb.forms, form.file, form.at, () => { return stampAfter(meta, now); });
   });
 }
 

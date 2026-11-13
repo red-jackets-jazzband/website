@@ -111,3 +111,17 @@ test("fields this version doesn't know are kept", () => {
   assert.equal(merged.extra, true);
   assert.deepEqual(merged.songs[0].future, { x: 1 });
 });
+
+test("row tombstones also apply when only one device has the setlist", () => {
+  const a = doc("a", [], [], { setlists: { L: 5 }, rows: { "L/r": 4 } });
+  const b = doc("b", [list("L", [row("r", 1), row("keep", 1)], { metaAt: 6, updatedAt: 6 })]);
+  assert.deepEqual(ids(mergeDocs(a, b, NOW)), ["keep"]);
+  assert.deepEqual(ids(mergeDocs(b, a, NOW)), ["keep"]);
+});
+
+test("a row keeps fields only its losing copy has", () => {
+  const a = doc("a", [list("L", [row("r", 9)])]);
+  const b = doc("b", [list("L", [row("r", 2, { future: "x" })])]);
+  assert.equal(mergeDocs(a, b, NOW).setlists[0].songs[0].future, "x");
+  assert.equal(mergeDocs(b, a, NOW).setlists[0].songs[0].future, "x");
+});
