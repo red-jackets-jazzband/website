@@ -190,6 +190,9 @@ export function createBand(ctx) {
     set("bandSetup", Boolean(band));
     set("bandBox", !band);
     set("bandNow", !band);
+    set("bandFoot", !band);
+    set("bandIntro", Boolean(band));
+    set("bandLabelField", !band);
     const codeEl = byId("bandCode");
     if (codeEl) codeEl.textContent = code ? formatCode(code) : "";
     renderQrFor(band ? band.id : null, code);
