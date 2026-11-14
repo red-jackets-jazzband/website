@@ -113,6 +113,7 @@ export function createSync(ctx) {
       else if (ctx.state.currentPersonalId) ctx.setlistView.refreshOpenPersonal();
     }
     if (ctx.songForm) ctx.songForm.refresh();
+    if (ctx.band) ctx.band.refresh(); // the spaces are in the personal document too
   }
 
   // A pushed version newer than ours: pull now.
