@@ -11,7 +11,8 @@ import {
   bandCodec, connectedBands, forgetBand, isShared, readProfile, registerBand, renameBand, setDisplayName, setShared, listSharedSetlists,
   bandSetlistStorage, versionsOf,
 } from "./band-vault.js";
-import { buildLocalDoc } from "./doc.js";
+import { applyDoc, buildLocalDoc } from "./doc.js";
+import { readMeta } from "./clock.js";
 import { mergeDocs } from "./merge.js";
 import { validateDoc } from "./validate.js";
 import { createPersonalSetlist, listPersonalSetlists } from "../setlists/setlists-store.js";
@@ -181,4 +182,37 @@ test("documents from before spaces existed merge as having none", () => {
   const merged = mergeDocs(old, validateDoc(old).doc);
   assert.deepEqual(merged.spaces, []);
   assert.deepEqual(buildLocalDoc(makeStorage()).spaces, []);
+});
+
+test("leaving and joining again before the next sync still beats another device's newer leave", async () => {
+  const server = fakeServer();
+  const { phone, laptop } = await pairDevices(server);
+  const code = await startSpace(phone, "p1", "Anna");
+  await phone.personal.sync();
+  await laptop.personal.sync();
+
+  forgetBand(laptop.storage, laptop.storage.getItem("rj.band.list") && connectedBands(laptop.storage)[0].id);
+  await laptop.personal.sync(); // the leave is uploaded
+
+  // The phone leaves and rejoins before it has seen that leave.
+  forgetBand(phone.storage, "p1");
+  phone.storage.setItem("rj.band.p2.code", code);
+  setDisplayName(phone.storage, "p2", "Anna");
+  registerBand(phone.storage, "p2", "Again");
+  await phone.personal.sync();
+  await laptop.personal.sync();
+
+  assert.equal(connectedBands(phone.storage).length, 1);
+  assert.equal(connectedBands(laptop.storage).length, 1);
+});
+
+test("received space stamps from a faster clock are observed, so a local edit is stamped above them", () => {
+  const storage = makeStorage();
+  const future = Date.now() + 10 * 24 * 60 * 60 * 1000;
+  const entry = { code: parseCode(generateCode()), label: "x", name: "n", author: "ab12", at: 1, labelAt: future + 5, addedAt: future + 3, shared: [], sharedAt: future + 9 };
+  applyDoc(storage, { format: 1, device: "d", setlists: [], forms: [], spaces: [entry], tomb: { setlists: {}, rows: {}, forms: {}, spaces: {} } });
+  assert.ok(readMeta(storage).maxStamp >= future + 9);
+  renameBand(storage, connectedBands(storage)[0].id, "Renamed");
+  const edited = buildLocalDoc(storage, Date.now()).spaces[0];
+  assert.ok(edited.labelAt > future + 9, "the rename is stamped above every received stamp");
 });

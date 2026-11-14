@@ -181,8 +181,20 @@ function addToList(storage, id, label) {
 // the personal sync (changes.js), which carries the spaces to the device's
 // other devices; the personal vault applying a download uses the quiet
 // internals instead, so it doesn't upload what it just downloaded.
+// Joining stamps the space's `addedAt` anew, so a join after a leave (before
+// the personal sync has seen the leave, so no tombstone was recorded here) is
+// still newer than any tombstone another device has uploaded since.
+function stampJoin(storage, id) {
+  const code = storedCode(storage, id);
+  if (code === null) return; // not connected yet: the next document build stamps it
+  const meta = readMeta(storage);
+  meta.spaces[code] = { ...meta.spaces[code], addedAt: stampAfter(meta, Date.now()) };
+  writeMeta(storage, meta);
+}
+
 export function registerBand(storage, id, label) {
   addToList(storage, id, label);
+  stampJoin(storage, id);
   notifyLocalChange();
 }
 
@@ -723,13 +735,16 @@ export function applyLocalSpaces(storage, spaces, meta) {
     if (band) updateSpace(storage, band, space);
     else if (listBands(storage).length < MAX_BANDS) addSpace(storage, space);
   });
+  // Every stamp received counts as seen, so a later local edit is stamped above it.
+  spaces.forEach((space) => {
+    [space.at, space.addedAt, space.labelAt, space.sharedAt].forEach((at) => { observeStamp(meta, at); });
+  });
   const stamps = {};
   readLocalSpaces(storage, { spaces: {} }).forEach((local) => {
     const entry = spaces.find((space) => { return space.code === local.code; });
     const old = meta.spaces[local.code] || {};
     const from = entry || old;
     stamps[local.code] = { addedAt: stamp(from.addedAt), labelAt: stamp(from.labelAt), sharedAt: stamp(from.sharedAt) };
-    observeStamp(meta, local.at);
   });
   meta.spaces = stamps;
   return copied;
