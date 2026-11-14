@@ -1,0 +1,536 @@
+\documentclass[10pt,twocolumn,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{textcomp}
+\usepackage[a4paper,margin=18mm,columnsep=7mm]{geometry}
+\usepackage{microtype}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{caption}
+\usepackage{tikz}
+\usepackage{natbib}
+\usepackage{xurl}
+\usepackage[hidelinks]{hyperref}
+\usepackage{titlesec}
+
+\setlist{nosep,leftmargin=1.2em}
+\captionsetup{font=small,labelfont=bf,labelsep=period}
+\titleformat{\section}{\normalfont\large\bfseries}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\normalfont\normalsize\bfseries}{\thesubsection}{0.6em}{}
+\titlespacing*{\section}{0pt}{1.4ex plus .4ex}{0.8ex}
+\titlespacing*{\subsection}{0pt}{1.1ex plus .3ex}{0.5ex}
+\setcitestyle{authoryear,round,aysep={,},citesep={;}}
+\renewcommand{\arraystretch}{1.15}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+
+% --- figure helpers -------------------------------------------------------
+\definecolor{tint}{gray}{0.92}
+\definecolor{edge}{gray}{0.55}
+\definecolor{quiet}{gray}{0.40}
+% chevron: x, width, left height, right height, fill
+\newcommand{\chev}[5]{%
+  \filldraw[fill=#5,draw=edge,line width=0.6pt]
+    ({#1},{#3/2}) -- ({#1+#2-0.28},{#4/2}) -- ({#1+#2},0) --
+    ({#1+#2-0.28},{-#4/2}) -- ({#1},{-#3/2}) -- ({#1+0.22},0) -- cycle;}
+% part box: x, width, label
+\newcommand{\partbox}[3]{%
+  \draw[edge,line width=0.5pt,rounded corners=1.5pt] ({#1},-0.22) rectangle ({#1+#2},0.22);
+  \node[font=\sffamily\footnotesize] at ({#1+#2/2},0) {#3};}
+\newcommand{\rnum}[2]{\node[font=\sffamily\footnotesize\bfseries,anchor=west] at ({#1},0) {#2};}
+\newcommand{\badge}[2]{\node[circle,draw=black,line width=0.5pt,inner sep=0.6pt,
+  font=\sffamily\scriptsize\bfseries,minimum size=3.2mm,anchor=west] at #1 {#2};}
+\newcommand{\qnote}{\tikz[baseline=-0.35ex]{\fill (0,0) ellipse (0.075 and 0.055);
+  \draw[line width=0.5pt] (0.07,0) -- (0.07,0.28);}}
+\renewcommand{\sc}[1]{{\sffamily\scriptsize\MakeUppercase{#1}}}
+\newcommand{\cb}[1]{\textcircled{\scriptsize #1}}
+
+\title{\textbf{A Glanceable Visual Notation for Jazz Performance Routines}\\[0.4ex]
+  \large One round-by-round strip for drummers, rhythm section and front line}
+\author{Ben Spoor\\\small Red Jackets Jazzband}
+\date{October 2026}
+
+\begin{document}
+
+\twocolumn[
+\begin{@twocolumnfalse}
+\maketitle
+\begin{center}
+\begin{minipage}{0.86\textwidth}
+\small
+\textbf{Abstract.}
+Jazz bands agree their routines in rehearsal: the order of choruses, who solos,
+where the band drops out or stops. Existing music encodings represent the order of
+sections but not these roles, and corpora of structural annotations record roles only
+after the fact. I propose one visual notation of the routine that every member of the
+band can read at a glance while performing, including players who may not read the
+lead sheet, such as drummers and vocalists. It is a strip of arrows, one per round,
+drawn under a tune's chord grid. Drop-outs, solo order and feel (groove and texture)
+each get a fixed place and a distinct mark, following research on
+preattentive visual features. The notation is a proposal: it has not been tested with
+players. I specify a within-subjects study to test it, and outline the coding of
+existing routines as further research.
+
+\smallskip
+\textbf{Keywords:} jazz, performance routine, head arrangement, music notation,
+information visualisation, rehearsal
+\end{minipage}
+\end{center}
+\vspace{1ex}
+\end{@twocolumnfalse}
+]
+
+\section{Introduction}
+
+A jazz performance has two layers of structure. The \emph{form} belongs to the
+composition: a 12-bar blues, a 32-bar AABA song. The \emph{routine} belongs to a
+particular band's performance: the intro, the number of choruses, who sings, who
+solos and for how long, where the band stops, how the tune ends.
+\citet[chs.~11--12]{berliner1994} describes how such arrangements are decided in
+rehearsal and filled in through shared conventions. Traditional-jazz bands commonly work from
+a lead sheet and a head arrangement, a plan the players make up and keep in memory,
+at most noted informally as a roadmap \citep[pp.~76, 95]{campbell2017}. The routine
+may be planned in advance or cued on the spot, and it is usually described in plain
+text \citep{wyndham1994}. I found no standard notation for it.
+
+An unwritten routine depends on every player remembering it, which is weakest with a
+new member, a stand-in, or a tune not played for months. A written routine helps only
+if it can be read between two phrases, while the eyes are also needed for the music.
+Sentences of remarks under a lead sheet are a poor fit, because each must be read
+word by word. The routine also matters most to the players least served by the lead
+sheet. A drummer has no melody or chords to follow, and a vocalist may sing from the
+lyrics without reading the chart, yet both need the routine.
+
+The aim is therefore a \emph{universal} notation: one strip that the drummer, the rest
+of the rhythm section and the front line all read, instead of a lead sheet for some
+and a private form chart for others. I propose a strip of arrows, one per round,
+designed for the songbook of the Red Jackets Jazzband, a traditional-jazz band. The
+paper covers the visual form only; how a routine is entered or stored is out of scope.
+
+\section{Related work}\label{sec:related}
+
+\textbf{Encodings.} Conventional notation marks the order of sections with rehearsal
+letters, repeats, endings and \emph{D.S.}, coda and \emph{Fine} jumps. Digital
+encodings carry the same information: the ABC standard lets a tune header list the
+play order of lettered parts with repeat counts \citep{walshaw2011}; MusicXML~4.0
+encodes repeats, endings and jumps, and its \texttt{time-only} type restricts an
+element to particular passes through a repeat \citep{musicxml2021}; MEI's
+\texttt{<expansion>} element lists the performed order of sections
+\citep{mei}. All represent \emph{order}. None has a concept of a soloist, an
+instrument sitting out, or a change of feel.
+
+\textbf{Annotation corpora.} SALAMI \citep{smith2011} holds over 2,400 structure
+annotations of nearly 1,400 recordings, with similarity, function and instrumentation
+in separate layers. JAAH \citep{eremenko2018} annotates meter, structure and chords
+for 113 jazz tracks. JSD \citep{balke2022} segments 340 jazz recordings into over
+3,000 segments, each listing its active instruments and marking the soloist and the
+accompaniment. The Weimar Jazz Database \citep{pfleiderer2017} annotates transcribed
+solos with chorus and form structure and per-solo metadata, including a rhythm feel.
+These corpora show that roles and feel can be annotated systematically, and JSD's
+soloist--accompaniment pairing and the per-solo rhythm feel correspond to two of the
+marks proposed here. But they are \emph{descriptive}: made after the fact,
+time-stamped to a recording, and built for computational analysis. A routine is
+\emph{prescriptive} and must be read during performance.
+
+\textbf{Practitioners' form charts.}\label{sec:drumcharts} Drummers have their own,
+informal answer: a one-page chart of the song's whole form with only a few bars of
+drum notation, outlining the sections with their length in bars (``Verse -- 8'') plus
+short cues such as a groove, a hit or an energy level
+\citep[e.g.,][]{ellis2025,bergamini2021,ficalora}. Ficalora's Drum Chart Builder app
+lets the drummer map song form, grooves and hits \citep{ficalorabuilder}, and the
+trade press offers similar guidance \citep{lentz2019}. Beyond drums, the Nashville
+number system gives the whole band a compact, section-by-section chart for players who
+do not read notation \citep{williams2012}. A blog post by \citet{hein2012} draws songs
+as colour-coded blocks along a bar timeline, a visual precedent for the strip's part
+boxes that records only section order, length and type. A web template by
+\citet{scott} is a contrast: a planning aid for the writer that says nothing about who
+plays in performance. Drum charts are personal and count bars; the strip is shared by
+the whole band and leaves bar counts to the tune's known form.
+
+\textbf{Horizontal timelines.} Time-based diagrams that place events along a
+horizontal axis are well established in other fields. A Gantt chart lays tasks out as
+bars against time; its best-known form is Gantt's planning charts from the early 1900s
+\citep{wilson2003}. WaveDrom draws digital timing
+diagrams, one row per signal, from a compact text description \citep{wavedrom}.
+Digital audio workstations use the same layout for arrangements. These place events along a
+horizontal axis, but they serve planning, hardware design and
+production, not a player on stage, and none has marks for a soloist or a drop-out.
+The strip borrows the horizontal reading direction and drops the row per signal.
+
+\textbf{Dynamics.} Dynamics are usually marked on the score ($p$, $f$, hairpins) or
+drawn as curves measured from audio. Dixon et al.\ (\citeyear{dixon2002}) plot a
+performance as a trajectory of tempo against loudness, and \citet{park2025} overlays a
+recording's amplitude on the player's own for solo practice. Hyperscore maps dynamics and
+tension to line colour and shape for composing \citep{farbood2007}. Music theorists
+analyse how pop sections build and release energy
+\citep{summach2011,nobile2022,stroud2022} and how changes of texture or groove shape
+form \citep{cobb2025}, but they work from recordings and propose no notation for
+players. I found none designed to be read by a band during performance, so dynamics stay
+a next step here.
+
+\textbf{Reading at a glance.} Feature-integration theory holds that simple visual
+features are registered early and in parallel across the visual field, while
+combinations of features require serial, focused attention \citep{treisman1980}.
+\citet{healey2012} survey how visualisation design uses such preattentive features to
+make a target found without search. For a routine, this argues for answers marked by a
+distinct shape in a fixed position rather than embedded in prose. Eye-movement
+research on music reading is much less developed than research on reading text
+\citep{madell2008}, and its methods vary widely \citep{puurtinen2018}. I am not aware
+of any study of how musicians read routine information during performance.
+
+\section{Design}\label{sec:design}
+
+The target task is a player answering \emph{``what do I do this round?''} in one
+glance. Six requirements follow: \textbf{R1} each kind of answer has a fixed position
+and a mark unlike the others \citep{treisman1980,healey2012}; \textbf{R2} each fact
+appears in one position only; \textbf{R3} marks are ones musicians already read (plus
+and minus, numbered order, repeat counts); \textbf{R4} a round
+with nothing unusual adds no marks, so unusual rounds stand out; \textbf{R5} meaning
+is carried by position, typography and signs, not colour, so a printed copy loses
+nothing; \textbf{R6} nothing requires reading pitches, chord symbols or
+instrument-specific notation.
+
+\subsection{The strip}
+
+The strip runs left to right under the chord grid, one chevron-shaped arrow per round
+(Figure~\ref{fig:extended}). Inside each arrow are the round number, one box per part
+played (A, B, Intro) and a repeat count (``4x''); an ellipsis box marks a round that
+lasts until a cue. Rounds playing the same part share a shade of grey. Under the
+arrow come the \emph{lead} (who carries the round), underlined; one
+``+\,instrument'' line for each instrument that joins; and any other remarks on a
+single line. Three further questions get their own regions: \textbf{who} plays and who
+does not (lines under the arrow), \textbf{how} the beat goes (above and below the
+arrow), and everything else (the remarks line). ``No rhythm'' answers \emph{who}, so it
+is a drop-out, not a feel.
+
+\paragraph{Drop-outs.} A ``$-$\,instrument'' line sits beside the ``+\,instrument''
+lines, a matched pair of signs (R3). Strikethrough was rejected because it reads as a
+correction. Joins and drop-outs apply to their own round only, so any arrow can be
+read without tracing the rounds before it. This mirrors JSD's per-segment pairing of
+soloist and accompaniment \citep{balke2022}, expressed as a difference from the full
+band.
+
+\paragraph{Solo order.} A solo round shows a numbered sequence under its lead, for
+example \textsf{1\,sax/tbn $\rightarrow$ 2\,tpt\,$\times$2 $\rightarrow$ 3\,tpt}. One
+solo is one pass through the round's parts, the jazz chorus
+\citep[p.~4]{vonappen2015}. A slash marks alternates
+(whichever is present), and ``each $\times$1'' fixes the length but not the players.
+The lengths sum to the repeat count in the arrow, so the plan can be checked at a
+glance.
+
+\paragraph{Feel.} In band usage ``feel'' covers two things I keep apart, each with
+its own region and scope (Table~\ref{tab:feel}). A groove usually holds for a whole
+tune and changes at most once, so it is drawn only at a change; drawing it on every
+arrow would violate R4. Stop time, breaks and similar texture events end with their
+round. Half feel and double feel are relative to the groove in force, so they count as
+texture. A texture limited to part of a round names that part (``\sc{breaks} in the
+2nd B''). Labels come from a short fixed list per axis, which can be translated on the
+page; a label outside the list is shown as written. Dynamics (soft, loud, build) are a
+third axis that I leave for next steps.
+
+\begin{table*}[t]
+\centering\small
+\caption{The two axes of feel.}\label{tab:feel}
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{4.1cm} >{\raggedright\arraybackslash}p{4.3cm} >{\raggedright\arraybackslash}p{3.0cm} Y@{}}
+\toprule
+Axis & Region and mark & Scope & Labels\\
+\midrule
+\textbf{Groove}: the rhythm section's beat pattern & above the arrow: \qnote\ and label & until changed; drawn only at a change & two-beat, four, march, second line, shuffle, straight, latin, dirge, hymn\\
+\textbf{Texture}: how much of the beat is played & foot of the round, small capitals & one round & stop time, breaks, light, vamp, pedal, half feel, double feel\\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+\begin{figure*}[t]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm,font=\sffamily\small]
+  % round 4
+  \chev{0}{3.6}{0.8}{0.8}{tint}\rnum{0.3}{4}\partbox{0.75}{0.45}{A}
+  \node[anchor=west,font=\sffamily\footnotesize,text=quiet] at (1.3,0) {no repeat};
+  \node[anchor=west] (l4) at (0.3,-0.75) {collective};
+  \draw ([xshift=2pt]l4.south west) -- ([xshift=-2pt]l4.south east);
+  \node[anchor=west,font=\sffamily\footnotesize] (d4) at (0.3,-1.2) {$-$ rhythm};
+  % round 5
+  \chev{3.8}{5.6}{0.8}{0.8}{white}\rnum{4.1}{5}\partbox{4.55}{0.45}{B}
+  \node[anchor=west,font=\sffamily\footnotesize,text=quiet] at (5.1,0) {4x};
+  \node[anchor=west] (l5) at (4.1,-0.75) {Solos};
+  \draw ([xshift=2pt]l5.south west) -- ([xshift=-2pt]l5.south east);
+  \node[anchor=west,font=\sffamily\footnotesize] (s5) at (4.1,-1.2) {1 sax/tbn $\rightarrow$ 2 tpt $\times$2 $\rightarrow$ 3 tpt};
+  \node[anchor=west,font=\sffamily\footnotesize] at (4.1,-1.6) {+ banjo};
+  \node[anchor=west] (t5) at (4.1,-2.0) {\sc{breaks}};
+  % round 6: groove change
+  \chev{9.6}{3.9}{0.8}{0.8}{tint}\rnum{9.9}{6}\partbox{10.35}{0.45}{A}
+  \draw[edge,line width=0.6pt] (9.86,0.38) -- (9.86,0.62);
+  \node[anchor=south west,font=\sffamily\small\bfseries,inner sep=1pt] (g6) at (9.75,0.62) {\qnote\ four};
+  \node[anchor=west] (l6) at (9.9,-0.75) {collective};
+  \draw ([xshift=2pt]l6.south west) -- ([xshift=-2pt]l6.south east);
+  % round 7
+  \chev{13.7}{3.3}{0.8}{0.8}{white}\rnum{14.0}{7}\partbox{14.45}{0.95}{Intro}
+  \node[anchor=west,font=\sffamily\footnotesize] at (14.0,-0.75) {+ rhythm};
+  \node[anchor=west,font=\sffamily\footnotesize,text=quiet] at (14.0,-1.2) {= outro};
+  % callouts
+  \badge{(4.85,0.5)}{1}
+  \badge{([xshift=4pt]g6.east)}{2}
+  \badge{([xshift=3pt]l5.east)}{3}
+  \badge{([xshift=3pt]s5.east)}{4}
+  \badge{([xshift=3pt]d4.east)}{5}
+  \badge{([xshift=3pt]t5.east)}{6}
+\end{tikzpicture}
+\caption{The strip for rounds 4--7 of an invented \emph{Dippermouth Blues} routine.
+Callouts (annotations, not part of the notation):
+\cb{1}~parts and repeat count;
+\cb{2}~groove, drawn only where it changes;
+\cb{3}~lead;
+\cb{4}~solo order with each soloist's length;
+\cb{5}~joins (+) and drop-outs ($-$), one round only;
+\cb{6}~texture in small capitals, one round only.}\label{fig:extended}
+\end{figure*}
+
+\subsection{One strip for every role}\label{sec:roles}
+
+The strip is universal (R6): every answer is in one of the fixed regions, so no role
+needs its own chart (Table~\ref{tab:roles}). No region belongs to one role; the
+drummer and the bass player read the same groove label, and the horns and the
+vocalist the same lead line. One gap remains for the drummer: the strip gives no bar
+counts, which drummers' own charts do.
+
+\begin{table}[t]
+\centering\small
+\caption{What each role asks of the routine, and where it finds the answer.}\label{tab:roles}
+\begin{tabularx}{\columnwidth}{@{}>{\raggedright\arraybackslash}p{1.65cm} Y >{\raggedright\arraybackslash}p{2.35cm}@{}}
+\toprule
+Role & Typical questions & Where on the strip\\
+\midrule
+Drummer & Where are we in the form? Does the beat change? Stop time or breaks? Who solos next? & part boxes, groove label, texture line, solo order\\
+Rhythm section (bass, banjo, piano) & Two-beat or four? Stop time, vamp or pedal? Do I sit out? & groove label, texture line, $-$ lines\\
+Front line (horns) & Do I lead, play or rest? When is my solo? Who joins? & lead, $+$/$-$ lines, solo order\\
+Vocalist & Which rounds are mine? Who plays behind me? & lead, $+$ lines\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Proposed evaluation}\label{sec:eval}
+
+The central claim, that the strip is read faster and more accurately than written
+remarks, needs an experiment. I specify one here; it has not been run.
+
+\paragraph{Hypotheses.}
+\textbf{H1:} questions about drop-outs, solo order and feel are answered faster with
+the strip than with the same information as written remarks. \textbf{H2:} accuracy on
+those questions is higher. \textbf{H3:} questions about part, lead and joins are
+answered no slower. \textbf{H4:} the gain holds for every role, and is at least as
+large for players who do not read the lead sheet as for those who do.
+
+\paragraph{Design and task.} A within-subjects design with two conditions: (a) remarks
+as plain text below the music; (b) the strip. Participants are members and stand-ins
+of the band, expected $n = 8$--$12$, classed in advance by role and by whether they
+read the lead sheet while playing. Routines are counterbalanced across conditions.
+Each trial shows a routine briefly (about 2\,s, to be set in a pilot) and asks one
+question drawn from Table~\ref{tab:roles}, for example ``In round 5, do you play?'' or
+``Where does the beat change?'' Response time and accuracy are analysed with mixed-effects
+models with crossed random effects for participants and routines \citep{baayen2008}.
+Over a few rehearsals before and after adoption, interruptions caused by questions
+about the routine can also be counted. Eye tracking during performance would show where
+players look, but its methods vary widely and must be fixed in advance
+\citep{puurtinen2018}. With so few participants, only large effects are detectable.
+
+\section{Discussion}
+
+\paragraph{Prescriptive versus descriptive.} The corpora in Section~\ref{sec:related}
+describe what a recording did, at the resolution of seconds. A routine states what a
+band intends, at the resolution of a round, so the strip shows no times; timing within
+a round is a short qualifier (``from the 2nd line'').
+
+\paragraph{Scope.} The distinction between a sticky groove and per-round texture
+is the part most likely to transfer to other repertoires. The label lists are
+less likely to: they were chosen for a traditional-jazz repertoire and not checked
+against other bands' usage. The strip shows the plan that cues steer, not who gives
+them; it shows one routine per tune, with alternatives left to remarks; and it gives
+no bar counts.
+
+\paragraph{Further research.} The notation should be applied to real routines. Coding
+a band's existing routines round by round against the marks would show how often each
+is needed, which remarks cannot be classified without the band's input, and whether
+the label lists suffice. I have not done this; a second coder would be needed to report
+agreement.
+
+\paragraph{Limitations.} The design is untested with players; the readability claim
+rests on perception research. The related-work review is selective, not systematic:
+``not aware of'' means only that I did not find such a study. That drummers and some
+vocalists do not read the lead sheet is an assumption, which H4 tests. Dynamics are not
+covered.
+
+\section{Conclusion}
+
+Routine information that standard encodings do not represent can be drawn in a compact
+strip: who sits out, as minus lines paired with joins; who solos and for how long, as a
+numbered sequence; and how the band plays, split into groove and texture,
+each with its own place and scope. Because none of it needs notes or chord symbols, the
+same strip can serve every role. The next steps are implementing the strip, running the
+study above, adding dynamics, and coding existing routines against it.
+
+\scriptsize
+\begin{thebibliography}{99}
+\setlength{\itemsep}{0.3ex}
+
+\bibitem[Baayen et~al.(2008)]{baayen2008}
+Baayen, R.~H., Davidson, D.~J., \& Bates, D.~M. (2008). Mixed-effects modeling with
+crossed random effects for subjects and items. \emph{Journal of Memory and Language,
+59}(4), 390--412. \url{https://doi.org/10.1016/j.jml.2007.12.005}
+
+\bibitem[Balke et~al.(2022)]{balke2022}
+Balke, S., Reck, J., Wei\ss, C., Abe\ss er, J., \& M\"uller, M. (2022). JSD: A
+dataset for structure analysis in jazz music. \emph{Transactions of the International
+Society for Music Information Retrieval, 5}(1), 156--172.
+\url{https://doi.org/10.5334/tismir.131}
+
+\bibitem[Bergamini(2021)]{bergamini2021}
+Bergamini, J. (2021). \emph{The working drummer's chart book}. Hudson Music.
+
+\bibitem[Berliner(1994)]{berliner1994}
+Berliner, P.~F. (1994). \emph{Thinking in jazz: The infinite art of improvisation}.
+University of Chicago Press. \url{https://doi.org/10.7208/9780226044521}
+
+\bibitem[Campbell(2017)]{campbell2017}
+Campbell, R. (2017). \emph{Introduction to playing early jazz: A practical guide for
+beginners of all ages} (8th electronic ed.) [Self-published ebook, PDF].
+
+\bibitem[Cobb(2025)]{cobb2025}
+Cobb, N. (2025). Switch up the groove: Idiosyncratic approaches to form and texture in
+recent popular music. \emph{Music Theory Online, 31}(2).
+\url{https://www.mtosmt.org/issues/mto.25.31.2/mto.25.31.2.cobb.php}
+
+\bibitem[Dixon et~al.(2002)]{dixon2002}
+Dixon, S., Goebl, W., \& Widmer, G. (2002). Real time tracking and visualisation of
+musical expression. In \emph{Music and artificial intelligence} (pp.~58--68). Springer.
+\url{https://doi.org/10.1007/3-540-45722-4_7}
+
+\bibitem[Ellis(2025)]{ellis2025}
+Ellis, P. (2025, August 28). \emph{How to write a drum chart}. Austin Stone.
+Retrieved October 21, 2026, from
+\url{https://austinstone.org/articles/how-to-write-a-drum-chart}
+
+\bibitem[Eremenko et~al.(2018)]{eremenko2018}
+Eremenko, V., Demirel, E., Bozkurt, B., \& Serra, X. (2018). Audio-aligned jazz
+harmony dataset for automatic chord transcription and corpus-based research. In
+\emph{Proceedings of the 19th International Society for Music Information Retrieval
+Conference} (pp.~483--490).
+\url{https://ismir2018.ismir.net/doc/pdfs/206_Paper.pdf}
+
+\bibitem[Farbood et~al.(2007)]{farbood2007}
+Farbood, M., Kaufman, H., \& Jennings, K. (2007). Composing with Hyperscore: An
+intuitive interface for visualizing musical structure. In \emph{Proceedings of the
+International Computer Music Conference}.
+
+\bibitem[Ficalora(n.d.-a)]{ficalora}
+Ficalora, L. (n.d.-a). \emph{How to write a fast \& easy drum chart}. Alfred Music.
+
+\bibitem[Ficalora(n.d.-b)]{ficalorabuilder}
+Ficalora, L. (n.d.-b). \emph{Drum Chart Builder} [Mobile app]. App Store. Retrieved
+October 21, 2026, from
+\url{https://apps.apple.com/us/app/drum-chart-builder-charts-app/id1661737322}
+
+\bibitem[Healey \& Enns(2012)]{healey2012}
+Healey, C.~G., \& Enns, J.~T. (2012). Attention and visual memory in visualization
+and computer graphics. \emph{IEEE Transactions on Visualization and Computer
+Graphics, 18}(7), 1170--1188. \url{https://doi.org/10.1109/TVCG.2011.127}
+
+\bibitem[Hein(2012)]{hein2012}
+Hein, E. (2012, July 21). Visualizing song structures [Blog post]. \emph{The Ethan
+Hein Blog}. Retrieved October 21, 2026, from
+\url{https://www.ethanhein.com/wp/2012/song-structures/}
+
+\bibitem[Lentz(2019)]{lentz2019}
+Lentz, A. (2019, December 29). How to write drum charts. \emph{DRUM! Magazine}.
+Retrieved October 21, 2026, from
+\url{https://drummagazine.com/how-to-write-drum-charts-2/}
+
+\bibitem[Madell \& H\'ebert(2008)]{madell2008}
+Madell, J., \& H\'ebert, S. (2008). Eye movements and music reading: Where do we
+look next? \emph{Music Perception, 26}(2), 157--170.
+\url{https://doi.org/10.1525/mp.2008.26.2.157}
+
+\bibitem[Music Encoding Initiative(n.d.)]{mei}
+Music Encoding Initiative. (n.d.). \emph{expansion}. In \emph{MEI guidelines}
+(Version~5). Retrieved October 21, 2026, from
+\url{https://music-encoding.org/guidelines/v5/elements/expansion.html}
+
+\bibitem[Nobile(2022)]{nobile2022}
+Nobile, D. (2022). Teleology in verse--prechorus--chorus form, 1965--2020. \emph{Music
+Theory Online, 28}(3). \url{https://doi.org/10.30535/mto.28.3.8}
+
+\bibitem[Park(2025)]{park2025}
+Park, E.~J. (2025). Music dynamics visualization for music practice and education.
+\emph{Multimedia Tools and Applications, 84}, 36145--36161.
+\url{https://doi.org/10.1007/s11042-025-20637-0}
+
+\bibitem[Pfleiderer et~al.(2017)]{pfleiderer2017}
+Pfleiderer, M., Frieler, K., Abe\ss er, J., Zaddach, W.-G., \& Burkhart, B. (Eds.).
+(2017). \emph{Inside the Jazzomat: New perspectives for jazz research}. Schott
+Campus.
+
+\bibitem[Puurtinen(2018)]{puurtinen2018}
+Puurtinen, M. (2018). Eye on music reading: A methodological review of studies from
+1994 to 2017. \emph{Journal of Eye Movement Research, 11}(2).
+\url{https://doi.org/10.16910/jemr.11.2.2}
+
+\bibitem[Scott(n.d.)]{scott}
+Scott, J. (n.d.). \emph{Song structure template} [Web tool]. Retrieved October 21,
+2026, from \url{https://joolsscott.co.uk/song-structure-template/}
+
+\bibitem[Smith et~al.(2011)]{smith2011}
+Smith, J.~B.~L., Burgoyne, J.~A., Fujinaga, I., De~Roure, D., \& Downie, J.~S.
+(2011). Design and creation of a large-scale database of structural annotations. In
+\emph{Proceedings of the 12th International Society for Music Information Retrieval
+Conference} (pp.~555--560).
+\url{https://archives.ismir.net/ismir2011/paper/000099.pdf}
+
+\bibitem[Stroud(2022)]{stroud2022}
+Stroud, C. (2022). Codetta and anthem postchorus types in Top-40 pop from 2010 to 2015.
+\emph{Music Theory Online, 28}(2). \url{https://doi.org/10.30535/mto.28.2.9}
+
+\bibitem[Summach(2011)]{summach2011}
+Summach, J. (2011). The structure, function, and genesis of the prechorus. \emph{Music
+Theory Online, 17}(3). \url{https://doi.org/10.30535/mto.17.3.2}
+
+\bibitem[Treisman \& Gelade(1980)]{treisman1980}
+Treisman, A.~M., \& Gelade, G. (1980). A feature-integration theory of attention.
+\emph{Cognitive Psychology, 12}(1), 97--136.
+\url{https://doi.org/10.1016/0010-0285(80)90005-5}
+
+\bibitem[von Appen \& Frei-Hauenschild(2015)]{vonappen2015}
+von Appen, R., \& Frei-Hauenschild, M. (2015). AABA, refrain, chorus, bridge,
+prechorus: Song forms and their historical development. \emph{Samples, 13}. Gesellschaft
+f\"ur Popularmusikforschung. \url{https://gfpm-samples.de/index.php/samples/article/view/171}
+
+\bibitem[W3C Music Notation Community Group(2021)]{musicxml2021}
+W3C Music Notation Community Group. (2021). \emph{MusicXML 4.0}.
+\url{https://www.w3.org/2021/06/musicxml40/}
+
+\bibitem[Walshaw(2011)]{walshaw2011}
+Walshaw, C. (2011). \emph{The abc music standard 2.1}.
+\url{https://abcnotation.com/wiki/abc:standard:v2.1}
+
+\bibitem[WaveDrom(n.d.)]{wavedrom}
+WaveDrom. (n.d.). \emph{WaveDrom: Digital timing diagram rendering engine} [Software].
+Retrieved October 22, 2026, from \url{https://github.com/wavedrom/wavedrom}
+
+\bibitem[Williams(2005)]{williams2012}
+Williams, C. (2005). \emph{The Nashville number system} (7th ed.). Chas Williams. ISBN 978-0-9630906-7-6.
+
+\bibitem[Wilson(2003)]{wilson2003}
+Wilson, J.~M. (2003). Gantt charts: A centenary appreciation. \emph{European Journal
+of Operational Research, 149}(2), 430--437.
+\url{https://doi.org/10.1016/S0377-2217(02)00769-5}
+
+\bibitem[Wyndham(1994)]{wyndham1994}
+Wyndham, T. (1994, August). Texas Shout \#53: Routines and roadmaps. \emph{West Coast
+Rag}. Retrieved October 22, 2026, from
+\url{https://syncopatedtimes.com/texas-shout-53-routines-and-roadmaps-for-performances/}
+
+\end{thebibliography}
+
+\end{document}
