@@ -22,7 +22,7 @@ const FORM_KEY = /^[\w.-]{1,120}$/;
 const MAX_ROWS = 500;
 export const MAX_SETLISTS = 100;
 const MAX_FORMS = 200;
-export const MAX_SPACES = 8; // lib/sync/band-vault.js MAX_BANDS
+export const MAX_SPACES = 8; // must equal band-store.js MAX_BANDS (this is the lower layer; a test checks it)
 const LIMITS = { name: 200, desc: 5000, note: 2000, divider: 200, key: 20, form: 20000 };
 
 const CONTROL = /[\u0000-\u0009\u000b-\u001f]/; // eslint-disable-line no-control-regex -- detecting internal markers is the point

@@ -1,7 +1,7 @@
 /*
    Between local storage and a sync document (docs/device-sync-plan.md, WBS
    5.1, 5.4, 4.6): `buildLocalDoc` reads setlists, own song forms, the shared
-   spaces this device is in (see band-vault.js) and the sync metadata into a
+   spaces this device is in (see band-spaces.js) and the sync metadata into a
    document (leaving out the guided tour's demo setlist, and
    stamping what an older app copy changed without stamping, found by
    comparing with the last-synced snapshot); `applyDoc` writes a merged
@@ -10,7 +10,7 @@
 */
 import { listPersonalSetlists, replacePersonalSetlists } from "../setlists/setlists-store.js";
 import { songFormPrefKey } from "../core/preferences.js";
-import { applyLocalSpaces, readLocalSpaces } from "./band-vault.js";
+import { applyLocalSpaces, readLocalSpaces } from "./band-spaces.js";
 import { notifyLocalChange } from "./changes.js";
 import { FORMAT, hasInternalMarker } from "./validate.js";
 import { observeStamp, readMeta, rowTombstoneKey, stampAfter, writeMeta } from "./clock.js";

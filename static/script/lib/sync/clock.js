@@ -9,7 +9,7 @@
      forms     { <song file>: updatedAt } for own song forms (a form's own
                storage key stays exactly what older app copies expect)
      spaces    { <space code>: { addedAt, labelAt, sharedAt } } stamps of the
-               shared spaces this device is in (lib/sync/band-vault.js)
+               shared spaces this device is in (lib/sync/band-spaces.js)
      tomb      { setlists: { id: at }, rows: { "<setlist>/<row>": at },
                  forms: { file: at }, spaces: { code: at } } — deletions,
                  pruned after 180 days
