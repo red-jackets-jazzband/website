@@ -23,57 +23,26 @@
    labels among bandmates, not a login. Everything downloaded is validated like
    any decrypted data.
 
-   A device can be in several band spaces. Each has a local id (random, never
-   sent anywhere) and a label only this device sees; rj.band.list holds
-   [{ id, label }], and every other key is scoped by that id:
-   rj.band.<id>.code / .oldcode (the vault), .state ({ version, pending,
-   snapshot }, the engine's bookkeeping), .profile ({ author, name, at } — the
-   name and author id are per band, so one band can't tell it is the same
-   person as in another), .shared ({ <file>: true }: own song forms shared
-   with that band), .setlists/.meta (its shared setlists and their tombstones)
-   and .doc (the last merged document — where other members'
-   versions are read from). An own version's `raw` is always the song form's
-   own stored value (rj.songForm.<file>).
+   Where the local keys live is band-store.js; an own version's `raw` is always
+   the song form's own stored value (rj.songForm.<file>). This file is the
+   document model, its validation and merge, and the engine codec.
 */
-import { tl } from "../core/i18n.js";
 import { songFormPrefKey } from "../core/preferences.js";
 import { readStoredForm } from "../music/song-form.js";
-import { deletePersonalSetlist, listPersonalSetlists, replacePersonalSetlists, tryCopyBandSetlistToPersonal } from "../setlists/setlists-store.js";
+import { listPersonalSetlists, replacePersonalSetlists } from "../setlists/setlists-store.js";
 import { canonical } from "./canonical.js";
-import { notifyLocalChange } from "./changes.js";
-import { parseCode } from "./crypto.js";
-import { META_KEY, nextStamp, observeStamp, pruneTombstones, readMeta, stampAfter, writeMeta } from "./clock.js";
+import { observeStamp, pruneTombstones, readMeta, stampAfter, writeMeta } from "./clock.js";
 import { maxTomb, mergeSetlists } from "./merge.js";
 import { MAX_SETLISTS, cleanList, cleanSetlist, cleanTombs, isId, isObject, isSongFile, stamp, text, uniqueBy } from "./validate.js";
+import { bandKeys, bandSetlistStorage, cleanName, connectedBands, readJson, readProfile, sharedFiles, writeJson } from "./band-store.js";
 
 export const BAND_FORMAT = 2;
-const SETLISTS_KEY = "rj.setlists.v1"; // the personal store's key, which a scoped storage redirects
-const LIST_KEY = "rj.band.list";
-export const MAX_BANDS = 8;
-const FIELDS = ["code", "oldcode", "state", "profile", "shared", "doc"];
+
 const MAX_MEMBERS = 60;
+
 const MAX_VERSIONS = 400;
-const NAME_MAX = 40;
+
 const FORM_MAX = 20000;
-
-const CONTROL_ALL = /[\u0000-\u001f\u007f]/g; // eslint-disable-line no-control-regex -- stripping control bytes from a display name
-
-function readJson(storage, key) {
-  try {
-    const value = JSON.parse(storage.getItem(key));
-    return isObject(value) ? value : null;
-  } catch {
-    return null;
-  }
-}
-
-function writeJson(storage, key, value) {
-  try {
-    storage.setItem(key, JSON.stringify(value));
-  } catch (_e) {
-    // storage unavailable or full — the band space just won't survive a reload.
-  }
-}
 
 export function versionKey(file, author) {
   return `${file}/${author}`;
@@ -81,190 +50,6 @@ export function versionKey(file, author) {
 
 export function emptyBandDoc() {
   return { format: BAND_FORMAT, device: "", members: [], versions: [], setlists: [], tomb: { versions: {}, setlists: {}, rows: {} } };
-}
-
-export function cleanName(name) {
-  return String(name === undefined || name === null ? "" : name).replace(CONTROL_ALL, "").replace(/\s+/g, " ").trim().slice(0, NAME_MAX);
-}
-
-// ---- the list of band spaces ---------------------------------------------
-
-export function bandKeys(id) {
-  const key = (field) => { return `rj.band.${id}.${field}`; };
-  return {
-    code: key("code"), oldCode: key("oldcode"), state: key("state"), profile: key("profile"), shared: key("shared"), doc: key("doc"),
-    setlists: key("setlists"), meta: key("meta"), copied: key("copied"),
-  };
-}
-
-// The label a new band space starts with: "My Band", then "My Band 2", ...
-export function defaultBandLabel(n) {
-  return n === 1 ? tl("band_default_first", "My Band") : tl("band_default_label", "My Band {n}", { n });
-}
-
-function randomHex(bytes) {
-  const buffer = new Uint8Array(bytes);
-  crypto.getRandomValues(buffer);
-  return Array.from(buffer, (b) => { return b.toString(16).padStart(2, "0"); }).join("");
-}
-
-// A fresh local id for a band space about to be started or joined.
-export function newBandId() {
-  return randomHex(4);
-}
-
-function readList(storage) {
-  try {
-    const list = JSON.parse(storage.getItem(LIST_KEY));
-    if (!Array.isArray(list)) return null;
-    return list.filter((band) => { return isObject(band) && isId(band.id); }).map((band) => {
-      return { id: band.id, label: cleanName(band.label) };
-    }).slice(0, MAX_BANDS);
-  } catch {
-    return null;
-  }
-}
-
-function writeList(storage, list) {
-  try {
-    storage.setItem(LIST_KEY, JSON.stringify(list));
-  } catch (_e) {
-    // storage unavailable or full — the list just won't survive a reload.
-  }
-}
-
-const legacyKey = (field) => { return `rj.band.${field}`; };
-
-function hasLegacy(storage) {
-  try {
-    return FIELDS.some((field) => { return storage.getItem(legacyKey(field)) !== null; });
-  } catch {
-    return false;
-  }
-}
-
-function moveLegacyField(storage, field, to) {
-  try {
-    const value = storage.getItem(legacyKey(field));
-    if (value !== null) storage.setItem(to, value);
-    storage.removeItem(legacyKey(field));
-  } catch (_e) {
-    // storage unavailable — nothing to move.
-  }
-}
-
-// An earlier build held one band space under rj.band.<field>: move it under an id.
-function migrateLegacy(storage) {
-  if (!hasLegacy(storage)) return [];
-  const id = newBandId();
-  const keys = bandKeys(id);
-  const target = { code: keys.code, oldcode: keys.oldCode, state: keys.state, profile: keys.profile, shared: keys.shared, doc: keys.doc };
-  FIELDS.forEach((field) => { moveLegacyField(storage, field, target[field]); });
-  const list = [{ id, label: defaultBandLabel(1) }];
-  writeList(storage, list);
-  return list;
-}
-
-// [{ id, label }] in joining order.
-export function listBands(storage) {
-  if (!storage) return [];
-  return readList(storage) || migrateLegacy(storage);
-}
-
-function addToList(storage, id, label) {
-  const list = listBands(storage).filter((band) => { return band.id !== id; });
-  list.push({ id, label: cleanName(label) || defaultBandLabel(list.length + 1) });
-  writeList(storage, list);
-}
-
-// The local-edit functions below (register, rename, name, share, forget) tell
-// the personal sync (changes.js), which carries the spaces to the device's
-// other devices; the personal vault applying a download uses the quiet
-// internals instead, so it doesn't upload what it just downloaded.
-// Joining stamps the space's `addedAt` anew, so a join after a leave (before
-// the personal sync has seen the leave, so no tombstone was recorded here) is
-// still newer than any tombstone another device has uploaded since.
-function stampJoin(storage, id) {
-  const code = storedCode(storage, id);
-  if (code === null) return; // not connected yet: the next document build stamps it
-  const meta = readMeta(storage);
-  meta.spaces[code] = { ...meta.spaces[code], addedAt: stampAfter(meta, Date.now()) };
-  writeMeta(storage, meta);
-}
-
-export function registerBand(storage, id, label) {
-  addToList(storage, id, label);
-  stampJoin(storage, id);
-  notifyLocalChange();
-}
-
-function relabel(storage, id, name) {
-  writeList(storage, listBands(storage).map((band) => { return band.id === id ? { id, label: name } : band; }));
-}
-
-export function renameBand(storage, id, label) {
-  const name = cleanName(label);
-  if (!name) return;
-  relabel(storage, id, name);
-  notifyLocalChange();
-}
-
-export function bandConnected(storage, id) {
-  try {
-    return Boolean(storage) && Boolean(storage.getItem(bandKeys(id).code));
-  } catch {
-    return false;
-  }
-}
-
-// The band spaces this device is currently in.
-export function connectedBands(storage) {
-  return listBands(storage).filter((band) => { return bandConnected(storage, band.id); });
-}
-
-// ---- local profile, shares, cached document ------------------------------
-
-// { author, name, at }; the author id is made on first use.
-export function readProfile(storage, id) {
-  const stored = readJson(storage, bandKeys(id).profile) || {};
-  const profile = {
-    author: isId(stored.author) ? stored.author : randomHex(8),
-    name: cleanName(stored.name),
-    at: stamp(stored.at),
-  };
-  if (stored.author !== profile.author) writeJson(storage, bandKeys(id).profile, profile);
-  return profile;
-}
-
-export function setDisplayName(storage, id, name, now) {
-  const profile = readProfile(storage, id);
-  profile.name = cleanName(name);
-  profile.at = nextStamp(storage, now);
-  writeJson(storage, bandKeys(id).profile, profile);
-  notifyLocalChange();
-  return profile;
-}
-
-export function sharedFiles(storage, id) {
-  const stored = readJson(storage, bandKeys(id).shared) || {};
-  return Object.keys(stored).filter((file) => { return stored[file] === true && isSongFile(file); });
-}
-
-export function isShared(storage, id, file) {
-  return sharedFiles(storage, id).includes(file);
-}
-
-export function setShared(storage, id, file, on) {
-  const stored = readJson(storage, bandKeys(id).shared) || {};
-  if (on) stored[file] = true;
-  else delete stored[file];
-  writeJson(storage, bandKeys(id).shared, stored);
-  notifyLocalChange();
-}
-
-// A song form that no longer exists can't stay shared with any band.
-export function unshareEverywhere(storage, file) {
-  listBands(storage).forEach((band) => { if (isShared(storage, band.id, file)) setShared(storage, band.id, file, false); });
 }
 
 export function readBandDoc(storage, id) {
@@ -291,39 +76,6 @@ export function versionsOf(storage, file) {
   connectedBands(storage).forEach((band) => { out.push(...versionsIn(storage, band, file)); });
   return out.sort((a, b) => { return b.at - a.at; });
 }
-
-// ---- shared setlists -----------------------------------------------------
-
-// A view of `storage` in which the setlists store (and the stamp clock and
-// tombstones next to it) live under this band space's own keys, so every
-// function of setlists-store.js works on the space's setlists unchanged.
-// null when there is no storage.
-export function bandSetlistStorage(storage, id) {
-  if (!storage) return null;
-  const keys = bandKeys(id);
-  const redirects = { [SETLISTS_KEY]: keys.setlists, [META_KEY]: keys.meta };
-  const redirect = (key) => { return redirects[key] || key; };
-  return {
-    getItem: (key) => { return storage.getItem(redirect(key)); },
-    setItem: (key, value) => { storage.setItem(redirect(key), value); },
-    removeItem: (key) => { storage.removeItem(redirect(key)); },
-  };
-}
-
-// The setlists shared in band space `id`, as setlist entries.
-export function listSharedSetlists(storage, id) {
-  return storage ? listPersonalSetlists(bandSetlistStorage(storage, id)) : [];
-}
-
-// The band space (of those joined) that holds setlist `setlistId`, or null.
-export function findSharedSetlistBand(storage, setlistId) {
-  const band = connectedBands(storage).find((b) => {
-    return listSharedSetlists(storage, b.id).some((entry) => { return entry.id === setlistId; });
-  });
-  return band ? band.id : null;
-}
-
-// ---- validation ----------------------------------------------------------
 
 function cleanMember(member) {
   if (!isObject(member) || !isId(member.author)) return null;
@@ -377,8 +129,6 @@ export function validateBandDoc(raw) {
   };
 }
 
-// ---- merge ---------------------------------------------------------------
-
 function firstWins(stampA, deviceA, stampB, deviceB) {
   return stampA !== stampB ? stampA > stampB : deviceA >= deviceB;
 }
@@ -430,8 +180,6 @@ export function mergeBandDocs(a, b, now) {
     tomb,
   };
 }
-
-// ---- local ↔ document ----------------------------------------------------
 
 function ownFormRaw(storage, file) {
   try {
@@ -544,208 +292,4 @@ export function bandCodec(id) {
       writeJson(storage, keys.state, state);
     },
   };
-}
-
-// Copies a space's setlists into personal ones. Each copy made is noted in the
-// space's own `copied` key, so a retry after a failure skips it instead of
-// duplicating it (that note can fail to save too when storage is full, so the
-// copies made in this attempt are also removed again, best effort).
-// What makes two setlists "the same" for that purpose: name, text and songs.
-function setlistShape(entry) {
-  return canonical([entry.name, entry.desc || "", entry.songs.map((row) => {
-    return [row.file || "", row.divider === undefined ? "" : row.divider, row.key || "", row.note || ""];
-  })]);
-}
-
-// A copy identical to a personal setlist already here is skipped: when a
-// device leaves a space its copies sync to the others, which leave it too.
-function copySetlistsToPersonal(storage, id) {
-  const key = bandKeys(id).copied;
-  const done = new Set(readJsonArray(storage, key));
-  const have = new Set(listPersonalSetlists(storage).map(setlistShape));
-  const made = [];
-  for (const entry of listSharedSetlists(storage, id)) {
-    if (have.has(setlistShape(entry))) {
-      done.add(entry.id);
-    } else if (!done.has(entry.id)) {
-      const copy = tryCopyBandSetlistToPersonal(storage, entry);
-      if (copy === null) {
-        made.forEach((item) => { deletePersonalSetlist(storage, item.id); done.delete(item.from); });
-        writeJsonArray(storage, key, [...done]);
-        return false;
-      }
-      made.push({ id: copy.id, from: entry.id });
-      done.add(entry.id);
-      writeJsonArray(storage, key, [...done]);
-    }
-  }
-  return true;
-}
-
-function readJsonArray(storage, key) {
-  try {
-    const value = JSON.parse(storage.getItem(key));
-    return Array.isArray(value) ? value : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeJsonArray(storage, key, list) {
-  try {
-    storage.setItem(key, JSON.stringify(list));
-  } catch (_e) {
-    // storage full — a retry may duplicate a copy rather than lose one.
-  }
-}
-
-// Leaving a band space: forget its code and what came from it, and drop it
-// from the list. Own song forms stay (they were only ever copied), and so do
-// the space's setlists, as personal ones — leaving never loses a setlist. If a
-// copy can't be saved (storage full) nothing is removed and this returns
-// false, so the setlists are still in the space. `keepSetlists: false` is for
-// a join that failed halfway: what it downloaded is dropped, not promoted.
-function dropBand(storage, id, { keepSetlists = true } = {}) {
-  const keys = bandKeys(id);
-  if (keepSetlists && !copySetlistsToPersonal(storage, id)) return false;
-  [keys.code, keys.state, keys.doc, keys.shared, keys.profile, keys.setlists, keys.meta, keys.copied].forEach((key) => {
-    try {
-      storage.removeItem(key);
-    } catch (_e) {
-      // storage unavailable — nothing to forget.
-    }
-  });
-  const list = readList(storage);
-  if (list) writeList(storage, list.filter((band) => { return band.id !== id; }));
-  return true;
-}
-
-export function forgetBand(storage, id, options) {
-  const done = dropBand(storage, id, options);
-  if (done) notifyLocalChange();
-  return done;
-}
-
-// ---- the personal vault carries the spaces -------------------------------
-
-// A device's spaces ride in its personal sync document, so a device that joins
-// that vault ends up in the same spaces — same code, same label, same name
-// and author id (so one person is one member, not one per device) and the same
-// song forms shared. One entry per space, keyed by its code:
-//   { code, label, labelAt, name, author, at, shared: [files], sharedAt, addedAt }
-// `at` is the profile's own stamp; the other stamps live in rj.sync.meta
-// (meta.spaces[code]) and lib/sync/doc.js sets them by comparing with the last
-// synced snapshot, as it does for song forms.
-
-function storedCode(storage, id) {
-  try {
-    return parseCode(storage.getItem(bandKeys(id).code));
-  } catch {
-    return null;
-  }
-}
-
-const sortedFiles = (storage, id) => {
-  return sharedFiles(storage, id).sort((a, b) => { return a.localeCompare(b); });
-};
-
-// The spaces this device is in, as document entries (stamps from `meta`).
-export function readLocalSpaces(storage, meta) {
-  const out = [];
-  connectedBands(storage).forEach((band) => {
-    const code = storedCode(storage, band.id);
-    if (code === null) return;
-    const profile = readProfile(storage, band.id);
-    const stamps = meta.spaces[code] || {};
-    out.push({
-      code,
-      label: band.label,
-      labelAt: stamp(stamps.labelAt),
-      name: profile.name,
-      author: profile.author,
-      at: profile.at,
-      shared: sortedFiles(storage, band.id),
-      sharedAt: stamp(stamps.sharedAt),
-      addedAt: stamp(stamps.addedAt),
-    });
-  });
-  return out;
-}
-
-function sameList(a, b) {
-  return a.length === b.length && a.every((item, i) => { return item === b[i]; });
-}
-
-// Brings a space this device already has up to the merged entry.
-function updateSpace(storage, band, space) {
-  if (space.label && band.label !== space.label) relabel(storage, band.id, cleanName(space.label));
-  const profile = readProfile(storage, band.id);
-  if (profile.author !== space.author || profile.name !== cleanName(space.name) || profile.at !== space.at) {
-    writeJson(storage, bandKeys(band.id).profile, { author: space.author, name: cleanName(space.name), at: space.at });
-  }
-  if (!sameList(sortedFiles(storage, band.id), space.shared)) {
-    const map = {};
-    space.shared.forEach((file) => { map[file] = true; });
-    writeJson(storage, bandKeys(band.id).shared, map);
-  }
-}
-
-// Joins, on this device, a space another device is in. The code is written
-// here and the space's own first sync (band.js) does the rest, as for a join;
-// one that has since been deleted is found gone then and drops out again.
-function addSpace(storage, space) {
-  const id = newBandId();
-  const keys = bandKeys(id);
-  const shared = {};
-  space.shared.forEach((file) => { shared[file] = true; });
-  writeJson(storage, keys.profile, { author: space.author, name: cleanName(space.name), at: space.at });
-  writeJson(storage, keys.shared, shared);
-  try {
-    storage.setItem(keys.code, space.code);
-  } catch {
-    return;
-  }
-  addToList(storage, id, space.label);
-}
-
-// Writes the merged `spaces` into this device: spaces gone from the list
-// (left on another device) are left here too, keeping their setlists as
-// personal ones; new ones are joined (up to MAX_BANDS); the rest follow the
-// entry. Returns whether setlists were copied out of a space (the caller then
-// has local changes to upload). meta.spaces gets the stamps of the entries now
-// present, so the snapshot taken next sees exactly what is here.
-export function applyLocalSpaces(storage, spaces, meta) {
-  const want = new Set(spaces.map((space) => { return space.code; }));
-  const here = new Map();
-  connectedBands(storage).forEach((band) => {
-    const code = storedCode(storage, band.id);
-    if (code !== null) here.set(code, band);
-  });
-  let copied = false;
-  here.forEach((band, code) => {
-    if (want.has(code)) return;
-    const had = listSharedSetlists(storage, band.id).length > 0;
-    if (dropBand(storage, band.id)) {
-      here.delete(code);
-      copied = copied || had;
-    }
-  });
-  spaces.forEach((space) => {
-    const band = here.get(space.code);
-    if (band) updateSpace(storage, band, space);
-    else if (listBands(storage).length < MAX_BANDS) addSpace(storage, space);
-  });
-  // Every stamp received counts as seen, so a later local edit is stamped above it.
-  spaces.forEach((space) => {
-    [space.at, space.addedAt, space.labelAt, space.sharedAt].forEach((at) => { observeStamp(meta, at); });
-  });
-  const stamps = {};
-  readLocalSpaces(storage, { spaces: {} }).forEach((local) => {
-    const entry = spaces.find((space) => { return space.code === local.code; });
-    const old = meta.spaces[local.code] || {};
-    const from = entry || old;
-    stamps[local.code] = { addedAt: stamp(from.addedAt), labelAt: stamp(from.labelAt), sharedAt: stamp(from.sharedAt) };
-  });
-  meta.spaces = stamps;
-  return copied;
 }

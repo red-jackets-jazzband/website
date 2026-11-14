@@ -1,6 +1,6 @@
 /*
    JSON with sorted keys, so two documents compare by content, not key order.
-   Its own module (not engine.js) so band-vault.js and doc.js can use it
+   Its own module (not engine.js) so band-store.js, band-vault.js and doc.js can use it
    without importing the engine, which imports them.
 */
 export function canonical(value) {

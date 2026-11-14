@@ -4095,10 +4095,11 @@ dialog.rj-sync-modal {
 #syncPanelDevices[hidden] {
   display: none;
 }
+/* Spacing in this dialog is margins, never flex `gap` (Safari 14.1+: the old iPad would run it all together). */
 .rj-sync-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  margin-top: 10px;
+}
+.rj-sync-field + .rj-sync-field {
   margin-top: 10px;
 }
 .rj-sync-field[hidden] {
@@ -4124,7 +4125,7 @@ dialog.rj-sync-modal {
 /* Equal tiles on one row, whether three or four are shown. */
 .rj-sync-share {
   display: flex;
-  gap: 8px;
+  margin: 0 -4px;
 }
 .rj-sync-share .rj-modal-btn {
   flex: 1 1 0;
@@ -4134,7 +4135,7 @@ dialog.rj-sync-modal {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
+  margin: 0 4px;
   font-size: 10.5px;
   white-space: nowrap;
 }
@@ -4142,11 +4143,14 @@ dialog.rj-sync-modal {
   display: none;
 }
 .rj-sync-share .rj-modal-btn [class^="fa-"] {
+  margin-bottom: 3px;
   font-size: 15px;
 }
 .rj-sync-band .rj-sync-section {
-  gap: 10px;
   margin-top: 12px;
+}
+.rj-sync-band .rj-sync-section > * + * {
+  margin-top: 10px;
 }
 .rj-sync-band .rj-sync-pair {
   width: 160px;
@@ -4190,7 +4194,8 @@ dialog.rj-sync-modal {
 .rj-sync-band-status {
   margin-top: 12px;
 }
-.rj-sync-band-status:has(.rj-sync-status:empty):not(:has(.rj-modal-btn:not([hidden]))) {
+/* Hidden by updateStatusRow (songs/sync/dialog-parts.js) while it has nothing to say. */
+.rj-sync-band-status[hidden] {
   display: none;
 }
 .rj-sync-foot {
@@ -4213,8 +4218,10 @@ dialog.rj-sync-modal {
 .rj-sync-section {
   display: flex;
   flex-direction: column;
-  gap: 14px;
   margin-top: 16px;
+}
+.rj-sync-section > * + * {
+  margin-top: 14px;
 }
 .rj-sync-section[hidden] {
   display: none;
@@ -4229,7 +4236,6 @@ dialog.rj-sync-modal {
 .rj-sync-or {
   display: flex;
   align-items: center;
-  gap: 10px;
   margin-top: 6px;
   color: rgba(230,228,224,.45);
   font: 700 10px "Montserrat", sans-serif;
@@ -4243,17 +4249,30 @@ dialog.rj-sync-modal {
   height: 1px;
   background: rgba(255,255,255,.1);
 }
+/* The divider's own 6px used to add to the section's flex gap (14, or 10 in the shared tab). */
+.rj-sync-section > .rj-sync-or {
+  margin-top: 20px;
+}
+.rj-sync-band .rj-sync-section > .rj-sync-or {
+  margin-top: 16px;
+}
+.rj-sync-or::before {
+  margin-right: 10px;
+}
+.rj-sync-or::after {
+  margin-left: 10px;
+}
 .rj-sync-or label {
   flex: none;
 }
 .rj-sync-join {
   display: flex;
-  gap: 8px;
 }
 .rj-sync-join .rj-modal-input {
   flex: 1;
   min-width: 0;
   height: 36px;
+  margin-right: 8px;
 }
 .rj-sync-pair {
   overflow: hidden;
@@ -4301,6 +4320,13 @@ dialog.rj-sync-modal {
   margin: 0;
   text-align: center;
 }
+/* ...and the hint text keeps the section's spacing above it that the reset above would take away. */
+.rj-sync-modal .rj-sync-section > .rj-sync-hint {
+  margin-top: 14px;
+}
+.rj-sync-modal .rj-sync-band .rj-sync-section > .rj-sync-hint {
+  margin-top: 10px;
+}
 .rj-sync-modal .rj-sync-privacy {
   margin: 14px 0 0;
   font-size: 11px;
@@ -4312,16 +4338,26 @@ dialog.rj-sync-modal {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
 }
 .rj-sync-statusrow .rj-modal-btn {
   flex: none;
+}
+/* The personal tab's row is also a .rj-sync-section (stacked): its gap was 12, not the section's 14. */
+.rj-sync-statusrow.rj-sync-section > * + * {
+  margin-top: 12px;
+}
+/* The Sync now button sits beside the status line, unless the row is also a stacked .rj-sync-section. */
+.rj-sync-statusrow:not(.rj-sync-section) > .rj-modal-btn {
+  margin-left: 12px;
 }
 .rj-sync-links {
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 6px 18px;
+  margin: -3px -9px;
+}
+.rj-sync-links > .rj-sync-link {
+  margin: 3px 9px;
 }
 .rj-sync-status {
   flex: 1;
@@ -4466,8 +4502,10 @@ select.rj-modal-input {
 .rj-modal-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
   margin-top: 20px;
+}
+.rj-modal-actions > .rj-modal-btn {
+  margin-left: 8px;
 }
 .rj-modal-btn {
   height: 36px;

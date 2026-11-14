@@ -2,15 +2,14 @@ import { byId, clear, el, on } from "../../lib/core/dom.js";
 import { hashWithoutSync, syncCodeFromHash } from "../../lib/core/song-hash.js";
 import { tl } from "../../lib/core/i18n.js";
 import { createVaultEngine } from "../../lib/sync/engine.js";
-import {
-  MAX_BANDS, bandCodec, cleanName, connectedBands, defaultBandLabel, forgetBand, listBands, newBandId, readProfile, registerBand, renameBand, setDisplayName,
-} from "../../lib/sync/band-vault.js";
+import { MAX_BANDS, cleanName, connectedBands, defaultBandLabel, forgetBand, listBands, newBandId, readProfile, registerBand, renameBand, setDisplayName } from "../../lib/sync/band-store.js";
+import { bandCodec } from "../../lib/sync/band-vault.js";
 import { formatCode, parseCode } from "../../lib/sync/crypto.js";
 import { onLocalChange } from "../../lib/sync/changes.js";
 import { pairingUrl } from "../../lib/sync/qr.js";
 import { afterPageLoad } from "../core/after-load.js";
 import { fallbackCopy, flashShareBtn } from "../inspiration/share.js";
-import { clockTime, renderQr, statusText } from "./sync.js";
+import { clockTime, renderQr, statusText, updateStatusRow } from "./dialog-parts.js";
 
 /*
   Band spaces (docs/device-sync-plan.md, phase 2): optional vaults, each with
@@ -218,6 +217,7 @@ export function createBand(ctx) {
     renderBand(band);
     const status = byId("bandStatus");
     if (status) status.textContent = bandStatusText(resultFor(band ? band.id : null));
+    updateStatusRow("bandStatusRow", "bandStatus", "bandNow");
     renderFields(band);
   }
 

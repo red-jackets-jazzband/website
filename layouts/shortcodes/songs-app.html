@@ -317,7 +317,7 @@
       <p class="rj-install-note rj-sync-hint">{{ i18n "songs_syncCodeHint" }}</p>
     </div>
     {{/* The status sits outside the connected-only box, so a failed connect or join (no code yet) still shows. */}}
-    <div class="rj-sync-section rj-sync-statusrow rj-sync-band-status">
+    <div id="syncStatusRow" class="rj-sync-section rj-sync-statusrow rj-sync-band-status">
       <p id="syncStatus" class="rj-sync-status" role="status" aria-live="polite"></p> {{/* NOSONAR: <output> is styled inline by default */}}
       <button type="button" id="syncNow" class="rj-modal-btn rj-modal-btn-primary" hidden>{{ i18n "songs_syncNow" }}</button>
     </div>
@@ -364,7 +364,7 @@
         </div>
         <p class="rj-install-note rj-sync-hint">{{ i18n "songs_bandCodeHint" }}</p>
       </div>
-      <div class="rj-sync-statusrow rj-sync-band-status">
+      <div id="bandStatusRow" class="rj-sync-statusrow rj-sync-band-status">
         <p id="bandStatus" class="rj-sync-status" role="status" aria-live="polite"></p> {{/* NOSONAR: <output> is styled inline by default */}}
         <button type="button" id="bandNow" class="rj-modal-btn rj-modal-btn-primary" hidden>{{ i18n "songs_syncNow" }}</button>
       </div>

@@ -1,20 +1,18 @@
 /*
    The shared spaces a device is in travel in its personal sync document, so
-   the device's other devices join them too (lib/sync/band-vault.js, doc.js).
+   the device's other devices join them too (lib/sync/band-spaces.js, doc.js).
 */
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createSyncEngine, createVaultEngine } from "./engine.js";
 import { generateCode, parseCode } from "./crypto.js";
 import { fakeServer, makeStorage } from "../../../../tests/helpers/sync-server.js";
-import {
-  bandCodec, connectedBands, forgetBand, isShared, readProfile, registerBand, renameBand, setDisplayName, setShared, listSharedSetlists,
-  bandSetlistStorage, versionsOf,
-} from "./band-vault.js";
+import { MAX_BANDS, connectedBands, forgetBand, isShared, readProfile, registerBand, renameBand, setDisplayName, setShared, listSharedSetlists, bandSetlistStorage } from "./band-store.js";
+import { bandCodec, versionsOf } from "./band-vault.js";
 import { applyDoc, buildLocalDoc } from "./doc.js";
 import { readMeta } from "./clock.js";
 import { mergeDocs } from "./merge.js";
-import { validateDoc } from "./validate.js";
+import { MAX_SPACES, validateDoc } from "./validate.js";
 import { createPersonalSetlist, listPersonalSetlists } from "../setlists/setlists-store.js";
 import { songFormPrefKey } from "../core/preferences.js";
 
@@ -215,4 +213,8 @@ test("received space stamps from a faster clock are observed, so a local edit is
   renameBand(storage, connectedBands(storage)[0].id, "Renamed");
   const edited = buildLocalDoc(storage, Date.now()).spaces[0];
   assert.ok(edited.labelAt > future + 9, "the rename is stamped above every received stamp");
+});
+
+test("validate.js's space cap is the band store's (the lower layer can't import it)", () => {
+  assert.equal(MAX_SPACES, MAX_BANDS);
 });
