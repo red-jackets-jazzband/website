@@ -112,6 +112,21 @@ test("buildRenderPlan: chords, chord table and no comping by default", () => {
   assert.equal(plan.song.metaText.title, "Test");
 });
 
+test("buildRenderPlan: the visitor's patches change what is drawn, never abcText", () => {
+  const patches = [{
+    id: "p1", songFile: "t.abc", note: 0, action: "pitch", value: "D", createdAt: 0,
+  }];
+  const plan = buildRenderPlan(CHORD_TUNE, effectiveSheetSettings(SETTINGS, { patches }), { parse });
+  assert.equal(plan.abcText, CHORD_TUNE);
+  assert.ok(plan.sourceText.includes('"C" D8'));
+  assert.equal(plan.comping.renderText, plan.sourceText);
+});
+
+test("effectiveSheetSettings: patches apply to a booklet too", () => {
+  const patches = [{ id: "p1" }];
+  assert.deepEqual(effectiveSheetSettings(SETTINGS, { booklet: true, patches }).patches, patches);
+});
+
 test("buildRenderPlan: a comping pattern adds the comping staff", () => {
   const plan = withTonal(() => buildRenderPlan(
     CHORD_TUNE, effectiveSheetSettings({ ...SETTINGS, comping: "charleston" }), { parse },

@@ -25,6 +25,7 @@ import {
   DEFAULT_PROGRAM, injectMixerAudio, percentToMidiVolume, resolveGchordPattern,
 } from "../audio/audio-mix.js";
 import { annotateLayers } from "./layers.js";
+import { applyPatchesToAbc } from "../edit/apply-patches.js";
 import { defaultVoiceProgram } from "../audio/gm-voices.js";
 
 const ROMAN_INSTRUMENT = "concert_+_roman";
@@ -41,9 +42,10 @@ const ROMAN_INSTRUMENT = "concert_+_roman";
   layers slice's activeLayers) are live-sheet only as well: a booklet prints
   the plain chart.
 */
-export function effectiveSheetSettings(settings, { booklet = false, layers = {} } = {}) {
+export function effectiveSheetSettings(settings, { booklet = false, layers = {}, patches = [] } = {}) {
   const live = !booklet;
   return {
+    patches,
     layers: booklet ? {} : layers,
     instrument: settings.instrument,
     transpose: booklet ? 0 : settings.transpose,
@@ -110,6 +112,10 @@ function keywarnOffWhenTransposed(text, visual) {
   return `${clean.slice(0, at)}${KEYWARN_OFF}\n${clean.slice(at)}`;
 }
 
+function withPatches(abcText, patches) {
+  return patches && patches.length > 0 ? applyPatchesToAbc(abcText, patches) : abcText;
+}
+
 /*
   The tune in concert pitch with its chord scheme as printed bar by bar —
   including a second ending's own bars, unlike the chord table's scheme, or a
@@ -125,6 +131,8 @@ export function concertMaterial(abcText, parse) {
   Everything a render of `text` draws, given effectiveSheetSettings():
 
     abcText         the clef-adjusted tune (what rerender() re-engraves)
+    sourceText      the same with the visitor's patches applied (what is
+                    parsed and drawn)
     visualTranspose / audioTranspose   see resolveTranspose
     song            the parsed tune at its visual transposition
     chords          its chord scheme; displayChords is what the chord
@@ -144,21 +152,28 @@ export function concertMaterial(abcText, parse) {
                     part order as one table
 */
 export function buildRenderPlan(text, settings, { parse, extraTransposeSteps = 0 }) {
-  const { abcText, visual, audio } = resolveTranspose(
+  const resolved = resolveTranspose(
     text, settings.instrument, settings.transpose + extraTransposeSteps,
   );
-  const song = parse(abcText, visual);
+  const { visual, audio } = resolved;
+  // The visitor's own patches (lib/edit/apply-patches.js) go in after the
+  // clef rewrite, before anything is parsed — and only into `sourceText`:
+  // `abcText` stays the unpatched tune, since rerender() feeds it back in
+  // and a patch would otherwise be applied twice.
+  const { abcText } = resolved;
+  const sourceText = withPatches(abcText, settings.patches);
+  const song = parse(sourceText, visual);
   const chords = parseChordScheme(song);
   const displayChords = settings.instrument === ROMAN_INSTRUMENT ? convertChordsToRoman(chords) : chords;
   const hasChords = chords.length > 0;
   const needsConcert = hasChords
     && (settings.comping !== "off" || settings.solo !== "off" || (settings.practice || "off") !== "off");
-  const concert = needsConcert ? concertMaterial(abcText, parse) : null;
+  const concert = needsConcert ? concertMaterial(sourceText, parse) : null;
 
   // The active layers' annotations go into the text that gets engraved —
   // never into abcText itself, which rerender() re-reads and the comping /
   // solo generators parse.
-  const layered = annotateLayers(abcText, song, {
+  const layered = annotateLayers(sourceText, song, {
     active: settings.layers, instrument: settings.instrument, ownVoices: hasInstrumentVoices(text),
   });
 
@@ -174,12 +189,13 @@ export function buildRenderPlan(text, settings, { parse, extraTransposeSteps = 0
     }
   }
 
-  const { tables } = extractWordsTables(abcText);
-  const orderRows = extractPartOrderRows(abcText);
+  const { tables } = extractWordsTables(sourceText);
+  const orderRows = extractPartOrderRows(sourceText);
   const wordsTables = tables.length === 0 && orderRows ? [{ header: null, rows: orderRows }] : tables;
 
   return {
     abcText,
+    sourceText,
     visualTranspose: visual,
     audioTranspose: audio,
     song,

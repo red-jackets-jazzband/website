@@ -12,6 +12,7 @@ async function isolate(context) {
 
 // Console/page errors that are the aborted third-party requests above.
 const SONGS_URL = "/songs/";
+const NOTATION_SVG = "#notation svg";
 const SONG_ITEM = ".song-list-item";
 const IGNORED_ERROR = /Failed to load resource|net::ERR|ERR_FAILED|status of 40|blocked/i;
 
@@ -63,7 +64,7 @@ test("a song link's file is requested once, from the page head, and opens", asyn
     if (req.url().endsWith("/songs/bill_bailey.abc")) reads.push(req.url());
   });
   await page.goto(`${SONGS_URL}#s=bill_bailey`);
-  await expect(page.locator("#notation svg").first()).toBeVisible();
+  await expect(page.locator(NOTATION_SVG).first()).toBeVisible();
   await expect(page.locator("#songtitle")).toContainText(/bill bailey/i);
   expect(reads).toHaveLength(1);
 });
@@ -75,7 +76,7 @@ test("picking a song renders its title, chord grid and notation", async ({ page 
   await page.locator(SONG_ITEM).first().click();
 
   await expect(page.locator("#songtitle")).toContainText(/bourbon/i);
-  await expect(page.locator("#notation svg").first()).toBeVisible();
+  await expect(page.locator(NOTATION_SVG).first()).toBeVisible();
   await expect(page.locator("#chordtable")).not.toBeEmpty();
   expect(errors).toEqual([]);
 });
@@ -102,7 +103,7 @@ test("the Mixer <dialog> is hidden until its button is clicked, then toggles", a
   await page.goto(SONGS_URL);
   await page.locator("#songSearch").fill("Bourbon Street");
   await page.locator(SONG_ITEM).first().click();
-  await expect(page.locator("#notation svg").first()).toBeVisible();
+  await expect(page.locator(NOTATION_SVG).first()).toBeVisible();
 
   const panel = page.locator("#mixerPanel");
   await expect(panel).toBeHidden();
@@ -118,7 +119,7 @@ test("the Mixer <dialog> is hidden until its button is clicked, then toggles", a
 test("the Layers panel opens from its tab and draws fingerings and progression bands", async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto(`${SONGS_URL}#s=basin_street`);
-  await expect(page.locator("#notation svg").first()).toBeVisible();
+  await expect(page.locator(NOTATION_SVG).first()).toBeVisible();
   await page.locator("#instrument").selectOption("trumpet");
 
   const panel = page.locator("#layersPanel");
@@ -251,4 +252,24 @@ test("a worker upgrade drops the old shell cache but keeps downloaded soundfonts
   // entry count isn't asserted — WebKit's test storage didn't keep the
   // page-seeded entry across the reload, which says nothing about the worker.
   expect(names).toContain("rj-songs-soundfont-v1");
+});
+
+test("edit mode: a practice note and a pitch patch survive on the sheet", async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto(`${SONGS_URL}#s=basin_street`);
+  await expect(page.locator(NOTATION_SVG).first()).toBeVisible();
+  await page.locator("#editModeBtn").click();
+  await expect(page.locator("#rjSheet")).toHaveClass(/rj-edit-mode/);
+  // The notehead itself: a note group's centre can fall between its glyphs.
+  const firstNote = page.locator("#notation g.abcjs-note.abcjs-v0 path.abcjs-notehead").first();
+  await firstNote.click();
+  await page.locator(".rj-edit-popover-action", { hasText: "Add a note here" }).click();
+  await page.locator(".rj-edit-popover-textarea").fill("watch the break");
+  await page.locator(".rj-edit-popover-btn-primary").click();
+  await expect(page.locator("#notation .rj-practice-note-bubble")).toHaveCount(1);
+  await firstNote.click();
+  await page.locator(".rj-edit-popover-action", { hasText: "Pitch ▲" }).click();
+  await expect(page.locator("#notation .rj-patched-note")).toHaveCount(1);
+  await expect(page.locator("#notation .rj-practice-note-bubble")).toHaveCount(1);
+  expect(errors).toEqual([]);
 });

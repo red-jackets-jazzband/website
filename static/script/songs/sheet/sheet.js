@@ -18,6 +18,7 @@ import { updateIrealProLink } from "./irealpro-link.js";
 import { layerSteps } from "../layers/overlays.js";
 import { RENDER, isBackgroundWrite, isMixOnlyWrite, isRenderWrite } from "../core/state.js";
 import { tl } from "../../lib/core/i18n.js";
+import { listPatches } from "../../lib/edit/patches-store.js";
 
 const LIVE_TARGETS = { notationId: "notation", chordId: "chordtable", titleId: "songtitle" };
 
@@ -380,7 +381,10 @@ export function createSheet(ctx) {
   function prepareLive(text, fresh) {
     const settingsState = ctx.store.get("settings");
     updateInstrumentFooter(settingsState.instrument);
-    const settings = effectiveSheetSettings(settingsState, { layers: ctx.store.get("layers").activeLayers });
+    const settings = effectiveSheetSettings(settingsState, {
+      layers: ctx.store.get("layers").activeLayers,
+      patches: listPatches(ctx.storage(), ctx.state.currentSongFile),
+    });
     const plan = buildRenderPlan(text, settings, { parse: parseTune });
 
     // Like comping, a solo needs chords to play over.
@@ -593,16 +597,20 @@ export function createSheet(ctx) {
       });
     },
     renderIntoBooklet(text, targets, { deferEngrave = false } = {}) {
-      const { titlePrefix = "", extraTransposeSteps = 0, ...ids } = targets;
-      const settings = effectiveSheetSettings(ctx.store.get("settings"), { booklet: true });
+      const {
+        titlePrefix = "", extraTransposeSteps = 0, songFile, ...ids
+      } = targets;
+      const settings = effectiveSheetSettings(ctx.store.get("settings"), {
+        booklet: true, patches: listPatches(ctx.storage(), songFile),
+      });
       const plan = buildRenderPlan(text, settings, { parse: parseTune, extraTransposeSteps });
       if (!deferEngrave) {
-        paint(plan, plan.abcText, ids, { titlePrefix });
+        paint(plan, plan.sourceText, ids, { titlePrefix });
         return { title: plan.song.metaText.title, engrave: () => {} };
       }
       const notationEl = byId(ids.notationId);
       paintChordsAndTitle(plan, ids, titlePrefix);
-      return { title: plan.song.metaText.title, engrave: () => engraveNotation(plan, plan.abcText, notationEl, []) };
+      return { title: plan.song.metaText.title, engrave: () => engraveNotation(plan, plan.sourceText, notationEl, []) };
     },
   };
 }

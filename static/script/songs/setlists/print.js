@@ -1,4 +1,5 @@
 import { byId, el, clear } from "../../lib/core/dom.js";
+import { listPatches } from "../../lib/edit/patches-store.js";
 import { walkSetlist } from "../../lib/setlists/setlist-walk.js";
 import { splitIndexIntoColumns } from "../../lib/setlists/setlist-index-columns.js";
 import { extractKeyFromAbc, setlistTransposeSteps, formatSetlistKeyLabel } from "../../lib/music/music-theory.js";
@@ -386,7 +387,10 @@ export function createSetlistPrint(ctx) {
 
   function songCacheKey(entry, occurrence) {
     const key = entry.item.key === undefined || entry.item.key === null ? "" : entry.item.key;
-    return `${entry.item.file}|${key}|${instrument()}|${occurrence}`;
+    // The song's own patches are part of what was drawn: one made while the
+    // setlist stays open must not be served from an older block.
+    const patches = listPatches(ctx.storage(), entry.item.file).map((p) => p.id).join(",");
+    return `${entry.item.file}|${key}|${instrument()}|${occurrence}|${patches}`;
   }
 
   // Draw one song into its (attached) block from its .abc text and remember it.
@@ -398,6 +402,7 @@ export function createSetlistPrint(ctx) {
       titleId: `setlistPrintTitle-${n}`,
       titlePrefix: `${entry.displayNumber}. `,
       extraTransposeSteps: setlistTransposeSteps(entry.item.key, extractKeyFromAbc(text)),
+      songFile: entry.item.file,
     }, { deferEngrave: true });
     const record = {
       parts,

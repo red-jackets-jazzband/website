@@ -1,24 +1,9 @@
 import { parseSetlistFile, serializeSetlistFile, isSetlistDivider } from "./setlist-format.js";
+import { safeGetItem, parseStoredList, generateStoreId } from "../core/json-storage.js";
 import { notifyLocalChange } from "../sync/changes.js";
 import { addTombstone, nextStamp, rowTombstoneKey } from "../sync/clock.js";
 
 const STORAGE_KEY = "rj.setlists.v1";
-
-function safeGetItem(storage, key) {
-  try {
-    return storage.getItem(key);
-  } catch {
-    return null;
-  }
-}
-
-function parseStoredList(raw) {
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
-}
 
 // Sync bookkeeping (docs/device-sync-plan.md, WBS 4): every setlist carries
 // `metaAt` (name/desc), `orderAt` (which rows, in what order) and `updatedAt`
@@ -81,17 +66,7 @@ function writeStorage(storage, list, silent) {
   return saved;
 }
 
-function generateId() {
-  // Not crypto.randomUUID() — Safari 15.4+ only (see CLAUDE.md's Browser
-  // support section), and this codebase's floor is Safari 12. Nothing here
-  // needs cryptographic randomness, just a locally-unique id for a personal
-  // setlist stored in this one browser's localStorage — timestamp plus a
-  // random suffix is plenty.
-  // Not a security context — sonarjs flags Math.random() as a
-  // pseudo-random-number hotspot regardless of use.
-  // eslint-disable-next-line sonarjs/pseudo-random
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
-}
+const generateId = generateStoreId;
 
 function findEntry(list, id) {
   return list.find((entry) => {

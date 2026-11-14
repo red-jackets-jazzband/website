@@ -15,6 +15,9 @@ import { createFullscreen } from "../sheet/fullscreen.js";
 import { createSongHistory } from "../sheet/history.js";
 import { createSongForm } from "../sheet/song-form.js";
 import { createSwipeNav } from "../sheet/swipe-nav.js";
+import { createSheetEditMode } from "../edit/edit-mode.js";
+import { createPracticeNotes } from "../edit/practice-notes.js";
+import { createNotePatches } from "../edit/note-patches.js";
 import { createInspiration } from "../inspiration/inspiration.js";
 import { createLibraryTab } from "../library/library-tab.js";
 import { createSetlistData } from "../setlists/data.js";
@@ -122,6 +125,11 @@ export const FEATURES = [
   { name: "swipeNav", create: createSwipeNav, init: (ctx) => ctx.swipeNav.init() },
   { name: "fullscreen", create: createFullscreen, init: (ctx) => ctx.fullscreen.init() },
   { name: "history", create: createSongHistory, init: (ctx) => ctx.history.init() },
+  // Edit mode: its popover host first, then the two contributors that offer
+  // their actions in it.
+  { name: "editMode", create: createSheetEditMode, init: (ctx) => ctx.editMode.init() },
+  { name: "practiceNotes", create: createPracticeNotes, init: (ctx) => ctx.practiceNotes.init() },
+  { name: "notePatches", create: createNotePatches, init: (ctx) => ctx.notePatches.init() },
   { name: "layers", create: createLayersPanel, init: (ctx) => ctx.layers.init() },
   { name: "library", create: createLibraryTab },
   { name: "setlistData", create: createSetlistData },
