@@ -1,0 +1,29 @@
+{
+  "@context": "https://openvex.dev/ns/v0.2.0",
+  "@id": "https://github.com/red-jackets-jazzband/website/blob/master/vex/openvex.json",
+  "author": "Red Jackets Jazzband website maintainers",
+  "timestamp": "2026-11-17T20:37:01Z",
+  "version": 1,
+  "statements": [
+    {
+      "vulnerability": {
+        "@id": "https://nvd.nist.gov/vuln/detail/CVE-2026-112366",
+        "name": "CVE-2026-112366",
+        "description": "Picomatch through 4.0.7: ReDoS via single-branch repeated extglob patterns such as +(*) or +(*a), which block the Node.js event loop.",
+        "aliases": ["GHSA-fc5q-39xc-vjpf"]
+      },
+      "products": [
+        {
+          "@id": "pkg:github/red-jackets-jazzband/website",
+          "subcomponents": [
+            { "@id": "pkg:npm/picomatch@4.0.7" },
+            { "@id": "pkg:npm/picomatch@2.3.2" }
+          ]
+        }
+      ],
+      "status": "not_affected",
+      "justification": "vulnerable_code_cannot_be_controlled_by_adversary",
+      "impact_statement": "picomatch is only installed as a transitive devDependency of ESLint, typescript-eslint, Stylelint and tinyglobby, which match the glob patterns in this repository's own lint configuration and scripts. No glob pattern is ever supplied by an outside party, and picomatch is not part of the Hugo build output, the /songs/ page bundle, the service worker or the sync Worker (which has no npm dependencies). The worst case is a stalled local or CI lint run. No patched release exists yet (4.0.7 is the latest); remove this statement once one is installed."
+    }
+  ]
+}
