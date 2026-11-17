@@ -65,6 +65,20 @@ test("filterSongsByQuery forgives typos, word order, punctuation and accents, be
   assert.deepEqual(filterSongsByQuery(songs, "xyz"), []);
 });
 
+test("filterSongsByQuery keeps an apostrophe word whole and matches nothing for an unsearchable query", () => {
+  const songs = [
+    { name: "It's Wonderful", file: "its_wonderful.abc" },
+    { name: "All of me", file: "all_of_me.abc" },
+  ];
+  assert.deepEqual(filterSongsByQuery(songs, "its wonderful"), [songs[0]]);
+  assert.deepEqual(filterSongsByQuery(songs, "wonderful its"), [songs[0]]);
+  assert.deepEqual(filterSongsByQuery(songs, "wonderful it\u2019s"), [songs[0]]);
+  assert.deepEqual(filterSongsByQuery(songs, "東京"), []);
+  assert.deepEqual(filterSongsByQuery(songs, "!!!"), []);
+  assert.deepEqual(filterSongsByQuery(songs, "   "), songs);
+  assert.deepEqual(filterSongsByQuery(songs, undefined), songs);
+});
+
 test("songTitleSlug returns the .abc basename", () => {
   assert.equal(songTitleSlug({ file: "auld_lang_syne.abc" }), "auld_lang_syne");
   assert.equal(songTitleSlug({ file: "" }), "");
