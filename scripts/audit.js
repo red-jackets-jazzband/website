@@ -15,11 +15,6 @@ import { spawnSync } from "node:child_process";
 
 const ACCEPTED_ADVISORIES = new Map([
   [
-    "GHSA-vfj7-8cjw-p6xm",
-    "braces ReDoS-style stack exhaustion; dev tooling only (stylelint globbing our own " +
-      "repo files), nothing from it ships to the site, and no patched braces release exists yet",
-  ],
-  [
     "GHSA-fc5q-39xc-vjpf",
     "picomatch ReDoS through repeated extglobs; dev tooling only (eslint/stylelint/tinyglobby " +
       "matching our own repo's file globs), nothing from it ships to the site, and no patched " +
