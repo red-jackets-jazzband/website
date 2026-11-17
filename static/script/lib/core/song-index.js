@@ -27,11 +27,13 @@ export function groupSongsByLetter(songs) {
 }
 
 // Lower-case, accent-free, punctuation-free form of a title or query
-// ("Ain't my fault" → "ain t my fault"), so apostrophes, hyphens and accents
-// never stand between a visitor and a match.
+// ("Ain't my fault" → "aint my fault"), so apostrophes, hyphens and accents
+// never stand between a visitor and a match. An apostrophe inside a word is
+// dropped, not turned into a space, so "It's" stays the one word "its".
 export function normalizeSearch(text) {
   return (text || "")
     .toLowerCase()
+    .replace(/['\u2019]/g, "")
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "")
     .replace(/[^a-z0-9]+/g, " ")
@@ -89,10 +91,11 @@ function matchRank(name, q, qCompact, tokens) {
 // Fuzzy match on the song name: case, accents and punctuation don't matter,
 // words may come in any order or be half-typed, and a small typo is
 // forgiven. Exact matches come first. An empty/blank query returns every song
-// unchanged.
+// unchanged; a query with text but nothing searchable in it ("東京", "!!!")
+// matches nothing, like any other query that finds no song.
 export function filterSongsByQuery(songs, query) {
   const q = normalizeSearch(query);
-  if (!q) return songs;
+  if (!q) return (query || "").trim() ? [] : songs;
   const qCompact = q.split(" ").join("");
   const tokens = q.split(" ");
   const ranked = [];
