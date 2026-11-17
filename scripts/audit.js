@@ -19,6 +19,12 @@ const ACCEPTED_ADVISORIES = new Map([
     "braces ReDoS-style stack exhaustion; dev tooling only (stylelint globbing our own " +
       "repo files), nothing from it ships to the site, and no patched braces release exists yet",
   ],
+  [
+    "GHSA-fc5q-39xc-vjpf",
+    "picomatch ReDoS through repeated extglobs; dev tooling only (eslint/stylelint/tinyglobby " +
+      "matching our own repo's file globs), nothing from it ships to the site, and no patched " +
+      "picomatch release exists yet (4.0.7 is the latest and still affected)",
+  ],
 ]);
 
 const BLOCKING = new Set(["high", "critical"]);
