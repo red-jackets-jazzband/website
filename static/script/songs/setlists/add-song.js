@@ -57,6 +57,8 @@ export function createAddSongTray(ctx, { refresh, onInsert }) {
   let addSongActiveIndex = -1; // keyboard-highlighted add-song result, -1 = none
   let focusAfterRender = false;
   let insertAt = null; // item index the next added song lands at; null = end of list
+  let browseOpen = false; // the scrollable A-Z picker under the field
+  let browseScroll = 0; // its scrollTop, carried over each re-render
 
   // Top matches for an add-song query (empty query -> no matches).
   function addSongMatches(query) {
@@ -79,6 +81,55 @@ export function createAddSongTray(ctx, { refresh, onInsert }) {
     focusAfterRender = true;
     refresh();
     return true;
+  }
+
+  // Every song in the library, ordered by name, as one scrollable list: for
+  // adding a song whose title you don't know to type. Stays open after a pick
+  // so a run of songs goes in without reopening it.
+  function sortedSongs() {
+    return ctx.state.allSongs.slice().sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  function renderBrowse() {
+    const listEl = byId("setlistAddSongBrowse");
+    const btn = byId("setlistAddSongBrowseBtn");
+    if (!listEl || !btn) return;
+    clear(listEl);
+    listEl.hidden = !browseOpen;
+    btn.setAttribute("aria-expanded", browseOpen ? "true" : "false");
+    btn.classList.toggle("active", browseOpen);
+    if (!browseOpen) return;
+    sortedSongs().forEach((song) => {
+      listEl.append(el("button", {
+        type: "button",
+        class: "rj-library-add-song-result rj-library-add-song-pick",
+        html: '<span class="fa-solid fa-plus" aria-hidden="true"></span>',
+        on: {
+          click: () => {
+            browseScroll = listEl.scrollTop;
+            addSongByFile(song.file);
+          },
+        },
+      }, el("span", { class: "rj-library-add-song-result-name", text: song.name })));
+    });
+    listEl.scrollTop = browseScroll;
+  }
+
+  function toggleBrowse() {
+    if (browseOpen) {
+      browseOpen = false;
+      renderBrowse();
+      return;
+    }
+    ctx.setlistData.ensureSongsLoaded(() => {
+      browseOpen = true;
+      browseScroll = 0;
+      addSongQuery = "";
+      const search = byId("setlistAddSongSearch");
+      if (search) search.value = "";
+      renderAddSongResults("");
+      renderBrowse();
+    }, showAddSongError);
   }
 
   // Paint the keyboard highlight on the active result and scroll it into view.
@@ -160,6 +211,10 @@ export function createAddSongTray(ctx, { refresh, onInsert }) {
       on: {
         input: (e) => {
           addSongQuery = e.target.value.trim();
+          if (addSongQuery && browseOpen) {
+            browseOpen = false;
+            renderBrowse();
+          }
           ctx.setlistData.ensureSongsLoaded(
             () => renderAddSongResults(addSongQuery), showAddSongError,
           );
@@ -185,15 +240,36 @@ export function createAddSongTray(ctx, { refresh, onInsert }) {
     inputWrap.append(el("kbd", {
       class: "rj-search-hint", text: "/", attrs: { "aria-hidden": "true" },
     }));
+    const browseLabel = tl("add_song_browse", "Browse all songs");
+    inputWrap.append(el("button", {
+      type: "button",
+      id: "setlistAddSongBrowseBtn",
+      class: "rj-library-add-song-browse-btn",
+      html: '<span class="fa-solid fa-list" aria-hidden="true"></span>',
+      attrs: {
+        title: browseLabel,
+        "aria-label": browseLabel,
+        "aria-expanded": "false",
+        "aria-controls": "setlistAddSongBrowse",
+      },
+      on: { click: toggleBrowse },
+    }));
 
     const results = el("div", {
       id: "setlistAddSongResults",
       class: "rj-library-add-song-results",
     });
 
-    return el("div", { class: "rj-library-add-song rj-library-add-song-inline" }, [
-      el("div", { class: "rj-library-add-song-field" }, [inputWrap, results]),
+    const browse = el("div", {
+      id: "setlistAddSongBrowse",
+      class: "rj-library-add-song-browse",
+      hidden: true,
+    });
+
+    const row = el("div", { class: "rj-library-add-song rj-library-add-song-inline" }, [
+      el("div", { class: "rj-library-add-song-field" }, [inputWrap, results, browse]),
     ]);
+    return row;
   }
 
   // The "New set" button that closes the list, after every set box.
@@ -218,8 +294,15 @@ export function createAddSongTray(ctx, { refresh, onInsert }) {
   // After a re-render: put focus (and the query in progress) back in the
   // search field, when the change came from the tray or emptied the list.
   function restoreFocus() {
+    if (browseOpen) renderBrowse(); // the tray was rebuilt: draw the open picker again
     if (!focusAfterRender) return;
     focusAfterRender = false;
+    if (browseOpen) {
+      // No keyboard popping up over the list on a phone: focus the toggle.
+      const btn = byId("setlistAddSongBrowseBtn");
+      if (btn) btn.focus();
+      return;
+    }
     const addSearch = byId("setlistAddSongSearch");
     if (!addSearch) return;
     addSearch.value = addSongQuery;
@@ -239,7 +322,7 @@ export function createAddSongTray(ctx, { refresh, onInsert }) {
     // Focus the search field after the next re-render.
     focusAfterRender: () => { focusAfterRender = true; },
     // A band setlist has no tray: forget any query in progress.
-    reset: () => { addSongQuery = ""; insertAt = null; },
+    reset: () => { addSongQuery = ""; insertAt = null; browseOpen = false; },
     // Aim the next added song at item index `index` (the end of one set): the
     // re-render moves the search field into that set and focuses it.
     targetEnd: (index) => {

@@ -4620,7 +4620,7 @@ select.rj-modal-input {
 }
 /* "/" hint badge, hidden once the field is focused or has text */
 .rj-library-add-song-inputwrap .rj-search-hint {
-  right: 10px;
+  right: 40px;
 }
 .rj-library-add-song-inputwrap input:focus ~ .rj-search-hint,
 .rj-library-add-song-inputwrap input:not(:placeholder-shown) ~ .rj-search-hint {
@@ -4678,6 +4678,45 @@ select.rj-modal-input {
 .rj-library-add-song-result:hover > .fa-plus,
 .rj-library-add-song-result.is-active > .fa-plus {
   color: var(--rj-gold);
+}
+/* The "browse all songs" icon at the field's right edge, and the A-Z list it
+   opens: one scrollable box under the field. Margins, not flex gap (Safari 12). */
+.rj-library-add-song-inputwrap input[type="search"] {
+  padding-right: 72px;
+}
+.rj-library-add-song-browse-btn {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 36px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 0 7px 7px 0;
+  font-size: 12px;
+  color: rgba(230,228,224,.5);
+  cursor: pointer;
+}
+.rj-library-add-song-browse-btn:hover,
+.rj-library-add-song-browse-btn:focus-visible,
+.rj-library-add-song-browse-btn.active {
+  color: var(--rj-gold);
+}
+.rj-library-add-song-browse {
+  margin-top: 4px;
+  max-height: 260px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.rj-library-add-song-browse[hidden] {
+  display: none;
+}
+.rj-library-add-song-browse > .rj-library-add-song-pick {
+  width: 100%;
+  margin-bottom: 4px;
 }
 .rj-library-add-song-empty {
   padding: 4px 0 0 34px;

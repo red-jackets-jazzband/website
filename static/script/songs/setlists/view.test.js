@@ -1164,3 +1164,33 @@ test("openShared renders a space's setlist and edits it in that space, not in th
     page.cleanup();
   }
 });
+
+test("the browse icon opens every song ordered by name, and a pick adds it", () => {
+  const result = setup({ songs: [{ file: "a.abc" }] });
+  const { view, ctx, entry, storage, cleanup } = result;
+  try {
+    ctx.state.allSongs = [
+      { file: "z.abc", name: "Zonk" },
+      { file: "m.abc", name: "Muskrat Ramble" },
+      { file: "b.abc", name: "Basin Street" },
+    ];
+    view.renderOpen(entry.name, entry.songs, entry, "");
+    const btn = document.getElementById("setlistAddSongBrowseBtn");
+    btn.dispatchEvent(new window.Event("click"));
+
+    const names = [...document.querySelectorAll(".rj-library-add-song-pick")]
+      .map((n) => n.textContent.trim());
+    assert.deepEqual(names, ["Basin Street", "Muskrat Ramble", "Zonk"]);
+    assert.equal(btn.getAttribute("aria-expanded"), "true");
+
+    document.querySelectorAll(".rj-library-add-song-pick")[1].dispatchEvent(new window.Event("click"));
+    assert.deepEqual(
+      getPersonalSetlist(storage, entry.id).songs.map((s) => s.file),
+      ["a.abc", "m.abc"],
+    );
+    // still open for the next pick
+    assert.equal(document.querySelectorAll(".rj-library-add-song-pick").length, 3);
+  } finally {
+    cleanup();
+  }
+});
