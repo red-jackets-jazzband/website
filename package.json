@@ -39,7 +39,7 @@
     "jscpd": "^5.4.3",
     "jsdom": "^31.0.1",
     "stylelint": "^17.16.0",
-    "stylelint-config-recommended": "^18.0.0",
+    "stylelint-config-recommended": "^19.0.0",
     "subset-font": "2.9.0",
     "typescript": "6.0.3",
     "typescript-eslint": "^8.72.2"
