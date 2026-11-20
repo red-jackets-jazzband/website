@@ -26,11 +26,11 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@fortawesome/fontawesome-free": "7.3.1",
-    "@playwright/test": "1.65.0",
+    "@playwright/test": "1.65.1",
     "@stylistic/eslint-plugin": "^5.10.0",
     "@types/node": "^26.6.6",
     "abcjs": "^6.7.2",
-    "eslint": "^10.14.0",
+    "eslint": "^10.15.0",
     "eslint-plugin-promise": "^7.3.0",
     "eslint-plugin-regexp": "^3.3.3",
     "eslint-plugin-sonarjs": "^4.2.2",
