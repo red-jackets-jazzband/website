@@ -30,7 +30,7 @@ import {
 //   v10: Font Awesome self-hosted, MuseJazzText as WOFF2, PNG iRealPro mark;
 //   v11: no fallback font formats precached;
 //   v12: a superseded fingerprinted bundle/stylesheet is dropped from the cache;
-//   v15: song/setlist/tour files are network-first, pages skip the HTTP cache).
+//   v15: song/setlist/tour files revalidate and announce changes, pages skip the HTTP cache).
 // - ASSET_VERSION: the third-party soundfont samples, which never change
 //   once published. Bump only when caching *those* changes —
 //   it deletes the soundfonts visitors downloaded with "Download for
@@ -263,26 +263,28 @@ function cacheFirstRevalidate(request, cacheName, event) {
   }));
 }
 
-// Song, setlist and tour files change under a fixed URL, so serving the cached
-// copy first meant a new song or edit only showed after a *second* load.
-// Instead ask the server first — `no-cache` makes the browser revalidate
-// (a cheap 304 when nothing changed, so the HTTP cache still saves the
-// bytes; GitHub Pages' own max-age of 10 minutes no longer delays updates) —
-// and fall back to the cached copy when the network fails, answers an error
-// or takes longer than DATA_TIMEOUT_MS (a slow link shouldn't be slower than
-// before). A slow fetch still finishes in the background and refreshes the
-// cache for next time.
-const DATA_TIMEOUT_MS = 3000;
+// Song, setlist and tour files change under a fixed URL. They're served like
+// the rest of the shell — the cached copy at once, a refetch behind it — but
+// the refetch revalidates (`no-cache`: a cheap 304 when nothing changed, and
+// GitHub Pages' 10-minute max-age no longer delays it), and when what came
+// back differs from what was shown, the open pages are told (see
+// announceChange) so the song list can refresh itself in place.
+async function announceChange(cached, response, url) {
+  if (!cached || !response.ok) return;
+  const [before, after] = await Promise.all([cached.clone().text(), response.clone().text()]);
+  if (before === after) return;
+  const clients = await self.clients.matchAll();
+  clients.forEach((client) => client.postMessage({ type: "rj-data-updated", url }));
+}
 
-async function networkFirst(request, cacheName, event) {
+async function dataRevalidate(request, cacheName, event) {
   const cache = await caches.open(cacheName);
   const cached = await cache.match(request);
-  const live = fetchAndCache(new Request(request, { cache: "no-cache" }), cache);
+  const live = fetchAndCache(new Request(request, { cache: "no-cache" }), cache)
+    .then((response) => announceChange(cached, response, request.url).then(() => response));
   if (!cached) return live;
   event.waitUntil(live.catch(() => null));
-  const fallback = live.then((response) => (response.ok ? response : cached), () => cached);
-  const timeout = new Promise((resolve) => { setTimeout(() => resolve(cached), DATA_TIMEOUT_MS); });
-  return Promise.race([fallback, timeout]);
+  return cached;
 }
 
 // Same shape, but never refetches once cached — for content that's
@@ -321,7 +323,7 @@ async function navigate(request, event) {
 
 const STRATEGIES = {
   navigate,
-  data: (request, event) => networkFirst(request, SHELL_CACHE, event),
+  data: (request, event) => dataRevalidate(request, SHELL_CACHE, event),
   shell: (request, event) => cacheFirstRevalidate(request, SHELL_CACHE, event),
   soundfont: (request) => cacheFirstOnly(request, SOUNDFONT_CACHE),
 };

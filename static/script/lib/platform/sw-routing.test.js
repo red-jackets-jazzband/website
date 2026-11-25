@@ -20,7 +20,7 @@ test("a cross-origin navigation is left alone", () => {
   assert.equal(classify("/", "https://example.com", "navigate"), null);
 });
 
-test("song, setlist and tour files are classified 'data' (network-first)", () => {
+test("song, setlist and tour files are classified 'data' (revalidated, changes announced)", () => {
   for (const path of [
     "/songs/bourbon_street_parade.abc", "/songs/index_of_songs.txt",
     "/setlists/setlist_2026.txt", "/setlists/index_of_setlists.txt", "/tour/tour.en.md",

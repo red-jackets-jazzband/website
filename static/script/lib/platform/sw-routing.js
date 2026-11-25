@@ -25,7 +25,7 @@ const CACHEABLE_PATH_PREFIXES = [
 // The content that changes between deploys without changing its URL — the
 // song/setlist indexes, the .abc and setlist files, the tour copy. Unlike
 // the fingerprinted bundle, a stale copy of these is a visitor missing a new
-// song until a second reload, so they are fetched network-first (see "data").
+// song until a second reload, so they are revalidated on every use and a change is announced (see "data").
 const DATA_PATH_PREFIXES = ["/songs/", "/setlists/", "/tour/"];
 
 function isCacheablePath(pathname) {
@@ -42,9 +42,9 @@ function isCacheablePath(pathname) {
     "navigate"  - an HTML page load; network-first, falling back to the
                   cached shell so a reload still works offline.
     "data"      - same-origin song/setlist/tour files that change under a
-                  fixed URL; network-first with a short timeout, so a visitor
-                  online sees a new song at once, falling back to the cache
-                  when offline or slow.
+                  fixed URL; cache-first like "shell", but always revalidated
+                  with the server, and the worker tells open pages when a file
+                  came back different, so the page can refresh its lists.
     "shell"     - same-origin app code/assets; cache-first, revalidated
                   in the background (a stale copy beats a broken page, but a
                   fresher one is picked up next time it's actually used).

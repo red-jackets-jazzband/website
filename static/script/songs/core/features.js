@@ -63,7 +63,8 @@ function loadCatalog(ctx) {
     ctx.store.set("catalog", { allSongs: parseSongIndex(data), allSongsLoaded: true });
     const countEl = byId("songCount");
     if (countEl) countEl.textContent = tl("library_count", "{count} lead sheets", { count: ctx.state.allSongs.length });
-    if (ctx.state.activeTab === "library") ctx.library.render("");
+    const search = byId("songSearch");
+    if (ctx.state.activeTab === "library") ctx.library.render(search ? search.value : "");
   });
 
   ctx.readFile("/setlists/index_of_setlists.txt", (data) => {
@@ -73,11 +74,24 @@ function loadCatalog(ctx) {
   });
 }
 
+// The service worker shows the cached lists at once and refetches them behind
+// the page; when a list came back different it says so, and the lists are read
+// again (from the cache it just updated) — a new song appears without a reload.
+function refreshCatalogOnUpdate(ctx) {
+  if (!("serviceWorker" in navigator)) return;
+  navigator.serviceWorker.addEventListener("message", (event) => {
+    const { data } = event;
+    const url = data && data.type === "rj-data-updated" ? String(data.url) : "";
+    if (url.endsWith("/songs/index_of_songs.txt") || url.endsWith("/setlists/index_of_setlists.txt")) loadCatalog(ctx);
+  });
+}
+
 // The sidebar: the Library / Setlists tab switcher and both lists, starting
 // on the tab the page asks for (data-default-tab on .rj-songs-layout).
 function initSidebar(ctx) {
   if (!byId("songList")) return;
   loadCatalog(ctx);
+  refreshCatalogOnUpdate(ctx);
   qsa(".rj-library-tab", byId("libraryTabs")).forEach((btn) => {
     btn.addEventListener("click", () => ctx.nav.switchTab(btn.dataset.tab));
   });
