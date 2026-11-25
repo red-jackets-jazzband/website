@@ -29,12 +29,13 @@ import {
 //   v9: the page loads one js.Build bundle instead of the module graph;
 //   v10: Font Awesome self-hosted, MuseJazzText as WOFF2, PNG iRealPro mark;
 //   v11: no fallback font formats precached;
-//   v12: a superseded fingerprinted bundle/stylesheet is dropped from the cache).
+//   v12: a superseded fingerprinted bundle/stylesheet is dropped from the cache;
+//   v15: song/setlist/tour files are network-first, pages skip the HTTP cache).
 // - ASSET_VERSION: the third-party soundfont samples, which never change
 //   once published. Bump only when caching *those* changes —
 //   it deletes the soundfonts visitors downloaded with "Download for
 //   offline", so their offline playback is gone until they download again.
-const SHELL_VERSION = "v14";
+const SHELL_VERSION = "v15";
 const ASSET_VERSION = "v1";
 // Every cache this worker owns is named under this prefix, and activate()'s
 // cleanup only ever deletes caches under it — CacheStorage is shared across
@@ -262,6 +263,28 @@ function cacheFirstRevalidate(request, cacheName, event) {
   }));
 }
 
+// Song, setlist and tour files change under a fixed URL, so serving the cached
+// copy first meant a new song or edit only showed after a *second* load.
+// Instead ask the server first — `no-cache` makes the browser revalidate
+// (a cheap 304 when nothing changed, so the HTTP cache still saves the
+// bytes; GitHub Pages' own max-age of 10 minutes no longer delays updates) —
+// and fall back to the cached copy when the network fails, answers an error
+// or takes longer than DATA_TIMEOUT_MS (a slow link shouldn't be slower than
+// before). A slow fetch still finishes in the background and refreshes the
+// cache for next time.
+const DATA_TIMEOUT_MS = 3000;
+
+async function networkFirst(request, cacheName, event) {
+  const cache = await caches.open(cacheName);
+  const cached = await cache.match(request);
+  const live = fetchAndCache(new Request(request, { cache: "no-cache" }), cache);
+  if (!cached) return live;
+  event.waitUntil(live.catch(() => null));
+  const fallback = live.then((response) => (response.ok ? response : cached), () => cached);
+  const timeout = new Promise((resolve) => { setTimeout(() => resolve(cached), DATA_TIMEOUT_MS); });
+  return Promise.race([fallback, timeout]);
+}
+
 // Same shape, but never refetches once cached — for content that's
 // immutable once published (an audio sample, a webfont file), so there's
 // nothing to ever catch up on. No event.waitUntil() needed here the way
@@ -285,7 +308,7 @@ function cacheFirstOnly(request, cacheName) {
 // for the same early-termination reason cacheFirstRevalidate's does above.
 async function navigate(request, event) {
   try {
-    const response = await fetch(request);
+    const response = await fetch(request, { cache: "no-cache" });
     if (response.ok) {
       event.waitUntil(caches.open(SHELL_CACHE).then((cache) => cache.put(request, response.clone())));
     }
@@ -298,6 +321,7 @@ async function navigate(request, event) {
 
 const STRATEGIES = {
   navigate,
+  data: (request, event) => networkFirst(request, SHELL_CACHE, event),
   shell: (request, event) => cacheFirstRevalidate(request, SHELL_CACHE, event),
   soundfont: (request) => cacheFirstOnly(request, SOUNDFONT_CACHE),
 };

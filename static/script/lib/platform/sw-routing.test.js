@@ -20,11 +20,19 @@ test("a cross-origin navigation is left alone", () => {
   assert.equal(classify("/", "https://example.com", "navigate"), null);
 });
 
-test("same-origin app shell/data paths are classified 'shell'", () => {
+test("song, setlist and tour files are classified 'data' (network-first)", () => {
   for (const path of [
-    "/songs/", "/songs/bourbon_street_parade.abc", "/songs/index_of_songs.txt",
+    "/songs/bourbon_street_parade.abc", "/songs/index_of_songs.txt",
+    "/setlists/setlist_2026.txt", "/setlists/index_of_setlists.txt", "/tour/tour.en.md",
+  ]) {
+    assert.equal(classify(path, OWN_ORIGIN, "cors"), "data", path);
+  }
+});
+
+test("same-origin app shell paths are classified 'shell'", () => {
+  for (const path of [
+    "/songs/",
     "/script/songs-page.js", "/script/songs/app.js", "/script/lib/setlist-format.js",
-    "/setlists/setlist_2026.txt", "/tour/tour.en.md",
     "/css/split.min.abc12345.css", "/fonts/Montserrat-latin.woff2", "/fonts/Saniretro.woff",
     "/images/icons/icon-512.png", "/manifest.webmanifest", "/manifest.nl.webmanifest",
   ]) {

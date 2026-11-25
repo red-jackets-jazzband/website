@@ -22,6 +22,12 @@ const CACHEABLE_PATH_PREFIXES = [
   "/images/icons/", "/manifest.",
 ];
 
+// The content that changes between deploys without changing its URL — the
+// song/setlist indexes, the .abc and setlist files, the tour copy. Unlike
+// the fingerprinted bundle, a stale copy of these is a visitor missing a new
+// song until a second reload, so they are fetched network-first (see "data").
+const DATA_PATH_PREFIXES = ["/songs/", "/setlists/", "/tour/"];
+
 function isCacheablePath(pathname) {
   return CACHEABLE_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
@@ -35,7 +41,11 @@ function isCacheablePath(pathname) {
   Returns one of:
     "navigate"  - an HTML page load; network-first, falling back to the
                   cached shell so a reload still works offline.
-    "shell"     - same-origin app code/markup/data; cache-first, revalidated
+    "data"      - same-origin song/setlist/tour files that change under a
+                  fixed URL; network-first with a short timeout, so a visitor
+                  online sees a new song at once, falling back to the cache
+                  when offline or slow.
+    "shell"     - same-origin app code/assets; cache-first, revalidated
                   in the background (a stale copy beats a broken page, but a
                   fresher one is picked up next time it's actually used).
     "soundfont" - an audio sample from the FatBoy/MusyngKite CDN; cache-first
@@ -48,7 +58,10 @@ export function classifyRequest({
   pathname, origin, sameOrigin, mode,
 }) {
   if (mode === "navigate") return sameOrigin ? "navigate" : null;
-  if (sameOrigin) return isCacheablePath(pathname) ? "shell" : null;
+  if (sameOrigin) {
+    if (pathname !== "/songs/" && DATA_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix))) return "data";
+    return isCacheablePath(pathname) ? "shell" : null;
+  }
   if (origin === SOUNDFONT_ORIGIN) return "soundfont";
   return null;
 }
