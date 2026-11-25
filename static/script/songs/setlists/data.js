@@ -32,6 +32,12 @@ export function createSetlistData(ctx) {
       }, onError);
     },
 
+    // A band setlist's file changed on the server: forget the parse, so the
+    // next loadBand reads the (already refreshed) file again.
+    invalidate(file) {
+      delete bandCache[file];
+    },
+
     ensureSongsLoaded(callback, onError) {
       if (ctx.state.allSongsLoaded) {
         callback();

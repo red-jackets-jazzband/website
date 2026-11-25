@@ -74,15 +74,35 @@ function loadCatalog(ctx) {
   });
 }
 
-// The service worker shows the cached lists at once and refetches them behind
-// the page; when a list came back different it says so, and the lists are read
-// again (from the cache it just updated) — a new song appears without a reload.
-function refreshCatalogOnUpdate(ctx) {
+// A band setlist's own file came back different: forget its parse, and redraw
+// what shows it — the open setlist's list, or the shelf's song counts.
+function refreshBandSetlist(ctx, file) {
+  ctx.setlistData.invalidate(file);
+  const { setlistsView, currentSetlistId, currentPersonalId } = ctx.state;
+  if (setlistsView === "open" && !currentPersonalId && currentSetlistId === file.replace(/\.txt$/, "")) {
+    ctx.setlistData.loadBand(file, (setlist) => {
+      ctx.setlistView.renderOpen(setlist.name, setlist.songs, null, setlist.desc);
+    });
+  } else if (ctx.state.activeTab === "setlists" && setlistsView === "home") {
+    ctx.setlistHome.render();
+  }
+}
+
+// The service worker shows cached files at once and refetches them behind the
+// page; when one came back different it says so. The song and setlist lists
+// are read again (from the cache it just updated), so a new song or setlist
+// appears without a reload.
+function refreshOnDataUpdate(ctx) {
   if (!("serviceWorker" in navigator)) return;
   navigator.serviceWorker.addEventListener("message", (event) => {
     const { data } = event;
     const url = data && data.type === "rj-data-updated" ? String(data.url) : "";
-    if (url.endsWith("/songs/index_of_songs.txt") || url.endsWith("/setlists/index_of_setlists.txt")) loadCatalog(ctx);
+    if (url.endsWith("/songs/index_of_songs.txt") || url.endsWith("/setlists/index_of_setlists.txt")) {
+      loadCatalog(ctx);
+      return;
+    }
+    const at = url.indexOf("/setlists/");
+    if (at !== -1 && url.endsWith(".txt")) refreshBandSetlist(ctx, url.slice(at + "/setlists/".length));
   });
 }
 
@@ -91,7 +111,7 @@ function refreshCatalogOnUpdate(ctx) {
 function initSidebar(ctx) {
   if (!byId("songList")) return;
   loadCatalog(ctx);
-  refreshCatalogOnUpdate(ctx);
+  refreshOnDataUpdate(ctx);
   qsa(".rj-library-tab", byId("libraryTabs")).forEach((btn) => {
     btn.addEventListener("click", () => ctx.nav.switchTab(btn.dataset.tab));
   });
